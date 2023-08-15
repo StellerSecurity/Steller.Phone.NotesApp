@@ -1,0 +1,7 @@
+{
+  "name": "Steller.Phone.NotesApp",
+  "integrations": {
+    "capacitor": {}
+  },
+  "type": "angular"
+}
