@@ -1,0 +1,17 @@
+<ion-header [translucent]="true">
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button></ion-back-button>
+    </ion-buttons>
+    <ion-title>Note</ion-title>
+
+    <ion-buttons slot="end">
+      <ion-button (click)="back()">OK</ion-button>
+    </ion-buttons>
+
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true" class="ion-padding">
+  <ion-textarea (ionInput)="save($event)" value="{{getCurrentNoteText()}}" autofocus="true"></ion-textarea>
+</ion-content>

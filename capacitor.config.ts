@@ -1,8 +1,8 @@
 import { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'io.ionic.starter',
-  appName: 'Steller.Phone.NotesApp',
+  appId: 'Steller.Phone.NotesApp',
+  appName: 'Notes',
   webDir: 'www',
   server: {
     androidScheme: 'https'
