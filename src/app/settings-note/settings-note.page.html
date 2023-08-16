@@ -1,0 +1,26 @@
+<ion-header [translucent]="true">
+  <ion-buttons slot="start">
+    <ion-back-button></ion-back-button>
+  </ion-buttons>
+  <ion-toolbar>
+    <ion-title>Note Settings</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true">
+  <ion-item>
+    <ion-toggle checked="true"> Protect With Password </ion-toggle>
+  </ion-item>
+
+  <ion-item>
+    <ion-toggle checked="true"> Delete Note on 20+ wrongly passwords entered </ion-toggle>
+  </ion-item>
+
+  <ion-item>
+    <ion-toggle checked="true"> Bruteforce Protection </ion-toggle>
+  </ion-item>
+
+
+  <p class="ion-padding">* Bruteforce protection sets time limits when the password for the note has been written wrongly many times.</p>
+
+</ion-content>
