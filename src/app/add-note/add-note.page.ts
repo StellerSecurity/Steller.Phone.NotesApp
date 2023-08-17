@@ -3,6 +3,7 @@ import {at} from "ionicons/icons";
 import {CryptoService} from "../services/crypto.service";
 import {ActivatedRoute, ParamMap, Router} from "@angular/router";
 import {AlertController, NavController} from "@ionic/angular";
+import {NotesService} from "../services/notes.service";
 const { v4: uuidv4 } = require('uuid');
 
 declare var require: any;
@@ -17,8 +18,6 @@ export class AddNotePage implements OnInit {
 
   private notesPassword = "lol";
 
-  private notesAppPassword: string = "DILO1234";
-
   private notes_id = null;
 
   private notes = null;
@@ -30,18 +29,21 @@ export class AddNotePage implements OnInit {
   constructor(private cryptoService: CryptoService,
               public activatedRoute: ActivatedRoute,
               private navController: NavController,
+              private notesService: NotesService,
               private alertCtrl: AlertController) {
 
     this.activatedRoute.paramMap.subscribe((params: ParamMap) => {
 
       // retrieve already encrypted notes in storage (if any)
-      const notesStored = localStorage.getItem("notes");
+      const notesStored = this.notesService.getNotes();
 
-      // notes in DB are stored and encrypted.
-      if(notesStored !== null) {
-        this.notes = this.cryptoService.decrypt(notesStored, this.notesAppPassword);
+      // notes in Storage are encrypted.
+      if(notesStored !== null && this.notesService.appHasPasswordChallenge()) {
+        this.notes = this.cryptoService.decrypt(notesStored, this.notesService.getNotesAppPassword());
         // @ts-ignore
         this.notes = JSON.parse(this.notes);
+      } else if(notesStored !== null) {
+        this.notes = JSON.parse(this.notesService.getDecryptedNotes());
       }
 
       // @ts-ignore
@@ -68,15 +70,21 @@ export class AddNotePage implements OnInit {
 
     const value = ev.target!.value;
 
+    let should_encrypt = false;
+
+    let encryptedText = value;
+
     // encrypt the text.
-    let encryptedText = this.cryptoService.encrypt(value, this.notesPassword);
+    if(should_encrypt) {
+      encryptedText = btoa(this.cryptoService.encrypt(value, this.notesPassword));
+    }
 
     // newly created note.
     var note = {
       "id": this.notes_id,
       "last_modified": Date.now(),
-      "text": btoa(encryptedText),
-      "protected": true,
+      "text": encryptedText,
+      "protected": false,
       "auto_wipe": false
     };
 
@@ -106,20 +114,23 @@ export class AddNotePage implements OnInit {
 
     }
 
-    // newly notes to save into storage.
-    let encryptedNotesSave = this.cryptoService.encrypt(JSON.stringify(this.notes), this.notesAppPassword);
-
-    // update notes, and store.
-    localStorage.setItem("notes", encryptedNotesSave);
+    if(this.notesService.appHasPasswordChallenge()) {
+      // newly notes to save into storage.
+      let encryptedNotesSave = this.cryptoService.encrypt(JSON.stringify(this.notes), this.notesService.getNotesAppPassword());
+      // notes in the app is stored.
+      localStorage.setItem("app_password_challenge", "1");
+      // update notes, and store.
+      this.notesService.setNotes(encryptedNotesSave);
+    } else {
+      this.notesService.setNotes(JSON.stringify(this.notes));
+    }
 
   }
 
   public findNote(id: number) {
-
     let note = null;
     // @ts-ignore
     let notes = this.notes;
-
     // @ts-ignore
     for(let i = 0; i < notes.length; i++) {
       // @ts-ignore
@@ -129,9 +140,7 @@ export class AddNotePage implements OnInit {
         break;
       }
     }
-
     return note;
-
   }
 
   public back() {
@@ -169,12 +178,12 @@ export class AddNotePage implements OnInit {
 
             if(decryptedText == "") {
               return false;
-            } else {
-              // @ts-ignore
-              this.currentNote.text = decryptedText;
-              this.note_locked = false;
-              return true;
             }
+
+            // @ts-ignore
+            this.currentNote.text = decryptedText;
+            this.note_locked = false;
+            return true;
 
           },
         },
@@ -184,15 +193,14 @@ export class AddNotePage implements OnInit {
   }
 
   public getCurrentNoteText() {
-
+    // the note is locked, meaning it's protected with password,
+    // do not reveal until the PW has been written.
     if(this.note_locked) {
       return "";
     }
-
     if(this.currentNote === null) {
       return "";
     }
-
     // @ts-ignore
     return this.currentNote.text;
   }

@@ -17,6 +17,7 @@
     <ion-item *ngFor="let note of getNotes()"  [routerLink]="'/note/' + note.id" [detail]="false">
       <ion-label class="ion-text-wrap ion-padding">
         <h2>
+          <span *ngIf="!note.protected"> {{ (note.text.length > 12)? (note.text | slice:0:12)+'...':(note.text) }}</span>
           <span *ngIf="note.protected">PROTECTED <ion-icon name="lock-closed"></ion-icon></span>
           <span class="date">
         <ion-note>{{ note.last_modified | date: "yyyy-MM-dd H:mm":"UTC" }}</ion-note>

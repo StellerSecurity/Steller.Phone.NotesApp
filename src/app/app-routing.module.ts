@@ -23,6 +23,10 @@ const routes: Routes = [
     path: 'settings-note/:id',
     loadChildren: () => import('./settings-note/settings-note.module').then( m => m.SettingsNotePageModule)
   },
+  {
+    path: 'reset-password',
+    loadChildren: () => import('./reset-password/reset-password.module').then( m => m.ResetPasswordPageModule)
+  },
 ];
 
 @NgModule({
