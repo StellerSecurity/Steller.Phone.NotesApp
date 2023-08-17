@@ -1,5 +1,5 @@
 import { Component, inject } from '@angular/core';
-import {AlertController, RefresherCustomEvent} from '@ionic/angular';
+import {AlertController, NavController, RefresherCustomEvent} from '@ionic/angular';
 
 import {Router} from "@angular/router";
 import {CryptoService} from "../services/crypto.service";
@@ -16,25 +16,35 @@ var CryptoJS = require('crypto-js');
 export class HomePage {
   private notes: any;
 
-
   constructor(private cryptoService: CryptoService,
               private alertCtrl: AlertController,
-              private noteService: NotesService) {
-
-    if(this.noteService.getDecryptedNotes() === null) {
-      this.askForNotesAppPassword();
-    }
+              private noteService: NotesService,
+              private navController: NavController) {
   }
 
   ionViewWillEnter() {
-
+    if(this.noteService.getDecryptedNotes() === null && this.noteService.appHasPasswordChallenge()) {
+      this.askForNotesAppPassword().then(r => {});
+    } else {
+      this.setData("");
+    }
   }
 
-  private setData(password: string) {
-    let notes = this.noteService.getNotes();
-    let decryptedNotes = this.cryptoService.decrypt(notes, password);
-    this.noteService.setDecryptedNotes(decryptedNotes);
-    this.notes = JSON.parse(decryptedNotes);
+  private setData(password: string = "") {
+
+    let decryptedNotes = null;
+    if(this.noteService.appHasPasswordChallenge()) {
+      let notes = this.noteService.getNotes();
+      decryptedNotes = this.cryptoService.decrypt(notes, password);
+    } else {
+      this.noteService.setDecryptedNotes(this.noteService.getNotes());
+      console.log(this.noteService.getNotes());
+      decryptedNotes = this.noteService.getDecryptedNotes();
+    }
+
+      this.noteService.setDecryptedNotes(decryptedNotes);
+      this.notes = JSON.parse(decryptedNotes);
+
   }
 
   /**
@@ -60,7 +70,7 @@ export class HomePage {
           text: 'Reset Password',
           role: 'cancel',
           handler: () => {
-            //this.back();
+            this.navController.navigateForward('reset-password');
           },
         },
         {
@@ -69,11 +79,13 @@ export class HomePage {
             // @ts-ignore
 
             this.setData(data.password);
-
             if(this.notes === null) {
               // wrong password, call a counter, [where should be stored?]
               return false;
             }
+
+            // store the notes app password in a service.
+            this.noteService.setNotesAppPassword(data.password);
 
             // set counter to, 0.
             return true;
@@ -92,7 +104,7 @@ export class HomePage {
    */
   getNotes()  {
 
-    if(this.notes === undefined) {
+    if(this.notes === undefined || this.notes === null) {
       return [];
     }
 
