@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import {Component, HostListener, inject} from '@angular/core';
 import {AlertController, NavController, RefresherCustomEvent, ToastController} from '@ionic/angular';
 
 import {Router} from "@angular/router";
@@ -19,15 +19,18 @@ export class HomePage {
 
   public should_display = false;
 
+  public checkboxOpened = false;
+
+  public listOfCheckedCheckboxes: string[] = [];
+
+  private alert : any = null;
+
   constructor(private cryptoService: CryptoService,
               private alertCtrl: AlertController,
               private noteService: NotesService,
               private navController: NavController,
               private toastController: ToastController,
-              private appProtectorService: AppProtectorService) {
-
-
-  }
+              private appProtectorService: AppProtectorService) {}
 
   ionViewWillEnter() {
     if(this.noteService.shouldAskForPassword()) {
@@ -61,13 +64,12 @@ export class HomePage {
 
   /**
    * The method will ask the password for the notes-app (if set),
-   * when the state of notes-app is either first-time opened
-   * or if have been idle for x minutes.
+   * when the state of notes-app is either first-time opened.
    */
   public async askForNotesAppPassword() {
 
     // @ts-ignore
-    let alert = await this.alertCtrl.create({
+    this.alert = await this.alertCtrl.create({
       header: 'Protected Notes App',
       subHeader: 'Enter Password For The Notes App',
       inputs: [
@@ -88,34 +90,36 @@ export class HomePage {
         {
           text: 'Okay',
           handler: async (data: any) => {
-            // @ts-ignore
-
-            this.noteService.increaseAppNoteAttemptsFailedPasswords();
-
-            if (this.noteService.shouldWipeAllNotesOrNot()) {
-              // @ts-ignore
-              navigator['app'].exitApp();
-              return false;
-            }
-
-            this.setData(data.password);
-
-            // init protection
-            this.appProtectorService.init();
-            // store the notes app password in a service.
-            this.noteService.setNotesAppPassword(data.password);
-            // reset failed attempts.
-            this.noteService.setFailedPasswordAppAttempts(0);
-
-            // set counter to, 0.
-            return true;
-
+            return this.unlockNotesApp(data);
           },
         },
       ]
     });
-    await alert.present();
+    await this.alert.present();
 
+  }
+
+  // @ts-ignore
+  private async unlockNotesApp(data: any) {
+
+    this.noteService.increaseAppNoteAttemptsFailedPasswords();
+    if (this.noteService.shouldWipeAllNotesOrNot()) {
+      localStorage.clear();
+      // @ts-ignore
+      navigator['app'].exitApp();
+      return false;
+    }
+
+    this.setData(data.password);
+
+    // init protection
+    this.appProtectorService.init();
+    // store the notes app password in a service.
+    this.noteService.setNotesAppPassword(data.password);
+    // reset failed attempts.
+    this.noteService.setFailedPasswordAppAttempts(0);
+
+    return true;
   }
 
   /**
@@ -123,12 +127,11 @@ export class HomePage {
    * and sort them by last modified.
    */
   getNotes()  {
-
     if(this.notes === undefined || this.notes === null) {
       return [];
     }
 
-    // sort notes by last modified date
+    // sort notes by last modified date.
     // @ts-ignore
     this.notes = this.notes.sort((a, b) => {
       if (a.last_modified > b.last_modified) {
@@ -140,7 +143,113 @@ export class HomePage {
   }
 
   public settings(type: string = "") {
-    this.navController.navigateForward('app-settings');
+    this.navController.navigateForward('app-settings').then(r => {});
   }
 
+  public openOrCheckbox(note_id: string) {
+    if(!this.checkboxOpened) {
+      this.navController.navigateForward('/note/' + note_id).then(r => {});
+    }
+  }
+
+  public toggleCheckbox() {
+    this.checkboxOpened = !this.checkboxOpened;
+    if(!this.checkboxOpened) {
+      this.listOfCheckedCheckboxes = [];
+    }
+  }
+
+  public async deleteSelectedNotes() {
+    let alert = await this.alertCtrl.create({
+      header: 'Confirm',
+      subHeader: 'Please confirm that you want to delete the selected notes. They cannot be recovered once deleted.',
+      buttons: [
+        {
+          text: 'Cancel',
+          role: 'cancel',
+          handler: () => {
+            // this.handlerMessage = 'Alert canceled';
+          },
+        },
+        {
+          text: 'Delete',
+          role: 'confirm',
+          handler: async () => {
+            await this.deleteNotesConfirm();
+          },
+        },
+      ],
+    });
+
+
+    await alert.present();
+  }
+
+  /**
+   * Being called, when the confirmation has been done.
+   * @private
+   */
+  private async deleteNotesConfirm() {
+    // delete the selected notes.
+    for (let i = 0; this.listOfCheckedCheckboxes.length > i; i++) {
+      for (let j = 0; this.notes.length > j; j++) {
+        if (this.listOfCheckedCheckboxes[i] == this.notes[j].id) {
+          console.log(this.listOfCheckedCheckboxes[i] + " " + this.notes[j].id);
+          this.notes.splice(i, 1);
+        }
+      }
+    }
+
+    if (this.noteService.appHasPasswordChallenge()) {
+      // newly notes to save into storage.
+      let encryptedNotesSave = this.cryptoService.encrypt(JSON.stringify(this.notes), this.noteService.getNotesAppPassword());
+      // notes in the app is stored.
+      localStorage.setItem("app_password_challenge", "1");
+      // update notes, and store.
+      this.noteService.setNotes(encryptedNotesSave);
+    } else {
+      this.noteService.setNotes(JSON.stringify(this.notes));
+    }
+
+    this.toggleCheckbox();
+
+    const toast = await this.toastController.create({
+      message: 'The selected notes has been deleted.',
+      duration: 2500,
+      position: 'bottom',
+    });
+
+    await toast.present();
+  }
+
+  /**
+   * Listens on Keyboard events.
+   * Used for the unlock-app.
+   * @param event
+   */
+  @HostListener('document:keyup', ['$event'])
+  async onKeyUp(event: KeyboardEvent) {
+    if (this.alert !== null && event.key.toUpperCase() == "ENTER") {
+      this.unlockNotesApp(null);
+    }
+  }
+
+  /**
+   * Selecting notes that the user has chosen in UI.
+   * @param event
+   * @param note_id
+   */
+  public selectNote(event: any, note_id: string) {
+    var isChecked = event.currentTarget.checked;
+    // checked.
+    if(!isChecked) {
+      this.listOfCheckedCheckboxes.push(note_id);
+    } else { // removed.
+      for(let i = 0; this.listOfCheckedCheckboxes.length > i; i++) {
+        if(this.listOfCheckedCheckboxes[i] == note_id) {
+          this.listOfCheckedCheckboxes.splice(i, 1);
+        }
+      }
+    }
+  }
 }

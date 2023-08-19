@@ -41,13 +41,13 @@
           <span style="color: red">* Warning, this will leave your notes in a decrypted state. You can always add a password again.</span>
         </p>
 
-        <div *ngIf="!note_locked">
+        <div *ngIf="!note_locked && !getProtected()">
           <password-strength-meter [password]="notes_password_input"></password-strength-meter>
           {{passwordStrengthHelperText}}
           </div>
         <br><br>
 
-        <ion-list>
+        <ion-list *ngIf="!getProtected()">
           <ion-item>
             <ion-input type="password" (ionInput)="notesPasswordChange()" placeholder="Password"  [(ngModel)]="notes_password_input" ></ion-input>
           </ion-item>
@@ -56,8 +56,9 @@
           </ion-item>
         </ion-list>
 
-        <ion-button expand="block" (click)="lockNote()">Lock Note With Password</ion-button>
+        <ion-button expand="block" *ngIf="!getProtected()" (click)="lockNote()">Lock Note With Password</ion-button>
         <br><br><br>
+        <p *ngIf="getProtected()">If you want to change the note-password, you must remove the password first.</p>
         <ion-button expand="block" color="danger" (click)="removeLock()" *ngIf="getProtected()">Remove Lock Password</ion-button>
 
       </ion-content>
