@@ -52,9 +52,6 @@ export class AddNotePage implements OnInit {
       if(notesStored !== null && this.notesService.appHasPasswordChallenge()) {
         this.notes = this.cryptoService.decrypt(notesStored, this.notesService.getNotesAppPassword());
         // @ts-ignore
-        console.log(JSON.parse(this.notes));
-
-        // @ts-ignore
         this.notes = JSON.parse(this.notes);
       } else if(notesStored !== null) {
         this.notes = JSON.parse(this.notesService.getDecryptedNotes());
@@ -110,7 +107,7 @@ export class AddNotePage implements OnInit {
       "last_modified": Date.now(),
       "text": encryptedText,
       "protected": protectedNote,
-      "auto_wipe": false,
+      "auto_wipe": true,
     };
 
     // first time the user creates a note in history.
@@ -154,8 +151,6 @@ export class AddNotePage implements OnInit {
     } else {
       this.notesService.setNotes(JSON.stringify(this.notes));
     }
-
-    console.log(this.notesService.getNotes());
   }
 
   public back() {
@@ -291,7 +286,6 @@ export class AddNotePage implements OnInit {
 
   public async lockNote() {
 
-    console.log(this.notes_password_input + " " + this.notes_password_confirm);
     if (this.notes_password_input !== this.notes_password_confirm) {
       const toast = await this.toastController.create({
         message: 'The two passwords does not match.',
@@ -314,6 +308,7 @@ export class AddNotePage implements OnInit {
       return;
     }
 
+    // @ts-ignore
     this.notes_password_stored = this.notes_password_input;
 
     // @ts-ignore
@@ -342,34 +337,56 @@ export class AddNotePage implements OnInit {
     this.notes_password_input = "";
 
     await this.dismissModal();
-
   }
 
   public async removeLock() {
     const alert = await this.alertCtrl.create({
       header: 'WARNING',
-      subHeader: 'Are you sure, you want to remove the password for the note?',
-      buttons: ['OK'],
+      subHeader: 'Are you sure, you want to remove the password for the note? It will be stored in a decrypted-state on your device, if the lock is removed.',
+      buttons: [
+        {
+        text: 'Cancel',
+        role: 'cancel',
+        handler: () => {
+          // this.handlerMessage = 'Alert canceled';
+        },
+      },         {
+          text: 'Remove lock',
+          role: 'confirm',
+          handler: () => {
+            // @ts-ignore
+            for (let i = 0; this.notes.length > i; i++) {
+              // @ts-ignore
+              if (this.notes[i].id === this.notes_id) {
+                // @ts-ignore
+                this.notes[i].protected = false;
+                break;
+              }
+            }
+
+            // update.
+            this.storeNoteInStorage();
+            this.modal.dismiss();
+
+          },
+        }],
     });
 
     await alert.present();
   }
-
   public async openLockModal() {
     await this.modal.present();
   }
-
 
   public getProtected() {
     // @ts-ignore
     return this.currentNote.protected;
   }
-
   public async deleteNote() {
 
     const alert = await this.alertCtrl.create({
       header: 'Confirm',
-      subHeader: 'Please confirm that you want to delete this note.',
+      subHeader: 'Please confirm that you want to delete this note. It cannot be recovered!',
       buttons: [
         {
           text: 'Cancel',
@@ -397,9 +414,7 @@ export class AddNotePage implements OnInit {
 
             // updated list will not have the current note.
             this.storeNoteInStorage();
-
             this.currentNote = null;
-
             this.navController.navigateForward('/home');
           },
         },
@@ -407,8 +422,8 @@ export class AddNotePage implements OnInit {
     });
 
     await alert.present();
-
-
   }
+
+
 
 }

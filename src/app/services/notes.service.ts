@@ -32,7 +32,6 @@ export class NotesService {
   public shouldWipeAllNotesOrNot() {
     // @ts-ignore
     if((this.MAX_APP_FAILED_ATTEMPTS + 1) <= parseInt(this.getFailedPasswordAppAttempts())) {
-      localStorage.clear();
       return true;
     }
     return false;
