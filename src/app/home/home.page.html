@@ -3,10 +3,18 @@
     <ion-title>
       Steller Notes ({{getNotes().length}})
     </ion-title>
+
+
+    <ion-buttons slot="end"  (click)="settings()">
+      <button  slot="icon-only">
+        <ion-icon slot="end"  name="settings-outline" (click)="settings()"></ion-icon>
+      </button>
+    </ion-buttons>
+
   </ion-toolbar>
 </ion-header>
 
-<ion-fab slot="fixed"  vertical="bottom" horizontal="end">
+<ion-fab slot="fixed"  vertical="center" horizontal="end" *ngIf="should_display">
   <ion-fab-button routerLink="/note">
     <ion-icon name="add"></ion-icon>
   </ion-fab-button>
@@ -26,4 +34,16 @@
       </ion-label>
     </ion-item>
   </ion-list>
+
+
 </ion-content>
+
+<ion-footer class="ion-padding">
+
+  <ion-button *ngIf="!appHasPasswordChallenge()" expand="block" (click)="settings('addPassword')">Add Notes App Password</ion-button>
+
+  <div class="ion-padding" align="center">
+    <ion-icon name="lock-closed-outline"  style="font-size: 25px"></ion-icon><br><br>
+    Encrypted, secured and protected by<br>Steller Security. All data is stored on your phone and not on any server.
+  </div>
+</ion-footer>

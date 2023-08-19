@@ -1,13 +1,13 @@
 import { TestBed } from '@angular/core/testing';
 
-import { CryptoService } from './crypto.service';
+import { AppProtectorService } from './app-protector.service';
 
-describe('CryptoService', () => {
-  let service: CryptoService;
+describe('AppProtectorService', () => {
+  let service: AppProtectorService;
 
   beforeEach(() => {
     TestBed.configureTestingModule({});
-    service = TestBed.inject(CryptoService);
+    service = TestBed.inject(AppProtectorService);
   });
 
   it('should be created', () => {

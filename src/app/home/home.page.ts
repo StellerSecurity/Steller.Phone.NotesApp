@@ -1,9 +1,10 @@
 import { Component, inject } from '@angular/core';
-import {AlertController, NavController, RefresherCustomEvent} from '@ionic/angular';
+import {AlertController, NavController, RefresherCustomEvent, ToastController} from '@ionic/angular';
 
 import {Router} from "@angular/router";
 import {CryptoService} from "../services/crypto.service";
 import {NotesService} from "../services/notes.service";
+import {AppProtectorService} from "../services/app-protector.service";
 declare var require: any;
 var CryptoJS = require('crypto-js');
 
@@ -16,18 +17,28 @@ var CryptoJS = require('crypto-js');
 export class HomePage {
   private notes: any;
 
+  public should_display = false;
+
   constructor(private cryptoService: CryptoService,
               private alertCtrl: AlertController,
               private noteService: NotesService,
-              private navController: NavController) {
+              private navController: NavController,
+              private toastController: ToastController,
+              private appProtectorService: AppProtectorService) {
+
+
   }
 
   ionViewWillEnter() {
-    if(this.noteService.getDecryptedNotes() === null && this.noteService.appHasPasswordChallenge()) {
+    if(this.noteService.shouldAskForPassword()) {
       this.askForNotesAppPassword().then(r => {});
     } else {
-      this.setData("");
+      this.setData(this.noteService.getNotesAppPassword()); // will send a password, if the app is encrypted.
     }
+  }
+
+  public appHasPasswordChallenge() : boolean {
+    return this.noteService.appHasPasswordChallenge();
   }
 
   private setData(password: string = "") {
@@ -36,10 +47,11 @@ export class HomePage {
     if(this.noteService.appHasPasswordChallenge()) {
       let notes = this.noteService.getNotes();
       decryptedNotes = this.cryptoService.decrypt(notes, password);
+      this.should_display = true;
     } else {
       this.noteService.setDecryptedNotes(this.noteService.getNotes());
-      console.log(this.noteService.getNotes());
       decryptedNotes = this.noteService.getDecryptedNotes();
+      this.should_display = true;
     }
 
       this.noteService.setDecryptedNotes(decryptedNotes);
@@ -75,17 +87,25 @@ export class HomePage {
         },
         {
           text: 'Okay',
-          handler: (data: any) => {
+          handler: async (data: any) => {
             // @ts-ignore
 
-            this.setData(data.password);
-            if(this.notes === null) {
-              // wrong password, call a counter, [where should be stored?]
+            this.noteService.increaseAppNoteAttemptsFailedPasswords();
+
+            if (this.noteService.shouldWipeAllNotesOrNot()) {
+              // @ts-ignore
+              navigator['app'].exitApp();
               return false;
             }
 
+            this.setData(data.password);
+
+            // init protection
+            this.appProtectorService.init();
             // store the notes app password in a service.
             this.noteService.setNotesAppPassword(data.password);
+            // reset failed attempts.
+            this.noteService.setFailedPasswordAppAttempts(0);
 
             // set counter to, 0.
             return true;
@@ -117,6 +137,10 @@ export class HomePage {
     });
 
     return this.notes;
+  }
+
+  public settings(type: string = "") {
+    this.navController.navigateForward('app-settings');
   }
 
 }

@@ -7,7 +7,19 @@ export class NotesService {
 
   private decryptedNotes : any = null;
 
-  private notesAppPassword : string = "DILO1234";
+  private notesAppPassword : string = "";
+
+  /**
+   * Max failed attempts in a row before the app wipes it-self.
+   * @private
+   */
+  private MAX_APP_FAILED_ATTEMPTS = 20;
+
+  /**
+   * Controls, when the active time was for the notesApp, when it was active && unlocked.
+   * @private
+   */
+  private LAST_ACTIVITY_TIMESTAMP = 0;
 
   /**
    * If the user has chosen to add a password to the notes-app,
@@ -15,6 +27,72 @@ export class NotesService {
    */
   public getNotes() {
     return localStorage.getItem("notes");
+  }
+
+  public shouldWipeAllNotesOrNot() {
+    // @ts-ignore
+    if((this.MAX_APP_FAILED_ATTEMPTS + 1) <= parseInt(this.getFailedPasswordAppAttempts())) {
+      localStorage.clear();
+      return true;
+    }
+    return false;
+  }
+
+  public increaseAppNoteAttemptsFailedPasswords() {
+    let failedAttempts = this.getFailedPasswordAppAttempts();
+
+    let failedAttemptsUpdated = 0;
+
+    if(failedAttempts === null) {
+      failedAttemptsUpdated = 1;
+    } else {
+      failedAttemptsUpdated = parseInt(failedAttempts) + 1;
+    }
+
+    this.setFailedPasswordAppAttempts(failedAttemptsUpdated);
+
+    // @ts-ignore
+    return parseInt(this.getFailedPasswordAppAttempts());
+
+  }
+
+  public setFailedPasswordAppAttempts(attempts: number) {
+    localStorage.setItem("failedAttemptsApp", String(attempts));
+  }
+
+  public getFailedPasswordAppAttempts() {
+    return localStorage.getItem("failedAttemptsApp");
+  }
+
+  /**
+   * Will find a note by its ID.
+   * @param id
+   * @param notes
+   */
+  public findNoteById(id: string, notes: any) {
+
+    if(notes === null) return;
+
+    let note = null;
+
+  //  notes = JSON.parse(notes);
+
+    // @ts-ignore
+    for(let i = 0; i < notes.length; i++) {
+      // @ts-ignore
+      console.log(id);
+      // @ts-ignore
+      if(notes[i].id === id) {
+        // @ts-ignore
+        note = notes[i];
+        break;
+      }
+    }
+    return note;
+  }
+
+  public shouldAskForPassword() : boolean {
+    return this.appHasPasswordChallenge() && this.notesAppPassword == "";
   }
 
   /**
@@ -54,6 +132,14 @@ export class NotesService {
 
   public setDecryptedNotes(data: any) {
     this.decryptedNotes = data;
+  }
+
+  public setLastActivityTimestamp(timestamp: number) {
+    this.LAST_ACTIVITY_TIMESTAMP = timestamp;
+  }
+
+  public getLastActivityTimestamp() {
+    return this.LAST_ACTIVITY_TIMESTAMP;
   }
 
 }
