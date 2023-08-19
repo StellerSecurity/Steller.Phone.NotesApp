@@ -2,7 +2,7 @@ import {Component, ElementRef, OnInit, ViewChild} from '@angular/core';
 import {at} from "ionicons/icons";
 import {CryptoService} from "../services/crypto.service";
 import {ActivatedRoute, ParamMap, Router} from "@angular/router";
-import {AlertController, IonModal, NavController, ToastController} from "@ionic/angular";
+import {AlertController, IonModal, LoadingController, NavController, ToastController} from "@ionic/angular";
 import {NotesService} from "../services/notes.service";
 const { v4: uuidv4 } = require('uuid');
 
@@ -41,7 +41,8 @@ export class AddNotePage implements OnInit {
               private navController: NavController,
               private notesService: NotesService,
               private toastController: ToastController,
-              private alertCtrl: AlertController) {
+              private alertCtrl: AlertController,
+              private loadingCtrl: LoadingController) {
 
     this.activatedRoute.paramMap.subscribe((params: ParamMap) => {
 
@@ -80,13 +81,17 @@ export class AddNotePage implements OnInit {
   // should be called on key enter.
   save(ev: any) {
 
+    console.log("Save, method");
     if(this.notes_id === null) return;
+
 
     let value = " ";
     if(ev !== null) {
       value = ev.target!.value;
     }
 
+
+    // @ts-ignore
     let encryptedText = value;
 
     // encrypt the text.
@@ -110,6 +115,10 @@ export class AddNotePage implements OnInit {
       "auto_wipe": true,
     };
 
+    console.log("diller");
+    console.log(note);
+    console.log("end of lol");
+
     // first time the user creates a note in history.
     if(this.notes === null) {
       // @ts-ignore
@@ -124,6 +133,9 @@ export class AddNotePage implements OnInit {
           found = true;
           // @ts-ignore
           this.notes[i] = note;
+          // @ts-ignore
+          this.currentNote = note;
+          console.log("lol");
           break;
         }
       }
@@ -132,9 +144,12 @@ export class AddNotePage implements OnInit {
       if(!found) {
         // @ts-ignore
         this.notes.push(note);
+        // @ts-ignore
+        this.currentNote = note;
       }
 
     }
+
 
     this.storeNoteInStorage();
 
@@ -151,6 +166,7 @@ export class AddNotePage implements OnInit {
     } else {
       this.notesService.setNotes(JSON.stringify(this.notes));
     }
+
   }
 
   public back() {
@@ -216,11 +232,15 @@ export class AddNotePage implements OnInit {
     // the note is locked, meaning it's protected with password,
     // do not reveal until the PW has been written.
     if(this.note_locked) {
+      console.log("Locked note");
       return "";
     }
     if(this.currentNote === null) {
+      console.log("Note does not exist");
       return "";
     }
+
+   // console.log(this.currentNote);
 
     // @ts-ignore
     return this.currentNote.text;
@@ -286,6 +306,9 @@ export class AddNotePage implements OnInit {
 
   public async lockNote() {
 
+    // @ts-ignore
+    console.log(this.currentNote);
+    console.log("end of locking note");
     if (this.notes_password_input !== this.notes_password_confirm) {
       const toast = await this.toastController.create({
         message: 'The two passwords does not match.',
@@ -312,6 +335,9 @@ export class AddNotePage implements OnInit {
     this.notes_password_stored = this.notes_password_input;
 
     // @ts-ignore
+    let decryptedText = this.currentNote.text;
+
+    // @ts-ignore
     let encryptedText = btoa(this.cryptoService.encrypt(this.currentNote.text, this.notes_password_stored));
 
     // @ts-ignore
@@ -330,8 +356,10 @@ export class AddNotePage implements OnInit {
       }
     }
 
-    // should replace the note in storage?
     this.storeNoteInStorage();
+
+    // @ts-ignore
+    this.currentNote.text = decryptedText;
 
     this.notes_password_confirm = "";
     this.notes_password_input = "";

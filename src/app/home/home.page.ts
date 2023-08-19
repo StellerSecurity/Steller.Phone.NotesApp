@@ -1,5 +1,5 @@
 import {Component, HostListener, inject} from '@angular/core';
-import {AlertController, NavController, RefresherCustomEvent, ToastController} from '@ionic/angular';
+import {AlertController, LoadingController, NavController, RefresherCustomEvent, ToastController} from '@ionic/angular';
 
 import {Router} from "@angular/router";
 import {CryptoService} from "../services/crypto.service";
@@ -30,7 +30,8 @@ export class HomePage {
               private noteService: NotesService,
               private navController: NavController,
               private toastController: ToastController,
-              private appProtectorService: AppProtectorService) {}
+              private appProtectorService: AppProtectorService,
+              private loadingController: LoadingController) {}
 
   ionViewWillEnter() {
     if(this.noteService.shouldAskForPassword()) {
@@ -110,7 +111,7 @@ export class HomePage {
       return false;
     }
 
-    this.setData(data.password);
+    this.setData(data.password); // throws error, if uncorrect PW... @TODO fix!
 
     // init protection
     this.appProtectorService.init();
@@ -180,8 +181,6 @@ export class HomePage {
         },
       ],
     });
-
-
     await alert.present();
   }
 
@@ -190,12 +189,16 @@ export class HomePage {
    * @private
    */
   private async deleteNotesConfirm() {
+
+    const loading = await this.loadingController.create();
+    loading.present();
+
     // delete the selected notes.
     for (let i = 0; this.listOfCheckedCheckboxes.length > i; i++) {
-      for (let j = 0; this.notes.length > j; j++) {
+      for (let j = this.notes.length - 1; j >= 0; j--) {
         if (this.listOfCheckedCheckboxes[i] == this.notes[j].id) {
           console.log(this.listOfCheckedCheckboxes[i] + " " + this.notes[j].id);
-          this.notes.splice(i, 1);
+          this.notes.splice(j, 1);
         }
       }
     }
@@ -212,7 +215,6 @@ export class HomePage {
     }
 
     this.toggleCheckbox();
-
     const toast = await this.toastController.create({
       message: 'The selected notes has been deleted.',
       duration: 2500,
@@ -220,6 +222,7 @@ export class HomePage {
     });
 
     await toast.present();
+    await loading.dismiss();
   }
 
   /**
@@ -230,7 +233,7 @@ export class HomePage {
   @HostListener('document:keyup', ['$event'])
   async onKeyUp(event: KeyboardEvent) {
     if (this.alert !== null && event.key.toUpperCase() == "ENTER") {
-      this.unlockNotesApp(null);
+      await this.unlockNotesApp(null);
     }
   }
 

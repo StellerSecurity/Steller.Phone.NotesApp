@@ -30,19 +30,12 @@ export class AppSettingsPage implements OnInit {
 
   constructor(public alertController: AlertController,
               private toastController: ToastController,
-              private modalController: ModalController,
               private noteService: NotesService,
               private cryptoService: CryptoService,
               private appProtectorService: AppProtectorService,
               private passwordHelperService: PasswordHelperService) { }
 
-  ngOnInit() {
-
-  }
-
-  public getPasswordStrength() {
-    return this.passwordStrength;
-  }
+  ngOnInit() {}
 
   ionViewWillEnter() {
     this.appPasswordChallenge = this.noteService.appHasPasswordChallenge();
@@ -195,6 +188,8 @@ export class AppSettingsPage implements OnInit {
           handler: () => {
             localStorage.clear();
             window.location.href = "/home";
+            // @ts-ignore
+            navigator['app'].exitApp();
           },
         },
       ],
