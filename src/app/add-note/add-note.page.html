@@ -6,12 +6,65 @@
     <ion-title>Note</ion-title>
 
     <ion-buttons slot="end">
-      <ion-button (click)="back()">OK</ion-button>
+      <ion-button (click)="openLockModal()">
+        <ion-icon name="lock-open-outline" *ngIf="!note_locked"></ion-icon>
+        <ion-icon name="lock-closed-outline" *ngIf="note_locked"></ion-icon>
+      </ion-button>
+
+      <ion-button (click)="deleteNote()">
+        <ion-icon name="trash-outline"></ion-icon>
+      </ion-button>
     </ion-buttons>
 
   </ion-toolbar>
 </ion-header>
 
+
+
 <ion-content [fullscreen]="true" class="ion-padding">
-  <ion-textarea (ionInput)="save($event)" value="{{getCurrentNoteText()}}" autofocus="true"></ion-textarea>
+
+  <ion-modal #modal trigger="open-modal">
+    <ng-template>
+      <ion-header>
+        <ion-toolbar>
+          <ion-buttons slot="start">
+            <ion-button (click)="dismissModal()"> Close </ion-button>
+          </ion-buttons>
+          <ion-title>Lock note</ion-title>
+        </ion-toolbar>
+      </ion-header>
+      <ion-content class="ion-padding">
+
+        <p *ngIf="note_locked">
+          To disable the notes app password, please enter your password to confirm.
+          <br><br>
+          <span style="color: red">* Warning, this will leave your notes in a decrypted state. You can always add a password again.</span>
+        </p>
+
+        <div *ngIf="!note_locked">
+          <password-strength-meter [password]="notes_password_input"></password-strength-meter>
+          {{passwordStrengthHelperText}}
+          </div>
+        <br><br>
+
+        <ion-list>
+          <ion-item>
+            <ion-input type="password" (ionInput)="notesPasswordChange()" placeholder="Password"  [(ngModel)]="notes_password_input" ></ion-input>
+          </ion-item>
+          <ion-item>
+            <ion-input type="password"  placeholder="Confirm Password" [(ngModel)]="notes_password_confirm" ></ion-input>
+          </ion-item>
+        </ion-list>
+
+        <ion-button expand="block" (click)="lockNote()">Lock Note With Password</ion-button>
+        <br><br><br>
+        <ion-button expand="block" color="danger" (click)="removeLock()" *ngIf="getProtected()">Remove Lock Password</ion-button>
+
+      </ion-content>
+    </ng-template>
+  </ion-modal>
+
+  <!-- textarea -->
+
+  <ion-textarea placeholder="Note.." (ionInput)="save($event)" value="{{getCurrentNoteText()}}" autofocus=""></ion-textarea>
 </ion-content>

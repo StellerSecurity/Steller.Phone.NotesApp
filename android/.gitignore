@@ -92,7 +92,7 @@ lint/tmp/
 # Cordova plugins for Capacitor
 capacitor-cordova-android-plugins
 
-# Copied web assets
+# Copied web resources
 app/src/main/assets/public
 
 # Generated Config files
