@@ -13,7 +13,7 @@ Key-features:
 * Data only stored on the phone. Not on any server.
 * If the app contains a password and it has been unlocked, the app will require the notes app password again after 2 minutes inactivity.
 * Possible to delete all notes in one tap.
-* If the user loses their notes-password it is possible to reset the password, but it requires to delete all data created, meaning the app will be empty.
+* If the user loses their notes-password it is possible to reset the password, but it requires to delete all data created, meaning the app will be empty. Data cannot be recovered without the passwords.
 * Brute-force protection.
 * All data will be wiped/deleted from the phone, if there is 20+ incorrect passwords attempts in a row.
 * Password helper, when adding password for the app or notes our password helper will ensure you create a strong password.
