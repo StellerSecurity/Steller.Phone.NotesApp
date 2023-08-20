@@ -1,5 +1,12 @@
-import {Component, HostListener, inject} from '@angular/core';
-import {AlertController, LoadingController, NavController, RefresherCustomEvent, ToastController} from '@ionic/angular';
+import {Component, HostListener, inject, ViewChild} from '@angular/core';
+import {
+  AlertController, IonModal,
+  LoadingController,
+  ModalController,
+  NavController,
+  RefresherCustomEvent,
+  ToastController
+} from '@ionic/angular';
 
 import {Router} from "@angular/router";
 import {CryptoService} from "../services/crypto.service";
@@ -17,7 +24,7 @@ var CryptoJS = require('crypto-js');
 export class HomePage {
   private notes: any;
 
-  public should_display = false;
+  public should_display = true;
 
   public checkboxOpened = false;
 
@@ -25,21 +32,33 @@ export class HomePage {
 
   private alert : any = null;
 
+  public app_requires_password = false;
+
+  public input_password_app_unlock = "";
+
+  @ViewChild(IonModal) modal: IonModal;
+
   constructor(private cryptoService: CryptoService,
               private alertCtrl: AlertController,
               private noteService: NotesService,
               private navController: NavController,
               private toastController: ToastController,
+              private modalCtrl: ModalController,
               private appProtectorService: AppProtectorService,
               private loadingController: LoadingController) {}
 
   ionViewWillEnter() {
+
+
     if(this.noteService.shouldAskForPassword()) {
-      this.askForNotesAppPassword().then(r => {});
+      this.should_display = false;
     } else {
+      console.log(10);
       this.setData(this.noteService.getNotesAppPassword()); // will send a password, if the app is encrypted.
     }
+
   }
+
 
   public appHasPasswordChallenge() : boolean {
     return this.noteService.appHasPasswordChallenge();
@@ -51,11 +70,9 @@ export class HomePage {
     if(this.noteService.appHasPasswordChallenge()) {
       let notes = this.noteService.getNotes();
       decryptedNotes = this.cryptoService.decrypt(notes, password);
-      this.should_display = true;
     } else {
       this.noteService.setDecryptedNotes(this.noteService.getNotes());
       decryptedNotes = this.noteService.getDecryptedNotes();
-      this.should_display = true;
     }
 
       this.noteService.setDecryptedNotes(decryptedNotes);
@@ -63,45 +80,9 @@ export class HomePage {
 
   }
 
-  /**
-   * The method will ask the password for the notes-app (if set),
-   * when the state of notes-app is either first-time opened.
-   */
-  public async askForNotesAppPassword() {
-
-    // @ts-ignore
-    this.alert = await this.alertCtrl.create({
-      header: 'Protected Notes App',
-      subHeader: 'Enter Password For The Notes App',
-      inputs: [
-        {
-          name: 'password',
-          placeholder: 'Password',
-          type: 'password',
-        }
-      ],
-      buttons: [
-        {
-          text: 'Reset Password',
-          role: 'cancel',
-          handler: () => {
-            this.navController.navigateForward('reset-password');
-          },
-        },
-        {
-          text: 'Okay',
-          handler: async (data: any) => {
-            return this.unlockNotesApp(data);
-          },
-        },
-      ]
-    });
-    await this.alert.present();
-
-  }
 
   // @ts-ignore
-  private async unlockNotesApp(data: any) {
+  public async unlockNotesApp() {
 
     this.noteService.increaseAppNoteAttemptsFailedPasswords();
     if (this.noteService.shouldWipeAllNotesOrNot()) {
@@ -111,14 +92,18 @@ export class HomePage {
       return false;
     }
 
-    this.setData(data.password); // throws error, if uncorrect PW... @TODO fix!
+    this.setData(this.input_password_app_unlock); // throws error, if uncorrect PW... @TODO fix!
+
+    this.should_display = true;
 
     // init protection
     this.appProtectorService.init();
     // store the notes app password in a service.
-    this.noteService.setNotesAppPassword(data.password);
+    this.noteService.setNotesAppPassword(this.input_password_app_unlock);
     // reset failed attempts.
     this.noteService.setFailedPasswordAppAttempts(0);
+
+   // this.input_password_app_unlock = "";
 
     return true;
   }
@@ -191,7 +176,7 @@ export class HomePage {
   private async deleteNotesConfirm() {
 
     const loading = await this.loadingController.create();
-    loading.present();
+    await loading.present();
 
     // delete the selected notes.
     for (let i = 0; this.listOfCheckedCheckboxes.length > i; i++) {
@@ -233,8 +218,35 @@ export class HomePage {
   @HostListener('document:keyup', ['$event'])
   async onKeyUp(event: KeyboardEvent) {
     if (this.alert !== null && event.key.toUpperCase() == "ENTER") {
-      await this.unlockNotesApp(null);
+      await this.unlockNotesApp();
     }
+  }
+
+  public async resetPassword() {
+    const alert = await this.alertCtrl.create({
+      header: 'WARNING',
+      subHeader: 'PLEASE CONFIRM THAT YOU WANT TO THE RESET PASSWORD. IF YOU CONFIRM ALL NOTES STORED WILL BE DELETED ON YOUR DEVICE AND CANT BE RECOVERED !',
+      buttons: [
+        {
+          text: 'Cancel',
+          role: 'cancel',
+          handler: () => {
+            // do nothing.
+          },
+        },
+        {
+          text: 'OK',
+          role: 'confirm',
+          handler: () => {
+            localStorage.clear();
+            this.app_requires_password = false;
+            window.location.href='/home';
+          },
+        }]
+    });
+
+    await alert.present();
+
   }
 
   /**
@@ -255,4 +267,13 @@ export class HomePage {
       }
     }
   }
+
+  public ionInputAppUnlockInput(ev: any) {
+
+    if(ev.key == "Enter") {
+      this.unlockNotesApp();
+    }
+
+  }
+
 }
