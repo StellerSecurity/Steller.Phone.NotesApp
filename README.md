@@ -1,6 +1,6 @@
 # Steller.Phone.NotesApp
 
-A hybrid application that allows users to store notes on their phone using localStorage.
+A hybrid ionic application that allows users to store notes on their phone using localStorage.
 
 It is possible to add a password for the app which encrypts all data stored on the phone with AES256.
 
@@ -21,3 +21,11 @@ Key-features:
 Up-coming features:
 - Possible to export notes and upload them to a new device. [Requires the decryption keys, if there is any set].
 - If a note has a lock, and it has been unlocked - but the user is inactive x time, the app should automaticly unlock the note. If the user has notes app password, it already does for the whole app.
+
+Install:
+
+1. NPM install
+
+2. ionic serve
+
+thats it.
