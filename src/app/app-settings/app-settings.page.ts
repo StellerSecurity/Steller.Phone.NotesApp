@@ -95,6 +95,11 @@ export class AppSettingsPage implements OnInit {
       localStorage.removeItem("app_password_challenge");
 
     } else {
+
+      if(notes === null) {
+        notes = JSON.stringify([]);
+      }
+
       // encrypting notes.
       let encryptedNotes = this.cryptoService.encrypt(notes, this.notesAppPassword);
       this.noteService.setNotes(encryptedNotes);
@@ -110,8 +115,6 @@ export class AppSettingsPage implements OnInit {
 
 
   }
-
-  onWillDismiss(event: Event) {}
 
   public notesAppPasswordChange() {
 
