@@ -25,6 +25,9 @@ Up-coming features:
 Sources:
 The app "Steller - Notes" will be availabile on Aptoide, Fdroid, Google store and Apple store.
 
+Contribution
+For any contribution just do pull-requests.
+
 Install:
 
 1. NPM install
