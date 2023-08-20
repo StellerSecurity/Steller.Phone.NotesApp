@@ -7,6 +7,10 @@ export class NotesService {
 
   private decryptedNotes : any = null;
 
+  /**
+   * Holds the app password if there is any.
+   * @private
+   */
   private notesAppPassword : string = "";
 
   /**
@@ -52,7 +56,6 @@ export class NotesService {
 
     // @ts-ignore
     return parseInt(this.getFailedPasswordAppAttempts());
-
   }
 
   public setFailedPasswordAppAttempts(attempts: number) {
@@ -74,8 +77,6 @@ export class NotesService {
 
     let note = null;
 
-  //  notes = JSON.parse(notes);
-
     // @ts-ignore
     for(let i = 0; i < notes.length; i++) {
       // @ts-ignore
@@ -90,6 +91,9 @@ export class NotesService {
     return note;
   }
 
+  /**
+   * Determines if we should ask the user about the password for app-access.
+   */
   public shouldAskForPassword() : boolean {
     return this.appHasPasswordChallenge() && this.notesAppPassword == "";
   }
@@ -137,6 +141,10 @@ export class NotesService {
     this.LAST_ACTIVITY_TIMESTAMP = timestamp;
   }
 
+  /**
+   * Returns timestamp of when the user last was active on the app (foreground).
+   * @return number
+   */
   public getLastActivityTimestamp() {
     return this.LAST_ACTIVITY_TIMESTAMP;
   }
