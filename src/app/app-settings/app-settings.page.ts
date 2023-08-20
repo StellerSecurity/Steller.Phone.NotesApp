@@ -1,5 +1,5 @@
 import {Component, OnInit, ViewChild} from '@angular/core';
-import {AlertController, IonicSafeString, ModalController, ToastController} from "@ionic/angular";
+import {AlertController, ModalController, ToastController} from "@ionic/angular";
 import {PasswordHelperService} from "../services/password-helper.service";
 import { PasswordStrengthMeterModule } from 'angular-password-strength-meter';
 import { IonModal } from '@ionic/angular';

@@ -38,14 +38,12 @@ export class AddNotePage implements OnInit {
 
   public note_text = "";
 
-
   constructor(private cryptoService: CryptoService,
               public activatedRoute: ActivatedRoute,
               private navController: NavController,
               private notesService: NotesService,
               private toastController: ToastController,
-              private alertCtrl: AlertController,
-              private loadingCtrl: LoadingController) {
+              private alertCtrl: AlertController) {
 
     this.activatedRoute.paramMap.subscribe((params: ParamMap) => {
 
@@ -90,12 +88,10 @@ export class AddNotePage implements OnInit {
     console.log("Save, method");
     if(this.notes_id === null) return;
 
-
     let value = " ";
     if(ev !== null) {
       value = ev.target!.value;
     }
-
 
     // @ts-ignore
     let encryptedText = value;
@@ -103,7 +99,6 @@ export class AddNotePage implements OnInit {
 
     // encrypt the text.
     if(this.notes_password_stored != "") {
-      console.log("encrypting...");
       encryptedText = btoa(this.cryptoService.encrypt(value, this.notes_password_stored));
     }
 
@@ -123,10 +118,6 @@ export class AddNotePage implements OnInit {
       "auto_wipe": true,
     };
 
-    console.log("diller");
-    console.log(note);
-    console.log("end of lol");
-
     // first time the user creates a note in history.
     if(this.notes === null) {
       // @ts-ignore
@@ -145,12 +136,9 @@ export class AddNotePage implements OnInit {
           //this.currentNote.text = decryptedText;
           // @ts-ignore
           this.currentNote = note;
-          console.log("lol");
           break;
         }
       }
-
-
 
       // no existing note found, meaning we´re creating a new one.
       if(!found) {
@@ -163,14 +151,9 @@ export class AddNotePage implements OnInit {
       }
 
       this.note_text = decryptedText;
-
-
-
     }
 
-
     this.storeNoteInStorage();
-
   }
 
   private storeNoteInStorage() {
@@ -251,15 +234,12 @@ export class AddNotePage implements OnInit {
     // the note is locked, meaning it's protected with password,
     // do not reveal until the PW has been written.
     if(this.note_locked) {
-      console.log("Locked note");
+      console.log(" note");
       return "";
     }
     if(this.currentNote === null) {
-      console.log("Note does not exist");
       return "";
     }
-
-   // console.log(this.currentNote);
 
     // @ts-ignore
     return this.note_text;
@@ -320,7 +300,6 @@ export class AddNotePage implements OnInit {
     } else {
       this.passwordStrengthHelperText = "Extremely difficult. " + tips;
     }
-
   }
 
   public async lockNote() {
@@ -411,7 +390,6 @@ export class AddNotePage implements OnInit {
                 this.notes[i].protected = false;
                 // @ts-ignore
                 this.currentNote = this.notes[i];
-                console.log("protection removed..");
                 this.notes_password_stored = "";
                 break;
               }
@@ -452,8 +430,6 @@ export class AddNotePage implements OnInit {
           text: 'Delete',
           role: 'confirm',
           handler: () => {
-
-            //let updated : any;
 
             // @ts-ignore
             for (let i = 0; this.notes.length > i; i++) {
