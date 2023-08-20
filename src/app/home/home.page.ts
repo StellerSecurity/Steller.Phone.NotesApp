@@ -1,20 +1,16 @@
-import {Component, HostListener, inject, ViewChild} from '@angular/core';
+import {Component, ViewChild} from '@angular/core';
 import {
   AlertController, IonModal,
   LoadingController,
   ModalController,
   NavController,
-  RefresherCustomEvent,
   ToastController
 } from '@ionic/angular';
 
-import {Router} from "@angular/router";
 import {CryptoService} from "../services/crypto.service";
 import {NotesService} from "../services/notes.service";
 import {AppProtectorService} from "../services/app-protector.service";
 declare var require: any;
-var CryptoJS = require('crypto-js');
-
 
 @Component({
   selector: 'app-home',
@@ -30,8 +26,6 @@ export class HomePage {
 
   public listOfCheckedCheckboxes: string[] = [];
 
-  private alert : any = null;
-
   public app_requires_password = false;
 
   public input_password_app_unlock = "";
@@ -43,17 +37,13 @@ export class HomePage {
               private noteService: NotesService,
               private navController: NavController,
               private toastController: ToastController,
-              private modalCtrl: ModalController,
               private appProtectorService: AppProtectorService,
               private loadingController: LoadingController) {}
 
   ionViewWillEnter() {
-
-
     if(this.noteService.shouldAskForPassword()) {
       this.should_display = false;
     } else {
-      console.log(10);
       this.setData(this.noteService.getNotesAppPassword()); // will send a password, if the app is encrypted.
     }
 
@@ -80,7 +70,6 @@ export class HomePage {
 
   }
 
-
   // @ts-ignore
   public async unlockNotesApp() {
 
@@ -102,8 +91,6 @@ export class HomePage {
     this.noteService.setNotesAppPassword(this.input_password_app_unlock);
     // reset failed attempts.
     this.noteService.setFailedPasswordAppAttempts(0);
-
-   // this.input_password_app_unlock = "";
 
     return true;
   }
@@ -210,18 +197,6 @@ export class HomePage {
     await loading.dismiss();
   }
 
-  /**
-   * Listens on Keyboard events.
-   * Used for the unlock-app.
-   * @param event
-   */
-  @HostListener('document:keyup', ['$event'])
-  async onKeyUp(event: KeyboardEvent) {
-    if (this.alert !== null && event.key.toUpperCase() == "ENTER") {
-      await this.unlockNotesApp();
-    }
-  }
-
   public async resetPassword() {
     const alert = await this.alertCtrl.create({
       header: 'WARNING',
@@ -268,12 +243,14 @@ export class HomePage {
     }
   }
 
+  /**
+   * Will detect if the user presses enter on unlock notes-app.
+   * @param ev
+   */
   public ionInputAppUnlockInput(ev: any) {
-
     if(ev.key == "Enter") {
       this.unlockNotesApp();
     }
-
   }
 
 }
