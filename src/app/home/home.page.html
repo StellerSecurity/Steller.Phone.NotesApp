@@ -7,7 +7,7 @@
     <ion-buttons slot="end">
       <button  slot="icon-only">
         <ion-icon slot="end"  name="settings-outline" (click)="settings()"></ion-icon>
-        <ion-icon slot="end" name="ellipsis-vertical-outline" (click)="toggleCheckbox()"></ion-icon>
+        <ion-icon slot="end" name="ellipsis-vertical-outline" (click)="toggleCheckbox()" *ngIf="getNotes().length > 0"></ion-icon>
       </button>
     </ion-buttons>
 
@@ -40,6 +40,9 @@
 </ion-fab>
 
 <ion-content [fullscreen]="true">
+
+  <p class="ion-padding" *ngIf="getNotes().length == 0">No notes has been created. Click on "+" to create a new note.</p>
+
   <ion-list>
     <ion-item *ngFor="let note of getNotes()" (click)="openOrCheckbox(note.id)" [detail]="false">
       <ion-checkbox *ngIf="checkboxOpened" (click)="selectNote($event, note.id)"  justify="start" style="margin-left: 7px"></ion-checkbox>
@@ -67,7 +70,7 @@
   </div>
 </ion-footer>
 
-<ion-toolbar slot="fixed" class="toolbar-bottom" *ngIf="checkboxOpened">
+<ion-toolbar slot="fixed" class="toolbar-bottom" *ngIf="checkboxOpened && getNotes().length > 0">
   <ion-button color="danger" expand="full" (click)="deleteSelectedNotes()">Delete Selected Notes</ion-button><br>
   <ion-button color="primary" expand="full" (click)="toggleCheckbox()">Cancel</ion-button>
 </ion-toolbar>
