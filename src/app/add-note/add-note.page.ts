@@ -263,10 +263,10 @@ export class AddNotePage implements OnInit {
     }
 
     // Check password length
-    if (this.notes_password_input.length < 5) {
+    if (this.notes_password_input.length <= 4) {
       tips += "Make the password longer. ";
     } else {
-      this.passwordStrength += 2;
+      this.passwordStrength += 1;
     }
 
     // Check for mixed case
