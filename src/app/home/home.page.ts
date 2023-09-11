@@ -41,6 +41,7 @@ export class HomePage {
               private loadingController: LoadingController) {}
 
   ionViewWillEnter() {
+
     if(this.noteService.shouldAskForPassword()) {
       this.should_display = false;
     } else {
@@ -49,24 +50,36 @@ export class HomePage {
 
   }
 
-
   public appHasPasswordChallenge() : boolean {
     return this.noteService.appHasPasswordChallenge();
   }
 
-  private setData(password: string = "") {
+  private setData(password: string = ""): boolean {
 
+    console.log("DECRYPTED..");
     let decryptedNotes = null;
     if(this.noteService.appHasPasswordChallenge()) {
       let notes = this.noteService.getNotes();
       decryptedNotes = this.cryptoService.decrypt(notes, password);
+      console.log(decryptedNotes.length);
     } else {
       this.noteService.setDecryptedNotes(this.noteService.getNotes());
-      decryptedNotes = this.noteService.getDecryptedNotes();
+      decryptedNotes = this.noteService.getNotes();
     }
 
+    // @ts-ignore
+    if(decryptedNotes.length == 0 && this.noteService.appHasPasswordChallenge()) {
+      console.log("fail..");
+      return false;
+    }
+
+    console.log(decryptedNotes);
+
       this.noteService.setDecryptedNotes(decryptedNotes);
+      // @ts-ignore
       this.notes = JSON.parse(decryptedNotes);
+
+      return true;
 
   }
 
@@ -81,16 +94,26 @@ export class HomePage {
       return false;
     }
 
-    this.setData(this.input_password_app_unlock); // throws error, if uncorrect PW... @TODO fix!
+    let shouldUnlock = this.setData(this.input_password_app_unlock);
 
-    this.should_display = true;
+    if(shouldUnlock) {
+      this.should_display = true;
+      // init protection
+      this.appProtectorService.init();
+      // store the notes app password in a service.
+      this.noteService.setNotesAppPassword(this.input_password_app_unlock);
+      // reset failed attempts.
+      this.noteService.setFailedPasswordAppAttempts(0);
+    } else {
+      const toast = await this.toastController.create({
+        message: 'The password is not correct. Try again.',
+        duration: 3000,
+        position: 'bottom',
+      });
 
-    // init protection
-    this.appProtectorService.init();
-    // store the notes app password in a service.
-    this.noteService.setNotesAppPassword(this.input_password_app_unlock);
-    // reset failed attempts.
-    this.noteService.setFailedPasswordAppAttempts(0);
+      await toast.present();
+      return false;
+    }
 
     return true;
   }
@@ -169,7 +192,6 @@ export class HomePage {
     for (let i = 0; this.listOfCheckedCheckboxes.length > i; i++) {
       for (let j = this.notes.length - 1; j >= 0; j--) {
         if (this.listOfCheckedCheckboxes[i] == this.notes[j].id) {
-          console.log(this.listOfCheckedCheckboxes[i] + " " + this.notes[j].id);
           this.notes.splice(j, 1);
         }
       }
@@ -185,6 +207,8 @@ export class HomePage {
     } else {
       this.noteService.setNotes(JSON.stringify(this.notes));
     }
+
+    this.setData(this.input_password_app_unlock);
 
     this.toggleCheckbox();
     const toast = await this.toastController.create({
@@ -249,7 +273,7 @@ export class HomePage {
    */
   public ionInputAppUnlockInput(ev: any) {
     if(ev.key == "Enter") {
-      this.unlockNotesApp();
+      this.unlockNotesApp().then(r => {});
     }
   }
 

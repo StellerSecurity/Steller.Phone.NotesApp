@@ -68,7 +68,7 @@ export class AppSettingsPage implements OnInit {
       return;
     }
 
-    if(this.passwordStrength < 2) {
+    if(this.notesAppPassword.length < 2) {
       const toast = await this.toastController.create({
         message: 'The password is weak. Please make your password stronger.',
         duration: 3000,

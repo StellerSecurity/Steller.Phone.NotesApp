@@ -14,7 +14,7 @@ var CryptoJS = require('crypto-js');
   templateUrl: './add-note.page.html',
   styleUrls: ['./add-note.page.scss'],
 })
-export class AddNotePage implements OnInit {
+export class AddNotePage {
 
   @ViewChild(IonModal) modal: IonModal;
 
@@ -47,33 +47,22 @@ export class AddNotePage implements OnInit {
 
     this.activatedRoute.paramMap.subscribe((params: ParamMap) => {
 
-      // retrieve already encrypted notes in storage (if any)
-      const notesStored = this.notesService.getNotes();
-
-      // notes in Storage are encrypted.
-      if(notesStored !== null && this.notesService.appHasPasswordChallenge()) {
-        this.notes = this.cryptoService.decrypt(notesStored, this.notesService.getNotesAppPassword());
-        // @ts-ignore
-        this.notes = JSON.parse(this.notes);
-      } else if(notesStored !== null) {
-        this.notes = JSON.parse(this.notesService.getDecryptedNotes());
-      }
+      this.notes = JSON.parse(this.notesService.getDecryptedNotes());
+      console.log(this.notesService.getDecryptedNotes());
 
       // @ts-ignore
       this.notes_id = params.get('id');
       if(this.notes_id === null) {
         this.notes_id = uuidv4();
         this.save(null);
-        // @ts-ignore
-        this.currentNote = this.notesService.findNoteById(this.notes_id, this.notes);
-      } else {
-        // @ts-ignore
-        this.currentNote = this.notesService.findNoteById(this.notes_id, this.notes);
-        // @ts-ignore
-        if(this.currentNote.protected) {
-          this.note_locked = true;
-          this.askforNotePassword().then(r => {});
-        }
+      }
+
+      // @ts-ignore
+      this.currentNote = this.notesService.findNoteById(this.notes_id, this.notes);
+      // @ts-ignore
+      if(this.currentNote.protected) {
+        this.note_locked = true;
+        this.askforNotePassword().then(r => {});
       }
 
       // @ts-ignore
@@ -98,8 +87,9 @@ export class AddNotePage implements OnInit {
     let decryptedText = value;
 
     // encrypt the text.
-    if(this.notes_password_stored != "") {
-      encryptedText = btoa(this.cryptoService.encrypt(value, this.notes_password_stored));
+    if(this.notes_password_stored.length > 1) {
+      encryptedText = this.cryptoService.encrypt(value, this.notes_password_stored);
+      console.log(value);
     }
 
     let protectedNote = false;
@@ -133,8 +123,6 @@ export class AddNotePage implements OnInit {
           // @ts-ignore
           this.notes[i] = note;
           // @ts-ignore
-          //this.currentNote.text = decryptedText;
-          // @ts-ignore
           this.currentNote = note;
           break;
         }
@@ -146,8 +134,6 @@ export class AddNotePage implements OnInit {
         this.notes.push(note);
         // @ts-ignore
         this.currentNote = note;
-        // @ts-ignore
-        //this.currentNote.text = decryptedText;
       }
 
       this.note_text = decryptedText;
@@ -162,7 +148,7 @@ export class AddNotePage implements OnInit {
       let encryptedNotesSave = this.cryptoService.encrypt(JSON.stringify(this.notes), this.notesService.getNotesAppPassword());
       // notes in the app is stored.
       localStorage.setItem("app_password_challenge", "1");
-      // update notes, and store.
+      //update notes, and store.
       this.notesService.setNotes(encryptedNotesSave);
     } else {
       this.notesService.setNotes(JSON.stringify(this.notes));
@@ -173,8 +159,6 @@ export class AddNotePage implements OnInit {
   public back() {
     this.navController.back();
   }
-
-  ngOnInit() {}
 
   public async askforNotePassword() {
     // @ts-ignore
@@ -203,7 +187,10 @@ export class AddNotePage implements OnInit {
             this.notes_password_stored = data.password;
 
             // @ts-ignore
-            let decryptedText = this.cryptoService.decrypt(atob(this.currentNote.text), data.password);
+            let decryptedText = this.cryptoService.decrypt(this.currentNote.text, data.password);
+
+            // @ts-ignore
+            console.log(this.currentNote.text);
 
             if (decryptedText.length == 0) {
               const toast = await this.toastController.create({
@@ -234,7 +221,6 @@ export class AddNotePage implements OnInit {
     // the note is locked, meaning it's protected with password,
     // do not reveal until the PW has been written.
     if(this.note_locked) {
-      console.log(" note");
       return "";
     }
     if(this.currentNote === null) {
@@ -304,8 +290,6 @@ export class AddNotePage implements OnInit {
 
   public async lockNote() {
 
-    // @ts-ignore
-    console.log(this.currentNote);
     console.log("end of locking note");
     if (this.notes_password_input !== this.notes_password_confirm) {
       const toast = await this.toastController.create({
@@ -318,7 +302,7 @@ export class AddNotePage implements OnInit {
       return;
     }
 
-    if(this.passwordStrength == 1) {
+    if(this.notes_password_input.length < 2) {
       const toast = await this.toastController.create({
         message: 'The password is too weak. Please make it stronger.',
         duration: 3000,
@@ -336,7 +320,10 @@ export class AddNotePage implements OnInit {
     let decryptedText = this.currentNote.text;
 
     // @ts-ignore
-    let encryptedText = btoa(this.cryptoService.encrypt(this.currentNote.text, this.notes_password_stored));
+    console.log(this.currentNote.text);
+
+    // @ts-ignore
+    let encryptedText = this.cryptoService.encrypt(this.currentNote.text, this.notes_password_stored);
 
     // @ts-ignore
     this.currentNote.protected = true;
@@ -350,6 +337,9 @@ export class AddNotePage implements OnInit {
       if (this.notes[i].id === this.notes_id) {
         // @ts-ignore
         this.notes[i] = this.currentNote;
+        console.log(10);
+        // @ts-ignore
+        console.log(this.notes[i]);
         break;
       }
     }
@@ -371,12 +361,12 @@ export class AddNotePage implements OnInit {
       subHeader: 'Are you sure, you want to remove the password for the note? It will be stored in a decrypted-state on your device, if the lock is removed.',
       buttons: [
         {
-        text: 'Cancel',
-        role: 'cancel',
-        handler: () => {
-          // this.handlerMessage = 'Alert canceled';
-        },
-      },         {
+          text: 'Cancel',
+          role: 'cancel',
+          handler: () => {
+            // this.handlerMessage = 'Alert canceled';
+          },
+        },         {
           text: 'Remove lock',
           role: 'confirm',
           handler: () => {
@@ -423,7 +413,7 @@ export class AddNotePage implements OnInit {
           text: 'Cancel',
           role: 'cancel',
           handler: () => {
-           // this.handlerMessage = 'Alert canceled';
+            // this.handlerMessage = 'Alert canceled';
           },
         },
         {

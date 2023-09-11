@@ -30,8 +30,12 @@ export class NotesService {
    * the methods returns an encrypted AES string.
    */
   public getNotes() {
+    // @ts-ignore
     return localStorage.getItem("notes");
   }
+
+
+
 
   public shouldWipeAllNotesOrNot() {
     // @ts-ignore
