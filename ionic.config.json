@@ -1,5 +1,5 @@
 {
-  "name": "Steller.Phone.NotesApp",
+  "name": "steller.phone.notesapp",
   "integrations": {
     "capacitor": {}
   },
