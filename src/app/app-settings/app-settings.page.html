@@ -57,19 +57,9 @@
     <ion-toggle checked="true" [(ngModel)]="wipeNotesOnFailedPasswords" [enableOnOffLabels]="true" disabled=""> Wipe Notes if there<br> is 20+ failed login attempts </ion-toggle>
   </ion-item>
 
-  <ion-item  *ngIf="appPasswordChallenge">
-    <ion-toggle checked="true" [enableOnOffLabels]="true" disabled=""> Bruteforce Protection </ion-toggle>
-  </ion-item>
-
-
-  <p class="ion-padding"  *ngIf="appPasswordChallenge">* Bruteforce protection sets time limits when the password for the app has been written wrongly many times. It cannot be turned off.</p>
-
   <p class="ion-padding" *ngIf="appPasswordChallenge">* Wipe notes will delete ALL notes on your phone if you enter the password for the app wrongly 20 times in a row. It cannot be turned off.</p>
 
-  <p class="ion-padding" *ngIf="appPasswordChallenge">The app will lock itself with the given password if it has been inactive for 5 minutes.</p>
-
   <hr>
-
 
 </ion-content>
 
