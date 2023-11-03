@@ -24,3 +24,32 @@
 @import "@ionic/angular/css/text-alignment.css";
 @import "@ionic/angular/css/text-transformation.css";
 @import "@ionic/angular/css/flex-utils.css";
+
+* {
+  font-family: "Trebuchet MS";
+  font-style: normal;
+  line-height: normal;
+  margin: 0;
+  padding: 0;
+}
+
+.white {
+  color: white;
+}
+
+.grey-1 {
+  color: #4d4c4c;
+}
+
+.grey-2 {
+  color: #8a8a8a;
+}
+
+.w-full {
+  width: 100%;
+}
+
+.header-action-btn {
+  width: 20px;
+  height: 20px;
+}
