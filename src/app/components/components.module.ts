@@ -5,10 +5,13 @@ import { RouterModule } from '@angular/router';
 
 import { ButtonComponent } from './button/button.component';
 import { LinkComponent } from './link/link.component';
+import { NoteListComponent } from './note-list/note-list.component';
+import { PipesModule } from '../pipes/pipes.module';
 
 @NgModule({
-  declarations: [ButtonComponent, LinkComponent],
-  imports: [CommonModule, IonicModule, RouterModule],
-  exports: [ButtonComponent, LinkComponent],
+  declarations: [ButtonComponent, LinkComponent, NoteListComponent],
+  imports: [CommonModule, IonicModule, RouterModule, PipesModule],
+  exports: [ButtonComponent, LinkComponent, NoteListComponent],
 })
+
 export class ComponentsModule {}

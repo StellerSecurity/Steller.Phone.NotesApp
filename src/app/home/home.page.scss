@@ -58,7 +58,7 @@ ion-footer ion-title {
   font-weight: normal;
 }
 
-button{
+button {
   background: none !important;
   background-color: none !important;
   box-shadow: none !important;
@@ -71,4 +71,41 @@ span.uuid {
 
 ion-footer {
   background-color: #fff;
+}
+
+ion-fab {
+  top: auto;
+  bottom: 50px;
+  right: 15px;
+}
+
+ion-img.add {
+  width: 50px;
+  height: 50px;
+}
+
+.note-list {
+  --padding-top: 0;
+}
+
+.note-search {
+  display: flex;
+  padding: 10px 15px 10px 22px;
+  background: white;
+  border-radius: 30px;
+  width: 100%;
+  margin: 16px;
+  margin-bottom: 8px;
+
+  input {
+    border: none;
+    outline: none;
+    width: 100%;
+    color: #263238;
+  }
+
+  ion-icon {
+    width: 24px;
+    height: 24px;
+  }
 }

@@ -1,0 +1,30 @@
+<ion-list lines="none">
+  <ng-container *ngFor="let note of notes">
+    <div
+      (click)="handleClick($event, note.id)"
+      class="note-item"
+      [class.lock]="note.protected"
+    >
+      <div class="note-item-1">
+        <p>
+          {{ note.last_modified | getFormatedDateNote : "date" }}
+        </p>
+        <p>
+          {{ note.last_modified | getFormatedDateNote : "month" }}
+        </p>
+        <div class="lock-img" *ngIf="note.protected">
+          <ion-img src="assets/images/lock.svg"></ion-img>
+        </div>
+      </div>
+      <div class="note-item-2">
+        <p>{{ note.title }}</p>
+        <p>
+          {{ note.text }}
+        </p>
+        <div class="lock-text" *ngIf="note.protected">
+          <p>PROTECTED</p>
+        </div>
+      </div>
+    </div>
+  </ng-container>
+</ion-list>
