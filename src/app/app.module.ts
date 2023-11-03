@@ -9,9 +9,10 @@ import { AppRoutingModule } from './app-routing.module';
 import { PasswordStrengthMeterModule } from 'angular-password-strength-meter';
 import { LayoutModule } from './layout/layout.module';
 import { ComponentsModule } from './components/components.module';
+import { WelcomeComponent } from './welcome/welcome.component';
 
 @NgModule({
-  declarations: [AppComponent],
+  declarations: [AppComponent, WelcomeComponent],
   imports: [
     BrowserModule,
     PasswordStrengthMeterModule.forRoot(),
