@@ -7,6 +7,7 @@ import { IonicModule, IonicRouteStrategy } from '@ionic/angular';
 import { AppComponent } from './app.component';
 import { AppRoutingModule } from './app-routing.module';
 import { PasswordStrengthMeterModule } from 'angular-password-strength-meter';
+import { LayoutModule } from './layout/layout.module';
 import { ComponentsModule } from './components/components.module';
 
 @NgModule({
@@ -17,6 +18,7 @@ import { ComponentsModule } from './components/components.module';
     IonicModule.forRoot({ innerHTMLTemplatesEnabled: true }),
     AppRoutingModule,
     ComponentsModule,
+    LayoutModule,
   ],
   providers: [{ provide: RouteReuseStrategy, useClass: IonicRouteStrategy }],
   bootstrap: [AppComponent],

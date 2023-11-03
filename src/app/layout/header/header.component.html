@@ -1,0 +1,12 @@
+<ion-header [translucent]="true" [class]="className">
+  <ion-toolbar [class]="className">
+    <ng-container [ngTemplateOutlet]="backBtn?.templateRef || template"></ng-container>
+    <ion-title> {{ title }} </ion-title>
+
+    <ion-buttons slot="end">
+      <ng-container [ngTemplateOutlet]="actionBar?.templateRef || template"></ng-container>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ng-template #template></ng-template>
