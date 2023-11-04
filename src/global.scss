@@ -24,6 +24,7 @@
 @import "@ionic/angular/css/text-alignment.css";
 @import "@ionic/angular/css/text-transformation.css";
 @import "@ionic/angular/css/flex-utils.css";
+@import "./assets/styles/ion-colors";
 
 * {
   font-family: "Trebuchet MS";
@@ -63,4 +64,12 @@
 .bg-color-light {
   --background: #f2f2f2;
   background: #f2f2f2;
+}
+
+.psm__progress-bar-items {
+  width: calc(100% + 16px) !important;
+}
+
+.psm__progress-bar-item {
+  border-right: 16px solid #fff !important;
 }
