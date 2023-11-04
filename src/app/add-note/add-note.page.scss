@@ -1,5 +1,10 @@
 ion-textarea {
   resize: none;
-  width:100vw;
-  height:100vh;
+  height: 100%;
+}
+
+ion-item {
+  --inner-padding-end: 0;
+  --padding-start: 0;
+  --min-height: 0;
 }
