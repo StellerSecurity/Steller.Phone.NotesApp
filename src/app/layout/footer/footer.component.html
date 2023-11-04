@@ -1,4 +1,10 @@
 <ion-footer class="ion-text-center" [class]="bgClass">
+  <ng-container
+    [ngTemplateOutlet]="body?.templateRef || bodyTemp"
+  ></ng-container>
+</ion-footer>
+
+<ng-template #bodyTemp>
   <ng-container [ngTemplateOutlet]="before?.templateRef || null"></ng-container>
   <ion-img src="assets/Logo_Steller_Security_RGB.svg" style="height: 32px" />
-</ion-footer>
+</ng-template>
