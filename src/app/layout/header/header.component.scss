@@ -1,6 +1,15 @@
 ion-header {
   box-shadow: none;
-  padding: 12px 16px;
+  padding: 14px 16px;
+}
+
+ion-title {
+  font-size: 16px;
+  font-weight: 700px;
+}
+
+ion-toolbar {
+  --min-height: 0;
 }
 
 .header-primary {

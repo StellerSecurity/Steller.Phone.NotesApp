@@ -1,5 +1,6 @@
 import { Component, OnInit, ContentChild, Input } from '@angular/core';
-import { BeforeDirective } from './directives/before.directive';
+import { BeforeDirective } from './directives/footer-before.directive';
+import { BodyDirective } from './directives/footer-body.directive';
 @Component({
   selector: 'app-footer',
   templateUrl: './footer.component.html',
@@ -8,6 +9,7 @@ import { BeforeDirective } from './directives/before.directive';
 export class FooterComponent implements OnInit {
   constructor() {}
   @ContentChild(BeforeDirective) before?: BeforeDirective;
+  @ContentChild(BodyDirective) body?: BodyDirective;
   @Input() variant: 'white' | 'light' = 'white';
 
   public bgClass = 'bg-color-white';
