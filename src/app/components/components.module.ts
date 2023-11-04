@@ -8,16 +8,25 @@ import { LinkComponent } from './link/link.component';
 import { NoteListComponent } from './note-list/note-list.component';
 import { PipesModule } from '../pipes/pipes.module';
 import { SettingCardModule } from './setting-card/setting-card.module';
-
+import { PasswordInputModule } from './password-input/password-input.module';
 @NgModule({
-  declarations: [ButtonComponent, LinkComponent, NoteListComponent],
+  declarations: [
+    ButtonComponent,
+    LinkComponent,
+    NoteListComponent,
+  ],
   imports: [
     CommonModule,
     IonicModule,
     RouterModule,
     PipesModule,
     SettingCardModule,
+    PasswordInputModule,
   ],
-  exports: [ButtonComponent, LinkComponent, NoteListComponent],
+  exports: [
+    ButtonComponent,
+    LinkComponent,
+    NoteListComponent,
+  ],
 })
 export class ComponentsModule {}

@@ -10,12 +10,17 @@ ion-button {
   --padding-bottom: 13px;
   text-transform: none;
   font-weight: 700;
+  font-size: 14px;
 
   &.setting-color-primary {
     --background: #4264fa;
   }
 
   &.setting-color-danger {
-    --background: linear-gradient(91deg, rgba(251, 1, 1, 0.81) 0%, #E91010 97.1%);;
+    --background: linear-gradient(
+      91deg,
+      rgba(251, 1, 1, 0.81) 0%,
+      #e91010 97.1%
+    );
   }
 }
