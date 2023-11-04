@@ -11,6 +11,7 @@ import { PasswordStrengthMeterModule } from 'angular-password-strength-meter';
 import { ComponentsModule } from '../components/components.module';
 import { LayoutModule } from '../layout/layout.module';
 import { SettingCardModule } from '../components/setting-card/setting-card.module';
+import { PasswordInputModule } from '../components/password-input/password-input.module';
 @NgModule({
   imports: [
     CommonModule,
@@ -21,6 +22,7 @@ import { SettingCardModule } from '../components/setting-card/setting-card.modul
     ComponentsModule,
     LayoutModule,
     SettingCardModule,
+    PasswordInputModule,
   ],
   declarations: [AppSettingsPage],
 })
