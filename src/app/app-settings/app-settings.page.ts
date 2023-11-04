@@ -60,6 +60,7 @@ export class AppSettingsPage implements OnInit {
   }
 
   public async save() {
+    console.log('confirmed');
     if (this.notesAppPassword !== this.confirmPassword) {
       const toast = await this.toastController.create({
         message: 'The two passwords does not match.',
@@ -122,60 +123,6 @@ export class AppSettingsPage implements OnInit {
     }
   }
 
-  public notesAppPasswordChange() {
-    // Initialize variables
-    var tips = '';
-
-    this.passwordStrength = 0;
-
-    if (this.notesAppPassword.length == 0) {
-      this.passwordStrengthHelperText = '';
-      return;
-    }
-
-    // Check password length
-    if (this.notesAppPassword.length < 6) {
-      tips += 'Make the password longer. ';
-    } else {
-      this.passwordStrength += 1;
-    }
-
-    // Check for mixed case
-    if (
-      this.notesAppPassword.match(/[a-z]/) &&
-      this.notesAppPassword.match(/[A-Z]/)
-    ) {
-      this.passwordStrength += 1;
-    } else {
-      tips += 'Use both lowercase and uppercase letters. ';
-    }
-
-    // Check for numbers
-    if (this.notesAppPassword.match(/\d/)) {
-      this.passwordStrength += 1;
-    } else {
-      tips += 'Include at least one number. ';
-    }
-
-    // Check for special characters
-    if (this.notesAppPassword.match(/[^a-zA-Z\d]/)) {
-      this.passwordStrength += 1;
-    } else {
-      tips += 'Include at least one special character. ';
-    }
-
-    // Return results
-    if (this.passwordStrength < 2) {
-      this.passwordStrengthHelperText = 'Easy to guess. ' + tips;
-    } else if (this.passwordStrength === 2) {
-      this.passwordStrengthHelperText = 'Medium difficulty. ' + tips;
-    } else if (this.passwordStrength === 3) {
-      this.passwordStrengthHelperText = 'Difficult. ' + tips;
-    } else {
-      this.passwordStrengthHelperText = 'Extremely difficult.x ' + tips;
-    }
-  }
-
   public async appPasswordChallengeDialog($event: boolean) {
     this.appPasswordChallenge = $event;
 
@@ -183,30 +130,30 @@ export class AppSettingsPage implements OnInit {
   }
 
   public async deleteWholeAppStorage() {
-    const alert = await this.alertController.create({
-      header: 'Confirm',
-      subHeader:
-        ' IF YOU CLICK ON CONFIRM, ALL NOTES WILL BE DELETED FROM YOUR DEVICE ! IT CANT BE RESTORED !',
-      buttons: [
-        {
-          text: 'Cancel',
-          role: 'cancel',
-          handler: () => {
-            // this.handlerMessage = 'Alert canceled';
-          },
-        },
-        {
-          text: 'Confirm',
-          role: 'confirm',
-          handler: () => {
-            localStorage.clear();
-            window.location.href = '/home';
-            // @ts-ignore
-            navigator['app'].exitApp();
-          },
-        },
-      ],
-    });
-    await alert.present();
+    // const alert = await this.alertController.create({
+    //   header: 'Confirm',
+    //   subHeader:
+    //     ' IF YOU CLICK ON CONFIRM, ALL NOTES WILL BE DELETED FROM YOUR DEVICE ! IT CANT BE RESTORED !',
+    //   buttons: [
+    //     {
+    //       text: 'Cancel',
+    //       role: 'cancel',
+    //       handler: () => {
+    //         // this.handlerMessage = 'Alert canceled';
+    //       },
+    //     },
+    //     {
+    //       text: 'Confirm',
+    //       role: 'confirm',
+    //       handler: () => {
+    //         localStorage.clear();
+    //         window.location.href = '/home';
+    //         // @ts-ignore
+    //         navigator['app'].exitApp();
+    //       },
+    //     },
+    //   ],
+    // });
+    // await alert.present();
   }
 }
