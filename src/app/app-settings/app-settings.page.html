@@ -82,7 +82,7 @@
           </ion-item>
 
           <ion-item>
-            <note-button value="Set New Password" (onClick)="save()" />
+            <note-button value="Set New Password" (clickEvent)="save()" />
           </ion-item>
         </ion-list>
       </ion-content>
@@ -129,7 +129,7 @@
     <note-button
       color="danger"
       expand="full"
-      (click)="deleteWholeAppStorage()"
+      (clickEvent)="deleteWholeAppStorage()"
       value="Delete All Notes"
     ></note-button>
   </ng-template>

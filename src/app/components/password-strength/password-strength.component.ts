@@ -58,7 +58,6 @@ export class PasswordStrengthComponent implements OnChanges {
   }
 
   private setBarColors(count: number, color: string) {
-    console.log(count);
     for (let n = 0; n < count; n++) {
       (this as any)['bar' + n] = color;
     }
