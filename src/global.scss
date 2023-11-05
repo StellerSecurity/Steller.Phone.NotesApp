@@ -26,6 +26,14 @@
 @import "@ionic/angular/css/flex-utils.css";
 @import "./assets/styles/ion-colors";
 
+:root {
+  --ion-color-primary: #4264FA;
+  --ion-color-primary-contrast: #ffffff;
+  --ion-color-primary-shade: #4264FA;
+  --ion-color-primary-tint: #4264FA;
+}
+
+
 * {
   font-family: "Trebuchet MS";
   font-style: normal;
