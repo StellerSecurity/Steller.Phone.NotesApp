@@ -8,3 +8,31 @@ ion-item {
   --padding-start: 0;
   --min-height: 0;
 }
+
+.title {
+  color: #263238;
+  font-size: 16px;
+  font-style: normal;
+  font-weight: 700;
+  line-height: normal;
+}
+
+.content {
+  color: #8a8a8a;
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  margin-top: 10px;
+}
+
+.date {
+  margin-top: 10px;
+}
+
+ion-datetime-button::part(native) {
+  background: #FFF;
+  color: #D8D6D6;
+  font-size: 8px;
+  padding: 0;
+}
