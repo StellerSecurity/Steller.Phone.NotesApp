@@ -7,7 +7,8 @@ import { IonicModule } from '@ionic/angular';
 import { AddNotePageRoutingModule } from './add-note-routing.module';
 
 import { AddNotePage } from './add-note.page';
-import {PasswordStrengthMeterModule} from "angular-password-strength-meter";
+import { PasswordStrengthMeterModule } from 'angular-password-strength-meter';
+import { NoteConfirmModalModule } from '../components/note-confirm-modal/note-confirm-modal.module';
 
 @NgModule({
   imports: [
@@ -15,8 +16,9 @@ import {PasswordStrengthMeterModule} from "angular-password-strength-meter";
     FormsModule,
     IonicModule,
     AddNotePageRoutingModule,
-    PasswordStrengthMeterModule
+    PasswordStrengthMeterModule,
+    NoteConfirmModalModule,
   ],
-  declarations: [AddNotePage]
+  declarations: [AddNotePage],
 })
 export class AddNotePageModule {}

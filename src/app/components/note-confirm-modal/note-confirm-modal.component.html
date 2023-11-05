@@ -1,0 +1,30 @@
+<ion-modal
+  id="example-modal"
+  #modal
+  trigger="open-custom-dialog"
+  [isOpen]="true"
+>
+  <ng-template>
+    <div class="wrapper">
+      <ion-list lines="none" class="modal-content">
+        <ng-container *ngIf="iconSection.templateRef">
+          <ion-row>
+            <ng-container
+              [ngTemplateOutlet]="iconSection.templateRef || null"
+            ></ng-container>
+          </ion-row>
+        </ng-container>
+        <ng-container
+          [ngTemplateOutlet]="actionSection.templateRef || null"
+        ></ng-container>
+        <ion-row>
+          <p>Are you sure?</p>
+        </ion-row>
+        <ion-row>
+          <p>You want to delete this Notepad? 
+            This action cannot be undone.</p>
+        </ion-row>
+      </ion-list>
+    </div>
+  </ng-template>
+</ion-modal>

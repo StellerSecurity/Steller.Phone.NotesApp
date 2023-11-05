@@ -9,6 +9,7 @@ import { NoteListComponent } from './note-list/note-list.component';
 import { PipesModule } from '../pipes/pipes.module';
 import { SettingCardModule } from './setting-card/setting-card.module';
 import { PasswordInputModule } from './password-input/password-input.module';
+import { NoteConfirmModalModule } from './note-confirm-modal/note-confirm-modal.module';
 @NgModule({
   declarations: [
     ButtonComponent,
@@ -22,6 +23,7 @@ import { PasswordInputModule } from './password-input/password-input.module';
     PipesModule,
     SettingCardModule,
     PasswordInputModule,
+    NoteConfirmModalModule,
   ],
   exports: [
     ButtonComponent,
