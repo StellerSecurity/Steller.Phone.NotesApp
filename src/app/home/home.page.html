@@ -7,6 +7,7 @@
         (click)="settings()"
         class="header-action-btn white"
       ></ion-icon>
+
       <ion-icon
         slot="end"
         name="ellipsis-vertical-outline"
@@ -20,7 +21,7 @@
 
 <ion-item class="bg-color-light" lines="none">
   <div class="note-search">
-    <input placeholder="Search"/>
+    <input placeholder="Search" />
     <ion-icon
       name="search"
       src="assets/images/material-symbols-light_search.svg"
@@ -32,7 +33,11 @@
     No notes has been created. Click on "+" to create a new note.
   </p>
 
-  <note-list [notes]="getNotes()" />
+  <note-list
+    [notes]="getNotes()"
+    [isCheckable]="checkboxOpened"
+    (checkEvent)="handleCheckEvent($event)"
+  />
 
   <ion-fab
     slot="fixed"
@@ -46,15 +51,19 @@
   </ion-fab>
 </ion-content>
 
-<app-footer variant="light">
-  <ng-template footerBefore>
-    <note-button
-      *ngIf="!appHasPasswordChallenge()"
-      value="Add Notes App Passwordee"
-      (onClick)="settings('addPassword')"
-    />
-  </ng-template>
-</app-footer>
+<ng-container
+  *ngIf="!checkboxOpened && getNotes().length > 0; else selectFooter"
+>
+  <app-footer variant="light">
+    <ng-template footerBefore>
+      <note-button
+        *ngIf="!appHasPasswordChallenge()"
+        value="Add Notes App Passwordee"
+        (clickEvent)="settings('addPassword')"
+      />
+    </ng-template>
+  </app-footer>
+</ng-container>
 
 <!-- modal ask for password -->
 <ion-modal trigger="app-ask-password" [isOpen]="!should_display">
@@ -85,15 +94,27 @@
   </ng-template>
 </ion-modal>
 
-<ion-toolbar
-  slot="fixed"
-  class="toolbar-bottom"
-  *ngIf="checkboxOpened && getNotes().length > 0"
->
-  <ion-button color="danger" expand="full" (click)="deleteSelectedNotes()"
-    >Delete Selected Notes</ion-button
-  ><br />
-  <ion-button color="primary" expand="full" (click)="toggleCheckbox()"
-    >Cancel</ion-button
-  >
-</ion-toolbar>
+<ng-template #selectFooter>
+  <app-footer variant="light">
+    <ng-template footerBody>
+      <ion-list lines="none" class="footer-action">
+        <ion-item>
+          <note-button
+            color="danger"
+            (clickEvent)="deleteSelectedNotes()"
+            value="Delete Selected Notes"
+          >
+          </note-button>
+        </ion-item>
+        <ion-item>
+          <note-button
+            color="primary"
+            (clickEvent)="toggleCheckbox()"
+            value="Cancel"
+          >
+          </note-button>
+        </ion-item>
+      </ion-list>
+    </ng-template>
+  </app-footer>
+</ng-template>

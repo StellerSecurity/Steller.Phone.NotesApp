@@ -11,8 +11,8 @@ import {
 import { CryptoService } from '../services/crypto.service';
 import { NotesService } from '../services/notes.service';
 import { AppProtectorService } from '../services/app-protector.service';
-declare var require: any;
-
+import { notes } from 'src/@fake-data/notes.data';
+import { INote } from '../types';
 @Component({
   selector: 'app-home',
   templateUrl: 'home.page.html',
@@ -27,11 +27,13 @@ export class HomePage {
 
   public checkboxOpened = false;
 
-  public listOfCheckedCheckboxes: string[] = [];
+  public listOfCheckedCheckboxes: Set<string>;
 
   public app_requires_password = false;
 
   public input_password_app_unlock = '';
+
+  public checkedIds: Set<string>;
 
   @ViewChild(IonModal) modal: IonModal;
 
@@ -126,19 +128,19 @@ export class HomePage {
    * and sort them by last modified.
    */
   getNotes() {
-    if (this.notes === undefined || this.notes === null) {
-      return [];
-    }
+    // if (this.notes === undefined || this.notes === null) {
+    //   return [];
+    // }
 
-    // sort notes by last modified date.
-    // @ts-ignore
-    this.notes = this.notes.sort((a, b) => {
-      if (a.last_modified > b.last_modified) {
-        return -1;
-      }
-    });
+    // // sort notes by last modified date.
+    // // @ts-ignore
+    // this.notes = this.notes.sort((a, b) => {
+    //   if (a.last_modified > b.last_modified) {
+    //     return -1;
+    //   }
+    // });
 
-    return this.notes;
+    return notes;
   }
 
   public settings(type: string = '') {
@@ -154,7 +156,7 @@ export class HomePage {
   public toggleCheckbox() {
     this.checkboxOpened = !this.checkboxOpened;
     if (!this.checkboxOpened) {
-      this.listOfCheckedCheckboxes = [];
+      this.listOfCheckedCheckboxes = new Set<string>();
     }
   }
 
@@ -192,13 +194,10 @@ export class HomePage {
     await loading.present();
 
     // delete the selected notes.
-    for (let i = 0; this.listOfCheckedCheckboxes.length > i; i++) {
-      for (let j = this.notes.length - 1; j >= 0; j--) {
-        if (this.listOfCheckedCheckboxes[i] == this.notes[j].id) {
-          this.notes.splice(j, 1);
-        }
-      }
-    }
+
+    this.notes = this.notes.filter((note: INote) => {
+      return this.listOfCheckedCheckboxes.has(note.id);
+    });
 
     if (this.noteService.appHasPasswordChallenge()) {
       // newly notes to save into storage.
@@ -256,26 +255,6 @@ export class HomePage {
   }
 
   /**
-   * Selecting notes that the user has chosen in UI.
-   * @param event
-   * @param note_id
-   */
-  public selectNote(event: any, note_id: string) {
-    var isChecked = event.currentTarget.checked;
-    // checked.
-    if (!isChecked) {
-      this.listOfCheckedCheckboxes.push(note_id);
-    } else {
-      // removed.
-      for (let i = 0; this.listOfCheckedCheckboxes.length > i; i++) {
-        if (this.listOfCheckedCheckboxes[i] == note_id) {
-          this.listOfCheckedCheckboxes.splice(i, 1);
-        }
-      }
-    }
-  }
-
-  /**
    * Will detect if the user presses enter on unlock notes-app.
    * @param ev
    */
@@ -283,5 +262,9 @@ export class HomePage {
     if (ev.key == 'Enter') {
       this.unlockNotesApp().then((r) => {});
     }
+  }
+
+  public handleCheckEvent(checked: Set<string>) {
+    this.listOfCheckedCheckboxes = checked;
   }
 }

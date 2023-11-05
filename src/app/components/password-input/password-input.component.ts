@@ -90,8 +90,6 @@ export class PasswordInputComponent implements OnInit {
     this.strengthHelperText = $event.helperText;
     this.strengthLevel = $event.strengthLevel;
     this.strengthStatus = $event.strengthStatus;
-
-    console.log($event);
   }
 
   public toggleShowPws() {

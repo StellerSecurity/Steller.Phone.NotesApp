@@ -12,7 +12,7 @@ export class ButtonComponent {
 
   @Input() value: string = '';
   @Input() className: string = '';
-  @Output() onClick = new EventEmitter<any>();
+  @Output() clickEvent = new EventEmitter<any>();
   @Input() color: "primary" | "danger" = "primary";
 
   ngOnChanges() {
@@ -29,6 +29,6 @@ export class ButtonComponent {
   }
 
   handleClick($event: any) {
-    this.onClick.emit($event);
+    this.clickEvent.emit($event);
   }
 }
