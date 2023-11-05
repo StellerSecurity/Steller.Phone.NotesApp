@@ -1,15 +1,20 @@
 ion-header {
   box-shadow: none;
-  padding: 14px 16px;
+  // padding: 14px 16px;
+  --background: #4264fa;
 }
 
 ion-title {
   font-size: 16px;
   font-weight: 700px;
+  text-align: left;
 }
 
 ion-toolbar {
   --min-height: 0;
+  padding: 14px 16px;
+  --padding-top: 14px;
+
 }
 
 .header-primary {

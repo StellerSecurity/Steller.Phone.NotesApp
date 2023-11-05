@@ -88,20 +88,21 @@
   <!-- textarea -->
 
   <ion-list lines="none">
-    <ion-item>
+    <ion-item class="title">
       <ion-input placeholder="Title" />
     </ion-item>
-    <ion-item>
-      <ion-datetime-button datetime="datetime"></ion-datetime-button>
+    <ion-item class="date">
+      <ion-datetime-button datetime="datetime" type="secondary"></ion-datetime-button>
       <ion-modal [keepContentsMounted]="true">
         <ng-template>
           <ion-datetime id="datetime"></ion-datetime>
         </ng-template>
       </ion-modal>
     </ion-item>
-    <ion-item>
+    <ion-item class="content">
       <ion-textarea
-        placeholder="Type something here"
+        placeholder="Type something..."
+        [autoGrow]="true"
       ></ion-textarea>
     </ion-item>
   </ion-list>
