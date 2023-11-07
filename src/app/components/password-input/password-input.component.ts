@@ -23,12 +23,16 @@ export class PasswordInputComponent implements OnInit {
   @Input() placeholder?: string = '';
   @Input() label?: string = '';
   @Output() changeEvent: EventEmitter<any> = new EventEmitter<any>();
+  @Output() keyupEvent: EventEmitter<any> = new EventEmitter<any>();
+  @Output() noteChangeEvent: EventEmitter<string> = new EventEmitter<string>();
+
   public notesAppPassword = '';
 
   ngOnInit() {}
 
   public handleChangeEvent($event: any) {
     this.changeEvent.emit($event);
+    this.noteChangeEvent.emit(this.notesAppPassword);
     // Initialize variables
     var tips = '';
 
@@ -95,5 +99,9 @@ export class PasswordInputComponent implements OnInit {
   public toggleShowPws() {
     this.isPwsShow = !this.isPwsShow;
     this.inputType = this.isPwsShow ? 'normal' : 'password';
+  }
+
+  public handleKeyup(event: any) {
+    this.keyupEvent.emit(event);
   }
 }

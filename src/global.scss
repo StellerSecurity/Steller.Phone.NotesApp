@@ -27,12 +27,11 @@
 @import "./assets/styles/ion-colors";
 
 :root {
-  --ion-color-primary: #4264FA;
+  --ion-color-primary: #4264fa;
   --ion-color-primary-contrast: #ffffff;
-  --ion-color-primary-shade: #4264FA;
-  --ion-color-primary-tint: #4264FA;
+  --ion-color-primary-shade: #4264fa;
+  --ion-color-primary-tint: #4264fa;
 }
-
 
 * {
   font-family: "Trebuchet MS";
@@ -61,6 +60,19 @@
 .header-action-btn {
   width: 20px;
   height: 20px;
+}
+
+// Margin
+.mb-12 {
+  margin-bottom: 48px;
+}
+
+.mb-10 {
+  margin-bottom: 40px;
+}
+
+.mb-2 {
+  margin-bottom: 8px;
 }
 
 // Background
