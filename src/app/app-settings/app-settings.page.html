@@ -7,6 +7,7 @@
 </app-header>
 
 <ion-content>
+  <!-- Set Password Modal For App -->
   <ion-modal #modal trigger="open-modal">
     <ng-template>
       <ion-content class="ion-padding">
@@ -45,8 +46,11 @@
             ></note-password-input>
           </ion-item>
 
-          <ion-item>
+          <ion-item class="mb-4">
             <note-button value="Set New Password" (clickEvent)="save()" />
+          </ion-item>
+          <ion-item>
+            <note-button value="Cancel" (clickEvent)="cancel()" fill="outline" ></note-button>
           </ion-item>
         </ion-list>
       </ion-content>

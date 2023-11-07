@@ -593,6 +593,9 @@ export class AddNotePage {
     this.isConfirmModalOpen = false;
     this.isPasswordModalOpen = false;
     this.isConfirmPasswordOpen = false;
+
+    this.notes_password_confirm = '';
+    this.notes_password_input = '';
   }
 
   toggleToEdit() {
