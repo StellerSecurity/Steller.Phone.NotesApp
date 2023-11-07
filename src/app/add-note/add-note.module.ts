@@ -9,7 +9,7 @@ import { AddNotePageRoutingModule } from './add-note-routing.module';
 import { AddNotePage } from './add-note.page';
 import { PasswordStrengthMeterModule } from 'angular-password-strength-meter';
 import { NoteConfirmModalModule } from '../components/note-confirm-modal/note-confirm-modal.module';
-
+import { ComponentsModule } from '../components/components.module';
 @NgModule({
   imports: [
     CommonModule,
@@ -18,6 +18,7 @@ import { NoteConfirmModalModule } from '../components/note-confirm-modal/note-co
     AddNotePageRoutingModule,
     PasswordStrengthMeterModule,
     NoteConfirmModalModule,
+    ComponentsModule
   ],
   declarations: [AddNotePage],
 })

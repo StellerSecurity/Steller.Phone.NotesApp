@@ -1,8 +1,13 @@
 import { NgModule } from '@angular/core';
 import { PreloadAllModules, RouterModule, Routes } from '@angular/router';
 import { WelcomeComponent } from './welcome/welcome.component';
+import { SplashComponent } from './splash/splash.component';
 
 const routes: Routes = [
+  {
+    path: 'splash',
+    component: SplashComponent,
+  },
   {
     path: 'welcome',
     component: WelcomeComponent,
@@ -14,7 +19,7 @@ const routes: Routes = [
   },
   {
     path: '',
-    redirectTo: 'welcome',
+    redirectTo: 'splash',
     pathMatch: 'full',
   },
   {

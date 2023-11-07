@@ -1,7 +1,7 @@
 import { Directive, TemplateRef } from '@angular/core';
 
 @Directive({
-  selector: '[headerBackBtn]',
+  selector: '[headerBackButton]',
 })
 export class HeaderBackBtn {
   constructor(public templateRef: TemplateRef<any>) {}

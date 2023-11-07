@@ -10,9 +10,10 @@ import { PasswordStrengthMeterModule } from 'angular-password-strength-meter';
 import { LayoutModule } from './layout/layout.module';
 import { ComponentsModule } from './components/components.module';
 import { WelcomeComponent } from './welcome/welcome.component';
+import { SplashComponent } from './splash/splash.component';
 
 @NgModule({
-  declarations: [AppComponent, WelcomeComponent],
+  declarations: [AppComponent, WelcomeComponent, SplashComponent],
   imports: [
     BrowserModule,
     PasswordStrengthMeterModule.forRoot(),
