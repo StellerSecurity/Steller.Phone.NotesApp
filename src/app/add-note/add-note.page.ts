@@ -577,6 +577,7 @@ export class AddNotePage {
         this.note_title = value;
         break;
       case 'text':
+        this.isDirty = true;
         this.note_text = value;
         break;
       case 'password':

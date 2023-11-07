@@ -11,7 +11,7 @@ import {
 import { CryptoService } from '../services/crypto.service';
 import { NotesService } from '../services/notes.service';
 import { AppProtectorService } from '../services/app-protector.service';
-import { INote } from '../types';
+import { INote, IColor } from '../types';
 @Component({
   selector: 'app-home',
   templateUrl: 'home.page.html',
@@ -31,6 +31,32 @@ export class HomePage {
   public app_requires_password = false;
 
   public input_password_app_unlock = '';
+
+  public isDeleteModalOpen = false;
+
+  public deleteConfirm: {
+    title: string;
+    text: string;
+    button1: {
+      label: string;
+      color: IColor
+    },
+    button2: {
+      label: string;
+      color: IColor
+    }
+  } = {
+    title: 'Are you sure?',
+    text: 'You want to delete Notes? This action cannot be undone.',
+    button1: {
+      label: 'CANCEL',
+      color: 'note-primary',
+    },
+    button2: {
+      label: 'DELETE',
+      color: 'note-danger',
+    },
+  };
 
   public checkedIds: Set<string>;
 
@@ -75,7 +101,6 @@ export class HomePage {
     ) {
       return false;
     }
-
 
     this.noteService.setDecryptedNotes(decryptedNotes);
     // @ts-ignore
@@ -155,36 +180,11 @@ export class HomePage {
     }
   }
 
-  public async deleteSelectedNotes() {
-    let alert = await this.alertCtrl.create({
-      header: 'Confirm',
-      subHeader:
-        'Please confirm that you want to delete the selected notes. They cannot be recovered once deleted.',
-      buttons: [
-        {
-          text: 'Cancel',
-          role: 'cancel',
-          handler: () => {
-            // this.handlerMessage = 'Alert canceled';
-          },
-        },
-        {
-          text: 'Delete',
-          role: 'confirm',
-          handler: async () => {
-            await this.deleteNotesConfirm();
-          },
-        },
-      ],
-    });
-    await alert.present();
-  }
-
   /**
    * Being called, when the confirmation has been done.
    * @private
    */
-  private async deleteNotesConfirm() {
+  private async deleteNotes() {
     const loading = await this.loadingController.create();
     await loading.present();
 
@@ -269,5 +269,21 @@ export class HomePage {
         this.input_password_app_unlock = event;
         break;
     }
+  }
+
+  public deleteSelectedNotes() {
+    this.isDeleteModalOpen = true;
+  }
+
+  public onDeleteConfirm(value: boolean) {
+    this.isDeleteModalOpen = false
+    if(value) {
+      
+    }
+    value && setTimeout(() => this.deleteNotes(), 300);
+  }
+
+  public onModalDismiss() {
+    this.isDeleteModalOpen = false;
   }
 }
