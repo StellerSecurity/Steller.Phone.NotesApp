@@ -10,7 +10,10 @@
     <ion-button class="header-action" (click)="toggleToEdit()">
       <ion-img src="assets/images/note-edit.svg"></ion-img>
     </ion-button>
-    <ion-button class="header-action" (click)="openModal(ConfirmModalType.Delete)">
+    <ion-button
+      class="header-action"
+      (click)="openModal(ConfirmModalType.Delete)"
+    >
       <ion-img src="assets/images/note-delete.svg"></ion-img>
     </ion-button>
   </ng-template>
@@ -125,8 +128,15 @@
             ></note-password-input>
           </ion-item>
 
-          <ion-item>
+          <ion-item class="mb-4">
             <note-button value="Set New Password" (clickEvent)="lockNote()" />
+          </ion-item>
+          <ion-item>
+            <note-button
+              value="Cancel"
+              (clickEvent)="onModalDismiss()"
+              fill="outline"
+            />
           </ion-item>
         </ion-list>
       </ion-content>
@@ -135,7 +145,11 @@
   </ion-modal>
 
   <!-- Unlock password -->
-  <ion-modal [isOpen]="isConfirmPasswordOpen" class="unlock" (willDismiss)="onModalDismiss()">
+  <ion-modal
+    [isOpen]="isConfirmPasswordOpen"
+    class="unlock"
+    (willDismiss)="onModalDismiss()"
+  >
     <ng-template>
       <ion-content class="ion-padding">
         <ion-list lines="none">
@@ -167,7 +181,7 @@
           </ion-row>
 
           <ion-item>
-            <note-button value="Unlock App" (clickEvent)="unlockNote()"/>
+            <note-button value="Unlock App" (clickEvent)="unlockNote()" />
           </ion-item>
         </ion-list>
       </ion-content>
