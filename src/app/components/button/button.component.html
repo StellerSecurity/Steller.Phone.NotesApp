@@ -1,3 +1,9 @@
-<ion-button class="{{ _className }}" (click)="handleClick($event)" shape="round">
+<ion-button
+  class="{{ _className }}"
+  (click)="handleClick($event)"
+  shape="round"
+  [fill]="fill"
+  [color]="color"
+>
   {{ value }}
 </ion-button>

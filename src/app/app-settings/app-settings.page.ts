@@ -3,6 +3,7 @@ import {
   AlertController,
   ModalController,
   ToastController,
+  NavController,
 } from '@ionic/angular';
 import { PasswordHelperService } from '../services/password-helper.service';
 import { PasswordStrengthMeterModule } from 'angular-password-strength-meter';
@@ -37,7 +38,8 @@ export class AppSettingsPage implements OnInit {
     private noteService: NotesService,
     private cryptoService: CryptoService,
     private appProtectorService: AppProtectorService,
-    private passwordHelperService: PasswordHelperService
+    private passwordHelperService: PasswordHelperService,
+    private navController: NavController
   ) {}
 
   ngOnInit() {}
@@ -125,6 +127,7 @@ export class AppSettingsPage implements OnInit {
 
   public async appPasswordChallengeDialog($event: boolean) {
     this.appPasswordChallenge = $event;
+    if (!$event) return;
 
     await this.modal.present();
   }
@@ -155,5 +158,9 @@ export class AppSettingsPage implements OnInit {
     //   ],
     // });
     // await alert.present();
+  }
+
+  public handleOnBack() {
+    this.navController.back();
   }
 }

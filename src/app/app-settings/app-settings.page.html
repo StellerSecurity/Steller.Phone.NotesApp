@@ -1,11 +1,21 @@
-<ion-header [translucent]="true" class="header-primary">
+<app-header
+  title="Settings"
+  variant="primary"
+  [backButton]="true"
+  (backClickEvent)="handleOnBack()"
+>
+  <!-- <ng-template headerBackButton>
+    <ion-button (click)="handleBackButtonClick()"></ion-button>
+  </ng-template> -->
+</app-header>
+<!-- <ion-header [translucent]="true" class="header-primary">
   <ion-toolbar class="header-primary">
     <ion-buttons slot="start">
       <ion-back-button></ion-back-button>
     </ion-buttons>
     <ion-title>Settings</ion-title>
   </ion-toolbar>
-</ion-header>
+</ion-header> -->
 
 <ion-content>
   <ion-modal #modal trigger="open-modal">
@@ -63,7 +73,7 @@
               </p>
             </ion-label>
           </ion-item>
-          
+
           <ion-item>
             <note-password-input
               placeholder="Enter your password"
@@ -121,13 +131,12 @@
     * Wipe notes will delete ALL notes on your phone if you enter the password
     for the app wrongly 20 times in a row. It cannot be turned off.
   </p> -->
-
 </ion-content>
 
 <app-footer>
   <ng-template footerBody>
     <note-button
-      color="danger"
+      color="note-danger"
       expand="full"
       (clickEvent)="deleteWholeAppStorage()"
       value="Delete All Notes"

@@ -84,9 +84,15 @@
       </ion-content>
     </ng-template>
   </ion-modal> -->
-  
+
   <note-confirm-modal>
-    
+    <ng-template confirmModalIcon>
+      <ion-img src="assets/images/confirm-delete.svg"></ion-img>
+    </ng-template>
+    <ng-template confirmModalAction>
+      <note-button value="CANCEL" fill="outline" size="md"></note-button>
+      <note-button value="DELETE" color="note-danger" size="md"></note-button>
+    </ng-template>
   </note-confirm-modal>
 
   <!-- textarea -->
@@ -96,7 +102,10 @@
       <ion-input placeholder="Title" />
     </ion-item>
     <ion-item class="date">
-      <ion-datetime-button datetime="datetime" type="secondary"></ion-datetime-button>
+      <ion-datetime-button
+        datetime="datetime"
+        type="secondary"
+      ></ion-datetime-button>
       <ion-modal [keepContentsMounted]="true">
         <ng-template>
           <ion-datetime id="datetime"></ion-datetime>

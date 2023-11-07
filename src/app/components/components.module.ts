@@ -29,6 +29,13 @@ import { NoteConfirmModalModule } from './note-confirm-modal/note-confirm-modal.
     ButtonComponent,
     LinkComponent,
     NoteListComponent,
+    CommonModule,
+    IonicModule,
+    RouterModule,
+    PipesModule,
+    SettingCardModule,
+    PasswordInputModule,
+    NoteConfirmModalModule,
   ],
 })
 export class ComponentsModule {}

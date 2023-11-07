@@ -14,7 +14,6 @@ ion-toolbar {
   --min-height: 0;
   padding: 14px 16px;
   --padding-top: 14px;
-
 }
 
 .header-primary {
@@ -25,4 +24,16 @@ ion-toolbar {
 
 .header-white {
   --background: white;
+}
+
+.back-btn {
+  --padding-bottom: 0;
+  --padding-top: 0;
+  --padding-end: 7px;
+  --padding-start: 0;
+  min-height: 0;
+
+  ion-img {
+    width: 20px;
+  }
 }

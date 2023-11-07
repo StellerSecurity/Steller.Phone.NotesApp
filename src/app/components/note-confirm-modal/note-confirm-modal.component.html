@@ -8,22 +8,27 @@
     <div class="wrapper">
       <ion-list lines="none" class="modal-content">
         <ng-container *ngIf="iconSection.templateRef">
-          <ion-row>
+          <ion-row class="icon-img">
             <ng-container
-              [ngTemplateOutlet]="iconSection.templateRef || null"
+              [ngTemplateOutlet]="iconSection.templateRef"
             ></ng-container>
           </ion-row>
         </ng-container>
-        <ng-container
-          [ngTemplateOutlet]="actionSection.templateRef || null"
-        ></ng-container>
         <ion-row>
-          <p>Are you sure?</p>
+          <p class="title">Are you sure?</p>
         </ion-row>
-        <ion-row>
-          <p>You want to delete this Notepad? 
-            This action cannot be undone.</p>
+        <ion-row class="desc">
+          <p>You want to delete this Notepad? This action cannot be undone.</p>
         </ion-row>
+        <ng-container *ngIf="actionSection.templateRef">
+          <ion-toolbar>
+            <ion-buttons class="actions">
+              <ng-container
+                [ngTemplateOutlet]="actionSection.templateRef"
+              ></ng-container>
+            </ion-buttons>
+          </ion-toolbar>
+        </ng-container>
       </ion-list>
     </div>
   </ng-template>
