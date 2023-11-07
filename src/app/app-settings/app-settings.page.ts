@@ -132,32 +132,43 @@ export class AppSettingsPage implements OnInit {
     await this.modal.present();
   }
 
+  handleInputChange(value: string, type: string) {
+    switch (type) {
+      case 'password':
+        this.notesAppPassword = value;
+        break;
+      case 'confirm-password':
+        this.confirmPassword = value;
+        break;
+    }
+  }
+  
   public async deleteWholeAppStorage() {
-    // const alert = await this.alertController.create({
-    //   header: 'Confirm',
-    //   subHeader:
-    //     ' IF YOU CLICK ON CONFIRM, ALL NOTES WILL BE DELETED FROM YOUR DEVICE ! IT CANT BE RESTORED !',
-    //   buttons: [
-    //     {
-    //       text: 'Cancel',
-    //       role: 'cancel',
-    //       handler: () => {
-    //         // this.handlerMessage = 'Alert canceled';
-    //       },
-    //     },
-    //     {
-    //       text: 'Confirm',
-    //       role: 'confirm',
-    //       handler: () => {
-    //         localStorage.clear();
-    //         window.location.href = '/home';
-    //         // @ts-ignore
-    //         navigator['app'].exitApp();
-    //       },
-    //     },
-    //   ],
-    // });
-    // await alert.present();
+    const alert = await this.alertController.create({
+      header: 'Confirm',
+      subHeader:
+        ' IF YOU CLICK ON CONFIRM, ALL NOTES WILL BE DELETED FROM YOUR DEVICE ! IT CANT BE RESTORED !',
+      buttons: [
+        {
+          text: 'Cancel',
+          role: 'cancel',
+          handler: () => {
+            // this.handlerMessage = 'Alert canceled';
+          },
+        },
+        {
+          text: 'Confirm',
+          role: 'confirm',
+          handler: () => {
+            localStorage.clear();
+            window.location.href = '/home';
+            // @ts-ignore
+            navigator['app'].exitApp();
+          },
+        },
+      ],
+    });
+    await alert.present();
   }
 
   public handleOnBack() {

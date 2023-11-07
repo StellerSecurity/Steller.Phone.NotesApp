@@ -37,6 +37,7 @@
     [notes]="getNotes()"
     [isCheckable]="checkboxOpened"
     (checkEvent)="handleCheckEvent($event)"
+    (clickEvent)="handleClickNote($event)"
   />
 
   <ion-fab
@@ -52,7 +53,7 @@
 </ion-content>
 
 <ng-container
-  *ngIf="!checkboxOpened && getNotes().length > 0; else selectFooter"
+  *ngIf="!checkboxOpened; else selectFooter"
 >
   <app-footer variant="light">
     <ng-template footerBefore>
@@ -65,32 +66,47 @@
   </app-footer>
 </ng-container>
 
-<!-- modal ask for password -->
-<ion-modal trigger="app-ask-password" [isOpen]="!should_display">
+<!-- Unlock password -->
+<ion-modal [isOpen]="!should_display" class="password">
   <ng-template>
     <ion-content class="ion-padding">
-      <div align="center"><h2>Stellar Notes</h2></div>
-      <p>Enter your password to get access to your notes.</p>
-      <ion-item>
-        <ion-input
-          type="password"
-          placeholder="Enter your password"
-          (keyup)="ionInputAppUnlockInput($event)"
-          [(ngModel)]="input_password_app_unlock"
-          autofocus="true"
-        ></ion-input>
-      </ion-item>
-      <ion-button color="primary" expand="full" (click)="unlockNotesApp()"
-        >Unlock App</ion-button
-      >
-      <br /><br />
-    </ion-content>
+      <ion-list lines="none">
+        <ion-item class="mb-12">
+          <ion-label>
+            <h4 class="password-title">
+              <ion-text color="note-primary"> Unlock Notes App </ion-text>
+            </h4>
+            <p class="password-desc">
+              <ion-text color="note-grey">
+                Enter your password for the app to unlock your notes
+              </ion-text>
+            </p>
+          </ion-label>
+        </ion-item>
 
-    <ion-footer>
-      <ion-button color="danger" expand="full" (click)="resetPassword()"
-        >Reset Password</ion-button
-      >
-    </ion-footer>
+        <ion-item class="mb-2">
+          <note-password-input
+            placeholder="Enter your password"
+            label="Password *"
+            (keyupEvent)="ionInputAppUnlockInput($event)"
+            (noteChangeEvent)="handleInputChange($event, 'password')"
+          ></note-password-input>
+        </ion-item>
+
+        <ion-row class="forget-btn mb-10">
+          <ion-button
+            fill="clear"
+            color="note-primary"
+            (click)="resetPassword()"
+            >Forgot Password</ion-button
+          >
+        </ion-row>
+
+        <ion-item>
+          <note-button value="Unlock App" (clickEvent)="unlockNotesApp()" />
+        </ion-item>
+      </ion-list>
+    </ion-content>
   </ng-template>
 </ion-modal>
 

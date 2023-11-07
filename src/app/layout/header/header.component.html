@@ -21,7 +21,12 @@
         class="back-btn"
         fill="clear"
       >
-        <ion-img src="assets/images/header-back-button.svg"></ion-img>
+        <ng-container *ngIf="variant == 'primary'">
+          <ion-img src="assets/images/header-back-button-white.svg"></ion-img>
+        </ng-container>
+        <ng-container *ngIf="variant == 'white'"
+          ><ion-img src="assets/images/header-back-button-grey.svg"></ion-img>
+        </ng-container>
       </ion-button>
     </ion-buttons>
   </ng-container>

@@ -39,7 +39,7 @@ export class NoteConfirmModalComponent implements OnInit {
   iconSection: NoteConfirmModalIconDirective;
 
   @Input() title: string = '';
-  @Input() content: string = '';
+  @Input() text: string = '';
   @Input() isOpen: boolean = false;
 
   ngOnInit() {}

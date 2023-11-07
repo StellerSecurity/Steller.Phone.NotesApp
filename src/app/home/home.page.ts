@@ -11,7 +11,6 @@ import {
 import { CryptoService } from '../services/crypto.service';
 import { NotesService } from '../services/notes.service';
 import { AppProtectorService } from '../services/app-protector.service';
-import { notes } from 'src/@fake-data/notes.data';
 import { INote } from '../types';
 @Component({
   selector: 'app-home',
@@ -60,12 +59,10 @@ export class HomePage {
   }
 
   private setData(password: string = ''): boolean {
-    console.log('DECRYPTED..');
     let decryptedNotes = null;
     if (this.noteService.appHasPasswordChallenge()) {
       let notes = this.noteService.getNotes();
       decryptedNotes = this.cryptoService.decrypt(notes, password);
-      console.log(decryptedNotes.length);
     } else {
       this.noteService.setDecryptedNotes(this.noteService.getNotes());
       decryptedNotes = this.noteService.getNotes();
@@ -76,11 +73,9 @@ export class HomePage {
       decryptedNotes.length == 0 &&
       this.noteService.appHasPasswordChallenge()
     ) {
-      console.log('fail..');
       return false;
     }
 
-    console.log(decryptedNotes);
 
     this.noteService.setDecryptedNotes(decryptedNotes);
     // @ts-ignore
@@ -128,26 +123,26 @@ export class HomePage {
    * and sort them by last modified.
    */
   getNotes() {
-    // if (this.notes === undefined || this.notes === null) {
-    //   return [];
-    // }
+    if (this.notes === undefined || this.notes === null) {
+      return [];
+    }
 
-    // // sort notes by last modified date.
-    // // @ts-ignore
-    // this.notes = this.notes.sort((a, b) => {
-    //   if (a.last_modified > b.last_modified) {
-    //     return -1;
-    //   }
-    // });
+    // sort notes by last modified date.
+    // @ts-ignore
+    this.notes = this.notes.sort((a, b) => {
+      if (a.last_modified > b.last_modified) {
+        return -1;
+      }
+    });
 
-    return notes;
+    return this.notes;
   }
 
   public settings(type: string = '') {
     this.navController.navigateForward('app-settings').then((r) => {});
   }
 
-  public openOrCheckbox(note_id: string) {
+  public handleClickNote(note_id: string) {
     if (!this.checkboxOpened) {
       this.navController.navigateForward('/note/' + note_id).then((r) => {});
     }
@@ -196,7 +191,7 @@ export class HomePage {
     // delete the selected notes.
 
     this.notes = this.notes.filter((note: INote) => {
-      return this.listOfCheckedCheckboxes.has(note.id);
+      return !this.listOfCheckedCheckboxes.has(note.id);
     });
 
     if (this.noteService.appHasPasswordChallenge()) {
@@ -266,5 +261,13 @@ export class HomePage {
 
   public handleCheckEvent(checked: Set<string>) {
     this.listOfCheckedCheckboxes = checked;
+  }
+
+  public handleInputChange(event: string, type: string) {
+    switch (type) {
+      case 'password':
+        this.input_password_app_unlock = event;
+        break;
+    }
   }
 }

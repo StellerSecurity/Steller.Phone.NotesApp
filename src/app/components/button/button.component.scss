@@ -25,6 +25,10 @@ ion-button {
     );
   }
 
+  &.setting-color-success {
+    --background: linear-gradient(94deg, #0db20a 6.93%, #08b805 100%);
+  }
+
   &.setting-size-lg {
     --padding-top: 13px;
     --padding-bottom: 13px;

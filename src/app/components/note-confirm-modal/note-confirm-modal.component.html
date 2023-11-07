@@ -2,7 +2,7 @@
   id="example-modal"
   #modal
   trigger="open-custom-dialog"
-  [isOpen]="true"
+  [isOpen]="isOpen"
 >
   <ng-template>
     <div class="wrapper">
@@ -15,10 +15,10 @@
           </ion-row>
         </ng-container>
         <ion-row>
-          <p class="title">Are you sure?</p>
+          <p class="title">{{title}}</p>
         </ion-row>
         <ion-row class="desc">
-          <p>You want to delete this Notepad? This action cannot be undone.</p>
+          <p>{{text}}</p>
         </ion-row>
         <ng-container *ngIf="actionSection.templateRef">
           <ion-toolbar>
