@@ -495,6 +495,7 @@ export class AddNotePage {
   handleOnBack() {
     if (this.note_text.length == 0) {
       this.deleteNote();
+      return;
     }
 
     if (this.isDirty) {
@@ -561,5 +562,12 @@ export class AddNotePage {
 
   toggleToEdit() {
     this.isEditable = !this.isEditable;
+  }
+
+  cancel() {
+    this.isConfirmModalOpen = false;
+    this.isPasswordModalOpen = false;
+    this.isConfirmPasswordOpen = false;
+    this.back();
   }
 }

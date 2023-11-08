@@ -52,6 +52,9 @@ export class AppSettingsPage implements OnInit {
 
   cancel() {
     this.appPasswordChallenge = this.noteService.appHasPasswordChallenge();
+    this.notesAppPassword = '';
+    this.confirmPassword = '';
+    this.passwordStrengthHelperText = '';
     this.modal.dismiss(null, 'cancel');
   }
 

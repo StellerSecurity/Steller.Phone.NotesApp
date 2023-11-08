@@ -18,7 +18,9 @@ import { INote, IColor } from '../types';
   styleUrls: ['home.page.scss'],
 })
 export class HomePage {
-  private notes: any;
+  private notes: INote[];
+
+  private __notes: INote[];
 
   public headerTitle: string = 'My Notes';
 
@@ -33,6 +35,8 @@ export class HomePage {
   public input_password_app_unlock = '';
 
   public isDeleteModalOpen = false;
+
+  public search: string = '';
 
   public deleteConfirm: {
     title: string;
@@ -162,6 +166,17 @@ export class HomePage {
     return this.notes;
   }
 
+  getSearchResult() {
+
+    if(this.notes == null) return [];
+
+    this.__notes = this.notes.filter((_note: INote) => {
+      return _note.text.includes(this.search);
+    });
+
+    return this.__notes;
+  }
+
   public settings(type: string = '') {
     this.navController.navigateForward('app-settings').then((r) => {});
   }
@@ -283,5 +298,12 @@ export class HomePage {
 
   public onModalDismiss() {
     this.isDeleteModalOpen = false;
+  }
+
+  public onSearchChange(event: any) {
+    const value = event.target.value;
+    this.search = value;
+
+    this.getSearchResult()
   }
 }
