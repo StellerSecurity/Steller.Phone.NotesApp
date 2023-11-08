@@ -49,4 +49,22 @@ ion-modal {
     justify-content: center;
     min-height: 550px;
   }
+
+  .forget-btn {
+    justify-content: flex-end;
+
+    ion-button {
+      --padding-bottom: 0;
+      --padding-end: 0;
+      --padding-start: 0;
+      --padding-top: 0;
+      min-height: 0;
+      font-size: 14px;
+      font-weight: 700;
+      line-height: normal;
+      text-decoration-line: underline;
+      font-family: Tw Cen MT Std;
+      text-transform: none;
+    }
+  }
 }

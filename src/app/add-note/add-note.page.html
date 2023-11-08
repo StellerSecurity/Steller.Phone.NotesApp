@@ -226,14 +226,6 @@
   <!-- textarea -->
 
   <ion-list lines="none">
-    <ion-item class="title">
-      <ion-input
-        placeholder="Title"
-        (ionInput)="handleInputChange($event, 'title')"
-        [readonly]="!isEditable"
-        [value]="note_title"
-      />
-    </ion-item>
     <ion-item class="date">
       <ion-datetime-button
         datetime="datetime"

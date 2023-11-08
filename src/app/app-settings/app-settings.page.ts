@@ -20,6 +20,8 @@ import { AppProtectorService } from '../services/app-protector.service';
 export class AppSettingsPage implements OnInit {
   public appPasswordChallenge: boolean;
 
+  public tempPasswordChallenge: boolean;
+
   public wipeNotesOnFailedPasswords: boolean = true;
 
   public notesAppPassword: string;
@@ -63,47 +65,66 @@ export class AppSettingsPage implements OnInit {
 
   public async save() {
     console.log('confirmed');
-    if (this.notesAppPassword !== this.confirmPassword) {
-      const toast = await this.toastController.create({
-        message: 'The two passwords does not match.',
-        duration: 3000,
-        position: 'bottom',
-      });
-
-      await toast.present();
-
-      return;
-    }
-
-    if (this.notesAppPassword.length < 2) {
-      const toast = await this.toastController.create({
-        message: 'The password is weak. Please make your password stronger.',
-        duration: 3000,
-        position: 'bottom',
-      });
-
-      await toast.present();
-
-      return;
-    }
 
     // can be in encrypted state or decrypted - depends if the app_password_challenge is set.
     let notes = this.noteService.getNotes();
 
+    console.log(this.tempPasswordChallenge);
     // the note-service has password-protection, meaning the user wants to remove the password.
-    if (this.noteService.appHasPasswordChallenge()) {
+    if (
+      this.noteService.appHasPasswordChallenge() &&
+      !this.tempPasswordChallenge
+    ) {
       // first, we have to decrypt the notes:
-      let decryptedNotes = this.cryptoService.decrypt(
-        notes,
-        this.notesAppPassword
-      );
-      this.noteService.setNotes(decryptedNotes);
-      this.noteService.setDecryptedNotes(decryptedNotes);
-      await this.modal.dismiss();
-      this.notesAppPassword = '';
-      this.noteService.setNotesAppPassword('');
-      localStorage.removeItem('app_password_challenge');
-    } else {
+      try {
+        let decryptedNotes = this.cryptoService.decrypt(
+          notes,
+          this.confirmPassword
+        );
+
+        this.noteService.setNotes(decryptedNotes);
+        this.noteService.setDecryptedNotes(decryptedNotes);
+        await this.modal.dismiss();
+        this.notesAppPassword = '';
+        this.noteService.setNotesAppPassword('');
+        localStorage.removeItem('app_password_challenge');
+
+        this.appPasswordChallenge = false;
+      } catch (e) {
+        const toast = await this.toastController.create({
+          message: 'The password is not correct. Try again.',
+          duration: 3000,
+          position: 'bottom',
+        });
+
+        await toast.present();
+        return;
+      }
+    } else if (this.tempPasswordChallenge) {
+      if (this.notesAppPassword !== this.confirmPassword) {
+        const toast = await this.toastController.create({
+          message: 'The two passwords does not match.',
+          duration: 3000,
+          position: 'bottom',
+        });
+
+        await toast.present();
+
+        return;
+      }
+
+      if (this.notesAppPassword.length < 2) {
+        const toast = await this.toastController.create({
+          message: 'The password is weak. Please make your password stronger.',
+          duration: 3000,
+          position: 'bottom',
+        });
+
+        await toast.present();
+
+        return;
+      }
+
       if (notes === null) {
         notes = JSON.stringify([]);
       }
@@ -122,14 +143,16 @@ export class AppSettingsPage implements OnInit {
       // reset failed attempts.
       this.noteService.setFailedPasswordAppAttempts(0);
       localStorage.setItem('app_password_challenge', '1');
+
+      this.appPasswordChallenge = true;
     }
   }
 
   public async appPasswordChallengeDialog($event: boolean) {
-    this.appPasswordChallenge = $event;
-    if (!$event) return;
+    this.tempPasswordChallenge = $event;
 
-    await this.modal.present();
+    if (this.tempPasswordChallenge !== this.appPasswordChallenge)
+      await this.modal.present();
   }
 
   handleInputChange(value: string, type: string) {
@@ -142,7 +165,7 @@ export class AppSettingsPage implements OnInit {
         break;
     }
   }
-  
+
   public async deleteWholeAppStorage() {
     const alert = await this.alertController.create({
       header: 'Confirm',
