@@ -44,8 +44,6 @@ export class AddNotePage {
 
   public note_text = '';
 
-  public note_title = '';
-
   public isDirty = false;
 
   public isEditable = false;
@@ -105,7 +103,6 @@ export class AddNotePage {
         this.askforNotePassword().then((r) => {});
       } else {
         // @ts-ignore
-        this.note_title = this.currentNote!.title;
         this.note_text = this.currentNote!.text;
       }
     });
@@ -118,17 +115,11 @@ export class AddNotePage {
     // @ts-ignore
     let encryptedText = this.note_text;
     let decryptedText = this.note_text;
-    let encryptedTitle = this.note_title;
-    let decryptedTitle = this.note_title;
 
     // encrypt the text.
     if (this.notes_password_stored.length > 1) {
       encryptedText = this.cryptoService.encrypt(
         this.note_text,
-        this.notes_password_stored
-      );
-      encryptedTitle = this.cryptoService.encrypt(
-        this.note_title,
         this.notes_password_stored
       );
     }
@@ -146,7 +137,6 @@ export class AddNotePage {
       last_modified: Date.now(),
       text: encryptedText,
       protected: protectedNote,
-      title: encryptedTitle,
       auto_wipe: true,
     };
 
@@ -179,7 +169,6 @@ export class AddNotePage {
       }
 
       this.note_text = decryptedText;
-      this.note_title = decryptedTitle;
     }
 
     this.storeNoteInStorage();
@@ -219,14 +208,10 @@ export class AddNotePage {
       this.currentNote!.text,
       this.notes_password_input
     );
-    let decryptedTitle = this.cryptoService.decrypt(
-      this.currentNote!.title,
-      this.notes_password_input
-    );
 
     // @ts-ignore
 
-    if (decryptedTitle.length == 0) {
+    if (decryptedText.length == 0) {
       const toast = await this.toastController.create({
         message: 'The password is not correct. Try again.',
         duration: 3000,
@@ -239,9 +224,7 @@ export class AddNotePage {
 
     // @ts-ignore
     this.currentNote.text = decryptedText;
-    this.currentNote!.title = decryptedTitle;
 
-    this.note_title = decryptedTitle;
     this.note_text = decryptedText;
 
     this.note_locked = false;
@@ -349,7 +332,6 @@ export class AddNotePage {
     this.notes_password_stored = this.notes_password_input;
 
     // @ts-ignore
-    let decryptTitle = this.note_title;
     let decryptedText = this.note_text;
 
     // @ts-ignore
@@ -358,16 +340,10 @@ export class AddNotePage {
       this.notes_password_stored
     );
 
-    let encryptedTitle = this.cryptoService.encrypt(
-      this.note_title,
-      this.notes_password_stored
-    );
-
     // @ts-ignore
     this.currentNote.protected = true;
     // @ts-ignore
     this.currentNote.text = encryptedText;
-    this.currentNote!.title = encryptedTitle;
 
     // find the current note.
     // @ts-ignore
@@ -385,7 +361,6 @@ export class AddNotePage {
 
     // @ts-ignore
     this.currentNote.text = decryptedText;
-    this.currentNote!.title = decryptTitle;
 
     this.notes_password_confirm = '';
     this.notes_password_input = '';
@@ -518,18 +493,8 @@ export class AddNotePage {
   }
 
   handleOnBack() {
-    if (!this.note_title) {
-      this.setConfirmModal(
-        this.ConfirmModalType.Discard,
-        'Your draft has been saved',
-        'You want to delete this Notepad? This action cannot be undone.',
-        'CANCEL',
-        'DISCARD',
-        'note-danger'
-      );
-
-      this.isConfirmModalOpen = true;
-      return;
+    if (this.note_text.length == 0) {
+      this.deleteNote();
     }
 
     if (this.isDirty) {
@@ -572,10 +537,6 @@ export class AddNotePage {
     const value = event.target.value;
 
     switch (type) {
-      case 'title':
-        this.isDirty = true;
-        this.note_title = value;
-        break;
       case 'text':
         this.isDirty = true;
         this.note_text = value;

@@ -39,12 +39,12 @@ export class HomePage {
     text: string;
     button1: {
       label: string;
-      color: IColor
-    },
+      color: IColor;
+    };
     button2: {
       label: string;
-      color: IColor
-    }
+      color: IColor;
+    };
   } = {
     title: 'Are you sure?',
     text: 'You want to delete Notes? This action cannot be undone.',
@@ -118,10 +118,9 @@ export class HomePage {
       navigator['app'].exitApp();
       return false;
     }
+    try {
+      let shouldUnlock = this.setData(this.input_password_app_unlock);
 
-    let shouldUnlock = this.setData(this.input_password_app_unlock);
-
-    if (shouldUnlock) {
       this.should_display = true;
       // init protection
       this.appProtectorService.init();
@@ -129,7 +128,7 @@ export class HomePage {
       this.noteService.setNotesAppPassword(this.input_password_app_unlock);
       // reset failed attempts.
       this.noteService.setFailedPasswordAppAttempts(0);
-    } else {
+    } catch (e) {
       const toast = await this.toastController.create({
         message: 'The password is not correct. Try again.',
         duration: 3000,
@@ -276,9 +275,8 @@ export class HomePage {
   }
 
   public onDeleteConfirm(value: boolean) {
-    this.isDeleteModalOpen = false
-    if(value) {
-      
+    this.isDeleteModalOpen = false;
+    if (value) {
     }
     value && setTimeout(() => this.deleteNotes(), 300);
   }
