@@ -46,7 +46,7 @@ export class AddNotePage {
 
   public isDirty = false;
 
-  public isEditable = false;
+  public isEditable = true;
 
   public isConfirmModalOpen: boolean = false;
   public isPasswordModalOpen: boolean = false;
@@ -107,7 +107,7 @@ export class AddNotePage {
       }
     });
   }
-
+  
   // should be called on key enter.
   save() {
     if (this.notes_id === null) return;
@@ -560,8 +560,8 @@ export class AddNotePage {
     this.notes_password_input = '';
   }
 
-  toggleToEdit() {
-    this.isEditable = !this.isEditable;
+  enableToEdit() {
+    this.isEditable = true;
   }
 
   cancel() {
