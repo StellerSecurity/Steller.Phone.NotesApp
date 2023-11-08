@@ -21,7 +21,7 @@
 
 <ion-item class="bg-color-light" lines="none">
   <div class="note-search">
-    <input placeholder="Search" />
+    <input placeholder="Search" (keyup)="onSearchChange($event)" [value]="search"/>
     <ion-icon
       name="search"
       src="assets/images/material-symbols-light_search.svg"
@@ -34,7 +34,7 @@
   </p>
 
   <note-list
-    [notes]="getNotes()"
+    [notes]="getSearchResult()"
     [isCheckable]="checkboxOpened"
     (checkEvent)="handleCheckEvent($event)"
     (clickEvent)="handleClickNote($event)"

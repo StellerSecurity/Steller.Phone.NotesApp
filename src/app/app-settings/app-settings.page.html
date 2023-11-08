@@ -59,11 +59,11 @@
           <ion-item class="mb-12">
             <ion-label>
               <h4 class="password-title">
-                <ion-text color="note-primary"> Unlock Notes App </ion-text>
+                <ion-text color="note-primary">Remove Password</ion-text>
               </h4>
               <p class="password-desc">
                 <ion-text color="note-grey">
-                  Enter your password for the app to unlock your notes
+                  Enter your password for the app to remove password
                 </ion-text>
               </p>
             </ion-label>
@@ -78,8 +78,11 @@
             ></note-password-input>
           </ion-item>
   
+          <ion-item class="mb-4">
+            <note-button value="Remove Password" (clickEvent)="save()" />
+          </ion-item>
           <ion-item>
-            <note-button value="Unlock App" (clickEvent)="save()" />
+            <note-button value="Cancel" (clickEvent)="cancel()" fill="outline" />
           </ion-item>
         </ion-list>
       </ion-content>

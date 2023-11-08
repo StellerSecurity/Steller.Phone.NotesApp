@@ -24,6 +24,10 @@ ion-item {
   font-weight: 400;
   line-height: normal;
   margin-top: 10px;
+  
+  ion-textarea {
+    min-height: 500px;
+  }
 }
 
 .date {
