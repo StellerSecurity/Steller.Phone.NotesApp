@@ -11,7 +11,7 @@ export class SplashComponent {
 
   ngAfterViewInit() {
     setTimeout(() => {
-      this.navController.navigateForward('welcome');
+      this.navController.navigateForward('home');
     }, 1500);
   }
 }
