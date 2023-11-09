@@ -33,6 +33,12 @@ export class NoteConfirmModalComponent implements OnInit {
     // }
   }
 
+  preventClose(event: Event) {
+    // Prevent the default behavior of the back button (closing the modal)
+    event.preventDefault();
+    // Your custom logic here (if needed)
+  }
+
   @ContentChild(NoteConfirmModalActionDirective)
   actionSection: NoteConfirmModalActionDirective;
   @ContentChild(NoteConfirmModalIconDirective)
