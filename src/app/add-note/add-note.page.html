@@ -100,19 +100,19 @@
             </ion-label>
           </ion-item>
 
-          <ion-item class="mb-2">
+          <ion-item class="mb-10">
             <note-password-input
               placeholder="Enter your password"
               label="Password *"
               (changeEvent)="handleInputChange($event, 'password')"
             ></note-password-input>
           </ion-item>
-
+<!-- 
           <ion-row class="forget-btn mb-10">
             <ion-button fill="clear" color="note-primary"
               >Forgot Password</ion-button
             >
-          </ion-row>
+          </ion-row> -->
 
           <ion-item class="mb-4">
             <note-button value="Unlock Note" (clickEvent)="unlockNote()" />
