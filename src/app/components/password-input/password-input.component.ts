@@ -44,7 +44,7 @@ export class PasswordInputComponent implements OnInit {
     }
 
     // Check password length
-    if (this.notesAppPassword.length < 6) {
+    if (this.notesAppPassword.length < 4) {
       tips += 'Make the password longer. ';
     } else {
       this.passwordStrength += 1;

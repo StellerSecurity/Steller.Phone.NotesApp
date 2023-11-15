@@ -1,4 +1,4 @@
-<app-header title="My Notes" variant="primary">
+<app-header title="Stellar Notes" variant="primary">
   <ng-template headerActionbar>
     <button>
       <ion-icon
@@ -57,7 +57,7 @@
     <ng-template footerBefore>
       <note-button
         *ngIf="!appHasPasswordChallenge()"
-        value="Add Notes App Passwordee"
+        value="Add Notes App Password"
         (clickEvent)="settings('addPassword')"
       />
     </ng-template>
@@ -68,8 +68,7 @@
   [title]="deleteConfirm.title"
   [text]="deleteConfirm.text"
   [isOpen]="isDeleteModalOpen"
-  (willDismiss)="onModalDismiss()"
->
+  (willDismiss)="onModalDismiss()">
   <ng-template confirmModalIcon>
     <ion-img src="assets/images/confirm-delete.svg"></ion-img>
   </ng-template>
@@ -101,7 +100,7 @@
             </h4>
             <p class="password-desc">
               <ion-text color="note-grey">
-                Enter your password for the app to unlock your notes
+                Enter your password for the app<br> to unlock your notes
               </ion-text>
             </p>
           </ion-label>

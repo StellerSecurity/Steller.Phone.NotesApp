@@ -107,7 +107,7 @@ export class AddNotePage {
       }
     });
   }
-  
+
   // should be called on key enter.
   save() {
     if (this.notes_id === null) return;
@@ -446,7 +446,7 @@ export class AddNotePage {
         this.setConfirmModal(
           this.ConfirmModalType.Delete,
           'Are you sure?',
-          'You want to delete this Notepad? This action cannot be undone.',
+          'You want to delete this note? This action cannot be undone.',
           'CANCEL',
           'DELETE',
           'note-danger'
@@ -482,9 +482,7 @@ export class AddNotePage {
           this.isConfirmModalOpen = false;
           this.save();
 
-          setTimeout(() => {
-            this.back();
-          }, 300);
+          this.back();
           break;
       }
     } else {
@@ -498,7 +496,7 @@ export class AddNotePage {
       return;
     }
 
-    if (this.isDirty) {
+    /*if (this.isDirty) {
       this.setConfirmModal(
         this.ConfirmModalType.Save,
         'Your changes have been saved',
@@ -510,7 +508,9 @@ export class AddNotePage {
 
       this.isConfirmModalOpen = true;
       return;
-    }
+    }*/
+
+    this.save();
 
     setTimeout(() => {
       this.back();
@@ -539,8 +539,8 @@ export class AddNotePage {
 
     switch (type) {
       case 'text':
-        this.isDirty = true;
         this.note_text = value;
+        this.save();
         break;
       case 'password':
         this.notes_password_input = value;

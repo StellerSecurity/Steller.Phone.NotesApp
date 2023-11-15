@@ -128,11 +128,15 @@ ion-list.footer-action {
 
 // Password
 .password-title {
-  font-size: 16px;
+  font-size: 25px;
   font-weight: 700;
   text-align: center;
   margin: 0;
   margin-bottom: 10px;
+}
+
+ion-text {
+  font-size: 16px;
 }
 
 .password-desc {
