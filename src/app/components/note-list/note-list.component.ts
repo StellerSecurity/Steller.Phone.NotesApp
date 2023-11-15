@@ -24,23 +24,15 @@ export class NoteListComponent implements OnChanges {
   public selected: Set<string>;
 
   ngOnChanges(changes: SimpleChanges): void {
-    if (changes['notes']) {
-      this.initCheckedIds(changes['notes'].currentValue);
-    }
-
     if (changes['isCheckable']) {
       if (changes['isCheckable'].currentValue) {
-        this.initCheckedIds(this.notes);
+        this.initCheckedIds();
       }
     }
   }
 
-  private initCheckedIds(notes: INote[]): void {
-    this.selected = new Set(
-      notes.map((note) => {
-        return note.id;
-      })
-    );
+  private initCheckedIds(): void {
+    this.selected = new Set();
 
     this.checkEvent.emit(this.selected);
   }
