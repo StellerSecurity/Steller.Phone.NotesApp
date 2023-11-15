@@ -1,6 +1,7 @@
 ion-textarea {
   resize: none;
   height: 100%;
+  font-size: 15px;
 }
 
 ion-item {
@@ -24,7 +25,7 @@ ion-item {
   font-weight: 400;
   line-height: normal;
   margin-top: 10px;
-  
+
   ion-textarea {
     min-height: 500px;
   }
@@ -36,8 +37,8 @@ ion-item {
 
 ion-datetime-button::part(native) {
   background: #fff;
-  color: #d8d6d6;
-  font-size: 8px;
+  color: #000;
+  font-size: 12px;
   padding: 0;
 }
 
