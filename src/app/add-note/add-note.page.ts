@@ -56,6 +56,7 @@ export class AddNotePage {
     Delete: 'delete',
     Save: 'save',
     Discard: 'discard',
+    RemovePassword: 'remove-password'
   };
 
   public modalInfo: IModalInfo = {
@@ -128,7 +129,7 @@ export class AddNotePage {
 
     if (this.currentNote !== null && this.currentNote !== undefined) {
       // @ts-ignore
-      protectedNote = this.note_locked;
+      protectedNote = this.currentNote.protected;
     }
 
     // newly created note.
@@ -194,6 +195,10 @@ export class AddNotePage {
     this.navController.back();
   }
 
+  public hasPassword() {
+    return this.notes_password_stored.length > 0;
+  }
+
   public async askforNotePassword() {
     this.isConfirmPasswordOpen = true;
     return;
@@ -228,10 +233,6 @@ export class AddNotePage {
     this.note_text = decryptedText;
 
     this.note_locked = false;
-
-    this.notes_password_stored = '';
-
-    this.save()
 
     this.isConfirmPasswordOpen = false;
     return true;
@@ -356,12 +357,10 @@ export class AddNotePage {
       if (this.notes[i].id === this.notes_id) {
         // @ts-ignore
         this.notes[i] = this.currentNote;
-        // @ts-ignore
+        // @ts-ignore;
         break;
       }
     }
-
-    this.note_locked = true;
 
     this.storeNoteInStorage();
 
@@ -465,7 +464,20 @@ export class AddNotePage {
       case this.ConfirmModalType.Save:
         break;
       case 'set-password':
-        this.isPasswordModalOpen = true;
+        if (this.notes_password_stored.length > 0) {
+          this.currentModalType = this.ConfirmModalType.RemovePassword;
+          this.setConfirmModal(
+            this.ConfirmModalType.RemovePassword,
+            'Are you sure?',
+            'You want to remove password for this note?',
+            'CANCEL',
+            'REMOVE',
+            'note-warning'
+          );
+          this.isConfirmModalOpen = true;
+        } else {
+          this.isPasswordModalOpen = true;
+        }
         break;
       case 'confirm-password':
     }
@@ -490,6 +502,16 @@ export class AddNotePage {
 
           this.back();
           break;
+        case this.ConfirmModalType.RemovePassword:
+          this.notes_password_stored = '';
+          this.notes_password_input = '';
+          this.currentNote && (this.currentNote.protected = false);
+
+          this.save();
+
+          setTimeout(() => {
+            this.isConfirmModalOpen = false;
+          }, 300)
       }
     } else {
       this.isConfirmModalOpen = false;
@@ -501,20 +523,6 @@ export class AddNotePage {
       this.deleteNote();
       return;
     }
-
-    /*if (this.isDirty) {
-      this.setConfirmModal(
-        this.ConfirmModalType.Save,
-        'Your changes have been saved',
-        'Your changes have been saved and will be reflected on the next page load',
-        'CANCEL',
-        'SAVE',
-        'note-success'
-      );
-
-      this.isConfirmModalOpen = true;
-      return;
-    }*/
 
     this.save();
 

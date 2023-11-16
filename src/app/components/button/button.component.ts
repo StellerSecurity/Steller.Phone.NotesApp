@@ -13,7 +13,7 @@ export class ButtonComponent {
   @Input() value: string = '';
   @Input() className: string = '';
   @Output() clickEvent = new EventEmitter<any>();
-  @Input() color: 'note-primary' | 'note-danger' | 'note-success' | null =
+  @Input() color: string | null =
     'note-primary';
   @Input() fill: 'outline' | 'solid' = 'solid';
   @Input() size: 'lg' | 'md' | 'sm' = 'lg';

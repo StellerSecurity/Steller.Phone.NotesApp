@@ -5,7 +5,13 @@
 >
   <ng-template headerActionbar>
     <ion-button class="header-action" (click)="openModal('set-password')">
-      <ion-img src="assets/images/note-lock.svg"></ion-img>
+      <ng-container *ngIf="hasPassword()">
+        <ion-icon name="lock-open-outline" class="toggle-password"></ion-icon>
+      </ng-container>
+
+      <ng-container *ngIf="!hasPassword()">
+        <ion-icon name="lock-closed-outline" class="toggle-password"></ion-icon>
+      </ng-container>
     </ion-button>
     <!-- <ion-button class="header-action" (click)="enableToEdit()">
       <ion-img src="assets/images/note-edit.svg"></ion-img>
@@ -107,18 +113,16 @@
               (changeEvent)="handleInputChange($event, 'password')"
             ></note-password-input>
           </ion-item>
-<!-- 
-          <ion-row class="forget-btn mb-10">
-            <ion-button fill="clear" color="note-primary"
-              >Forgot Password</ion-button
-            >
-          </ion-row> -->
 
           <ion-item class="mb-4">
             <note-button value="Unlock Note" (clickEvent)="unlockNote()" />
           </ion-item>
           <ion-item>
-            <note-button value="Cancel" (clickEvent)="cancel()" fill="outline" />
+            <note-button
+              value="Cancel"
+              (clickEvent)="cancel()"
+              fill="outline"
+            />
           </ion-item>
         </ion-list>
       </ion-content>
@@ -142,6 +146,10 @@
       </ng-container>
       <ng-container *ngIf="currentModalType==ConfirmModalType.Delete">
         <ion-img src="assets/images/confirm-delete.svg"></ion-img>
+      </ng-container>
+      <ng-container *ngIf="currentModalType==ConfirmModalType.RemovePassword">
+        <ion-img src="assets/images/danger-ellipse.svg"></ion-img>
+        <ion-icon name="lock-open-outline" class="unlock-icon"></ion-icon>
       </ng-container>
     </ng-template>
     <ng-template confirmModalAction>

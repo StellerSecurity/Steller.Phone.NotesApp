@@ -10,10 +10,10 @@ export interface IModalInfo {
   text: string;
   button1: {
     label: string;
-    color: 'note-primary' | 'note-danger' | 'note-success';
+    color: string;
   };
   button2: {
     label: string;
-    color: 'note-primary' | 'note-danger' | 'note-success';
+    color: string;
   };
 }
