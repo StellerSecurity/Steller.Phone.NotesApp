@@ -128,7 +128,7 @@ export class AddNotePage {
 
     if (this.currentNote !== null && this.currentNote !== undefined) {
       // @ts-ignore
-      protectedNote = this.currentNote.protected;
+      protectedNote = this.note_locked;
     }
 
     // newly created note.
@@ -228,6 +228,10 @@ export class AddNotePage {
     this.note_text = decryptedText;
 
     this.note_locked = false;
+
+    this.notes_password_stored = '';
+
+    this.save()
 
     this.isConfirmPasswordOpen = false;
     return true;
@@ -356,6 +360,8 @@ export class AddNotePage {
         break;
       }
     }
+
+    this.note_locked = true;
 
     this.storeNoteInStorage();
 
