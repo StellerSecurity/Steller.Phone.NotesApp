@@ -77,6 +77,17 @@ ion-datetime-button::part(native) {
 .confirm-password {
   margin-bottom: 40px;
 }
+
+.unlock-icon {
+  position: absolute;
+  width: 30px;
+  height: 30px;
+  color: #ff751a;
+}
+
+.toggle-password {
+  width: 15px;
+}
 // Modal Password
 ion-modal.set-password {
   ion-list {

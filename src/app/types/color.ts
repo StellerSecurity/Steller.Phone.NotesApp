@@ -1,1 +1,1 @@
-export type IColor = 'note-primary' | 'note-danger' | 'note-success';
+export type IColor = string;
