@@ -1,0 +1,45 @@
+:host {
+  width: 100%;
+}
+
+ion-button {
+  width: 100%;
+  --border-radius: 50px;
+  --box-shadow: none;
+  text-transform: none;
+  --border-width: 1px;
+  min-height: 0;
+  margin: 0;
+
+  width: calc(100% - 2px);
+
+  &.setting-color-primary {
+    --background: #4264fa;
+  }
+
+  &.setting-color-danger {
+    --background: linear-gradient(
+      91deg,
+      rgba(251, 1, 1, 0.81) 0%,
+      #e91010 97.1%
+    );
+  }
+
+  &.setting-color-success {
+    --background: linear-gradient(94deg, #0db20a 6.93%, #08b805 100%);
+  }
+
+  &.setting-size-lg {
+    --padding-top: 13px;
+    --padding-bottom: 13px;
+    font-weight: 700;
+    font-size: 14px;
+  }
+
+  &.setting-size-md {
+    --padding-top: 9px;
+    --padding-bottom: 9px;
+    font-weight: 400;
+    font-size: 12px;
+  }
+}

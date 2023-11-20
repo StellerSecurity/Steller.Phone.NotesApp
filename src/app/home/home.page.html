@@ -1,76 +1,160 @@
-<ion-header [translucent]="true">
-  <ion-toolbar>
-    <ion-title>
-      Stellar Notes
-    </ion-title>
+<app-header title="Stellar Notes" variant="primary">
+  <ng-template headerActionbar>
+    <button>
+      <ion-icon
+        slot="end"
+        name="settings-outline"
+        (click)="settings()"
+        class="header-action-btn white"
+      ></ion-icon>
 
-    <ion-buttons slot="end">
-      <button  slot="icon-only">
-        <ion-icon slot="end"  name="settings-outline" (click)="settings()"></ion-icon>
-        <ion-icon slot="end" name="ellipsis-vertical-outline" (click)="toggleCheckbox()" *ngIf="getNotes().length > 0"></ion-icon>
-      </button>
-    </ion-buttons>
+      <ion-icon
+        slot="end"
+        name="ellipsis-vertical-outline"
+        (click)="toggleCheckbox()"
+        *ngIf="getNotes().length > 0"
+        class="header-action-btn white"
+      ></ion-icon>
+    </button>
+  </ng-template>
+</app-header>
 
-  </ion-toolbar>
-</ion-header>
+<ion-item class="bg-color-light" lines="none">
+  <div class="note-search">
+    <input placeholder="Search" (keyup)="onSearchChange($event)" [value]="search"/>
+    <ion-icon
+      name="search"
+      src="assets/images/material-symbols-light_search.svg"
+    ></ion-icon>
+  </div>
+</ion-item>
+<ion-content class="ion-padding bg-color-light note-list">
+  <p class="ion-padding" *ngIf="getNotes().length == 0">
+    No notes has been created. Click on "+" to create a new note.
+  </p>
 
-<!-- modal ask for password -->
-<ion-modal trigger="app-ask-password" [isOpen]="!should_display">
+  <note-list
+    [notes]="getSearchResult()"
+    [isCheckable]="checkboxOpened"
+    (checkEvent)="handleCheckEvent($event)"
+    (clickEvent)="handleClickNote($event)"
+  />
+
+  <ion-fab
+    slot="fixed"
+    vertical="center"
+    horizontal="end"
+    *ngIf="should_display"
+  >
+    <a routerLink="/note">
+      <ion-img src="assets/images/add.png" alt="add" class="add"></ion-img>
+    </a>
+  </ion-fab>
+</ion-content>
+
+<ng-container *ngIf="!checkboxOpened; else selectFooter">
+  <app-footer variant="light">
+    <ng-template footerBefore>
+      <note-button
+        *ngIf="!appHasPasswordChallenge()"
+        value="Add Notes App Password"
+        (clickEvent)="settings('addPassword')"
+      />
+    </ng-template>
+  </app-footer>
+</ng-container>
+
+<note-confirm-modal
+  [title]="deleteConfirm.title"
+  [text]="deleteConfirm.text"
+  [isOpen]="isDeleteModalOpen"
+  (willDismiss)="onModalDismiss()">
+  <ng-template confirmModalIcon>
+    <ion-img src="assets/images/confirm-delete.svg"></ion-img>
+  </ng-template>
+  <ng-template confirmModalAction>
+    <note-button
+      [value]="deleteConfirm.button1.label"
+      fill="outline"
+      size="md"
+      (clickEvent)="onDeleteConfirm(false)"
+    ></note-button>
+    <note-button
+      [value]="deleteConfirm.button2.label"
+      [color]="deleteConfirm.button2.color"
+      size="md"
+      (clickEvent)="onDeleteConfirm(true)"
+    ></note-button>
+  </ng-template>
+</note-confirm-modal>
+
+<!-- Unlock password -->
+<ion-modal [isOpen]="!should_display" class="password">
   <ng-template>
     <ion-content class="ion-padding">
-      <div align="center"><h2>Stellar Notes</h2></div>
-      <p>Enter your password to get access to your notes.</p>
-      <ion-item>
-        <ion-input type="password" placeholder="Enter your password" (keyup)="ionInputAppUnlockInput($event)" [(ngModel)]="input_password_app_unlock" autofocus="true"></ion-input>
-      </ion-item>
-      <ion-button color="primary" expand="full" (click)="unlockNotesApp()">Unlock App</ion-button>
-      <br><br>
+      <ion-list lines="none">
+        <ion-item class="mb-12">
+          <ion-label>
+            <h4 class="password-title">
+              <ion-text color="note-primary"> Unlock Notes App </ion-text>
+            </h4>
+            <p class="password-desc">
+              <ion-text color="note-grey">
+                Enter your password for the app<br> to unlock your notes
+              </ion-text>
+            </p>
+          </ion-label>
+        </ion-item>
+
+        <ion-item class="mb-2">
+          <note-password-input
+            placeholder="Enter your password"
+            label="Password *"
+            (keyupEvent)="ionInputAppUnlockInput($event)"
+            (noteChangeEvent)="handleInputChange($event, 'password')"
+          ></note-password-input>
+        </ion-item>
+
+        <ion-row class="forget-btn mb-10">
+          <ion-button
+            fill="clear"
+            color="note-primary"
+            (click)="resetPassword()"
+            >Forgot Password</ion-button
+          >
+        </ion-row>
+
+        <ion-item>
+          <note-button value="Unlock App" (clickEvent)="unlockNotesApp()" />
+        </ion-item>
+      </ion-list>
     </ion-content>
 
-    <ion-footer>
-      <ion-button color="danger"  expand="full" (click)="resetPassword()">Reset Password</ion-button>
-    </ion-footer>
+    <app-footer></app-footer>
   </ng-template>
 </ion-modal>
 
-<ion-fab slot="fixed"  vertical="center" horizontal="end" *ngIf="should_display">
-  <ion-fab-button routerLink="/note">
-    <ion-icon name="add"></ion-icon>
-  </ion-fab-button>
-</ion-fab>
-
-<ion-content [fullscreen]="true">
-
-  <p class="ion-padding" *ngIf="getNotes().length == 0">No notes has been created. Click on "+" to create a new note.</p>
-
-  <ion-list>
-    <ion-item *ngFor="let note of getNotes()" (click)="openOrCheckbox(note.id)" [detail]="false">
-      <ion-checkbox *ngIf="checkboxOpened" (click)="selectNote($event, note.id)"  justify="start" style="margin-left: 7px"></ion-checkbox>
-      <ion-label class="ion-text-wrap  ion-padding">
-        <span>
-          <span *ngIf="!note.protected"> {{ (note.text.length > 12)? (note.text | slice:0:12)+'...':(note.text) }}</span>
-          <span *ngIf="note.protected">PROTECTED <ion-icon name="lock-closed"></ion-icon></span>
-          <span class="date">
-          <ion-note>{{ note.last_modified | date: "yyyy-MM-dd H:mm":"UTC" }}</ion-note>
-          </span><br>
-          <span class="uuid" *ngIf="note.protected">{{ note.id | slice:note.id.len:4 }}</span>
-        </span>
-      </ion-label>
-    </ion-item>
-  </ion-list>
-
-
-</ion-content>
-
-<ion-footer class="ion-padding" *ngIf="!checkboxOpened">
-  <ion-button *ngIf="!appHasPasswordChallenge()" expand="block" (click)="settings('addPassword')">Add Notes App Password</ion-button>
-  <div class="ion-padding" align="center">
-    <img src="assets/Logo_Steller_Security_RGB.svg" style="height: 32px;"><br><br>
-    All data is stored on your phone only.
-  </div>
-</ion-footer>
-
-<ion-toolbar slot="fixed" class="toolbar-bottom" *ngIf="checkboxOpened && getNotes().length > 0">
-  <ion-button color="danger" expand="full" (click)="deleteSelectedNotes()">Delete Selected Notes</ion-button><br>
-  <ion-button color="primary" expand="full" (click)="toggleCheckbox()">Cancel</ion-button>
-</ion-toolbar>
+<ng-template #selectFooter>
+  <app-footer variant="light">
+    <ng-template footerBody>
+      <ion-list lines="none" class="footer-action">
+        <ion-item>
+          <note-button
+            color="note-danger"
+            (clickEvent)="deleteSelectedNotes()"
+            value="Delete Selected Notes"
+          >
+          </note-button>
+        </ion-item>
+        <ion-item>
+          <note-button
+            color="note-primary"
+            (clickEvent)="toggleCheckbox()"
+            value="Cancel"
+          >
+          </note-button>
+        </ion-item>
+      </ion-list>
+    </ng-template>
+  </app-footer>
+</ng-template>
