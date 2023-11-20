@@ -1,71 +1,195 @@
-<ion-header [translucent]="true">
-  <ion-toolbar>
-    <ion-buttons slot="start">
-      <ion-back-button></ion-back-button>
-    </ion-buttons>
-    <ion-title>Note</ion-title>
+<app-header
+  variant="white"
+  [backButton]="true"
+  (backClickEvent)="handleOnBack()"
+>
+  <ng-template headerActionbar>
+    <ion-button class="header-action" (click)="openModal('set-password')">
+      <ng-container *ngIf="hasPassword()">
+        <ion-icon name="lock-open-outline" class="toggle-password"></ion-icon>
+      </ng-container>
 
-    <ion-buttons slot="end">
-      <ion-button (click)="openLockModal()">
-        <ion-icon name="lock-open-outline" *ngIf="!note_locked"></ion-icon>
-        <ion-icon name="lock-closed-outline" *ngIf="note_locked"></ion-icon>
-      </ion-button>
-
-      <ion-button (click)="deleteNote()">
-        <ion-icon name="trash-outline"></ion-icon>
-      </ion-button>
-    </ion-buttons>
-
-  </ion-toolbar>
-</ion-header>
-
-
+      <ng-container *ngIf="!hasPassword()">
+        <ion-icon name="lock-closed-outline" class="toggle-password"></ion-icon>
+      </ng-container>
+    </ion-button>
+    <!-- <ion-button class="header-action" (click)="enableToEdit()">
+      <ion-img src="assets/images/note-edit.svg"></ion-img>
+    </ion-button> -->
+    <ion-button
+      class="header-action"
+      (click)="openModal(ConfirmModalType.Delete)"
+    >
+      <ion-img src="assets/images/note-delete.svg"></ion-img>
+    </ion-button>
+  </ng-template>
+</app-header>
 
 <ion-content [fullscreen]="true" class="ion-padding">
-
-  <ion-modal #modal trigger="open-modal">
+  <ion-modal
+    [isOpen]="isPasswordModalOpen"
+    class="set-password"
+    (willDismiss)="onModalDismiss()"
+  >
     <ng-template>
-      <ion-header>
-        <ion-toolbar>
-          <ion-buttons slot="start">
-            <ion-button (click)="dismissModal()"> Close </ion-button>
-          </ion-buttons>
-          <ion-title>Lock note</ion-title>
-        </ion-toolbar>
-      </ion-header>
       <ion-content class="ion-padding">
-
-        <p *ngIf="note_locked">
-          To disable the notes app password, please enter your password to confirm.
-          <br><br>
-          <span style="color: red">* Warning, this will leave your notes in a decrypted state. You can always add a password again.</span>
-        </p>
-
-        <div *ngIf="!note_locked && !getProtected()">
-          <password-strength-meter [password]="notes_password_input"></password-strength-meter>
-          {{passwordStrengthHelperText}}
-          </div>
-        <br><br>
-
-        <ion-list *ngIf="!getProtected()">
+        <ion-list lines="none">
           <ion-item>
-            <ion-input type="password" (ionInput)="notesPasswordChange()" placeholder="Password"  [(ngModel)]="notes_password_input" ></ion-input>
+            <ion-label>
+              <h4 class="password-title">
+                <ion-text color="note-primary">
+                  Secure your Note with a password
+                </ion-text>
+              </h4>
+              <p class="password-desc">
+                <ion-text color="note-grey">
+                  Secure your Notes with encryption
+                </ion-text>
+              </p>
+            </ion-label>
+          </ion-item>
+
+          <ion-item>
+            <note-password-input
+              placeholder="Enter your password"
+              label="New Password *"
+              variant="strength"
+              class="new-password"
+              (changeEvent)="handleInputChange($event, 'password')"
+            ></note-password-input>
+          </ion-item>
+
+          <ion-item>
+            <note-password-input
+              placeholder="Enter your password"
+              label="Confirm Password *"
+              class="confirm-password"
+              (changeEvent)="handleInputChange($event, 'confirm-password')"
+            ></note-password-input>
+          </ion-item>
+
+          <ion-item class="mb-4">
+            <note-button value="Set New Password" (clickEvent)="lockNote()" />
           </ion-item>
           <ion-item>
-            <ion-input type="password"  placeholder="Confirm Password" [(ngModel)]="notes_password_confirm" ></ion-input>
+            <note-button
+              value="Cancel"
+              (clickEvent)="onModalDismiss()"
+              fill="outline"
+            />
           </ion-item>
         </ion-list>
-
-        <ion-button expand="block" *ngIf="!getProtected()" (click)="lockNote()">Lock Note With Password</ion-button>
-        <br><br><br>
-        <p *ngIf="getProtected()">If you want to change the note-password, you must remove the password first.</p>
-        <ion-button expand="block" color="danger" (click)="removeLock()" *ngIf="getProtected()">Remove Lock Password</ion-button>
-
       </ion-content>
+      <app-footer></app-footer>
     </ng-template>
   </ion-modal>
 
+  <!-- Unlock password -->
+  <ion-modal
+    [isOpen]="isConfirmPasswordOpen"
+    class="unlock"
+    (willDismiss)="onModalDismiss()"
+  >
+    <ng-template>
+      <ion-content class="ion-padding">
+        <ion-list lines="none">
+          <ion-item class="mb-12">
+            <ion-label>
+              <h4 class="password-title">
+                <ion-text color="note-primary"> Unlock Note </ion-text>
+              </h4>
+              <p class="password-desc">
+                <ion-text color="note-grey">
+                  Enter your password for the note to unlock it
+                </ion-text>
+              </p>
+            </ion-label>
+          </ion-item>
+
+          <ion-item class="mb-10">
+            <note-password-input
+              placeholder="Enter your password"
+              label="Password *"
+              (changeEvent)="handleInputChange($event, 'password')"
+            ></note-password-input>
+          </ion-item>
+
+          <ion-item class="mb-4">
+            <note-button value="Unlock Note" (clickEvent)="unlockNote()" />
+          </ion-item>
+          <ion-item>
+            <note-button
+              value="Cancel"
+              (clickEvent)="cancel()"
+              fill="outline"
+            />
+          </ion-item>
+        </ion-list>
+      </ion-content>
+      <app-footer></app-footer>
+    </ng-template>
+  </ion-modal>
+
+  <!-- Unlock password -->
+
+  <note-confirm-modal
+    [title]="modalInfo.title"
+    [text]="modalInfo.text"
+    [isOpen]="isConfirmModalOpen"
+    (willDismiss)="onModalDismiss()"
+  >
+    <ng-template confirmModalIcon>
+      <ng-container
+        *ngIf="currentModalType == ConfirmModalType.Save || currentModalType ==ConfirmModalType.Discard"
+      >
+        <ion-img src="assets/images/confirm-edit.svg"></ion-img>
+      </ng-container>
+      <ng-container *ngIf="currentModalType==ConfirmModalType.Delete">
+        <ion-img src="assets/images/confirm-delete.svg"></ion-img>
+      </ng-container>
+      <ng-container *ngIf="currentModalType==ConfirmModalType.RemovePassword">
+        <ion-img src="assets/images/danger-ellipse.svg"></ion-img>
+        <ion-icon name="lock-open-outline" class="unlock-icon"></ion-icon>
+      </ng-container>
+    </ng-template>
+    <ng-template confirmModalAction>
+      <note-button
+        [value]="modalInfo.button1.label"
+        fill="outline"
+        size="md"
+        (clickEvent)="onConfirm(false)"
+      ></note-button>
+      <note-button
+        [value]="modalInfo.button2.label"
+        [color]="modalInfo.button2.color"
+        size="md"
+        (clickEvent)="onConfirm(true)"
+      ></note-button>
+    </ng-template>
+  </note-confirm-modal>
+
   <!-- textarea -->
 
-  <ion-textarea placeholder="Note.." (ionInput)="save($event)" [value]="getCurrentNoteText()" autofocus=""></ion-textarea>
+  <ion-list lines="none">
+    <ion-item class="date">
+      <ion-datetime-button
+        datetime="datetime"
+        type="secondary"
+      ></ion-datetime-button>
+      <ion-modal [keepContentsMounted]="true">
+        <ng-template>
+          <ion-datetime id="datetime"></ion-datetime>
+        </ng-template>
+      </ion-modal>
+    </ion-item>
+    <ion-item class="content">
+      <ion-textarea
+        placeholder="Type something..."
+        [autoGrow]="true"
+        (ionInput)="handleInputChange($event, 'text')"
+        [readonly]="!isEditable"
+        [value]="note_text"
+      ></ion-textarea>
+    </ion-item>
+  </ion-list>
 </ion-content>

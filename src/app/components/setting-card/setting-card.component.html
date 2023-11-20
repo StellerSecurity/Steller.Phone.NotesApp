@@ -1,0 +1,50 @@
+<ion-card>
+  <ion-row style="align-items: center">
+    <div class="setting-card-left-side">
+      <ng-container
+        [ngTemplateOutlet]="leftSide?.templateRef || defaultLeftSide"
+      ></ng-container>
+    </div>
+
+    <div class="setting-card-right-side">
+      <ng-container
+        [ngTemplateOutlet]="rightSide?.templateRef || defaultRightSide"
+      ></ng-container>
+    </div>
+  </ion-row>
+</ion-card>
+
+<ng-template #defaultRightSide>
+  <ion-button
+    [fill]="status ? 'solid' : 'outline'"
+    (click)="onStatusChange(true)"
+    color="note-primary"
+  >
+    Yes
+  </ion-button>
+  <ion-button
+    [fill]="status ? 'outline' : 'solid'"
+    (click)="onStatusChange(false)"
+    color="note-primary"
+  >
+    No
+  </ion-button>
+</ng-template>
+
+<ng-template #defaultLeftSide>
+  <ion-card-header
+    ><ion-card-title>
+      <ng-container
+        [ngTemplateOutlet]="customTitle?.templateRef || defaultTitle"
+      ></ng-container>
+    </ion-card-title>
+  </ion-card-header>
+
+  <ion-card-content>
+    {{ content }}
+  </ion-card-content>
+</ng-template>
+
+<ng-template #defaultTitle>
+  {{ title }}
+</ng-template>

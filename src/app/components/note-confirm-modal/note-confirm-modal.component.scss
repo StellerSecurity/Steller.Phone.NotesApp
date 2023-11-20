@@ -1,0 +1,69 @@
+// Modal
+ion-modal#example-modal {
+  --width: 289px;
+  --min-width: 250px;
+  --height: fit-content;
+  --border-radius: 15px;
+}
+
+ion-modal#example-modal h1 {
+  margin: 38px 22px;
+}
+
+ion-modal#example-modal ion-icon {
+  margin-right: 6px;
+  width: 48px;
+  height: 48px;
+  padding: 4px 0;
+  color: #aaaaaa;
+}
+
+ion-modal#example-modal .wrapper {
+  margin: 30px 22px;
+}
+
+ion-list {
+  padding: 0;
+}
+
+ion-row {
+  justify-content: center;
+  align-items: center;
+}
+
+.modal-content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.icon-img {
+  ion-img {
+    width: 50px;
+    height: 50px;
+  }
+}
+
+.title {
+  color: #263238;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: normal;
+  text-align: center;
+}
+
+.desc {
+  color: #8a8a8a;
+  text-align: center;
+  font-family: Trebuchet MS;
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+
+  margin: 0 32px;
+}
+
+.actions {
+  gap: 16px;
+}

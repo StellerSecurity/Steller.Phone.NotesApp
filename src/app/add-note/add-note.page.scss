@@ -1,5 +1,128 @@
 ion-textarea {
   resize: none;
-  width:100vw;
-  height:100vh;
+  height: 100%;
+  font-size: 15px;
+}
+
+ion-item {
+  --inner-padding-end: 0;
+  --padding-start: 0;
+  --min-height: 0;
+}
+
+.title {
+  color: #263238;
+  font-size: 16px;
+  font-style: normal;
+  font-weight: 700;
+  line-height: normal;
+}
+
+.content {
+  color: #8a8a8a;
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  margin-top: 10px;
+
+  ion-textarea {
+    min-height: 500px;
+  }
+}
+
+.date {
+  margin-top: 10px;
+}
+
+ion-datetime-button::part(native) {
+  background: #fff;
+  color: #000;
+  font-size: 12px;
+  padding: 0;
+}
+
+.header-action {
+  --padding-bottom: 0;
+  --padding-end: 0;
+  --padding-start: 16px;
+  --padding-top: 0;
+  margin: 0;
+
+  ion-img {
+    width: 20px;
+    height: 20px;
+  }
+}
+
+// Password
+.password-title {
+  font-size: 16px;
+  font-weight: 700;
+  text-align: center;
+  margin: 0;
+  margin-bottom: 10px;
+}
+
+.password-desc {
+  text-align: center;
+  font-size: 12px;
+}
+
+.new-password {
+  margin-bottom: 15px;
+  margin-top: 44px;
+}
+
+.confirm-password {
+  margin-bottom: 40px;
+}
+
+.unlock-icon {
+  position: absolute;
+  width: 30px;
+  height: 30px;
+  color: #ff751a;
+}
+
+.toggle-password {
+  width: 15px;
+}
+// Modal Password
+ion-modal.set-password {
+  ion-list {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    justify-content: center;
+    min-height: 550px;
+  }
+}
+// Modal Unlock
+ion-modal.unlock {
+  ion-list {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    justify-content: center;
+    min-height: 550px;
+  }
+
+  .forget-btn {
+    justify-content: flex-end;
+
+    ion-button {
+      --padding-bottom: 0;
+      --padding-end: 0;
+      --padding-start: 0;
+      --padding-top: 0;
+      min-height: 0;
+      font-size: 14px;
+      font-weight: 700;
+      line-height: normal;
+      text-decoration-line: underline;
+      font-family: Tw Cen MT Std;
+      text-transform: none;
+    }
+  }
 }

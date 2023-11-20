@@ -1,68 +1,119 @@
-<ion-header [translucent]="true">
-  <ion-toolbar>
-    <ion-buttons slot="start">
-      <ion-back-button></ion-back-button>
-    </ion-buttons>
-    <ion-title>Note App Settings</ion-title>
-  </ion-toolbar>
-</ion-header>
+<app-header
+  title="Settings"
+  variant="primary"
+  [backButton]="true"
+  (backClickEvent)="handleOnBack()"
+>
+</app-header>
 
-
-<ion-content [fullscreen]="true">
-
+<ion-content>
+  <!-- Set Password Modal For App -->
   <ion-modal #modal trigger="open-modal">
-  <ng-template>
-    <ion-header>
-      <ion-toolbar>
-        <ion-buttons slot="start">
-          <ion-button (click)="cancel()"> Close </ion-button>
-        </ion-buttons>
-        <ion-title>Password On Notes App</ion-title>
-      </ion-toolbar>
-    </ion-header>
-    <ion-content class="ion-padding">
+    <ng-template>
+      <ion-content class="ion-padding" *ngIf="tempPasswordChallenge">
+        <ion-list lines="none">
+          <ion-item>
+            <ion-label>
+              <h4 class="password-title">
+                <ion-text color="note-primary">
+                  Set Password For The App
+                </ion-text>
+              </h4>
+              <p class="password-desc">
+                <ion-text color="note-grey">
+                  Secure your Notes data with encryption
+                </ion-text>
+              </p>
+            </ion-label>
+          </ion-item>
 
-      <p *ngIf="hasAppChallengePassword()">
-        To disable the notes app password, please enter your password to confirm.
-        <br><br>
-        <span style="color: red">* Warning, this will leave your notes in a decrypted state. You can always add a password again.</span>
-      </p>
+          <ion-item>
+            <note-password-input
+              placeholder="Enter your password"
+              label="New Password *"
+              variant="strength"
+              class="new-password"
+              (noteChangeEvent)="handleInputChange($event, 'password')"
+            ></note-password-input>
+          </ion-item>
 
-      <div *ngIf="!hasAppChallengePassword()">
-        <password-strength-meter [password]="notesAppPassword"></password-strength-meter>
-        {{passwordStrengthHelperText}}</div>
-      <br><br>
+          <ion-item>
+            <note-password-input
+              placeholder="Enter your password"
+              label="Confirm Password *"
+              class="confirm-password"
+              (noteChangeEvent)="handleInputChange($event, 'confirm-password')"
+            ></note-password-input>
+          </ion-item>
 
-      <ion-list>
-        <ion-item>
-          <ion-input type="password" placeholder="Password" (ionInput)="notesAppPasswordChange()" [(ngModel)]="notesAppPassword"></ion-input>
-        </ion-item>
-        <ion-item>
-          <ion-input type="password"  placeholder="Confirm Password"  [(ngModel)]="confirmPassword"></ion-input>
-        </ion-item>
-      </ion-list>
+          <ion-item class="mb-4">
+            <note-button value="Set New Password" (clickEvent)="save()" />
+          </ion-item>
+          <ion-item>
+            <note-button value="Cancel" (clickEvent)="cancel()" fill="outline" ></note-button>
+          </ion-item>
+        </ion-list>
+      </ion-content>
+      <ion-content class="ion-padding" *ngIf="!tempPasswordChallenge">
+        <ion-list lines="none">
+          <ion-item class="mb-12">
+            <ion-label>
+              <h4 class="password-title">
+                <ion-text color="note-primary">Remove Password</ion-text>
+              </h4>
+              <p class="password-desc">
+                <ion-text color="note-grey">
+                  Enter your password for the app to remove password
+                </ion-text>
+              </p>
+            </ion-label>
+          </ion-item>
 
-      <ion-button expand="block" (click)="save()">Save</ion-button>
+          <ion-item class="mb-10">
+            <note-password-input
+              placeholder="Enter your password"
+              label="Password *"
+              class="mb-2"
+              (noteChangeEvent)="handleInputChange($event, 'confirm-password')"
+            ></note-password-input>
+          </ion-item>
 
-
-    </ion-content>
-  </ng-template>
+          <ion-item class="mb-4">
+            <note-button value="Remove Password" (clickEvent)="save()" />
+          </ion-item>
+          <ion-item>
+            <note-button value="Cancel" (clickEvent)="cancel()" fill="outline" />
+          </ion-item>
+        </ion-list>
+      </ion-content>
+      <app-footer></app-footer>
+    </ng-template>
   </ion-modal>
 
-  <ion-item>
-    <ion-toggle checked="true" [(ngModel)]="appPasswordChallenge" (ionChange)="appPasswordChallengeDialog()" [enableOnOffLabels]="true"> Ask for Password<br>when opening App </ion-toggle>
-  </ion-item>
-
-  <ion-item *ngIf="appPasswordChallenge">
-    <ion-toggle checked="true" [(ngModel)]="wipeNotesOnFailedPasswords" [enableOnOffLabels]="true" disabled=""> Wipe Notes if there<br> is 20+ failed login attempts </ion-toggle>
-  </ion-item>
-
-  <p class="ion-padding" *ngIf="appPasswordChallenge">* Wipe notes will delete ALL notes on your phone if you enter the password for the app wrongly 20 times in a row. It cannot be turned off.</p>
-
-  <hr>
-
+  <ion-list>
+    <note-setting-card
+      title="Ask For Password"
+      content="When notes is launched it will require a password you set."
+      [status]="appPasswordChallenge"
+      (statusChangeEvent)="appPasswordChallengeDialog($event)"
+    >
+    </note-setting-card>
+    <note-setting-card
+      title="Protection"
+      content="Protection will delete ALL notes on your phone if you enter the password for the app wrongly 20 times in a row. It cannot be turned off, if password for the app is enabled."
+      [status]="appPasswordChallenge"
+    >
+    </note-setting-card>
+  </ion-list>
 </ion-content>
 
-<ion-footer>
-  <ion-button color="danger" expand="full" (click)="deleteWholeAppStorage()">Delete All Notes</ion-button>
-</ion-footer>
+<app-footer>
+  <ng-template footerBody>
+    <note-button
+      color="note-danger"
+      expand="full"
+      (clickEvent)="deleteWholeAppStorage()"
+      value="Delete All Notes"
+    ></note-button>
+  </ng-template>
+</app-footer>
