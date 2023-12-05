@@ -11,7 +11,7 @@ import {
 } from '@ionic/angular';
 import { NotesService } from '../services/notes.service';
 const { v4: uuidv4 } = require('uuid');
-import { INote, IModalInfo, IColor } from '../types';
+import { INote, IModalInfo, IColor, EExpiredDate } from '../types';
 
 declare var require: any;
 var CryptoJS = require('crypto-js');
@@ -51,6 +51,8 @@ export class AddNotePage {
   public isConfirmModalOpen: boolean = false;
   public isPasswordModalOpen: boolean = false;
   public isConfirmPasswordOpen: boolean = false;
+
+  public expiredDate: EExpiredDate = EExpiredDate.never;
 
   public ConfirmModalType = {
     Delete: 'delete',
@@ -98,6 +100,9 @@ export class AddNotePage {
         this.notes_id!,
         this.notes
       );
+
+      this.expiredDate = this.currentNote?.expired_date ?? EExpiredDate.never;
+      console.log("expiredDate", this.expiredDate);
       // @ts-ignore
       if (this.currentNote.protected) {
         this.note_locked = true;
@@ -139,6 +144,7 @@ export class AddNotePage {
       text: encryptedText,
       protected: protectedNote,
       auto_wipe: true,
+      expired_date: this.expiredDate
     };
 
     // first time the user creates a note in history.
@@ -529,6 +535,12 @@ export class AddNotePage {
     setTimeout(() => {
       this.back();
     }, 300);
+  }
+
+  handleExpireChange = (e: any) => {
+    this.expiredDate = e.target.value;
+    this.currentNote!.expired_date = e.target.value;
+    this.save();
   }
 
   setConfirmModal(

@@ -7,11 +7,12 @@ import {
   NavController,
   ToastController,
 } from '@ionic/angular';
+import { ExpireService } from '../services/expire.service';
 
 import { CryptoService } from '../services/crypto.service';
 import { NotesService } from '../services/notes.service';
 import { AppProtectorService } from '../services/app-protector.service';
-import { INote, IColor } from '../types';
+import { INote, IColor, EExpiredDate } from '../types';
 @Component({
   selector: 'app-home',
   templateUrl: 'home.page.html',
@@ -64,6 +65,10 @@ export class HomePage {
 
   public checkedIds: Set<string>;
 
+  private deleteExpireTimer: any = null;
+
+  private count = 0;
+
   @ViewChild(IonModal) modal: IonModal;
 
   constructor(
@@ -73,15 +78,25 @@ export class HomePage {
     private navController: NavController,
     private toastController: ToastController,
     private appProtectorService: AppProtectorService,
-    private loadingController: LoadingController
-  ) {}
+    private loadingController: LoadingController,
+    private expireService: ExpireService
+  ) {
+  }
 
   ionViewWillEnter() {
     if (this.noteService.shouldAskForPassword()) {
       this.should_display = false;
     } else {
       this.setData(this.noteService.getNotesAppPassword()); // will send a password, if the app is encrypted.
+      this.deleteExpiredNotes();
+      this.deleteExpireTimer = setInterval(() => {
+        this.deleteExpiredNotes();
+      }, 10000);
     }
+  }
+
+  ionViewWillLeave() {
+    this.deleteExpireTimer && clearInterval(this.deleteExpireTimer);
   }
 
   public appHasPasswordChallenge(): boolean {
@@ -203,10 +218,35 @@ export class HomePage {
     await loading.present();
 
     // delete the selected notes.
-
-    this.notes = this.notes.filter((note: INote) => {
+    
+    const _notes = this.notes.filter((note: INote) => {
       return !this.listOfCheckedCheckboxes.has(note.id);
     });
+
+    this.saveNotes(_notes);
+
+    this.toggleCheckbox();
+    const toast = await this.toastController.create({
+      message: 'The selected notes has been deleted.',
+      duration: 2500,
+      position: 'bottom',
+    });
+
+    await toast.present();
+    await loading.dismiss();
+  }
+
+  private deleteExpiredNotes() {
+    if(this.notes == undefined) return;
+    const _notes = this.notes.filter((note: INote) => {
+      return !this.expireService.deletable(Number(note.last_modified), note.expired_date)
+    })
+
+    this.saveNotes(_notes);
+  }
+
+  private saveNotes(notes: INote[]) {
+    this.notes = notes;
 
     if (this.noteService.appHasPasswordChallenge()) {
       // newly notes to save into storage.
@@ -223,16 +263,6 @@ export class HomePage {
     }
 
     this.setData(this.input_password_app_unlock);
-
-    this.toggleCheckbox();
-    const toast = await this.toastController.create({
-      message: 'The selected notes has been deleted.',
-      duration: 2500,
-      position: 'bottom',
-    });
-
-    await toast.present();
-    await loading.dismiss();
   }
 
   public async resetPassword() {

@@ -84,7 +84,7 @@
     </ng-template>
   </ion-modal>
 
-  <!-- Unlock password -->
+  <!-- @Unlock password -->
   <ion-modal
     [isOpen]="isConfirmPasswordOpen"
     class="unlock"
@@ -129,9 +129,9 @@
       <app-footer></app-footer>
     </ng-template>
   </ion-modal>
+  <!-- &Unlock password -->
 
-  <!-- Unlock password -->
-
+  <!-- @Confirm Password Modal -->
   <note-confirm-modal
     [title]="modalInfo.title"
     [text]="modalInfo.text"
@@ -167,21 +167,37 @@
       ></note-button>
     </ng-template>
   </note-confirm-modal>
+  <!-- &Confirm Password Modal -->
 
-  <!-- textarea -->
-
+  <!-- @textarea -->
   <ion-list lines="none">
-    <ion-item class="date">
-      <ion-datetime-button
+    <ion-row class="ion-justify-content-between mt-2">
+      <ion-item class="date">
+        <ion-datetime-button
         datetime="datetime"
         type="secondary"
-      ></ion-datetime-button>
-      <ion-modal [keepContentsMounted]="true">
-        <ng-template>
-          <ion-datetime id="datetime"></ion-datetime>
-        </ng-template>
-      </ion-modal>
-    </ion-item>
+        ></ion-datetime-button>
+        <ion-modal [keepContentsMounted]="true">
+          <ng-template>
+            <ion-datetime id="datetime"></ion-datetime>
+          </ng-template>
+        </ion-modal>
+      </ion-item>
+      <ion-item>
+        <ion-select placeholder="Expiration Period" aria-label="Expire date" (ionChange)="handleExpireChange($event)" [value]="expiredDate">
+          <ion-select-option value="1DAY">One Day</ion-select-option>
+          <ion-select-option value="3DAYS">Three days</ion-select-option>
+          <ion-select-option value="7DAYS">One week</ion-select-option>
+          <ion-select-option value="14DAYS">Twe weeks</ion-select-option>
+          <ion-select-option value="1MONTH">One month</ion-select-option>
+          <ion-select-option value="2MONTHS">Two months</ion-select-option>
+          <ion-select-option value="3MONTHS">Tree months</ion-select-option>
+          <ion-select-option value="6MONTHS">6 months</ion-select-option>
+          <ion-select-option value="NEVER">Never</ion-select-option>
+        </ion-select>
+      </ion-item>
+    </ion-row>
+
     <ion-item class="content">
       <ion-textarea
         placeholder="Type something..."
@@ -192,4 +208,5 @@
       ></ion-textarea>
     </ion-item>
   </ion-list>
+  <!-- &textarea -->
 </ion-content>

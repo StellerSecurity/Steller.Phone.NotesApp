@@ -31,8 +31,9 @@ ion-item {
   }
 }
 
-.date {
-  margin-top: 10px;
+ion-select {
+  min-height: 0;
+  font-size: 12px;
 }
 
 ion-datetime-button::part(native) {
