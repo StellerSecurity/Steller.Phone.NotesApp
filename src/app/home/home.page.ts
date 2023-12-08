@@ -80,17 +80,15 @@ export class HomePage {
     private appProtectorService: AppProtectorService,
     private loadingController: LoadingController,
     private expireService: ExpireService
-  ) {}
+  ) {
+    this.deleteExpiredNotes();
+  }
 
   ionViewWillEnter() {
     if (this.noteService.shouldAskForPassword()) {
       this.should_display = false;
     } else {
       this.setData(this.noteService.getNotesAppPassword()); // will send a password, if the app is encrypted.
-      this.deleteExpiredNotes();
-      // this.deleteExpireTimer = setInterval(() => {
-      //   this.deleteExpiredNotes();
-      // }, 2000);
     }
   }
 
@@ -250,12 +248,13 @@ export class HomePage {
     };
 
     while (true) {
+      console.log('while');
       await new Promise((resolve) => {
         _delete();
         resolve(true);
       });
 
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      await new Promise((resolve) => setTimeout(resolve, 5000));
     }
   }
 
