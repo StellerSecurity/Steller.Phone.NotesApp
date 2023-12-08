@@ -74,6 +74,11 @@ export class AddNotePage {
     },
   };
 
+  customAlertOptions = {
+    subHeader: 'Notes burner will automatically delete a note if it havent been unlocked for the time you set.',
+    translucent: true,
+  };
+
   public currentModalType = this.ConfirmModalType.Delete;
 
   constructor(
