@@ -248,7 +248,6 @@ export class HomePage {
     };
 
     while (true) {
-      console.log('while');
       await new Promise((resolve) => {
         _delete();
         resolve(true);
