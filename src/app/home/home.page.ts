@@ -80,8 +80,7 @@ export class HomePage {
     private appProtectorService: AppProtectorService,
     private loadingController: LoadingController,
     private expireService: ExpireService
-  ) {
-  }
+  ) {}
 
   ionViewWillEnter() {
     if (this.noteService.shouldAskForPassword()) {
@@ -89,9 +88,9 @@ export class HomePage {
     } else {
       this.setData(this.noteService.getNotesAppPassword()); // will send a password, if the app is encrypted.
       this.deleteExpiredNotes();
-      this.deleteExpireTimer = setInterval(() => {
-        this.deleteExpiredNotes();
-      }, 10000);
+      // this.deleteExpireTimer = setInterval(() => {
+      //   this.deleteExpiredNotes();
+      // }, 2000);
     }
   }
 
@@ -182,8 +181,7 @@ export class HomePage {
   }
 
   getSearchResult() {
-
-    if(this.notes == null) return [];
+    if (this.notes == null) return [];
 
     this.__notes = this.notes.filter((_note: INote) => {
       return _note.text.includes(this.search);
@@ -218,7 +216,7 @@ export class HomePage {
     await loading.present();
 
     // delete the selected notes.
-    
+
     const _notes = this.notes.filter((note: INote) => {
       return !this.listOfCheckedCheckboxes.has(note.id);
     });
@@ -236,13 +234,29 @@ export class HomePage {
     await loading.dismiss();
   }
 
-  private deleteExpiredNotes() {
-    if(this.notes == undefined) return;
-    const _notes = this.notes.filter((note: INote) => {
-      return !this.expireService.deletable(Number(note.last_modified), note.expired_date)
-    })
+  private async deleteExpiredNotes() {
+    const _delete = () => {
+      if (this.notes == undefined) return;
+      const _notes = this.notes.filter((note: INote) => {
+        return !this.expireService.deletable(
+          Number(note.last_modified),
+          note.expired_date
+        );
+      });
 
-    this.saveNotes(_notes);
+      if (this.notes.length > _notes.length) {
+        this.saveNotes(_notes);
+      }
+    };
+
+    while (true) {
+      await new Promise((resolve) => {
+        _delete();
+        resolve(true);
+      });
+
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+    }
   }
 
   private saveNotes(notes: INote[]) {
@@ -334,6 +348,6 @@ export class HomePage {
     const value = event.target.value;
     this.search = value;
 
-    this.getSearchResult()
+    this.getSearchResult();
   }
 }

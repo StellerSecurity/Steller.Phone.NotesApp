@@ -33,10 +33,6 @@ export class ExpireService {
     if (expireTime == 'NEVER') return false;
 
     const currentDate = dayjs().valueOf();
-    console.log("currentTime", currentDate);
-    console.log("last_time", last_time);
-    console.log("expireTime", expireTime);
-    console.log(currentDate - (last_time + expireTime));
     return currentDate > last_time + expireTime;
   };
 }
