@@ -184,7 +184,8 @@
         </ion-modal>
       </ion-item>
       <ion-item>
-        <ion-select placeholder="Expiration Period" aria-label="Expire date" (ionChange)="handleExpireChange($event)" [value]="expiredDate">
+        <ion-label>Burn note: </ion-label>
+        <ion-select placeholder="Expiration Period" [interfaceOptions]="customAlertOptions" aria-label="Expire date" (ionChange)="handleExpireChange($event)" [value]="expiredDate">
           <ion-select-option value="1DAY">One Day</ion-select-option>
           <ion-select-option value="3DAYS">Three days</ion-select-option>
           <ion-select-option value="7DAYS">One week</ion-select-option>
