@@ -1,6 +1,28 @@
+.header-md {
+  /* Removes the toolbar shadow. */
+  box-shadow: none !important;
+  -webkit-box-shadow: none !important;
+}
+
+ion-content,ion-header,ion-footer,ion-toolbar {
+  --ion-background-color: rgba(246, 246, 253, 1);
+}
+
+ion-note {
+  font-size: 10px;
+}
+
+.margin-right-top {
+  margin-right: 15px;
+}
+
 ion-item {
   --padding-start: 0;
   --inner-padding-end: 0;
+  --ion-background-color: #fff;
+  border-radius: 12px;
+  border-bottom: none !important;
+  margin-bottom: 15px;
 }
 
 ion-label {
@@ -31,9 +53,10 @@ ion-item ion-icon {
 }
 
 ion-item ion-note {
-  font-size: 15px;
+  font-size: 10px;
   margin-right: 8px;
   font-weight: normal;
+
 }
 
 ion-item ion-note.md {
@@ -64,6 +87,30 @@ button{
   box-shadow: none !important;
 }
 
+ion-checkbox{
+  display: flex;
+  width: 24px;
+  height: 24px;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  border: 1px solid #D6D6E0;
+  --checkbox-background-checked: #4364fa;
+}
+
+ion-checkbox .checkbox-checked {
+  left: 16px;
+  top: 5px;
+  position: absolute;
+  width: 14px;
+  height: 27px;
+  border-color: #427feb;
+  border-top-width: 0;
+  border-right-width: 4px;
+  border-bottom-width: 4px;
+  border-left-width: 0;
+}
+
 span.uuid {
   color: #a2a2a2;
   font-size: 10px;
@@ -71,4 +118,29 @@ span.uuid {
 
 ion-footer {
   background-color: #fff;
+}
+
+ion-button {
+  --border-radius: 250px;
+  border-radius: 250px;
+  display: flex;
+  height: 48px;
+  padding: 0 24px 0 20px;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.button-native {
+  border-radius: 250px !important;
+}
+
+.ion-color-danger {
+  --border-radius: 250px;
+  background-color: #fff;
+}
+
+.button-native {
+  border-radius: 250px !important;
 }

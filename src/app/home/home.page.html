@@ -1,13 +1,18 @@
 <ion-header [translucent]="true">
   <ion-toolbar>
     <ion-title>
-      Stellar Notes
+
+
+        <span  *ngIf="checkboxOpened && getNotes().length > 0" (click)="toggleCheckbox()" >
+           <img src="assets/tabler-icon-x.svg" valign="left" style="position: relative; top: 5px;" class="margin-right-top"> 2 Notes Selected
+        </span>
+        <img src="assets/Logo.svg"  *ngIf="!checkboxOpened && getNotes().length > 0">
     </ion-title>
 
-    <ion-buttons slot="end">
-      <button  slot="icon-only">
-        <ion-icon slot="end"  name="settings-outline" (click)="settings()"></ion-icon>
-        <ion-icon slot="end" name="ellipsis-vertical-outline" (click)="toggleCheckbox()" *ngIf="getNotes().length > 0"></ion-icon>
+    <ion-buttons slot="end"  *ngIf="!checkboxOpened && getNotes().length > 0">
+      <button slot="icon-only" style="padding-right: 15px">
+        <img src="assets/tabler-icon-square-check.svg" (click)="toggleCheckbox()" *ngIf="getNotes().length > 0" class="margin-right-top">
+        <img src="assets/tabler-icon-settings.svg" (click)="settings()">
       </button>
     </ion-buttons>
 
@@ -39,38 +44,45 @@
   </ion-fab-button>
 </ion-fab>
 
-<ion-content [fullscreen]="true">
+<ion-content [fullscreen]="true" class="ion-padding">
 
   <p class="ion-padding" *ngIf="getNotes().length == 0">No notes has been created. Click on "+" to create a new note.</p>
 
   <ion-list>
-    <ion-item *ngFor="let note of getNotes()" (click)="openOrCheckbox(note.id)" [detail]="false">
+    <ion-item  lines="none" *ngFor="let note of getNotes()" (click)="openOrCheckbox(note.id)" [detail]="false">
       <ion-checkbox *ngIf="checkboxOpened" (click)="selectNote($event, note.id)"  justify="start" style="margin-left: 7px"></ion-checkbox>
-      <ion-label class="ion-text-wrap  ion-padding">
+        <ion-label class="ion-text-wrap  ion-padding"  style="float: left">
         <span>
-          <span *ngIf="!note.protected"> {{ (note.text.length > 12)? (note.text | slice:0:12)+'...':(note.text) }}</span>
-          <span *ngIf="note.protected">PROTECTED <ion-icon name="lock-closed"></ion-icon></span>
-          <span class="date">
-          <ion-note>{{ note.last_modified | date: "yyyy-MM-dd H:mm":"UTC" }}</ion-note>
-          </span><br>
+            <ion-note> {{ note.last_modified | date: "yyyy-MM-dd H:mm":"UTC" }}</ion-note><br>
+            <span *ngIf="!note.protected" style="text-overflow: ellipsis;
+white-space: nowrap;
+/* Body/Body 12 */
+font-family: Poppins;
+font-size: 12px;
+font-style: normal;
+font-weight: 400;
+color: #62626A;
+line-height: 150%;"> {{ (note.text.length > 12)? (note.text | slice:0:12)+'...':(note.text) }}</span>
           <span class="uuid" *ngIf="note.protected">{{ note.id | slice:note.id.len:4 }}</span>
         </span>
-      </ion-label>
+        </ion-label>
+        <ion-label style="float: right; padding-right: 15px"><span *ngIf="note.protected"  style="float: right"><img src="/assets/tabler-icon-lock.svg"></span></ion-label>
     </ion-item>
   </ion-list>
+
+    <ion-button *ngIf="!appHasPasswordChallenge()" expand="block" (click)="settings('addPassword')">Add Notes App Password</ion-button>
+    <div class="ion-padding" align="center">
+        <img src="/assets/stellar-logo-icon.svg" valign="top"> <span style="font-family: Poppins;
+font-size: 12px;
+font-style: normal;
+font-weight: 400;
+line-height: 150%; position: relative; top: -9px; left: 15px; color: #62626A">All data is stored on your phone only.</span>
+    </div>
 
 
 </ion-content>
 
-<ion-footer class="ion-padding" *ngIf="!checkboxOpened">
-  <ion-button *ngIf="!appHasPasswordChallenge()" expand="block" (click)="settings('addPassword')">Add Notes App Password</ion-button>
-  <div class="ion-padding" align="center">
-    <img src="assets/Logo_Steller_Security_RGB.svg" style="height: 32px;"><br><br>
-    All data is stored on your phone only.
-  </div>
-</ion-footer>
-
 <ion-toolbar slot="fixed" class="toolbar-bottom" *ngIf="checkboxOpened && getNotes().length > 0">
-  <ion-button color="danger" expand="full" (click)="deleteSelectedNotes()">Delete Selected Notes</ion-button><br>
-  <ion-button color="primary" expand="full" (click)="toggleCheckbox()">Cancel</ion-button>
+  <ion-button color="danger" shape="round" fill="outline"  (click)="deleteSelectedNotes()"><img src="assets/tabler-icon-trash.svg" style="margin-right: 15px"> Delete</ion-button><br>
+  <!--<ion-button color="primary" fill="outline" expand="full" (click)="toggleCheckbox()">Cancel</ion-button>-->
 </ion-toolbar>
