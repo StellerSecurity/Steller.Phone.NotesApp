@@ -1,0 +1,19 @@
+.header-md {
+  /* Removes the toolbar shadow. */
+  box-shadow: none !important;
+  -webkit-box-shadow: none !important;
+}
+
+ion-content,ion-header,ion-footer,ion-toolbar {
+  --ion-background-color: rgba(246, 246, 253, 1);
+}
+
+ion-item {
+  --padding-start: 15px;
+  --padding-end: 15px;
+  --inner-padding-end: 0;
+  --ion-background-color: #fff;
+  border-radius: 12px;
+  border-bottom: none !important;
+  margin-bottom: 15px;
+}
