@@ -42,12 +42,21 @@ line-height: 150%; /* 21px */ ">Enter your password to get access to your notes<
 
         <ion-input type="password" placeholder="Enter your password" (keyup)="ionInputAppUnlockInput($event)" [(ngModel)]="input_password_app_unlock" autofocus="true"></ion-input>
 
-        <ion-button color="primary" expand="full" (click)="unlockNotesApp()">Unlock App</ion-button>
+            <span style="display: flex;
+padding: 14px 24px;
+justify-content: center;
+align-items: center;
+gap: 10px;
+align-self: stretch; background: #2761FC; color: #fff; border-radius: 250px"   (click)="unlockNotesApp()">Unlock</span>
         <br><br>
     </ion-content>
 
-    <ion-footer>
-      <ion-button color="danger"  expand="full" (click)="resetPassword()">Reset Password</ion-button>
+    <ion-footer style="  --ion-background-color: rgba(246, 246, 253, 1); padding: 20px">
+
+        <div align="center">
+            <span style="font-family: Poppins; text-align: center; font-size: 14px; color: #E10000; font-style: normal; font-weight: 600; line-height: 150%;" (click)="resetPassword()">
+                <img src="assets/tabler-icon-restore.svg"> <span style="position: relative; top: -6px; left: 10px">Reset Password</span></span>
+        </div>
     </ion-footer>
   </ng-template>
 </ion-modal>
@@ -60,7 +69,27 @@ line-height: 150%; /* 21px */ ">Enter your password to get access to your notes<
 
 <ion-content [fullscreen]="true" class="ion-padding">
 
-  <p class="ion-padding" *ngIf="getNotes().length == 0">No notes has been created. Click on "+" to create a new note.</p>
+  <p class="ion-padding" *ngIf="getNotes().length == 0" align="center">
+              <span style=" background: #EAEAF0; border-radius: 250px; height: 64px; width: 64px;  ">
+                  <div style="padding: 25px;"><img src="assets/tabler-icon-notes.svg"></div></span>
+              <span style="color: #0B0C19;
+        text-align: center;
+        /* Body/Body 16 Bold */
+        font-family: Poppins;
+        font-size: 16px;
+        font-style: normal;
+        font-weight: 600;
+       ">Your Notes Await</span><br>
+              <span style="overflow: hidden;
+        color: #62626A;
+        text-align: center;
+        text-overflow: ellipsis;
+        /* Body/Body 14 */
+        font-family: Poppins;
+        font-size: 14px;
+        font-style: normal;
+        font-weight: 400;">Tap to <span style="color: #2761FC; font-weight: bold">+ button</span> to add note</span>
+    </p>
 
   <ion-list>
     <ion-item  lines="none" *ngFor="let note of getNotes()" (click)="openOrCheckbox(note.id)" [detail]="false">
@@ -83,7 +112,7 @@ color: #0B0C19;"> {{ (note.text.length > 12)? (note.text | slice:0:12)+'...':(no
     </ion-item>
   </ion-list>
 
-    <ion-button *ngIf="!appHasPasswordChallenge()" expand="block" (click)="settings('addPassword')">Add Notes App Password</ion-button><br>
+    <ion-button *ngIf="!appHasPasswordChallenge() && getNotes().length > 0" expand="block" (click)="settings('addPassword')">Add Notes App Password</ion-button><br>
     <div  align="center">
         <img src="/assets/stellar-logo-icon.svg"><span style="
 font-size: 12px;
