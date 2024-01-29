@@ -56,7 +56,8 @@ white-space: nowrap;
 /* Body/Body 12 */
 font-size: 14px;
 font-style: normal;
-font-weight: 400;
+font-family: Poppins;
+font-weight: 600;
 color: #0B0C19;"> {{ (note.text.length > 12)? (note.text | slice:0:12)+'...':(note.text) }}<br></span>
           <ion-note> {{ note.last_modified | date: "yyyy-MM-dd H:mm":"UTC" }}</ion-note><br>
           <span class="uuid" *ngIf="note.protected">{{ note.id | slice:note.id.len:4 }}</span>
