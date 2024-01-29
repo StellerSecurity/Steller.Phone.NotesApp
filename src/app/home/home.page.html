@@ -7,7 +7,7 @@
         <img src="assets/Logo.svg" style="margin-top: 20px"  *ngIf="!checkboxOpened">
     </ion-title>
 
-    <ion-buttons slot="end"  *ngIf="!checkboxOpened && getNotes().length > 0">
+    <ion-buttons slot="end"  *ngIf="!checkboxOpened && getNotes().length > 0" style="position: relative; top: 5px;">
       <button slot="icon-only" style="padding-right: 15px">
         <img src="assets/tabler-icon-square-check.svg" (click)="toggleCheckbox()" *ngIf="getNotes().length > 0" class="margin-right-top">
         <img src="assets/tabler-icon-settings.svg" (click)="settings()">
@@ -36,7 +36,7 @@
   </ng-template>
 </ion-modal>
 
-<ion-fab slot="bottom"  vertical="center" horizontal="end" *ngIf="should_display">
+<ion-fab slot="bottom"  vertical="bottom" horizontal="end" *ngIf="should_display">
   <ion-fab-button routerLink="/note">
     <ion-icon name="add"></ion-icon>
   </ion-fab-button>
