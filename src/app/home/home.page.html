@@ -19,15 +19,31 @@
 
 <!-- modal ask for password -->
 <ion-modal trigger="app-ask-password" [isOpen]="!should_display">
-  <ng-template>
-    <ion-content class="ion-padding">
-      <div align="center"><h2>Stellar Notes</h2></div>
-      <p>Enter your password to get access to your notes.</p>
-      <ion-item>
+    <ng-template>
+        <ion-content class="ion-padding">
+        <div align="center"><img src="assets/Logo.svg"></div><br><br><br>
+
+        <div align="center"><img src="assets/icon-lock.svg"></div><br><br>
+        <div style="text-align: center;
+/* Title 1 */
+font-family: Poppins;
+font-size: 20px;
+font-style: normal;
+font-weight: 700;
+line-height: 150%; /* 30px */ ">App Is Locked</div>
+        <p style="text-align: center;
+/* Body/Body 14 */
+color: #62626A;
+font-family: Poppins;
+font-size: 14px;
+font-style: normal;
+font-weight: 400;
+line-height: 150%; /* 21px */ ">Enter your password to get access to your notes</p>
+
         <ion-input type="password" placeholder="Enter your password" (keyup)="ionInputAppUnlockInput($event)" [(ngModel)]="input_password_app_unlock" autofocus="true"></ion-input>
-      </ion-item>
-      <ion-button color="primary" expand="full" (click)="unlockNotesApp()">Unlock App</ion-button>
-      <br><br>
+
+        <ion-button color="primary" expand="full" (click)="unlockNotesApp()">Unlock App</ion-button>
+        <br><br>
     </ion-content>
 
     <ion-footer>

@@ -37,7 +37,8 @@
         <ion-input type="password"  shape="round" placeholder="Confirm Password"  [(ngModel)]="confirmPassword"></ion-input>
       </ion-list>
 
-      <ion-button expand="block" (click)="save()">Remove Notes Password</ion-button>
+      <ion-button expand="block" (click)="save()" *ngIf="hasAppChallengePassword()">Remove App Password</ion-button>
+        <ion-button expand="block" (click)="save()" *ngIf="!hasAppChallengePassword()">Add App Password</ion-button>
 
 
     </ion-content>
