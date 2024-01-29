@@ -61,7 +61,6 @@ export class HomePage {
     if(this.noteService.appHasPasswordChallenge()) {
       let notes = this.noteService.getNotes();
       decryptedNotes = this.cryptoService.decrypt(notes, password);
-      console.log(decryptedNotes.length);
     } else {
       this.noteService.setDecryptedNotes(this.noteService.getNotes());
       decryptedNotes = this.noteService.getNotes();
@@ -72,8 +71,6 @@ export class HomePage {
       console.log("fail..");
       return false;
     }
-
-    console.log(decryptedNotes);
 
       this.noteService.setDecryptedNotes(decryptedNotes);
       // @ts-ignore

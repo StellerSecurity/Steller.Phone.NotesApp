@@ -77,7 +77,7 @@ export class AddNotePage {
     console.log("Save, method");
     if(this.notes_id === null) return;
 
-    let value = " ";
+    let value = "";
     if(ev !== null) {
       value = ev.target!.value;
     }
@@ -89,7 +89,6 @@ export class AddNotePage {
     // encrypt the text.
     if(this.notes_password_stored.length > 1) {
       encryptedText = this.cryptoService.encrypt(value, this.notes_password_stored);
-      console.log(value);
     }
 
     let protectedNote = false;
@@ -188,9 +187,6 @@ export class AddNotePage {
 
             // @ts-ignore
             let decryptedText = this.cryptoService.decrypt(this.currentNote.text, data.password);
-
-            // @ts-ignore
-            console.log(this.currentNote.text);
 
             if (decryptedText.length == 0) {
               const toast = await this.toastController.create({

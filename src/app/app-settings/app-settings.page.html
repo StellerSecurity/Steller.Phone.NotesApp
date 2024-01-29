@@ -31,18 +31,13 @@
       <div *ngIf="!hasAppChallengePassword()">
         <password-strength-meter [password]="notesAppPassword"></password-strength-meter>
         {{passwordStrengthHelperText}}</div>
-      <br><br>
 
       <ion-list>
-        <ion-item>
-          <ion-input type="password" placeholder="Password" (ionInput)="notesAppPasswordChange()" [(ngModel)]="notesAppPassword"></ion-input>
-        </ion-item>
-        <ion-item>
-          <ion-input type="password"  placeholder="Confirm Password"  [(ngModel)]="confirmPassword"></ion-input>
-        </ion-item>
+        <ion-input type="password" shape="round" placeholder="Password" (ionInput)="notesAppPasswordChange()" [(ngModel)]="notesAppPassword"></ion-input>
+        <ion-input type="password"  shape="round" placeholder="Confirm Password"  [(ngModel)]="confirmPassword"></ion-input>
       </ion-list>
 
-      <ion-button expand="block" (click)="save()">Save</ion-button>
+      <ion-button expand="block" (click)="save()">Remove Notes Password</ion-button>
 
 
     </ion-content>

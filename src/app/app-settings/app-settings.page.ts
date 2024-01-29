@@ -91,6 +91,7 @@ export class AppSettingsPage implements OnInit {
       this.noteService.setDecryptedNotes(decryptedNotes);
       await this.modal.dismiss();
       this.notesAppPassword = "";
+      this.confirmPassword = "";
       this.noteService.setNotesAppPassword("");
       localStorage.removeItem("app_password_challenge");
 
