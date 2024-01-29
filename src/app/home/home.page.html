@@ -51,15 +51,14 @@
       <ion-checkbox *ngIf="checkboxOpened" (click)="selectNote($event, note.id)"  justify="start" style="margin-left: 7px"></ion-checkbox>
         <ion-label class="ion-text-wrap"  style="float: left; padding-left: 15px; padding-right: 15px">
         <span>
-            <ion-note> {{ note.last_modified | date: "yyyy-MM-dd H:mm":"UTC" }}</ion-note><br>
             <span *ngIf="!note.protected" style="text-overflow: ellipsis;
 white-space: nowrap;
 /* Body/Body 12 */
-font-family: Poppins;
-font-size: 12px;
+font-size: 14px;
 font-style: normal;
 font-weight: 400;
-color: #62626A;"> {{ (note.text.length > 12)? (note.text | slice:0:12)+'...':(note.text) }}</span>
+color: #0B0C19;"> {{ (note.text.length > 12)? (note.text | slice:0:12)+'...':(note.text) }}<br></span>
+          <ion-note> {{ note.last_modified | date: "yyyy-MM-dd H:mm":"UTC" }}</ion-note><br>
           <span class="uuid" *ngIf="note.protected">{{ note.id | slice:note.id.len:4 }}</span>
         </span>
         </ion-label>
@@ -67,13 +66,12 @@ color: #62626A;"> {{ (note.text.length > 12)? (note.text | slice:0:12)+'...':(no
     </ion-item>
   </ion-list>
 
-    <ion-button *ngIf="!appHasPasswordChallenge()" expand="block" (click)="settings('addPassword')">Add Notes App Password</ion-button>
-    <div class="ion-padding" align="center">
-        <img src="/assets/stellar-logo-icon.svg" valign="top"> <span style="font-family: Poppins;
+    <ion-button *ngIf="!appHasPasswordChallenge()" expand="block" (click)="settings('addPassword')">Add Notes App Password</ion-button><br>
+    <div  align="center">
+        <img src="/assets/stellar-logo-icon.svg"><span style="
 font-size: 12px;
-font-style: normal;
 font-weight: 400;
-line-height: 150%; position: relative; top: -9px; left: 15px; color: #62626A">All data is stored on your phone only.</span>
+position: relative; top: -9px; left: 15px; color: #62626A">All data is stored on your phone only.</span>
     </div>
 
 
