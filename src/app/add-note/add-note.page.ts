@@ -77,7 +77,7 @@ export class AddNotePage {
     console.log("Save, method");
     if(this.notes_id === null) return;
 
-    let value = "";
+    let value = " ";
     if(ev !== null) {
       value = ev.target!.value;
     }
