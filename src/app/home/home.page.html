@@ -2,7 +2,7 @@
   <ion-toolbar>
     <ion-title>
         <span  *ngIf="checkboxOpened && getNotes().length > 0" (click)="toggleCheckbox()" >
-           <img src="assets/tabler-icon-x.svg" valign="left" style="position: relative; top: 5px;" class="margin-right-top"> 2 Notes Selected
+           <img src="assets/tabler-icon-x.svg" valign="left" style="position: relative; top: 5px;" class="margin-right-top"> {{listOfCheckedCheckboxes.length / 2}} Notes Selected
         </span>
         <img src="assets/Logo.svg" style="margin-top: 20px"  *ngIf="!checkboxOpened">
     </ion-title>
