@@ -33,6 +33,11 @@ export class AddNotePage {
   public notes_password_confirm = "";
 
   public passwordStrengthHelperText = "";
+  
+  public showPassword = false;
+  public confirmShowPassword = false;
+  public upperLower = false;
+  public specialChar = false;
 
   public passwordStrength = 0;
 
@@ -71,6 +76,12 @@ export class AddNotePage {
 
   }
 
+  togglePasswordVisibility() {
+    this.showPassword = !this.showPassword;
+  }
+  toggleConfirmPasswordVisibility() {
+    this.confirmShowPassword = !this.confirmShowPassword;
+  }
   // should be called on key enter.
   save(ev: any) {
 
@@ -254,8 +265,10 @@ export class AddNotePage {
     // Check for mixed case
     if (this.notes_password_input.match(/[a-z]/) && this.notes_password_input.match(/[A-Z]/)) {
       this.passwordStrength += 1;
+      this.upperLower = true;
     } else {
       tips += "Use both lowercase and uppercase letters. ";
+      this.upperLower = false;
     }
 
     // Check for numbers
@@ -268,11 +281,22 @@ export class AddNotePage {
     // Check for special characters
     if (this.notes_password_input.match(/[^a-zA-Z\d]/)) {
       this.passwordStrength += 1;
+      this.specialChar = true;
     } else {
       tips += "Include at least one special character. ";
+      this.specialChar = false;
     }
 
     // Return results
+    if (this.passwordStrength < 2) {
+      this.passwordStrengthHelperText = "Weak Password!";
+    } else if (this.passwordStrength === 2) {
+      this.passwordStrengthHelperText = "Average Password!";
+    } else if (this.passwordStrength === 3) {
+      this.passwordStrengthHelperText = "Good Password!";
+    } else {
+      this.passwordStrengthHelperText = "Great Password!";
+    } /*
     if (this.passwordStrength < 2) {
       this.passwordStrengthHelperText = "Easy to guess. " + tips;
     } else if (this.passwordStrength === 2) {
@@ -281,7 +305,7 @@ export class AddNotePage {
       this.passwordStrengthHelperText = "Difficult. " + tips;
     } else {
       this.passwordStrengthHelperText = "Extremely difficult. " + tips;
-    }
+    }*/
   }
 
   public async lockNote() {
