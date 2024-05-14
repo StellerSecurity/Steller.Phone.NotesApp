@@ -1,11 +1,12 @@
-import {Component, OnInit, ViewChild} from '@angular/core';
-import {AlertController, ModalController, ToastController} from "@ionic/angular";
-import {PasswordHelperService} from "../services/password-helper.service";
+import { Component, OnInit, ViewChild } from '@angular/core';
+import { AlertController, ModalController, ToastController, NavController } from "@ionic/angular";
+import { PasswordHelperService } from "../services/password-helper.service";
 import { PasswordStrengthMeterModule } from 'angular-password-strength-meter';
 import { IonModal } from '@ionic/angular';
-import {NotesService} from "../services/notes.service";
-import {CryptoService} from "../services/crypto.service";
-import {AppProtectorService} from "../services/app-protector.service";
+import { NotesService } from "../services/notes.service";
+import { CryptoService } from "../services/crypto.service";
+import { AppProtectorService } from "../services/app-protector.service";
+import { ConfirmationModalComponent } from '../confirmation-modal/confirmation-modal.component';
 
 @Component({
   selector: 'app-app-settings',
@@ -14,9 +15,9 @@ import {AppProtectorService} from "../services/app-protector.service";
 })
 export class AppSettingsPage implements OnInit {
 
-  public appPasswordChallenge : boolean;
+  public appPasswordChallenge: boolean;
 
-  public wipeNotesOnFailedPasswords : boolean = true;
+  public wipeNotesOnFailedPasswords: boolean = true;
 
   public notesAppPassword: string;
 
@@ -24,20 +25,31 @@ export class AppSettingsPage implements OnInit {
 
   public passwordStrengthHelperText = "";
 
-  private passwordStrength = 0;
+  public passwordStrength = 0;
+
+  public password_enabled = false;
+  public showPassword = false;
+  public confirmShowPassword = false;
+  public upperLower = false;
+  public specialChar = false;
 
   @ViewChild(IonModal) modal: IonModal;
 
   constructor(public alertController: AlertController,
-              private toastController: ToastController,
-              private noteService: NotesService,
-              private cryptoService: CryptoService,
-              private appProtectorService: AppProtectorService,
-              private passwordHelperService: PasswordHelperService) { }
+    private toastController: ToastController,
+    private noteService: NotesService,
+    private cryptoService: CryptoService,
+    private appProtectorService: AppProtectorService,
+    private navController: NavController,
+    private modalCtrl: ModalController,
+    private passwordHelperService: PasswordHelperService) { }
 
-  ngOnInit() {}
+  ngOnInit() { }
 
-  ionViewWillEnter() {
+  ngAfterViewInit() {
+    if (this.noteService.appHasPasswordChallenge()) {
+      this.password_enabled = true;
+    }
     this.appPasswordChallenge = this.noteService.appHasPasswordChallenge();
   }
 
@@ -50,13 +62,21 @@ export class AppSettingsPage implements OnInit {
     this.modal.dismiss("", 'confirm');
   }
 
+  public togglePasswordVisibility() {
+    this.showPassword = !this.showPassword;
+  }
+  public toggleConfirmPasswordVisibility() {
+    this.confirmShowPassword = !this.confirmShowPassword;
+  }
+
+
   public hasAppChallengePassword() {
     return this.noteService.appHasPasswordChallenge();
   }
 
   public async save() {
 
-    if(this.notesAppPassword !== this.confirmPassword) {
+    if (this.notesAppPassword !== this.confirmPassword) {
       const toast = await this.toastController.create({
         message: 'The two passwords does not match.',
         duration: 3000,
@@ -68,7 +88,7 @@ export class AppSettingsPage implements OnInit {
       return;
     }
 
-    if(this.notesAppPassword.length < 2) {
+    if (this.notesAppPassword.length < 2) {
       const toast = await this.toastController.create({
         message: 'The password is weak. Please make your password stronger.',
         duration: 3000,
@@ -84,7 +104,7 @@ export class AppSettingsPage implements OnInit {
     let notes = this.noteService.getNotes();
 
     // the note-service has password-protection, meaning the user wants to remove the password.
-    if(this.noteService.appHasPasswordChallenge()) {
+    if (this.noteService.appHasPasswordChallenge()) {
       // first, we have to decrypt the notes:
       let decryptedNotes = this.cryptoService.decrypt(notes, this.notesAppPassword);
       this.noteService.setNotes(decryptedNotes);
@@ -117,6 +137,48 @@ export class AppSettingsPage implements OnInit {
 
   }
 
+
+  public async removePassword() {
+    const modal = await this.modalCtrl.create({
+      component: ConfirmationModalComponent,
+      cssClass: 'confirmation-popup'
+    });
+
+    modal.onDidDismiss().then(async (data) => {
+      if (data && data.data) {
+        const { confirm, inputValue } = data.data;
+        if (confirm) {
+          if (this.noteService.appHasPasswordChallenge() && inputValue) {
+            let notes = this.noteService.getNotes();
+            // first, we have to decrypt the notes:
+            let decryptedNotes = this.cryptoService.decrypt(notes, inputValue);
+            this.noteService.setNotes(decryptedNotes);
+            this.noteService.setDecryptedNotes(decryptedNotes);
+            await this.modal.dismiss();
+            this.notesAppPassword = "";
+            this.confirmPassword = "";
+            this.noteService.setNotesAppPassword("");
+            localStorage.removeItem("app_password_challenge");
+          }else{
+            const toast = await this.toastController.create({
+              message: 'Enter your current password',
+              duration: 3000,
+              position: 'bottom',
+            });
+      
+            await toast.present();
+          }
+        } else {
+
+        }
+      }
+    });
+
+    return await modal.present();
+  }
+
+
+
   public notesAppPasswordChange() {
 
     // Initialize variables
@@ -124,7 +186,7 @@ export class AppSettingsPage implements OnInit {
 
     this.passwordStrength = 0;
 
-    if(this.notesAppPassword.length == 0) {
+    if (this.notesAppPassword.length == 0) {
       this.passwordStrengthHelperText = "";
       return;
     }
@@ -139,8 +201,10 @@ export class AppSettingsPage implements OnInit {
     // Check for mixed case
     if (this.notesAppPassword.match(/[a-z]/) && this.notesAppPassword.match(/[A-Z]/)) {
       this.passwordStrength += 1;
+      this.upperLower = true;
     } else {
       tips += "Use both lowercase and uppercase letters. ";
+      this.upperLower = false;
     }
 
     // Check for numbers
@@ -153,20 +217,33 @@ export class AppSettingsPage implements OnInit {
     // Check for special characters
     if (this.notesAppPassword.match(/[^a-zA-Z\d]/)) {
       this.passwordStrength += 1;
+      this.specialChar = true;
     } else {
       tips += "Include at least one special character. ";
+      this.specialChar = false;
     }
 
     // Return results
     if (this.passwordStrength < 2) {
-      this.passwordStrengthHelperText = "Easy to guess. " + tips;
+      this.passwordStrengthHelperText = "Weak Password!";
     } else if (this.passwordStrength === 2) {
-      this.passwordStrengthHelperText = "Medium difficulty. " + tips;
+      this.passwordStrengthHelperText = "Average Password!";
     } else if (this.passwordStrength === 3) {
-      this.passwordStrengthHelperText = "Difficult. " + tips;
+      this.passwordStrengthHelperText = "Good Password!";
     } else {
-      this.passwordStrengthHelperText = "Extremely difficult.x " + tips;
+      this.passwordStrengthHelperText = "Great Password!";
     }
+
+    // Return results
+    /* if (this.passwordStrength < 2) {
+       this.passwordStrengthHelperText = "Easy to guess. " + tips;
+     } else if (this.passwordStrength === 2) {
+       this.passwordStrengthHelperText = "Medium difficulty. " + tips;
+     } else if (this.passwordStrength === 3) {
+       this.passwordStrengthHelperText = "Difficult. " + tips;
+     } else {
+       this.passwordStrengthHelperText = "Extremely difficult.x " + tips;
+     }*/
 
   }
 
@@ -193,7 +270,7 @@ export class AppSettingsPage implements OnInit {
             localStorage.clear();
             window.location.href = "/home";
             // @ts-ignore
-            navigator['app'].exitApp();
+            //navigator['app'].exitApp();
           },
         },
       ],

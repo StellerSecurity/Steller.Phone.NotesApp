@@ -5,13 +5,14 @@ import { FormsModule } from '@angular/forms';
 
 import { HomePage } from './home.page';
 import { HomePageRoutingModule } from './home-routing.module';
-
+import { DeleteNoteModalModule } from '../delete-note-modal/delete-note-modal.module';
 @NgModule({
   imports: [
     CommonModule,
     FormsModule,
     IonicModule,
-    HomePageRoutingModule
+    HomePageRoutingModule,
+    DeleteNoteModalModule
   ],
   declarations: [HomePage]
 })

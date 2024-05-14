@@ -9,11 +9,11 @@
     </ion-title>
 
     <ion-buttons slot="end" style="position: relative; top: 5px;">
-      <button slot="icon-only" style="padding-right: 15px">
-        <img src="assets/tabler-icon-square-check.svg" (click)="toggleCheckbox()" *ngIf="getNotes().length > 0"
-          class="margin-right-top">
-        <img src="assets/tabler-icon-settings.svg" (click)="settings()">
-      </button>
+      <ion-button slot="icon-only">
+        <img src="assets/tabler-icon-square-check.svg" (click)="toggleCheckbox()" *ngIf="getNotes().length > 0">
+      </ion-button>
+      <ion-button slot="icon-only" style="padding-right: 15px"><img src="assets/tabler-icon-settings.svg" (click)="settings()"></ion-button>
+      
     </ion-buttons>
 
   </ion-toolbar>
@@ -41,10 +41,11 @@ font-size: 14px;
 font-style: normal;
 font-weight: 400;
 line-height: 150%; /* 21px */ ">Enter your password to get access to your notes</p>
-
-      <ion-input type="password" placeholder="Enter your password" (keyup)="ionInputAppUnlockInput($event)"
-        [(ngModel)]="input_password_app_unlock" autofocus="true"></ion-input>
-
+      <div class="input-group" style="position: relative;">
+        <ion-input type="{{ showPassword ? 'text' : 'password' }}" placeholder="Enter your password" (keyup)="ionInputAppUnlockInput($event)"
+          [(ngModel)]="input_password_app_unlock" autofocus="true"></ion-input>
+        <ion-icon slot="end" [name]="showPassword ? 'eye-off' : 'eye'" (click)="togglePasswordVisibility()"></ion-icon>
+      </div>
       <span style="display: flex;
 padding: 14px 24px;
 justify-content: center;
@@ -54,7 +55,7 @@ align-self: stretch; background: #2761FC; color: #fff; border-radius: 250px" (cl
       <br><br>
     </ion-content>
 
-    <ion-footer style="  --ion-background-color: rgba(246, 246, 253, 1); padding: 20px">
+    <ion-footer style="  --ion-background-color: #F6F6FD; padding: 20px; background: #F6F6FD; box-shadow: none;">
 
       <div align="center">
         <span
@@ -122,17 +123,17 @@ align-self: stretch; background: #2761FC; color: #fff; border-radius: 250px" (cl
   <ion-list>
     <ion-item lines="none" *ngFor="let note of getNotes()" (click)="openOrCheckbox(note.id)" [detail]="false">
       <div class="box-item-main">
-      <ion-checkbox *ngIf="checkboxOpened" (click)="selectNote($event, note.id)" justify="center"
-        style="margin-right: 7px" size="small"></ion-checkbox>
-      <ion-label class="ion-text-wrap" *ngIf="!note.protected">
-        <ion-note><span>{{ note.last_modified | date: "yyyy-MM-dd H:mm":"UTC" }}</span></ion-note>
-        <span *ngIf="!note.protected" class="note-txt"> 
-          {{ (note.text.length > 20)? (note.text | slice:0:20)+'...':(note.text) }}
-        </span>
-        <span class="uuid" *ngIf="note.protected">{{ note.id | slice:note.id.len:4 }}</span>
-      </ion-label>
-      <ion-label *ngIf="note.protected"><ion-note><span>{{ note.last_modified | date: "yyyy-MM-dd H:mm":"UTC" }}</span> <img
-        src="/assets/tabler-icon-lock.svg"></ion-note></ion-label>
+        <ion-checkbox *ngIf="checkboxOpened" (click)="selectNote($event, note.id)" justify="center"
+          style="margin-right: 7px" size="small"></ion-checkbox>
+        <ion-label class="ion-text-wrap" *ngIf="!note.protected">
+          <ion-note><span>{{ note.last_modified | date: "yyyy-MM-dd H:mm":"UTC" }}</span></ion-note>
+          <span *ngIf="!note.protected" class="note-txt">
+            {{ (note.text.length > 20)? (note.text | slice:0:20)+'...':(note.text) }}
+          </span>
+          <span class="uuid" *ngIf="note.protected">{{ note.id | slice:note.id.len:4 }}</span>
+        </ion-label>
+        <ion-label *ngIf="note.protected"><ion-note><span>{{ note.last_modified | date: "yyyy-MM-dd H:mm":"UTC"
+              }}</span> <img src="/assets/tabler-icon-lock.svg"></ion-note></ion-label>
       </div>
     </ion-item>
   </ion-list>
@@ -141,7 +142,7 @@ align-self: stretch; background: #2761FC; color: #fff; border-radius: 250px" (cl
 </ion-content>
 
 <ion-toolbar slot="fixed" class="toolbar-bottom" *ngIf="checkboxOpened && getNotes().length > 0">
-  <ion-button color="danger" shape="round" fill="outline" (click)="deleteSelectedNotes()"><img
+  <ion-button color="danger" shape="round" fill="outline" class="delete-btn" (click)="deleteSelectedNotes()"><img
       src="assets/tabler-icon-trash.svg" style="margin-right: 15px"> Delete</ion-button><br>
   <!--<ion-button color="primary" fill="outline" expand="full" (click)="toggleCheckbox()">Cancel</ion-button>-->
 </ion-toolbar>

@@ -2,8 +2,9 @@ import {Component, ElementRef, OnInit, ViewChild} from '@angular/core';
 import {at} from "ionicons/icons";
 import {CryptoService} from "../services/crypto.service";
 import {ActivatedRoute, ParamMap, Router} from "@angular/router";
-import {AlertController, IonModal, LoadingController, NavController, ToastController} from "@ionic/angular";
+import {AlertController, IonModal, LoadingController, NavController, ToastController, ModalController} from "@ionic/angular";
 import {NotesService} from "../services/notes.service";
+import { NoteLockedModalComponent } from '../note-locked-modal/note-locked-modal.component';
 const { v4: uuidv4 } = require('uuid');
 
 declare var require: any;
@@ -48,6 +49,7 @@ export class AddNotePage {
               private navController: NavController,
               private notesService: NotesService,
               private toastController: ToastController,
+              private modalCtrl: ModalController,
               private alertCtrl: AlertController) {
 
     this.activatedRoute.paramMap.subscribe((params: ParamMap) => {
@@ -170,7 +172,7 @@ export class AddNotePage {
     this.navController.back();
   }
 
-  public async askforNotePassword() {
+  /*public async askforNotePassword() {
     // @ts-ignore
     let alert = await this.alertCtrl.create({
       header: 'Protected Note',
@@ -222,6 +224,53 @@ export class AddNotePage {
       ]
     });
     await alert.present();
+  }*/
+
+
+
+
+  public async askforNotePassword() {
+    // @ts-ignore
+    const modal = await this.modalCtrl.create({
+      component: NoteLockedModalComponent,
+      cssClass: 'confirmation-popup'
+    });
+
+    modal.onDidDismiss().then(async (data) => {
+      if (data && data.data) {
+        const { confirm, inputValue } = data.data;
+        if (confirm) {
+          this.notes_password_stored = inputValue;
+
+            // @ts-ignore
+            let decryptedText = this.cryptoService.decrypt(this.currentNote.text, inputValue);
+
+            if (decryptedText.length == 0) {
+              const toast = await this.toastController.create({
+                message: 'The password is not correct. Try again.',
+                duration: 3000,
+                position: 'bottom',
+              });
+
+              await toast.present();
+              // Don't close the modal if the password is incorrect
+            } else {
+              // @ts-ignore
+              this.currentNote.text = decryptedText;
+              this.note_text = decryptedText;
+
+              this.note_locked = false;
+              // Close the modal since the password is correct
+              modal.dismiss();
+            }
+        } else {
+          // Handle case when user cancels password input
+        }
+      }
+    });
+
+    return await modal.present();
+
   }
 
   public getCurrentNoteText() {

@@ -8,6 +8,7 @@ import { AddNotePageRoutingModule } from './add-note-routing.module';
 
 import { AddNotePage } from './add-note.page';
 import {PasswordStrengthMeterModule} from "angular-password-strength-meter";
+import { NoteLockedModalModule } from '../note-locked-modal/note-locked-modal.module';
 
 @NgModule({
   imports: [
@@ -15,7 +16,8 @@ import {PasswordStrengthMeterModule} from "angular-password-strength-meter";
     FormsModule,
     IonicModule,
     AddNotePageRoutingModule,
-    PasswordStrengthMeterModule
+    PasswordStrengthMeterModule,
+    NoteLockedModalModule
   ],
   declarations: [AddNotePage]
 })

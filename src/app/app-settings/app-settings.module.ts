@@ -8,14 +8,15 @@ import { AppSettingsPageRoutingModule } from './app-settings-routing.module';
 
 import { AppSettingsPage } from './app-settings.page';
 import {PasswordStrengthMeterModule} from "angular-password-strength-meter";
-
+import { ConfirmationModalModule } from '../confirmation-modal/confirmation-modal.module';
 @NgModule({
     imports: [
         CommonModule,
         FormsModule,
         IonicModule,
         AppSettingsPageRoutingModule,
-        PasswordStrengthMeterModule
+        PasswordStrengthMeterModule,
+        ConfirmationModalModule
     ],
   declarations: [AppSettingsPage]
 })
