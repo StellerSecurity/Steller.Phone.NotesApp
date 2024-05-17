@@ -47,7 +47,7 @@
 
 
         <div *ngIf="!password_enabled" class="pass-info-box">
-          <p class="pass-note">Password must have at least 6 characters</p>
+          <p *ngif="!strongPass" class="pass-note">Password must have at least 6 characters</p>
           <password-strength-meter [password]="notesAppPassword"></password-strength-meter>
           {{passwordStrengthHelperText}}
           <h4 style="color: #0B0C19; font-size: 12px; font-weight: 400; font-family: 'Poppins';">It’s better to have
@@ -56,7 +56,7 @@
             <li [ngClass]="{'active': upperLower}"><ion-icon name="checkmark-outline"></ion-icon> Upper & lower case
               letters</li>
             <li [ngClass]="{'active': specialChar}"><ion-icon name="checkmark-outline"></ion-icon> A symbol (#&$)</li>
-            <li [ngClass]="{'active': passwordStrength >= 3}">
+            <li [ngClass]="{'active': strongPass}">
               <ion-icon name="checkmark-outline"></ion-icon> Longer Password
             </li>
           </ul>

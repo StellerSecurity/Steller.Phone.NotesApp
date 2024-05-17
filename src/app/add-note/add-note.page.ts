@@ -5,6 +5,7 @@ import {ActivatedRoute, ParamMap, Router} from "@angular/router";
 import {AlertController, IonModal, LoadingController, NavController, ToastController, ModalController} from "@ionic/angular";
 import {NotesService} from "../services/notes.service";
 import { NoteLockedModalComponent } from '../note-locked-modal/note-locked-modal.component';
+import { DeleteNoteModalComponent } from '../delete-note-modal/delete-note-modal.component';
 const { v4: uuidv4 } = require('uuid');
 
 declare var require: any;
@@ -37,6 +38,7 @@ export class AddNotePage {
   
   public showPassword = false;
   public confirmShowPassword = false;
+  public strongPass = false;
   public upperLower = false;
   public specialChar = false;
 
@@ -336,6 +338,17 @@ export class AddNotePage {
       this.specialChar = false;
     }
 
+
+    // Check password length
+    if (this.notes_password_input.length >= 6) {
+      this.passwordStrength += 1;
+      this.strongPass = true;
+    } else {
+      tips += "Password should have at least 6 characters. ";
+      this.strongPass = false;
+    }
+
+
     // Return results
     if (this.passwordStrength < 2) {
       this.passwordStrengthHelperText = "Weak Password!";
@@ -473,8 +486,39 @@ export class AddNotePage {
     return this.currentNote.protected;
   }
   public async deleteNote() {
+    const modal = await this.modalCtrl.create({
+      component: DeleteNoteModalComponent,
+      cssClass: 'confirmation-popup'
+    });
 
-    const alert = await this.alertCtrl.create({
+    modal.onDidDismiss().then(async (data) => {
+      if (data && data.data) {
+        const { confirm } = data.data;
+        if (confirm) {
+          // @ts-ignore
+          for (let i = 0; this.notes.length > i; i++) {
+            // @ts-ignore
+            if (this.notes[i].id === this.notes_id) {
+              // @ts-ignore
+              this.notes.splice(i, 1);
+              break;
+            }
+          }
+
+          // updated list will not have the current note.
+          this.storeNoteInStorage();
+          this.currentNote = null;
+          this.navController.navigateForward('/home');
+        } else {
+          // Handle case when user cancels password input
+        }
+      }
+    });
+
+    return await modal.present();
+
+    
+    /*const alert = await this.alertCtrl.create({
       header: 'Confirm',
       subHeader: 'Please confirm that you want to delete this note. It cannot be recovered!',
       buttons: [
@@ -509,7 +553,7 @@ export class AddNotePage {
       ],
     });
 
-    await alert.present();
+    await alert.present();*/
   }
 
 }

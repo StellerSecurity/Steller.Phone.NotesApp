@@ -48,7 +48,7 @@
           </div>
         </div>
         <div *ngIf="!note_locked && !getProtected()" class="pass-info-box">
-          <p class="pass-note">Password must have at least 6 characters</p>
+          <p *ngif="!strongPass" class="pass-note">Password must have at least 6 characters</p>
           <password-strength-meter [password]="notes_password_input"></password-strength-meter>
           {{passwordStrengthHelperText}}
           <h4 style="color: #0B0C19; font-size: 12px; font-weight: 400; font-family: 'Poppins';">It’s better to have</h4>

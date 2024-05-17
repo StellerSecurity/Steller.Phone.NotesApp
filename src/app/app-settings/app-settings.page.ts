@@ -32,6 +32,7 @@ export class AppSettingsPage implements OnInit {
   public confirmShowPassword = false;
   public upperLower = false;
   public specialChar = false;
+  public strongPass = false;
 
   @ViewChild(IonModal) modal: IonModal;
 
@@ -114,7 +115,6 @@ export class AppSettingsPage implements OnInit {
       this.confirmPassword = "";
       this.noteService.setNotesAppPassword("");
       localStorage.removeItem("app_password_challenge");
-
     } else {
 
       if(notes === null) {
@@ -165,7 +165,6 @@ export class AppSettingsPage implements OnInit {
               duration: 3000,
               position: 'bottom',
             });
-      
             await toast.present();
           }
         } else {
@@ -222,6 +221,16 @@ export class AppSettingsPage implements OnInit {
       tips += "Include at least one special character. ";
       this.specialChar = false;
     }
+
+    // Check password length
+    if (this.notesAppPassword.length >= 6) {
+      this.passwordStrength += 1;
+      this.strongPass = true;
+    } else {
+      tips += "Password should have at least 6 characters. ";
+      this.strongPass = false;
+    }
+
 
     // Return results
     if (this.passwordStrength < 2) {
