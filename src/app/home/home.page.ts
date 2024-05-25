@@ -11,6 +11,7 @@ import {CryptoService} from "../services/crypto.service";
 import {NotesService} from "../services/notes.service";
 import {AppProtectorService} from "../services/app-protector.service";
 import { DeleteNoteModalComponent } from '../delete-note-modal/delete-note-modal.component';
+import { ResetPassModalComponent } from '../restpass-modal/resetpass-modal.component';
 declare var require: any;
 
 @Component({
@@ -249,6 +250,28 @@ export class HomePage {
   }
 
   public async resetPassword() {
+
+    // @ts-ignore
+    const modal = await this.modalCtrl.create({
+      component: ResetPassModalComponent,
+      cssClass: 'confirmation-popup'
+    });
+
+    modal.onDidDismiss().then(async (data) => {
+      if (data && data.data) {
+        const { confirm } = data.data;
+        if (confirm) {
+          localStorage.clear();
+          this.app_requires_password = false;
+          window.location.href='/home';
+        } else {
+          // Handle case when user cancels password input
+        }
+      }
+    });
+
+    return await modal.present();
+    /*
     const alert = await this.alertCtrl.create({
       header: 'WARNING',
       subHeader: 'PLEASE CONFIRM THAT YOU WANT TO THE RESET PASSWORD. IF YOU CONFIRM ALL NOTES STORED WILL BE DELETED ON YOUR DEVICE AND CANT BE RECOVERED !',
@@ -272,7 +295,7 @@ export class HomePage {
     });
 
     await alert.present();
-
+    */
   }
 
   /**

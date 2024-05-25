@@ -7,7 +7,7 @@ import { NotesService } from "../services/notes.service";
 import { CryptoService } from "../services/crypto.service";
 import { AppProtectorService } from "../services/app-protector.service";
 import { ConfirmationModalComponent } from '../confirmation-modal/confirmation-modal.component';
-
+import { DeleteNoteModalComponent } from '../delete-note-modal/delete-note-modal.component';
 @Component({
   selector: 'app-app-settings',
   templateUrl: './app-settings.page.html',
@@ -115,6 +115,7 @@ export class AppSettingsPage implements OnInit {
       this.confirmPassword = "";
       this.noteService.setNotesAppPassword("");
       localStorage.removeItem("app_password_challenge");
+      window.location.href = "/app-settings";
     } else {
 
       if(notes === null) {
@@ -132,6 +133,7 @@ export class AppSettingsPage implements OnInit {
       // reset failed attempts.
       this.noteService.setFailedPasswordAppAttempts(0);
       localStorage.setItem("app_password_challenge", "1");
+      window.location.href = "/app-settings";
     }
 
 
@@ -159,6 +161,7 @@ export class AppSettingsPage implements OnInit {
             this.confirmPassword = "";
             this.noteService.setNotesAppPassword("");
             localStorage.removeItem("app_password_challenge");
+            window.location.href = "/app-settings";
           }else{
             const toast = await this.toastController.create({
               message: 'Enter your current password',
@@ -261,7 +264,27 @@ export class AppSettingsPage implements OnInit {
   }
 
   public async deleteWholeAppStorage() {
-    const alert = await this.alertController.create({
+
+    const modal = await this.modalCtrl.create({
+      component: DeleteNoteModalComponent,
+      cssClass: 'confirmation-popup'
+    });
+
+    modal.onDidDismiss().then(async (data) => {
+      if (data && data.data) {
+        const { confirm } = data.data;
+        if (confirm) {
+          localStorage.clear();
+          window.location.href = "/home";
+        } else {
+          // Handle case when user cancels password input
+        }
+      }
+    });
+
+    return await modal.present();
+
+    /*const alert = await this.alertController.create({
       header: 'Confirm',
       subHeader: ' IF YOU CLICK ON CONFIRM, ALL NOTES WILL BE DELETED FROM YOUR DEVICE ! IT CANT BE RESTORED !',
       buttons: [
@@ -284,7 +307,8 @@ export class AppSettingsPage implements OnInit {
         },
       ],
     });
-    await alert.present();
+    await alert.present();*/
+
   }
 
 }
