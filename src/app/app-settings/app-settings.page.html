@@ -81,7 +81,7 @@
   </ion-item>
 
   <ion-item>
-    <ion-toggle checked="true" [(ngModel)]="wipeNotesOnFailedPasswords" [enableOnOffLabels]="true">
+    <ion-toggle [(ngModel)]="wipeNotesOnFailedPasswords" [enableOnOffLabels]="true" [disabled]="password_enabled" [checked]="password_enabled">
 
       <span style="font-family: Poppins;
 font-size: 14px;
