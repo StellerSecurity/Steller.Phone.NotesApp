@@ -7,11 +7,6 @@ const routes: Routes = [
     loadChildren: () => import('./home/home.module').then( m => m.HomePageModule)
   },
   {
-    path: '',
-    redirectTo: 'home',
-    pathMatch: 'full'
-  },
-  {
     path: 'note',
     loadChildren: () => import('./add-note/add-note.module').then( m => m.AddNotePageModule)
   },
@@ -26,7 +21,12 @@ const routes: Routes = [
   {
     path: 'app-settings',
     loadChildren: () => import('./app-settings/app-settings.module').then( m => m.AppSettingsPageModule)
-  }
+  },
+  {
+    path: '',
+    redirectTo: 'home',
+    pathMatch: 'full'
+  },
 ];
 
 @NgModule({

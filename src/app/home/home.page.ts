@@ -4,12 +4,14 @@ import {
   LoadingController,
   ModalController,
   NavController,
-  ToastController
+  ToastController,
 } from '@ionic/angular';
 
 import {CryptoService} from "../services/crypto.service";
 import {NotesService} from "../services/notes.service";
 import {AppProtectorService} from "../services/app-protector.service";
+import { DeleteNoteModalComponent } from '../delete-note-modal/delete-note-modal.component';
+import { ResetPassModalComponent } from '../restpass-modal/resetpass-modal.component';
 declare var require: any;
 
 @Component({
@@ -27,6 +29,7 @@ export class HomePage {
   public listOfCheckedCheckboxes: string[] = [];
 
   public app_requires_password = false;
+  public showPassword = false;
 
   public input_password_app_unlock = "";
 
@@ -38,6 +41,7 @@ export class HomePage {
               private navController: NavController,
               private toastController: ToastController,
               private appProtectorService: AppProtectorService,
+              private modalCtrl: ModalController,
               private loadingController: LoadingController) {}
 
   ionViewWillEnter() {
@@ -78,6 +82,10 @@ export class HomePage {
 
       return true;
 
+  }
+
+  public togglePasswordVisibility() {
+    this.showPassword = !this.showPassword;
   }
 
   // @ts-ignore
@@ -135,7 +143,7 @@ export class HomePage {
     return this.notes;
   }
 
-  public settings(type: string = "") {
+  public settings() {
     this.navController.navigateForward('app-settings').then(r => {});
   }
 
@@ -152,7 +160,7 @@ export class HomePage {
     }
   }
 
-  public async deleteSelectedNotes() {
+  /*public async deleteSelectedNotes() {
     let alert = await this.alertCtrl.create({
       header: 'Confirm',
       subHeader: 'Please confirm that you want to delete the selected notes. They cannot be recovered once deleted.',
@@ -174,6 +182,29 @@ export class HomePage {
       ],
     });
     await alert.present();
+  }*/
+
+
+  public async deleteSelectedNotes() {
+    // @ts-ignore
+    const modal = await this.modalCtrl.create({
+      component: DeleteNoteModalComponent,
+      cssClass: 'confirmation-popup'
+    });
+
+    modal.onDidDismiss().then(async (data) => {
+      if (data && data.data) {
+        const { confirm } = data.data;
+        if (confirm) {
+          await this.deleteNotesConfirm();
+        } else {
+          // Handle case when user cancels password input
+        }
+      }
+    });
+
+    return await modal.present();
+
   }
 
   /**
@@ -219,6 +250,28 @@ export class HomePage {
   }
 
   public async resetPassword() {
+
+    // @ts-ignore
+    const modal = await this.modalCtrl.create({
+      component: ResetPassModalComponent,
+      cssClass: 'confirmation-popup'
+    });
+
+    modal.onDidDismiss().then(async (data) => {
+      if (data && data.data) {
+        const { confirm } = data.data;
+        if (confirm) {
+          localStorage.clear();
+          this.app_requires_password = false;
+          window.location.href='/home';
+        } else {
+          // Handle case when user cancels password input
+        }
+      }
+    });
+
+    return await modal.present();
+    /*
     const alert = await this.alertCtrl.create({
       header: 'WARNING',
       subHeader: 'PLEASE CONFIRM THAT YOU WANT TO THE RESET PASSWORD. IF YOU CONFIRM ALL NOTES STORED WILL BE DELETED ON YOUR DEVICE AND CANT BE RECOVERED !',
@@ -242,7 +295,7 @@ export class HomePage {
     });
 
     await alert.present();
-
+    */
   }
 
   /**

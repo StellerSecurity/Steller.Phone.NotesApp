@@ -2,8 +2,10 @@ import {Component, ElementRef, OnInit, ViewChild} from '@angular/core';
 import {at} from "ionicons/icons";
 import {CryptoService} from "../services/crypto.service";
 import {ActivatedRoute, ParamMap, Router} from "@angular/router";
-import {AlertController, IonModal, LoadingController, NavController, ToastController} from "@ionic/angular";
+import {AlertController, IonModal, LoadingController, NavController, ToastController, ModalController} from "@ionic/angular";
 import {NotesService} from "../services/notes.service";
+import { NoteLockedModalComponent } from '../note-locked-modal/note-locked-modal.component';
+import { DeleteNoteModalComponent } from '../delete-note-modal/delete-note-modal.component';
 const { v4: uuidv4 } = require('uuid');
 
 declare var require: any;
@@ -33,6 +35,12 @@ export class AddNotePage {
   public notes_password_confirm = "";
 
   public passwordStrengthHelperText = "";
+  
+  public showPassword = false;
+  public confirmShowPassword = false;
+  public strongPass = false;
+  public upperLower = false;
+  public specialChar = false;
 
   public passwordStrength = 0;
 
@@ -43,6 +51,7 @@ export class AddNotePage {
               private navController: NavController,
               private notesService: NotesService,
               private toastController: ToastController,
+              private modalCtrl: ModalController,
               private alertCtrl: AlertController) {
 
     this.activatedRoute.paramMap.subscribe((params: ParamMap) => {
@@ -71,6 +80,12 @@ export class AddNotePage {
 
   }
 
+  togglePasswordVisibility() {
+    this.showPassword = !this.showPassword;
+  }
+  toggleConfirmPasswordVisibility() {
+    this.confirmShowPassword = !this.confirmShowPassword;
+  }
   // should be called on key enter.
   save(ev: any) {
 
@@ -159,7 +174,7 @@ export class AddNotePage {
     this.navController.back();
   }
 
-  public async askforNotePassword() {
+  /*public async askforNotePassword() {
     // @ts-ignore
     let alert = await this.alertCtrl.create({
       header: 'Protected Note',
@@ -211,6 +226,53 @@ export class AddNotePage {
       ]
     });
     await alert.present();
+  }*/
+
+
+
+
+  public async askforNotePassword() {
+    // @ts-ignore
+    const modal = await this.modalCtrl.create({
+      component: NoteLockedModalComponent,
+      cssClass: 'confirmation-popup'
+    });
+
+    modal.onDidDismiss().then(async (data) => {
+      if (data && data.data) {
+        const { confirm, inputValue } = data.data;
+        if (confirm) {
+          this.notes_password_stored = inputValue;
+
+            // @ts-ignore
+            let decryptedText = this.cryptoService.decrypt(this.currentNote.text, inputValue);
+
+            if (decryptedText.length == 0) {
+              const toast = await this.toastController.create({
+                message: 'The password is not correct. Try again.',
+                duration: 3000,
+                position: 'bottom',
+              });
+
+              await toast.present();
+              // Don't close the modal if the password is incorrect
+            } else {
+              // @ts-ignore
+              this.currentNote.text = decryptedText;
+              this.note_text = decryptedText;
+
+              this.note_locked = false;
+              // Close the modal since the password is correct
+              modal.dismiss();
+            }
+        } else {
+          // Handle case when user cancels password input
+        }
+      }
+    });
+
+    return await modal.present();
+
   }
 
   public getCurrentNoteText() {
@@ -254,8 +316,10 @@ export class AddNotePage {
     // Check for mixed case
     if (this.notes_password_input.match(/[a-z]/) && this.notes_password_input.match(/[A-Z]/)) {
       this.passwordStrength += 1;
+      this.upperLower = true;
     } else {
       tips += "Use both lowercase and uppercase letters. ";
+      this.upperLower = false;
     }
 
     // Check for numbers
@@ -268,11 +332,33 @@ export class AddNotePage {
     // Check for special characters
     if (this.notes_password_input.match(/[^a-zA-Z\d]/)) {
       this.passwordStrength += 1;
+      this.specialChar = true;
     } else {
       tips += "Include at least one special character. ";
+      this.specialChar = false;
     }
 
+
+    // Check password length
+    if (this.notes_password_input.length >= 6) {
+      this.passwordStrength += 1;
+      this.strongPass = true;
+    } else {
+      tips += "Password should have at least 6 characters. ";
+      this.strongPass = false;
+    }
+
+
     // Return results
+    if (this.passwordStrength < 2) {
+      this.passwordStrengthHelperText = "Weak Password!";
+    } else if (this.passwordStrength === 2) {
+      this.passwordStrengthHelperText = "Average Password!";
+    } else if (this.passwordStrength === 3) {
+      this.passwordStrengthHelperText = "Good Password!";
+    } else {
+      this.passwordStrengthHelperText = "Great Password!";
+    } /*
     if (this.passwordStrength < 2) {
       this.passwordStrengthHelperText = "Easy to guess. " + tips;
     } else if (this.passwordStrength === 2) {
@@ -281,7 +367,7 @@ export class AddNotePage {
       this.passwordStrengthHelperText = "Difficult. " + tips;
     } else {
       this.passwordStrengthHelperText = "Extremely difficult. " + tips;
-    }
+    }*/
   }
 
   public async lockNote() {
@@ -400,8 +486,39 @@ export class AddNotePage {
     return this.currentNote.protected;
   }
   public async deleteNote() {
+    const modal = await this.modalCtrl.create({
+      component: DeleteNoteModalComponent,
+      cssClass: 'confirmation-popup'
+    });
 
-    const alert = await this.alertCtrl.create({
+    modal.onDidDismiss().then(async (data) => {
+      if (data && data.data) {
+        const { confirm } = data.data;
+        if (confirm) {
+          // @ts-ignore
+          for (let i = 0; this.notes.length > i; i++) {
+            // @ts-ignore
+            if (this.notes[i].id === this.notes_id) {
+              // @ts-ignore
+              this.notes.splice(i, 1);
+              break;
+            }
+          }
+
+          // updated list will not have the current note.
+          this.storeNoteInStorage();
+          this.currentNote = null;
+          this.navController.navigateForward('/home');
+        } else {
+          // Handle case when user cancels password input
+        }
+      }
+    });
+
+    return await modal.present();
+
+    
+    /*const alert = await this.alertCtrl.create({
       header: 'Confirm',
       subHeader: 'Please confirm that you want to delete this note. It cannot be recovered!',
       buttons: [
@@ -436,7 +553,7 @@ export class AddNotePage {
       ],
     });
 
-    await alert.present();
+    await alert.present();*/
   }
 
 }

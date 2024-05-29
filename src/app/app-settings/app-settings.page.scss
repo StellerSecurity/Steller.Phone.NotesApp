@@ -4,18 +4,24 @@
   -webkit-box-shadow: none !important;
 }
 
-ion-content,ion-header,ion-footer,ion-toolbar {
+ion-content,
+ion-header,
+ion-footer,
+ion-toolbar {
   --ion-background-color: rgba(246, 246, 253, 1);
 }
 
 ion-item {
-  --padding-start: 15px;
-  --padding-end: 15px;
+  --padding-start: 16px;
+  --padding-end: 16px;
   --inner-padding-end: 0;
   --ion-background-color: #fff;
-  border-radius: 12px;
-  border-bottom: none !important;
+  border-radius: 16px;
   margin-bottom: 15px;
+  --padding-bottom: 16px;
+  --border-style: none;
+  --padding-top: 16px;
+
 }
 
 ion-input {
@@ -43,5 +49,161 @@ ion-button {
   align-items: center;
   gap: 8px;
   flex-shrink: 0;
-  --background: #4364fa;;
+  --background: #4364fa;
+  ;
+}
+
+ion-title {
+  color: #0B0C19;
+  font-size: 14px;
+  font-weight: 400;
+  font-family: "Poppins";
+  --padding-start: 0;
+  -webkit-padding-start: 0;
+}
+
+ion-back-button {
+  color: #62626A;
+  font-size: 20px;
+}
+
+.pass-toggle-main {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  width: 100%;
+  align-items: center;
+
+  .pass-toggle-btn {
+    display: flex;
+    flex-wrap: wrap;
+    flex-direction: column;
+
+    span {
+      color: #62626A;
+      font-size: 14px;
+      font-family: "Poppins";
+      font-weight: 400;
+      position: relative;
+      padding-left: 15px;
+
+      &.enabled {
+        color: #2761FC;
+
+        &::before {
+          background: #2761FC;
+        }
+      }
+
+      &::before {
+        content: "";
+        position: absolute;
+        left: 0;
+        top: 50%;
+        width: 8px;
+        height: 8px;
+        background: #D6D6E0;
+        border-radius: 50%;
+        transform: translateY(-50%);
+      }
+    }
+
+    strong {
+      font-family: Poppins;
+      font-size: 14px;
+      font-style: normal;
+      font-weight: 600;
+      line-height: 150%;
+    }
+  }
+
+  ion-icon {
+    color: #62626A;
+    font-size: 22px;
+  }
+}
+
+.input-group {
+  position: relative;
+
+  ion-icon {
+    position: absolute;
+    top: 50%;
+    right: 20px;
+    z-index: 9;
+    transform: translateY(-50%);
+    font-size: 20px;
+    color: #62626A;
+  }
+}
+
+.pass-list {
+  padding: 0;
+  list-style: none;
+  margin: 0;
+
+  li {
+    color: #62626A;
+    font-family: 'Poppins';
+    font-size: 12px;
+    font-weight: 400;
+
+    &.active {
+      text-decoration: line-through;
+
+      ion-icon {
+        color: #31b154;
+      }
+    }
+  }
+}
+
+.pass-note {
+  font-size: 12px;
+  font-family: 'Poppins';
+  font-weight: 600;
+  color: #0B0C19;
+}
+
+.pass-info-box {
+  background-color: #FFFFFF;
+  padding: 16px;
+  border-radius: 16px;
+  margin-bottom: 30px;
+
+  &.enabled-info-box {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+
+    h3 {
+      color: #0B0C19;
+      font-size: 16px;
+      font-family: 'Poppins';
+      font-weight: 600;
+      margin-top: 15px;
+      margin-bottom: 0;
+    }
+
+    p {
+      color: #62626A;
+      font-weight: 400;
+      font-family: 'Poppins';
+      font-size: 14px;
+    }
+  }
+}
+
+.disable-pass-btn {
+  color: #E10000;
+  font-weight: 600;
+  font-family: 'Poppins';
+  font-size: 14px;
+}
+
+.cancel-btn {
+  font-size: 20px;
+  padding: 10px;
 }

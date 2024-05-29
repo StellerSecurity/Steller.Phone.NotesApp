@@ -1,7 +1,7 @@
 <ion-header [translucent]="true">
   <ion-toolbar>
     <ion-buttons slot="start">
-      <ion-back-button></ion-back-button>
+      <ion-back-button defaultHref="/"></ion-back-button>
     </ion-buttons>
     <ion-title>Settings</ion-title>
   </ion-toolbar>
@@ -11,68 +11,95 @@
 <ion-content [fullscreen]="true" class="ion-padding">
 
   <ion-modal #modal trigger="open-modal">
-  <ng-template>
-    <ion-header>
-      <ion-toolbar>
-        <ion-buttons slot="start">
-          <ion-button (click)="cancel()"> Close </ion-button>
-        </ion-buttons>
-        <ion-title>Password On Notes App</ion-title>
-      </ion-toolbar>
-    </ion-header>
-    <ion-content class="ion-padding">
+    <ng-template>
+      <ion-header>
+        <ion-toolbar>
+          <ion-buttons slot="start">
+            <ion-icon (click)="cancel()" name="chevron-back-outline" class="cancel-btn"></ion-icon>
+          </ion-buttons>
+          <ion-title>Password On App</ion-title>
+        </ion-toolbar>
+      </ion-header>
+      <ion-content class="ion-padding">
 
-      <p *ngIf="hasAppChallengePassword()">
-        To disable the notes app password, please enter your password to confirm.
-        <br><br>
-        <span style="color: red">* Warning, this will leave your notes in a decrypted state. You can always add a password again.</span>
-      </p>
+        <div class="pass-info-box enabled-info-box" *ngIf="password_enabled">
+          <img src="../../assets/green-lock.png" />
+          <h3>Encryption successfully work</h3>
+          <p>Your notes are safe, password is set .</p>
+        </div>
+        <h2 *ngIf="!password_enabled"
+          style="color: #0B0C19; font-weight: 600; font-family: 'Poppins'; font-size: 16px; margin-bottom: 20px;">Lock
+          app with password</h2>
+        <div *ngIf="!password_enabled">
+          <div class="input-group" style="position: relative;">
+            <ion-input type="{{ showPassword ? 'text' : 'password' }}" shape="round" placeholder="Password" (ionInput)="notesAppPasswordChange()"
+              [(ngModel)]="notesAppPassword"></ion-input>
+            <ion-icon slot="end" [name]="showPassword ? 'eye-off' : 'eye'"
+              (click)="togglePasswordVisibility()"></ion-icon>
+          </div>
+          <div class="input-group">
+            <ion-input type="{{ confirmShowPassword ? 'text' : 'password' }}" shape="round" placeholder="Confirm Password"
+              [(ngModel)]="confirmPassword"></ion-input>
+            <ion-icon slot="end" [name]="confirmShowPassword ? 'eye-off' : 'eye'"
+              (click)="toggleConfirmPasswordVisibility()"></ion-icon>
+          </div>
+        </div>
 
-      <div *ngIf="!hasAppChallengePassword()">
-        <password-strength-meter [password]="notesAppPassword"></password-strength-meter>
-        {{passwordStrengthHelperText}}</div>
 
-      <ion-list>
-        <ion-input type="password" shape="round" placeholder="Password" (ionInput)="notesAppPasswordChange()" [(ngModel)]="notesAppPassword"></ion-input>
-        <ion-input type="password"  shape="round" placeholder="Confirm Password"  [(ngModel)]="confirmPassword"></ion-input>
-      </ion-list>
+        <div *ngIf="!password_enabled" class="pass-info-box">
+          <p *ngif="!strongPass" class="pass-note">Password must have at least 6 characters</p>
+          <password-strength-meter [password]="notesAppPassword"></password-strength-meter>
+          {{passwordStrengthHelperText}}
+          <h4 style="color: #0B0C19; font-size: 12px; font-weight: 400; font-family: 'Poppins';">It’s better to have
+          </h4>
+          <ul class="pass-list">
+            <li [ngClass]="{'active': upperLower}"><ion-icon name="checkmark-outline"></ion-icon> Upper & lower case
+              letters</li>
+            <li [ngClass]="{'active': specialChar}"><ion-icon name="checkmark-outline"></ion-icon> A symbol (#&$)</li>
+            <li [ngClass]="{'active': passwordStrength >= 3}">
+              <ion-icon name="checkmark-outline"></ion-icon> Longer Password
+            </li>
+          </ul>
+        </div>
 
-      <ion-button expand="block" (click)="save()" *ngIf="hasAppChallengePassword()">Remove App Password</ion-button>
-        <ion-button expand="block" (click)="save()" *ngIf="!hasAppChallengePassword()">Add App Password</ion-button>
+        <hr style="background: #EAEAF0;"/>
+        <p expand="block" (click)="removePassword()" class="disable-pass-btn" *ngIf="password_enabled">Disable App Password</p>
+        <ion-button expand="block" (click)="save()" *ngIf="!password_enabled">Add App Password</ion-button>
 
 
-    </ion-content>
-  </ng-template>
+      </ion-content>
+    </ng-template>
   </ion-modal>
 
   <ion-item>
-    <ion-toggle checked="true" [(ngModel)]="appPasswordChallenge" (ionChange)="appPasswordChallengeDialog()" [enableOnOffLabels]="true">
-        <span style="font-family: Poppins;
-font-size: 14px;
-font-style: normal;
-font-weight: 600;
-line-height: 150%; ">Ask for password<br>when opening App</span></ion-toggle>
+    <div class="pass-toggle-main" (click)="appPasswordChallengeDialog()">
+      <span class="pass-toggle-btn"><strong>Ask for password when opening App</strong>
+        <span *ngIf="!password_enabled">Not Set</span>
+        <span *ngIf="password_enabled" class="enabled">Enabled</span></span>
+      <ion-icon name="chevron-forward-outline"></ion-icon>
+    </div>
   </ion-item>
 
-  <ion-item *ngIf="appPasswordChallenge">
-    <ion-toggle checked="true" [(ngModel)]="wipeNotesOnFailedPasswords" [enableOnOffLabels]="true" disabled="">
+  <ion-item *ngIf="password_enabled">
+    <ion-toggle [(ngModel)]="wipeNotesOnFailedPasswords" [enableOnOffLabels]="true" [disabled]="password_enabled" [checked]="password_enabled">
 
-        <span style="font-family: Poppins;
+      <span style="font-family: Poppins;
 font-size: 14px;
 font-style: normal;
 font-weight: 600;
 line-height: 150%; ">Wipe Delete</span><br>
-    <span style="font-family: Poppins;
+      <span style="font-family: Poppins;
 font-size: 12px;
 font-style: normal;
 font-weight: 400;
-line-height: 150%; /* 18px */ ">Wipe notes will delete ALL notes on your phone<br> if you enter the password for<br> the app wrongly 20 times in a row.<br> It cannot be turned off.</span></ion-toggle>
+line-height: 150%; /* 18px */ ">Wipe notes will delete ALL notes on your phone<br> if you enter the password for<br>
+        the app wrongly 20 times in a row.<br> It cannot be turned off.</span></ion-toggle>
   </ion-item>
 
 
   <hr>
 
-    <ion-button color="danger" expand="full"   shape="round" fill="outline"  (click)="deleteWholeAppStorage()">Delete All Notes</ion-button>
+  <p class="disable-pass-btn" expand="full" (click)="deleteWholeAppStorage()">Delete All
+    Notes</p>
 
 </ion-content>
-

@@ -29,3 +29,14 @@
   --ion-font-family: 'Poppins';
   font-family: 'Poppins', sans-serif;
 }
+
+.ion-valid.sc-ion-input-md-h {
+  --highlight-color: none;
+}
+
+.confirmation-popup {
+  --height: auto;
+  --border-radius: 24px;
+  --width: 350px;
+  --backdrop-opacity: 0.6 !important;
+}
