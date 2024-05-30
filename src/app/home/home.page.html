@@ -108,14 +108,6 @@ align-self: stretch; background: #2761FC; color: #fff; border-radius: 250px" (cl
         </p>
       </ion-col>
 
-      <ion-col size-md="12" *ngIf="getNotes().length > 0">
-        <div align="center">
-          <img src="/assets/stellar-logo-icon.svg"><span style="
-            font-size: 12px;
-            font-weight: 400;
-            position: relative; top: -9px; left: 15px; color: #62626A">All data is stored on your phone only.</span>
-        </div>
-      </ion-col>
 
     </ion-row>
   </ion-grid>
@@ -138,6 +130,16 @@ align-self: stretch; background: #2761FC; color: #fff; border-radius: 250px" (cl
       </div>
     </ion-item>
   </ion-list>
+
+    <ion-button *ngIf="!appHasPasswordChallenge() && getNotes().length > 0" expand="block" (click)="settings()">Add Notes App Password</ion-button><br>
+    <ion-col size-md="12" *ngIf="getNotes().length > 0">
+        <div align="center">
+            <img src="/assets/stellar-logo-icon.svg"><span style="
+            font-size: 12px;
+            font-weight: 400;
+            position: relative; top: -9px; left: 15px; color: #62626A">All data is stored on your phone only.</span>
+        </div>
+    </ion-col>
 
 
 </ion-content>
