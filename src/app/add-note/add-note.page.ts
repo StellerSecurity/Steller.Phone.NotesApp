@@ -213,6 +213,7 @@ export class AddNotePage {
             }
         } else {
           // Handle case when user cancels password input
+          this.back();
         }
       }
     });
@@ -304,16 +305,7 @@ export class AddNotePage {
       this.passwordStrengthHelperText = "Good Password!";
     } else {
       this.passwordStrengthHelperText = "Great Password!";
-    } /*
-    if (this.passwordStrength < 2) {
-      this.passwordStrengthHelperText = "Easy to guess. " + tips;
-    } else if (this.passwordStrength === 2) {
-      this.passwordStrengthHelperText = "Medium difficulty. " + tips;
-    } else if (this.passwordStrength === 3) {
-      this.passwordStrengthHelperText = "Difficult. " + tips;
-    } else {
-      this.passwordStrengthHelperText = "Extremely difficult. " + tips;
-    }*/
+    }
   }
 
   public async lockNote() {
@@ -454,7 +446,7 @@ export class AddNotePage {
           // updated list will not have the current note.
           this.storeNoteInStorage();
           this.currentNote = null;
-          this.navController.navigateForward('/home');
+          await this.navController.navigateForward('/home');
         } else {
           // Handle case when user cancels password input
         }
@@ -462,44 +454,6 @@ export class AddNotePage {
     });
 
     return await modal.present();
-
-    
-    /*const alert = await this.alertCtrl.create({
-      header: 'Confirm',
-      subHeader: 'Please confirm that you want to delete this note. It cannot be recovered!',
-      buttons: [
-        {
-          text: 'Cancel',
-          role: 'cancel',
-          handler: () => {
-            // this.handlerMessage = 'Alert canceled';
-          },
-        },
-        {
-          text: 'Delete',
-          role: 'confirm',
-          handler: () => {
-
-            // @ts-ignore
-            for (let i = 0; this.notes.length > i; i++) {
-              // @ts-ignore
-              if (this.notes[i].id === this.notes_id) {
-                // @ts-ignore
-                this.notes.splice(i, 1);
-                break;
-              }
-            }
-
-            // updated list will not have the current note.
-            this.storeNoteInStorage();
-            this.currentNote = null;
-            this.navController.navigateForward('/home');
-          },
-        },
-      ],
-    });
-
-    await alert.present();*/
   }
 
 }
