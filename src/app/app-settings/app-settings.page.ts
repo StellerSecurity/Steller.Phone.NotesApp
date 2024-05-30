@@ -111,6 +111,7 @@ export class AppSettingsPage implements OnInit {
       this.noteService.setNotesAppPassword("");
       localStorage.removeItem("app_password_challenge");
       window.location.href = "/app-settings";
+      this.password_enabled = false;
     } else {
 
       if(notes === null) {
@@ -128,7 +129,7 @@ export class AppSettingsPage implements OnInit {
       // reset failed attempts.
       this.noteService.setFailedPasswordAppAttempts(0);
       localStorage.setItem("app_password_challenge", "1");
-      window.location.href = "/app-settings";
+      this.password_enabled = true;
     }
 
 
@@ -241,17 +242,6 @@ export class AppSettingsPage implements OnInit {
       this.passwordStrengthHelperText = "Great Password!";
     }
 
-    // Return results
-    /* if (this.passwordStrength < 2) {
-       this.passwordStrengthHelperText = "Easy to guess. " + tips;
-     } else if (this.passwordStrength === 2) {
-       this.passwordStrengthHelperText = "Medium difficulty. " + tips;
-     } else if (this.passwordStrength === 3) {
-       this.passwordStrengthHelperText = "Difficult. " + tips;
-     } else {
-       this.passwordStrengthHelperText = "Extremely difficult.x " + tips;
-     }*/
-
   }
 
   public async appPasswordChallengeDialog() {
@@ -278,31 +268,6 @@ export class AppSettingsPage implements OnInit {
     });
 
     return await modal.present();
-
-    /*const alert = await this.alertController.create({
-      header: 'Confirm',
-      subHeader: ' IF YOU CLICK ON CONFIRM, ALL NOTES WILL BE DELETED FROM YOUR DEVICE ! IT CANT BE RESTORED !',
-      buttons: [
-        {
-          text: 'Cancel',
-          role: 'cancel',
-          handler: () => {
-            // this.handlerMessage = 'Alert canceled';
-          },
-        },
-        {
-          text: 'Confirm',
-          role: 'confirm',
-          handler: () => {
-            localStorage.clear();
-            window.location.href = "/home";
-            // @ts-ignore
-            //navigator['app'].exitApp();
-          },
-        },
-      ],
-    });
-    await alert.present();*/
 
   }
 
