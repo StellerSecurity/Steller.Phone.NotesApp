@@ -76,6 +76,7 @@ export class HomePage {
       return false;
     }
 
+
       this.noteService.setDecryptedNotes(decryptedNotes);
       // @ts-ignore
       this.notes = JSON.parse(decryptedNotes);
