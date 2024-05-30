@@ -174,61 +174,6 @@ export class AddNotePage {
     this.navController.back();
   }
 
-  /*public async askforNotePassword() {
-    // @ts-ignore
-    let alert = await this.alertCtrl.create({
-      header: 'Protected Note',
-      subHeader: 'Enter Password For The Note',
-      inputs: [
-        {
-          name: 'password',
-          placeholder: 'Password',
-          type: 'password',
-        }
-      ],
-      buttons: [
-        {
-          text: 'Cancel',
-          role: 'cancel',
-          handler: () => {
-            this.back();
-          },
-        },
-        {
-          text: 'Okay',
-          handler: async (data: any) => {
-
-            this.notes_password_stored = data.password;
-
-            // @ts-ignore
-            let decryptedText = this.cryptoService.decrypt(this.currentNote.text, data.password);
-
-            if (decryptedText.length == 0) {
-              const toast = await this.toastController.create({
-                message: 'The password is not correct. Try again.',
-                duration: 3000,
-                position: 'bottom',
-              });
-
-              await toast.present();
-              return false;
-            }
-
-            // @ts-ignore
-            this.currentNote.text = decryptedText;
-            this.note_text = decryptedText;
-
-            this.note_locked = false;
-            return true;
-
-          },
-        },
-      ]
-    });
-    await alert.present();
-  }*/
-
-
 
 
   public async askforNotePassword() {
@@ -255,6 +200,7 @@ export class AddNotePage {
               });
 
               await toast.present();
+              await this.askforNotePassword();
               // Don't close the modal if the password is incorrect
             } else {
               // @ts-ignore
@@ -263,7 +209,7 @@ export class AddNotePage {
 
               this.note_locked = false;
               // Close the modal since the password is correct
-              modal.dismiss();
+              await modal.dismiss();
             }
         } else {
           // Handle case when user cancels password input

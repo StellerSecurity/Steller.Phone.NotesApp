@@ -9,10 +9,10 @@
     </ion-title>
 
     <ion-buttons slot="end" style="position: relative; top: 5px;">
-      <ion-button slot="icon-only">
-        <img src="assets/tabler-icon-square-check.svg" (click)="toggleCheckbox()" *ngIf="getNotes().length > 0">
+      <ion-button slot="icon-only" (click)="toggleCheckbox()">
+        <img src="assets/tabler-icon-square-check.svg"  *ngIf="getNotes().length > 0">
       </ion-button>
-      <ion-button slot="icon-only" style="padding-right: 15px"><img src="assets/tabler-icon-settings.svg" (click)="settings()"></ion-button>
+      <ion-button slot="icon-only" style="padding-right: 15px" (click)="settings()"><img src="assets/tabler-icon-settings.svg"></ion-button>
       
     </ion-buttons>
 
@@ -88,13 +88,14 @@ align-self: stretch; background: #2761FC; color: #fff; border-radius: 250px" (cl
           align-items: center;
           justify-content: center;">
             <img src="assets/tabler-icon-notes.svg" />
-          </span>
+          </span><br>
           <span style="color: #0B0C19;
     text-align: center;
     font-family: Poppins;
     font-size: 16px;
     font-style: normal;
     font-weight: 600;
+    position: relative;
    ">Your Notes Await</span><br>
           <span style="overflow: hidden;
     color: #62626A;

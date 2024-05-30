@@ -70,11 +70,6 @@ export class AppSettingsPage implements OnInit {
     this.confirmShowPassword = !this.confirmShowPassword;
   }
 
-
-  public hasAppChallengePassword() {
-    return this.noteService.appHasPasswordChallenge();
-  }
-
   public async save() {
 
     if (this.notesAppPassword !== this.confirmPassword) {
