@@ -67,15 +67,15 @@ export class AddNotePage {
     uploadWithCredentials: false,
     sanitize: true,
     toolbarPosition: 'top',
-    outline: true,
+    outline: false,
     toolbarHiddenButtons: [
-      ['bold', 'italic', 'underline', 'strikeThrough', 'superscript', 'subscript'],
-      ['heading', 'fontName', 'fontSize', 'color'],
+      ['italic', 'underline', 'superscript', 'subscript'],
+      ['fontName', 'fontSize', 'color'],
       ['justifyLeft', 'justifyCenter', 'justifyRight', 'justifyFull', 'indent', 'outdent'],
-      ['cut', 'copy', 'delete', 'removeFormat', 'undo', 'redo'],
+      ['cut', 'copy', 'delete', 'removeFormat'],
       ['paragraph', 'blockquote', 'removeBlockquote', 'horizontalLine',  'unorderedList'],
       ['link', 'unlink', 'image', 'video', 'insertVideo', 'horizontalline', 'insertHorizontalRule', 'toggleEditorMode'],
-      ['backgroundColor', 'foregroundColor', 'textColor']
+      ['backgroundColor', 'foregroundColor', 'textColor', 'insertImage']
     ],
   };
 

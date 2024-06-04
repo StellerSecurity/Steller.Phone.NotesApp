@@ -10,6 +10,7 @@ import { PasswordStrengthMeterModule } from 'angular-password-strength-meter';
 import { AngularEditorModule } from '@wfpena/angular-wysiwyg';
 import { HttpClientModule} from '@angular/common/http';
 
+
 @NgModule({
   declarations: [AppComponent],
   imports: [HttpClientModule, AngularEditorModule, BrowserModule, PasswordStrengthMeterModule.forRoot(), IonicModule.forRoot({innerHTMLTemplatesEnabled: true}), AppRoutingModule, CommonModule, FormsModule],

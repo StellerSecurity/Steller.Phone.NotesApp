@@ -7,15 +7,16 @@ import { HomePage } from './home.page';
 import { HomePageRoutingModule } from './home-routing.module';
 import { DeleteNoteModalModule } from '../delete-note-modal/delete-note-modal.module';
 import { RestPassModalModule } from '../restpass-modal/resetpass-modal.module';
+
 @NgModule({
-  imports: [
-    CommonModule,
-    FormsModule,
-    IonicModule,
-    HomePageRoutingModule,
-    DeleteNoteModalModule,
-    RestPassModalModule
-  ],
+    imports: [
+        CommonModule,
+        FormsModule,
+        IonicModule,
+        HomePageRoutingModule,
+        DeleteNoteModalModule,
+        RestPassModalModule
+    ],
   declarations: [HomePage]
 })
 export class HomePageModule {}

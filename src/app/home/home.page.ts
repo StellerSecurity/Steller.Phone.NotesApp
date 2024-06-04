@@ -12,7 +12,6 @@ import {NotesService} from "../services/notes.service";
 import {AppProtectorService} from "../services/app-protector.service";
 import { DeleteNoteModalComponent } from '../delete-note-modal/delete-note-modal.component';
 import { ResetPassModalComponent } from '../restpass-modal/resetpass-modal.component';
-declare var require: any;
 
 @Component({
   selector: 'app-home',
