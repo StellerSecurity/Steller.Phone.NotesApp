@@ -75,7 +75,7 @@ export class AddNotePage {
       ['cut', 'copy', 'delete', 'removeFormat', 'undo', 'redo'],
       ['paragraph', 'blockquote', 'removeBlockquote', 'horizontalLine',  'unorderedList'],
       ['link', 'unlink', 'image', 'video', 'insertVideo', 'horizontalline', 'insertHorizontalRule', 'toggleEditorMode'],
-      ['backgroundColor', 'foregroundColor']
+      ['backgroundColor', 'foregroundColor', 'textColor']
     ],
   };
 
@@ -208,6 +208,16 @@ export class AddNotePage {
   }
 
 
+  private async wrongPasswordEntered() {
+    const toast = await this.toastController.create({
+      message: 'The password is not correct. Try again.',
+      duration: 3000,
+      position: 'bottom',
+    });
+
+    await toast.present();
+    await this.askforNotePassword();
+  }
 
   public async askforNotePassword() {
     // @ts-ignore
@@ -225,6 +235,12 @@ export class AddNotePage {
             try {
               // @ts-ignore
               let decryptedText = this.cryptoService.decrypt(this.currentNote.text, inputValue);
+
+              if(decryptedText.length == 0) {
+                await this.wrongPasswordEntered();
+                return;
+              }
+
               // @ts-ignore
               this.currentNote.text = decryptedText;
               this.note_text = decryptedText;
@@ -234,14 +250,7 @@ export class AddNotePage {
               await modal.dismiss();
 
             } catch (e) {
-              const toast = await this.toastController.create({
-                message: 'The password is not correct. Try again.',
-                duration: 3000,
-                position: 'bottom',
-              });
-
-              await toast.present();
-              await this.askforNotePassword();
+              await this.wrongPasswordEntered();
             }
 
 
