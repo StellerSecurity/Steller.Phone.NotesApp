@@ -49,14 +49,14 @@ export class AddNotePage {
 
   public editorConfig: AngularEditorConfig = {
     editable: true,
-    spellcheck: true,
+    spellcheck: false,
     height: '100vh',
     minHeight: '0',
     maxHeight: 'auto',
     textAreaBackgroundColor: 'white',
     width: 'auto',
     minWidth: '0',
-    translate: 'yes',
+    translate: 'no',
     enableToolbar: true,
     showToolbar: true,
     placeholder: 'Enter your note here..',
