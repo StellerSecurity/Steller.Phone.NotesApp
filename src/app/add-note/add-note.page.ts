@@ -6,6 +6,7 @@ import {AlertController, IonModal, LoadingController, NavController, ToastContro
 import {NotesService} from "../services/notes.service";
 import { NoteLockedModalComponent } from '../note-locked-modal/note-locked-modal.component';
 import { DeleteNoteModalComponent } from '../delete-note-modal/delete-note-modal.component';
+import {AngularEditorConfig} from "@wfpena/angular-wysiwyg";
 const { v4: uuidv4 } = require('uuid');
 
 declare var require: any;
@@ -46,6 +47,38 @@ export class AddNotePage {
 
   public note_text = "";
 
+  public editorConfig: AngularEditorConfig = {
+    editable: true,
+    spellcheck: true,
+    height: '100vh',
+    minHeight: '0',
+    maxHeight: 'auto',
+    textAreaBackgroundColor: 'white',
+    width: 'auto',
+    minWidth: '0',
+    translate: 'yes',
+    enableToolbar: true,
+    showToolbar: true,
+    placeholder: 'Enter your note here..',
+    defaultParagraphSeparator: '',
+    defaultFontName: '',
+    defaultFontSize: '',
+    imageResizeSensitivity: 3,
+    uploadWithCredentials: false,
+    sanitize: true,
+    toolbarPosition: 'top',
+    outline: true,
+    toolbarHiddenButtons: [
+      ['bold', 'italic', 'underline', 'strikeThrough', 'superscript', 'subscript'],
+      ['heading', 'fontName', 'fontSize', 'color'],
+      ['justifyLeft', 'justifyCenter', 'justifyRight', 'justifyFull', 'indent', 'outdent'],
+      ['cut', 'copy', 'delete', 'removeFormat', 'undo', 'redo'],
+      ['paragraph', 'blockquote', 'removeBlockquote', 'horizontalLine',  'unorderedList'],
+      ['link', 'unlink', 'image', 'video', 'insertVideo', 'horizontalline', 'insertHorizontalRule', 'toggleEditorMode'],
+      ['backgroundColor', 'foregroundColor']
+    ],
+  };
+
   constructor(private cryptoService: CryptoService,
               public activatedRoute: ActivatedRoute,
               private navController: NavController,
@@ -57,7 +90,6 @@ export class AddNotePage {
     this.activatedRoute.paramMap.subscribe((params: ParamMap) => {
 
       this.notes = JSON.parse(this.notesService.getDecryptedNotes());
-      console.log(this.notesService.getDecryptedNotes());
 
       // @ts-ignore
       this.notes_id = params.get('id');
@@ -89,12 +121,13 @@ export class AddNotePage {
   // should be called on key enter.
   save(ev: any) {
 
-    console.log("Save, method");
+    console.log("Saving...");
     if(this.notes_id === null) return;
+    if(this.note_locked) return;
 
     let value = " ";
-    if(ev !== null) {
-      value = ev.target!.value;
+    if(this.note_text.length > 0) {
+      value = this.note_text;
     }
 
     // @ts-ignore
@@ -189,10 +222,18 @@ export class AddNotePage {
         if (confirm) {
           this.notes_password_stored = inputValue;
 
-            // @ts-ignore
-            let decryptedText = this.cryptoService.decrypt(this.currentNote.text, inputValue);
+            try {
+              // @ts-ignore
+              let decryptedText = this.cryptoService.decrypt(this.currentNote.text, inputValue);
+              // @ts-ignore
+              this.currentNote.text = decryptedText;
+              this.note_text = decryptedText;
 
-            if (decryptedText.length == 0) {
+              this.note_locked = false;
+              // Close the modal since the password is correct
+              await modal.dismiss();
+
+            } catch (e) {
               const toast = await this.toastController.create({
                 message: 'The password is not correct. Try again.',
                 duration: 3000,
@@ -201,16 +242,9 @@ export class AddNotePage {
 
               await toast.present();
               await this.askforNotePassword();
-              // Don't close the modal if the password is incorrect
-            } else {
-              // @ts-ignore
-              this.currentNote.text = decryptedText;
-              this.note_text = decryptedText;
-
-              this.note_locked = false;
-              // Close the modal since the password is correct
-              await modal.dismiss();
             }
+
+
         } else {
           // Handle case when user cancels password input
           this.back();
@@ -221,21 +255,6 @@ export class AddNotePage {
     return await modal.present();
 
   }
-
-  public getCurrentNoteText() {
-    // the note is locked, meaning it's protected with password,
-    // do not reveal until the PW has been written.
-    if(this.note_locked) {
-      return "";
-    }
-    if(this.currentNote === null) {
-      return "";
-    }
-
-    // @ts-ignore
-    return this.note_text;
-  }
-
 
   public async dismissModal() {
     await this.modal.dismiss();
@@ -308,6 +327,7 @@ export class AddNotePage {
     }
   }
 
+
   public async lockNote() {
 
     console.log("end of locking note");
@@ -340,9 +360,6 @@ export class AddNotePage {
     let decryptedText = this.currentNote.text;
 
     // @ts-ignore
-    console.log(this.currentNote.text);
-
-    // @ts-ignore
     let encryptedText = this.cryptoService.encrypt(this.currentNote.text, this.notes_password_stored);
 
     // @ts-ignore
@@ -357,9 +374,6 @@ export class AddNotePage {
       if (this.notes[i].id === this.notes_id) {
         // @ts-ignore
         this.notes[i] = this.currentNote;
-        console.log(10);
-        // @ts-ignore
-        console.log(this.notes[i]);
         break;
       }
     }

@@ -10,16 +10,18 @@ import { AddNotePage } from './add-note.page';
 import {PasswordStrengthMeterModule} from "angular-password-strength-meter";
 import { NoteLockedModalModule } from '../note-locked-modal/note-locked-modal.module';
 import { DeleteNoteModalModule } from '../delete-note-modal/delete-note-modal.module';
+import {AngularEditorModule} from "@wfpena/angular-wysiwyg";
 @NgModule({
-  imports: [
-    CommonModule,
-    FormsModule,
-    IonicModule,
-    AddNotePageRoutingModule,
-    PasswordStrengthMeterModule,
-    NoteLockedModalModule,
-    DeleteNoteModalModule
-  ],
+    imports: [
+        CommonModule,
+        FormsModule,
+        IonicModule,
+        AddNotePageRoutingModule,
+        PasswordStrengthMeterModule,
+        NoteLockedModalModule,
+        DeleteNoteModalModule,
+        AngularEditorModule
+    ],
   declarations: [AddNotePage]
 })
 export class AddNotePageModule {}

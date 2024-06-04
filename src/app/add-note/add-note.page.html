@@ -69,7 +69,6 @@
     </ng-template>
   </ion-modal>
 
-  <!-- textarea -->
-
-  <ion-textarea placeholder="Add your note.." (ionInput)="save($event)" [value]="getCurrentNoteText()" autofocus=""></ion-textarea>
+    <!-- textarea -->
+    <angular-editor [config]="editorConfig" [(ngModel)]="note_text" (ngModelChange)="save($event)"></angular-editor>
 </ion-content>

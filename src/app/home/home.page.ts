@@ -33,6 +33,8 @@ export class HomePage {
 
   public input_password_app_unlock = "";
 
+  public timezone = "UTC";
+
   @ViewChild(IonModal) modal: IonModal;
 
   constructor(private cryptoService: CryptoService,
@@ -46,6 +48,7 @@ export class HomePage {
 
   ionViewWillEnter() {
 
+    this.timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
     if(this.noteService.shouldAskForPassword()) {
       this.should_display = false;
     } else {
@@ -133,13 +136,13 @@ export class HomePage {
       return [];
     }
 
-    // sort notes by last modified date.
+    for(let i = 0; i < this.notes.length; i++){
+      let note = this.notes[i];
+      note.text = note.text.replace(/<[^>]*>/g, '');
+    }
+
     // @ts-ignore
-    this.notes = this.notes.sort((a, b) => {
-      if (a.last_modified > b.last_modified) {
-        return -1;
-      }
-    });
+    this.notes = this.notes.sort((a, b) => b.last_modified - a.last_modified);
 
     return this.notes;
   }

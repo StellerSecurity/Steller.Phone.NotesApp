@@ -119,14 +119,16 @@ align-self: stretch; background: #2761FC; color: #fff; border-radius: 250px" (cl
         <ion-checkbox *ngIf="checkboxOpened" (click)="selectNote($event, note.id)" justify="center"
           style="margin-right: 7px" size="small"></ion-checkbox>
         <ion-label class="ion-text-wrap" *ngIf="!note.protected">
-          <ion-note><span>{{ note.last_modified | date: "yyyy-MM-dd H:mm":"UTC" }}</span></ion-note>
+          <ion-note><span>{{ note.last_modified | date: "yyyy-MM-dd H:mm":"Europe/Copenhagen" }}</span></ion-note>
           <span *ngIf="!note.protected" class="note-txt">
             {{ (note.text.length > 20)? (note.text | slice:0:20)+'...':(note.text) }}
           </span>
           <span class="uuid" *ngIf="note.protected">{{ note.id | slice:note.id.len:4 }}</span>
         </ion-label>
-        <ion-label *ngIf="note.protected"><ion-note><span>{{ note.last_modified | date: "yyyy-MM-dd H:mm":"UTC"
-              }}</span> <img src="/assets/tabler-icon-lock.svg"></ion-note></ion-label>
+        <ion-label *ngIf="note.protected"><ion-note><span>{{ note.last_modified | date: "yyyy-MM-dd H:mm":"UTC"}}<br>
+             <span class="uuid" *ngIf="note.protected">{{ note.id | slice:note.id.len:6 }}</span>
+             </span>
+           <img src="/assets/tabler-icon-lock.svg"></ion-note></ion-label>
       </div>
     </ion-item>
   </ion-list>
