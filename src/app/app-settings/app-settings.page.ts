@@ -1,6 +1,5 @@
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { AlertController, ModalController, ToastController, NavController } from "@ionic/angular";
-import { PasswordHelperService } from "../services/password-helper.service";
 import { PasswordStrengthMeterModule } from 'angular-password-strength-meter';
 import { IonModal } from '@ionic/angular';
 import { NotesService } from "../services/notes.service";
@@ -42,8 +41,7 @@ export class AppSettingsPage implements OnInit {
     private cryptoService: CryptoService,
     private appProtectorService: AppProtectorService,
     private navController: NavController,
-    private modalCtrl: ModalController,
-    private passwordHelperService: PasswordHelperService) { }
+    private modalCtrl: ModalController) { }
 
   ngOnInit() { }
 
