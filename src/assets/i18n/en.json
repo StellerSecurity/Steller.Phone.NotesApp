@@ -1,3 +1,15 @@
 {
-    "test": "test tranasltiaon"
+  "lockNoteWithPassword": "Lock Note with password",
+  "pleaseEnterYourPasswordToConfirm": "To disable the notes app password, please enter your password to confirm.",
+  "passwordWarningMsg": "Warning, this will leave your notes in a decrypted state. You can always add a password again.",
+  "passwordCharacters": "Password must have at least 6 characters",
+  "itsBetterToHave": "It’s better to have",
+  "upperAndLowerCaseLetters": "Upper & lower case letters",
+  "longerPassword": "Longer Password",
+  "lockNote": "Lock Note",
+  "changeTheNotePasswordMsg": "If you want to change the note-password, you must remove the password first.",
+  "removeLockPassword": "Remove Lock Password",
+  "inputPassword": "Input Password",
+  "confirmPassword": "Confirm Password",
+  "aSymbol": "A symbol"
 }

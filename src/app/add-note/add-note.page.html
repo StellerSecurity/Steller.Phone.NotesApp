@@ -27,43 +27,43 @@
           <ion-buttons slot="start">
             <ion-button (click)="dismissModal()"> <ion-icon name="close" style="color: #62626A; font-size: 18px;"></ion-icon> </ion-button>
           </ion-buttons>
-          <ion-title>Lock note</ion-title>
+          <ion-title>{{'lockNote' | translate}}</ion-title>
         </ion-toolbar>
       </ion-header>
       <ion-content class="ion-padding">
-        <h2 style="font-size: 16px; color: #0B0C19; font-family: 'Poppins'; font-weight: 600;">Lock Note with password</h2>
+        <h2 style="font-size: 16px; color: #0B0C19; font-family: 'Poppins'; font-weight: 600;">{{'lockNoteWithPassword' | translate}}</h2>
         <p *ngIf="note_locked">
-          To disable the notes app password, please enter your password to confirm.
+          {{'pleaseEnterYourPasswordToConfirm' | translate}}
           <br><br>
-          <span style="color: red">* Warning, this will leave your notes in a decrypted state. You can always add a password again.</span>
+          <span style="color: red">* {{'passwordWarningMsg' | translate}}</span>
         </p>
         <div *ngIf="!getProtected()">
           <div class="input-group" style="position: relative;">
-            <ion-input type="{{ showPassword ? 'text' : 'password' }}" lines="none" shape="round" (ionInput)="notesPasswordChange()" placeholder="Input Password"  [(ngModel)]="notes_password_input"></ion-input>
+            <ion-input type="{{ showPassword ? 'text' : 'password' }}" lines="none" shape="round" (ionInput)="notesPasswordChange()" placeholder="{{'inputPassword' | translate}}"  [(ngModel)]="notes_password_input"></ion-input>
             <ion-icon slot="end" [name]="showPassword ? 'eye-off' : 'eye'" (click)="togglePasswordVisibility()"></ion-icon>
           </div>
           <div class="input-group">
-            <ion-input type="{{ confirmShowPassword ? 'text' : 'password' }}" lines="none" shape="round"  placeholder="Confirm Password" [(ngModel)]="notes_password_confirm"></ion-input>
+            <ion-input type="{{ confirmShowPassword ? 'text' : 'password' }}" lines="none" shape="round"  placeholder="{{'confirmPassword' | translate}}" [(ngModel)]="notes_password_confirm"></ion-input>
             <ion-icon slot="end" [name]="confirmShowPassword ? 'eye-off' : 'eye'" (click)="toggleConfirmPasswordVisibility()"></ion-icon>
           </div>
         </div>
         <div *ngIf="!note_locked && !getProtected()" class="pass-info-box">
-          <p *ngif="!strongPass" class="pass-note">Password must have at least 6 characters</p>
+          <p *ngif="!strongPass" class="pass-note">{{'passwordCharacters' | translate}}</p>
           <password-strength-meter [password]="notes_password_input"></password-strength-meter>
           {{passwordStrengthHelperText}}
-          <h4 style="color: #0B0C19; font-size: 12px; font-weight: 400; font-family: 'Poppins';">It’s better to have</h4>
+          <h4 style="color: #0B0C19; font-size: 12px; font-weight: 400; font-family: 'Poppins';">{{'itsBetterToHave' | translate}}</h4>
           <ul class="pass-list">
-            <li [ngClass]="{'active': upperLower}"><ion-icon name="checkmark-outline"></ion-icon> Upper & lower case letters</li>
-            <li [ngClass]="{'active': specialChar}"><ion-icon name="checkmark-outline"></ion-icon> A symbol (#&$)</li>
+            <li [ngClass]="{'active': upperLower}"><ion-icon name="checkmark-outline"></ion-icon> {{'upperAndLowerCaseLetters' | translate}}</li>
+            <li [ngClass]="{'active': specialChar}"><ion-icon name="checkmark-outline"></ion-icon> {{'aSymbol' | translate}} (#&$)</li>
             <li [ngClass]="{'active': passwordStrength >= 3}">
-              <ion-icon name="checkmark-outline"></ion-icon> Longer Password
+              <ion-icon name="checkmark-outline"></ion-icon> {{'longerPassword' | translate}}
           </li>
           </ul>
         </div>
-        <ion-button expand="block" class="p" *ngIf="!getProtected()" (click)="lockNote()">Lock Note</ion-button>
+        <ion-button expand="block" class="p" *ngIf="!getProtected()" (click)="lockNote()">{{'lockNote' | translate}}</ion-button>
 
-        <p *ngIf="getProtected()">If you want to change the note-password, you must remove the password first.</p>
-        <ion-button expand="block" class="p" color="danger" (click)="removeLock()" *ngIf="getProtected()">Remove Lock Password</ion-button>
+        <p *ngIf="getProtected()">{{'changeTheNotePasswordMsg' | translate}}</p>
+        <ion-button expand="block" class="p" color="danger" (click)="removeLock()" *ngIf="getProtected()">{{'removeLockPassword' | translate}}</ion-button>
 
       </ion-content>
     </ng-template>

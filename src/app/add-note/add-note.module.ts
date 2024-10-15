@@ -11,6 +11,7 @@ import {PasswordStrengthMeterModule} from "angular-password-strength-meter";
 import { NoteLockedModalModule } from '../note-locked-modal/note-locked-modal.module';
 import { DeleteNoteModalModule } from '../delete-note-modal/delete-note-modal.module';
 import {AngularEditorModule} from "@wfpena/angular-wysiwyg";
+import { TranslateModule } from '@ngx-translate/core';
 @NgModule({
     imports: [
         CommonModule,
@@ -20,7 +21,8 @@ import {AngularEditorModule} from "@wfpena/angular-wysiwyg";
         PasswordStrengthMeterModule,
         NoteLockedModalModule,
         DeleteNoteModalModule,
-        AngularEditorModule
+        AngularEditorModule,
+        TranslateModule
     ],
   declarations: [AddNotePage]
 })
