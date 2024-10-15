@@ -10,6 +10,7 @@ import { AppSettingsPage } from './app-settings.page';
 import {PasswordStrengthMeterModule} from "angular-password-strength-meter";
 import { ConfirmationModalModule } from '../confirmation-modal/confirmation-modal.module';
 import { DeleteNoteModalModule } from '../delete-note-modal/delete-note-modal.module';
+import { TranslateModule } from '@ngx-translate/core';
 @NgModule({
     imports: [
         CommonModule,
@@ -18,7 +19,8 @@ import { DeleteNoteModalModule } from '../delete-note-modal/delete-note-modal.mo
         AppSettingsPageRoutingModule,
         PasswordStrengthMeterModule,
         ConfirmationModalModule,
-        DeleteNoteModalModule
+        DeleteNoteModalModule,
+        TranslateModule
     ],
   declarations: [AppSettingsPage]
 })
