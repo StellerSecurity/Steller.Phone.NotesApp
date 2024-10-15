@@ -29,5 +29,11 @@
   "thePasswordFor" : "the password for",
   "theAppWrongly20TimesInRow" : "the app wrongly 20 times in a row.",
   "itCanNotBeTurnedOff" : "It cannot be turned off.",
-  "deleteAllNotes" : "Delete All Notes"
+  "deleteAllNotes" : "Delete All Notes",
+  "toDisableAppPasswordPleaseEnterCurrentPassword" : "To disable app password, please enter current password",
+  "cancel" : "Cancel",
+  "disable" : "Disable",
+  "deleteNotes" : "Delete Notes",
+  "confirmDeleteMsg" : "Please confirm if you want to delete the notes. They cant be recovered.",
+  "delete" : "Delete"
 }
