@@ -3,7 +3,7 @@
     <ion-title>
       <span *ngIf="checkboxOpened && getNotes().length > 0" (click)="toggleCheckbox()">
         <img src="assets/tabler-icon-x.svg" valign="left" style="position: relative; top: 5px;"
-          class="margin-right-top"> {{listOfCheckedCheckboxes.length / 2}} Notes Selected
+          class="margin-right-top"> {{listOfCheckedCheckboxes.length / 2}} {{'notesSelected' | translate}}
       </span>
       <img src="assets/Logo.svg" style="margin-top: 20px" *ngIf="!checkboxOpened">
     </ion-title>
@@ -32,7 +32,7 @@ font-family: Poppins;
 font-size: 20px;
 font-style: normal;
 font-weight: 700;
-line-height: 150%; /* 30px */ ">App Is Locked</div>
+line-height: 150%; /* 30px */ ">{{'appIsLocked' | translate}}</div>
       <p style="text-align: center;
 /* Body/Body 14 */
 color: #62626A;
@@ -40,9 +40,9 @@ font-family: Poppins;
 font-size: 14px;
 font-style: normal;
 font-weight: 400;
-line-height: 150%; /* 21px */ ">Enter your password to get access to your notes</p>
+line-height: 150%; /* 21px */ ">{{'enterYourPasswordToGetAccessToYourNotes' | translate}}</p>
       <div class="input-group" style="position: relative;">
-        <ion-input type="{{ showPassword ? 'text' : 'password' }}" placeholder="Enter your password" (keyup)="ionInputAppUnlockInput($event)"
+        <ion-input type="{{ showPassword ? 'text' : 'password' }}" placeholder="{{'enterYourPassword' | translate}}" (keyup)="ionInputAppUnlockInput($event)"
           [(ngModel)]="input_password_app_unlock" autofocus="true"></ion-input>
         <ion-icon slot="end" [name]="showPassword ? 'eye-off' : 'eye'" (click)="togglePasswordVisibility()"></ion-icon>
       </div>
@@ -51,7 +51,7 @@ padding: 14px 24px;
 justify-content: center;
 align-items: center;
 gap: 10px;
-align-self: stretch; background: #2761FC; color: #fff; border-radius: 250px" (click)="unlockNotesApp()">Unlock</span>
+align-self: stretch; background: #2761FC; color: #fff; border-radius: 250px" (click)="unlockNotesApp()">{{'unlock' | translate}}</span>
       <br><br>
     </ion-content>
 
@@ -61,8 +61,8 @@ align-self: stretch; background: #2761FC; color: #fff; border-radius: 250px" (cl
         <span
           style="font-family: Poppins; text-align: center; font-size: 14px; color: #E10000; font-style: normal; font-weight: 600; line-height: 150%;"
           (click)="resetPassword()">
-          <img src="assets/tabler-icon-restore.svg"> <span style="position: relative; top: -6px; left: 10px">Reset
-            Password</span></span>
+          <img src="assets/tabler-icon-restore.svg"> <span style="position: relative; top: -6px; left: 10px">
+            {{'resetPassword' | translate}}</span></span>
       </div>
     </ion-footer>
   </ng-template>
@@ -96,7 +96,7 @@ align-self: stretch; background: #2761FC; color: #fff; border-radius: 250px" (cl
     font-style: normal;
     font-weight: 600;
     position: relative;
-   ">Your Notes Await</span><br>
+   ">{{'yourNotesAwait' | translate}}</span><br>
           <span style="overflow: hidden;
     color: #62626A;
     text-align: center;
@@ -104,7 +104,7 @@ align-self: stretch; background: #2761FC; color: #fff; border-radius: 250px" (cl
     font-family: Poppins;
     font-size: 14px;
     font-style: normal;
-    font-weight: 400;">Tap to <span style="color: #2761FC; font-weight: bold">+ button</span> to add note</span>
+    font-weight: 400;">{{'tapTo' | translate}} <span style="color: #2761FC; font-weight: bold">+ {{'button' | translate}}</span> {{'toAddNote' | translate}}</span>
         </p>
       </ion-col>
 
@@ -133,13 +133,13 @@ align-self: stretch; background: #2761FC; color: #fff; border-radius: 250px" (cl
     </ion-item>
   </ion-list>
 
-    <ion-button *ngIf="!appHasPasswordChallenge() && getNotes().length > 0" expand="block" (click)="settings()">Add Notes App Password</ion-button><br>
+    <ion-button *ngIf="!appHasPasswordChallenge() && getNotes().length > 0" expand="block" (click)="settings()">{{'addNotesAppPassword' | translate}}</ion-button><br>
     <ion-col size-md="12" *ngIf="getNotes().length > 0">
         <div align="center">
             <img src="/assets/stellar-logo-icon.svg"><span style="
             font-size: 12px;
             font-weight: 400;
-            position: relative; top: -9px; left: 15px; color: #62626A">All data is stored on your phone only.</span>
+            position: relative; top: -9px; left: 15px; color: #62626A">{{'allDataIsStoredOnYourPhoneOnly' | translate}}</span>
         </div>
     </ion-col>
 
@@ -147,6 +147,6 @@ align-self: stretch; background: #2761FC; color: #fff; border-radius: 250px" (cl
 
 <ion-toolbar slot="fixed" class="toolbar-bottom" *ngIf="checkboxOpened && getNotes().length > 0">
   <ion-button color="danger" shape="round" fill="outline" class="delete-btn" (click)="deleteSelectedNotes()"><img
-      src="assets/tabler-icon-trash.svg" style="margin-right: 15px"> Delete</ion-button><br>
+      src="assets/tabler-icon-trash.svg" style="margin-right: 15px"> {{'delete' | translate}}</ion-button><br>
   <!--<ion-button color="primary" fill="outline" expand="full" (click)="toggleCheckbox()">Cancel</ion-button>-->
 </ion-toolbar>

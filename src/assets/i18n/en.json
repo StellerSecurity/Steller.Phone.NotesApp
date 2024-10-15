@@ -35,5 +35,17 @@
   "disable" : "Disable",
   "deleteNotes" : "Delete Notes",
   "confirmDeleteMsg" : "Please confirm if you want to delete the notes. They cant be recovered.",
-  "delete" : "Delete"
+  "delete" : "Delete",
+  "notesSelected" : "Notes Selected",
+  "appIsLocked" : "App Is Locked",
+  "enterYourPasswordToGetAccessToYourNotes" : "Enter your password to get access to your notes",
+  "enterYourPassword" : "Enter your password",
+  "unlock" : "Unlock",
+  "resetPassword" : "Reset Password",
+  "yourNotesAwait" : "Your Notes Await",
+  "tapTo" : "Tap to",
+  "button" : "button",
+  "toAddNote" : "to add note",
+  "addNotesAppPassword" : "Add Notes App Password",
+  "allDataIsStoredOnYourPhoneOnly" : "All data is stored on your phone only."
 }

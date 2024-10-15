@@ -7,6 +7,7 @@ import { HomePage } from './home.page';
 import { HomePageRoutingModule } from './home-routing.module';
 import { DeleteNoteModalModule } from '../delete-note-modal/delete-note-modal.module';
 import { RestPassModalModule } from '../restpass-modal/resetpass-modal.module';
+import { TranslateModule } from '@ngx-translate/core';
 
 @NgModule({
     imports: [
@@ -15,7 +16,8 @@ import { RestPassModalModule } from '../restpass-modal/resetpass-modal.module';
         IonicModule,
         HomePageRoutingModule,
         DeleteNoteModalModule,
-        RestPassModalModule
+        RestPassModalModule,
+        TranslateModule
     ],
   declarations: [HomePage]
 })
