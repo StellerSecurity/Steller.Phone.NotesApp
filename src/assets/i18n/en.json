@@ -51,5 +51,8 @@
   "thisNoteIsLocked" : "This note is locked",
   "enterThePasswordForTheNote" : "Enter the password for the note",
   "toUnlockIt" : "to unlock it.",
-  "confirm" : "Confirm"
+  "confirm" : "Confirm",
+  "warningCap" : "WARNING",
+  "resetPasswordConfirmMsg" : "Please confirm that you want to the reset password. If you confirm all notes stored will be deleted on your device and cant be recovered!",
+  "reset" : "Reset"
 }
