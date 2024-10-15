@@ -54,5 +54,10 @@
   "confirm" : "Confirm",
   "warningCap" : "WARNING",
   "resetPasswordConfirmMsg" : "Please confirm that you want to the reset password. If you confirm all notes stored will be deleted on your device and cant be recovered!",
-  "reset" : "Reset"
+  "reset" : "Reset",
+  "noteSettings" : "Note Settings",
+  "protectWithPassword" : "Protect With Password",
+  "deleteNoteOn20WronglyPasswordsEntered" : "Delete Note on 20+ wrongly passwords entered",
+  "bruteforceProtection" : "Bruteforce Protection",
+  "bruteforceProtectionSetsTimeLimitsWhenThePasswordWrittenWronglyManyTimes" : "Bruteforce protection sets time limits when the password for the note has been written wrongly many times."
 }

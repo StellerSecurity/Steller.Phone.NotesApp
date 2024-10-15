@@ -7,13 +7,15 @@ import { IonicModule } from '@ionic/angular';
 import { SettingsNotePageRoutingModule } from './settings-note-routing.module';
 
 import { SettingsNotePage } from './settings-note.page';
+import { TranslateModule } from '@ngx-translate/core';
 
 @NgModule({
   imports: [
     CommonModule,
     FormsModule,
     IonicModule,
-    SettingsNotePageRoutingModule
+    SettingsNotePageRoutingModule, 
+    TranslateModule
   ],
   declarations: [SettingsNotePage]
 })
