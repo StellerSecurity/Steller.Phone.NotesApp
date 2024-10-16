@@ -8,6 +8,7 @@ import { map } from "rxjs";
 })
 export class TranslatorService {
   hostName: string = "";
+  allTranslations:any;
 
   constructor(
     private http: HttpClient,
@@ -25,6 +26,7 @@ export class TranslatorService {
     return this.http.get(`${data}${language}.json`).pipe(
       map((translations: any) => {
         console.log('translations', translations)
+        this.allTranslations = translations
         this.translate.setTranslation(language, translations);
         return translations; // Return the loaded translations
       })
