@@ -73,5 +73,7 @@
   "theTwoPasswordsDoesNotMatch": "The two passwords does not match.",
   "thePasswordIsTooWeakPleaseMakeItStronger": "The password is too weak. Please make it stronger.",
   "removeLock": "Remove lock",
-  "areYouSureYouWantToRemoveThePasswordForTheNote": "Are you sure, you want to remove the password for the note? It will be stored in a decrypted-state on your device, if the lock is removed."
+  "areYouSureYouWantToRemoveThePasswordForTheNote": "Are you sure, you want to remove the password for the note? It will be stored in a decrypted-state on your device, if the lock is removed.",
+  "thePasswordIsWeakPleaseMakeYourPasswordStronger": "The password is weak. Please make your password stronger.",
+  "enterYourCurrentPassword": "Enter your current password"
 }
