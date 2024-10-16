@@ -84,8 +84,6 @@ export class NotesService {
     // @ts-ignore
     for(let i = 0; i < notes.length; i++) {
       // @ts-ignore
-      console.log(id);
-      // @ts-ignore
       if(notes[i].id === id) {
         // @ts-ignore
         note = notes[i];

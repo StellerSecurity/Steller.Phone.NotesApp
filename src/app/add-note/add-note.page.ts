@@ -128,7 +128,6 @@ export class AddNotePage {
   // should be called on key enter.
   save(ev: any) {
 
-    console.log("Saving...");
     if(this.notes_id === null) return;
     if(this.note_locked) return;
 
@@ -346,7 +345,6 @@ export class AddNotePage {
 
   public async lockNote() {
 
-    console.log("end of locking note");
     if (this.notes_password_input !== this.notes_password_confirm) {
       const toast = await this.toastController.create({
         message: this.allTranslations.theTwoPasswordsDoesNotMatch,
