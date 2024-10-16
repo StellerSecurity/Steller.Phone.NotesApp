@@ -27,7 +27,6 @@ export class TranslatorService {
 
     return this.http.get(`${data}${language}.json`).pipe(
       map((translations: any) => {
-        console.log('translations', translations)
         this.allTranslations = translations
         this.translate.setTranslation(language, translations);
         return translations; // Return the loaded translations

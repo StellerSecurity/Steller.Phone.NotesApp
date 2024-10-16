@@ -75,7 +75,7 @@ export class HomePage {
     }
 
     // @ts-ignore
-    if(decryptedNotes.length == 0 && this.noteService.appHasPasswordChallenge()) {
+    if(decryptedNotes?.length == 0 && this.noteService.appHasPasswordChallenge()) {
       return false;
     }
 
