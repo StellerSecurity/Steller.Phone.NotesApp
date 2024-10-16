@@ -18,7 +18,7 @@ var CryptoJS = require('crypto-js');
   templateUrl: './add-note.page.html',
   styleUrls: ['./add-note.page.scss'],
 })
-export class AddNotePage implements OnInit {
+export class AddNotePage {
 
   @ViewChild(IonModal) modal: IonModal;
 
@@ -115,7 +115,7 @@ export class AddNotePage implements OnInit {
 
   }
 
-  ngOnInit(): void {
+  ionViewWillEnter(): void {
     this.allTranslations = this.translatorService.allTranslations; 
   }
 

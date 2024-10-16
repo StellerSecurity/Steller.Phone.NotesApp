@@ -2,6 +2,7 @@ import { HttpClient } from "@angular/common/http";
 import { Injectable } from "@angular/core";
 import { TranslateService } from "@ngx-translate/core";
 import { map } from "rxjs";
+import * as EnLangTranslations  from "src/assets/i18n/en.json";
 
 @Injectable({
   providedIn: "root",
@@ -14,6 +15,7 @@ export class TranslatorService {
     private http: HttpClient,
     private translate: TranslateService
   ) {
+    this.allTranslations = EnLangTranslations;
   }
 
   loadTranslations(data: any) {

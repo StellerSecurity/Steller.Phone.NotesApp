@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild } from '@angular/core';
+import { AfterViewInit, Component, OnInit, ViewChild } from '@angular/core';
 import { AlertController, ModalController, ToastController, NavController } from "@ionic/angular";
 import { PasswordStrengthMeterModule } from 'angular-password-strength-meter';
 import { IonModal } from '@ionic/angular';
@@ -13,7 +13,7 @@ import { TranslatorService } from '../services/translator.service';
   templateUrl: './app-settings.page.html',
   styleUrls: ['./app-settings.page.scss'],
 })
-export class AppSettingsPage implements OnInit {
+export class AppSettingsPage implements AfterViewInit {
 
   public appPasswordChallenge: boolean;
 
@@ -46,9 +46,9 @@ export class AppSettingsPage implements OnInit {
     private modalCtrl: ModalController,
     private translatorService: TranslatorService) { }
 
-  ngOnInit() {
-    this.allTranslations = this.translatorService.allTranslations;
-   }
+  ionViewWillEnter(): void {
+  this.allTranslations = this.translatorService.allTranslations;
+  }
 
   ngAfterViewInit() {
     if (this.noteService.appHasPasswordChallenge()) {
