@@ -8,7 +8,6 @@ import { AppProtectorService } from "../services/app-protector.service";
 import { ConfirmationModalComponent } from '../confirmation-modal/confirmation-modal.component';
 import { DeleteNoteModalComponent } from '../delete-note-modal/delete-note-modal.component';
 import { TranslatorService } from '../services/translator.service';
-import { Router } from '@angular/router';
 @Component({
   selector: 'app-app-settings',
   templateUrl: './app-settings.page.html',
@@ -45,8 +44,7 @@ export class AppSettingsPage implements AfterViewInit {
     private appProtectorService: AppProtectorService,
     private navController: NavController,
     private modalCtrl: ModalController,
-    private translatorService: TranslatorService,
-    private router: Router) { }
+    private translatorService: TranslatorService) { }
 
   ionViewWillEnter(): void {
   this.allTranslations = this.translatorService.allTranslations;
@@ -115,7 +113,7 @@ export class AppSettingsPage implements AfterViewInit {
       this.confirmPassword = "";
       this.noteService.setNotesAppPassword("");
       localStorage.removeItem("app_password_challenge");
-      this.router.navigate(['/app-settings']);
+      window.location.href = "/app-settings";
       this.password_enabled = false;
     } else {
 
@@ -162,7 +160,7 @@ export class AppSettingsPage implements AfterViewInit {
             this.confirmPassword = "";
             this.noteService.setNotesAppPassword("");
             localStorage.removeItem("app_password_challenge");
-            this.router.navigate(['/app-settings']);
+            window.location.href = "/app-settings";
           }else{
             const toast = await this.toastController.create({
               message: this.allTranslations.enterYourCurrentPassword,
@@ -265,7 +263,7 @@ export class AppSettingsPage implements AfterViewInit {
         const { confirm } = data.data;
         if (confirm) {
           localStorage.clear();
-          this.router.navigate(['/home']);
+          window.location.href = "/home";
         } else {
           // Handle case when user cancels password input
         }
