@@ -1,9 +1,9 @@
 <div class="confirmation-modal">
   <img src="../../assets/lock-red.png" class="burn-img" alt="">
-  <h2>WARNING </h2>
-  <p>Please confirm that you want to the reset password. If you confirm all notes stored will be deleted on your device and cant be recovered !</p>
+  <h2>{{'warningCap' | translate}} </h2>
+  <p>{{'resetPasswordConfirmMsg' | translate}}</p>
   <div class="buttons">
-    <p class="blue-btn transparent-btn" (click)="dismiss(false)">Cancel</p>
-    <p class="blue-btn" (click)="dismiss(true)">Reset</p>
+    <p class="blue-btn transparent-btn" (click)="dismiss(false)">{{'cancel' | translate}}</p>
+    <p class="blue-btn" (click)="dismiss(true)">{{'reset' | translate}}</p>
   </div>
 </div>

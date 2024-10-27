@@ -7,6 +7,7 @@ import {NotesService} from "../services/notes.service";
 import { NoteLockedModalComponent } from '../note-locked-modal/note-locked-modal.component';
 import { DeleteNoteModalComponent } from '../delete-note-modal/delete-note-modal.component';
 import {AngularEditorConfig} from "@wfpena/angular-wysiwyg";
+import { TranslatorService } from '../services/translator.service';
 const { v4: uuidv4 } = require('uuid');
 
 declare var require: any;
@@ -74,10 +75,11 @@ export class AddNotePage {
       ['justifyLeft', 'justifyCenter', 'justifyRight', 'justifyFull', 'indent', 'outdent'],
       ['cut', 'copy', 'delete', 'removeFormat'],
       ['paragraph', 'blockquote', 'removeBlockquote', 'horizontalLine',  'unorderedList'],
-      ['link', 'unlink', 'image', 'video', 'insertVideo', 'horizontalline', 'insertHorizontalRule', 'toggleEditorMode'],
-      ['backgroundColor', 'foregroundColor', 'textColor', 'insertImage']
+      ['video', 'insertVideo', 'horizontalline', 'insertHorizontalRule', 'toggleEditorMode'],
+      ['backgroundColor', 'foregroundColor', 'textColor']
     ],
   };
+  allTranslations:any;
 
   constructor(private cryptoService: CryptoService,
               public activatedRoute: ActivatedRoute,
@@ -85,7 +87,8 @@ export class AddNotePage {
               private notesService: NotesService,
               private toastController: ToastController,
               private modalCtrl: ModalController,
-              private alertCtrl: AlertController) {
+              private alertCtrl: AlertController,
+              private translatorService: TranslatorService) {
 
     this.activatedRoute.paramMap.subscribe((params: ParamMap) => {
 
@@ -100,6 +103,7 @@ export class AddNotePage {
 
       // @ts-ignore
       this.currentNote = this.notesService.findNoteById(this.notes_id, this.notes);
+
       // @ts-ignore
       if(this.currentNote.protected) {
         this.note_locked = true;
@@ -112,6 +116,10 @@ export class AddNotePage {
 
   }
 
+  ionViewWillEnter(): void {
+    this.allTranslations = this.translatorService.allTranslations; 
+  }
+
   togglePasswordVisibility() {
     this.showPassword = !this.showPassword;
   }
@@ -121,7 +129,6 @@ export class AddNotePage {
   // should be called on key enter.
   save(ev: any) {
 
-    console.log("Saving...");
     if(this.notes_id === null) return;
     if(this.note_locked) return;
 
@@ -210,7 +217,7 @@ export class AddNotePage {
 
   private async wrongPasswordEntered() {
     const toast = await this.toastController.create({
-      message: 'The password is not correct. Try again.',
+      message: this.allTranslations.passwordIsNotCorrectTryAgain,
       duration: 3000,
       position: 'bottom',
     });
@@ -271,9 +278,6 @@ export class AddNotePage {
 
   public notesPasswordChange() {
 
-    // Initialize variables
-    var tips = "";
-
     this.passwordStrength = 0;
 
     if(this.notes_password_input.length == 0) {
@@ -283,7 +287,6 @@ export class AddNotePage {
 
     // Check password length
     if (this.notes_password_input.length <= 4) {
-      tips += "Make the password longer. ";
     } else {
       this.passwordStrength += 1;
     }
@@ -293,15 +296,12 @@ export class AddNotePage {
       this.passwordStrength += 1;
       this.upperLower = true;
     } else {
-      tips += "Use both lowercase and uppercase letters. ";
       this.upperLower = false;
     }
 
     // Check for numbers
     if (this.notes_password_input.match(/\d/)) {
       this.passwordStrength += 1;
-    } else {
-      tips += "Include at least one number. ";
     }
 
     // Check for special characters
@@ -309,7 +309,6 @@ export class AddNotePage {
       this.passwordStrength += 1;
       this.specialChar = true;
     } else {
-      tips += "Include at least one special character. ";
       this.specialChar = false;
     }
 
@@ -319,30 +318,28 @@ export class AddNotePage {
       this.passwordStrength += 1;
       this.strongPass = true;
     } else {
-      tips += "Password should have at least 6 characters. ";
       this.strongPass = false;
     }
 
 
     // Return results
     if (this.passwordStrength < 2) {
-      this.passwordStrengthHelperText = "Weak Password!";
+      this.passwordStrengthHelperText = this.allTranslations.weakPassword;
     } else if (this.passwordStrength === 2) {
-      this.passwordStrengthHelperText = "Average Password!";
+      this.passwordStrengthHelperText = this.allTranslations.averagePassword;
     } else if (this.passwordStrength === 3) {
-      this.passwordStrengthHelperText = "Good Password!";
+      this.passwordStrengthHelperText = this.allTranslations.goodPassword;
     } else {
-      this.passwordStrengthHelperText = "Great Password!";
+      this.passwordStrengthHelperText = this.allTranslations.greatPassword;
     }
   }
 
 
   public async lockNote() {
 
-    console.log("end of locking note");
     if (this.notes_password_input !== this.notes_password_confirm) {
       const toast = await this.toastController.create({
-        message: 'The two passwords does not match.',
+        message: this.allTranslations.theTwoPasswordsDoesNotMatch,
         duration: 2500,
         position: 'bottom',
       });
@@ -353,7 +350,7 @@ export class AddNotePage {
 
     if(this.notes_password_input.length < 2) {
       const toast = await this.toastController.create({
-        message: 'The password is too weak. Please make it stronger.',
+        message: this.allTranslations.thePasswordIsTooWeakPleaseMakeItStronger,
         duration: 3000,
         position: 'bottom',
       });
@@ -400,17 +397,17 @@ export class AddNotePage {
 
   public async removeLock() {
     const alert = await this.alertCtrl.create({
-      header: 'WARNING',
-      subHeader: 'Are you sure, you want to remove the password for the note? It will be stored in a decrypted-state on your device, if the lock is removed.',
+      header: this.allTranslations.warningCap,
+      subHeader: this.allTranslations.areYouSureYouWantToRemoveThePasswordForTheNote,
       buttons: [
         {
-          text: 'Cancel',
+          text: this.allTranslations.cancel,
           role: 'cancel',
           handler: () => {
             // this.handlerMessage = 'Alert canceled';
           },
         },         {
-          text: 'Remove lock',
+          text: this.allTranslations.removeLock,
           role: 'confirm',
           handler: () => {
             // @ts-ignore

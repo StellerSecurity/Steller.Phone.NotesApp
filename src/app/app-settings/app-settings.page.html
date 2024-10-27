@@ -3,7 +3,7 @@
     <ion-buttons slot="start">
       <ion-back-button defaultHref="/"></ion-back-button>
     </ion-buttons>
-    <ion-title>Settings</ion-title>
+    <ion-title>{{'settings' | translate}}</ion-title>
   </ion-toolbar>
 </ion-header>
 
@@ -17,28 +17,28 @@
           <ion-buttons slot="start">
             <ion-icon (click)="cancel()" name="chevron-back-outline" class="cancel-btn"></ion-icon>
           </ion-buttons>
-          <ion-title>Password On App</ion-title>
+          <ion-title>{{'passwordOnApp' | translate}}</ion-title>
         </ion-toolbar>
       </ion-header>
       <ion-content class="ion-padding">
 
         <div class="pass-info-box enabled-info-box" *ngIf="password_enabled">
           <img src="../../assets/green-lock.png" />
-          <h3>Encryption successfully work</h3>
-          <p>Your notes are safe and encrypted with your password.</p>
+          <h3>{{'encryptionSuccessfullyWork' | translate}}</h3>
+          <p>{{'yourNotesAreSafeAndEncryptedWithYourPassword' | translate}}</p>
         </div>
         <h2 *ngIf="!password_enabled"
-          style="color: #0B0C19; font-weight: 600; font-family: 'Poppins'; font-size: 16px; margin-bottom: 20px;">Lock
-          app with password</h2>
+          style="color: #0B0C19; font-weight: 600; font-family: 'Poppins'; font-size: 16px; margin-bottom: 20px;">
+          {{'lockAppWithPassword' | translate}}</h2>
         <div *ngIf="!password_enabled">
           <div class="input-group" style="position: relative;">
-            <ion-input type="{{ showPassword ? 'text' : 'password' }}" shape="round" placeholder="Password" (ionInput)="notesAppPasswordChange()"
+            <ion-input type="{{ showPassword ? 'text' : 'password' }}" shape="round" placeholder="{{'password' | translate}}" (ionInput)="notesAppPasswordChange()"
               [(ngModel)]="notesAppPassword"></ion-input>
             <ion-icon slot="end" [name]="showPassword ? 'eye-off' : 'eye'"
               (click)="togglePasswordVisibility()"></ion-icon>
           </div>
           <div class="input-group">
-            <ion-input type="{{ confirmShowPassword ? 'text' : 'password' }}" shape="round" placeholder="Confirm Password"
+            <ion-input type="{{ confirmShowPassword ? 'text' : 'password' }}" shape="round" placeholder="{{'confirmPassword' | translate}}"
               [(ngModel)]="confirmPassword"></ion-input>
             <ion-icon slot="end" [name]="confirmShowPassword ? 'eye-off' : 'eye'"
               (click)="toggleConfirmPasswordVisibility()"></ion-icon>
@@ -47,24 +47,24 @@
 
 
         <div *ngIf="!password_enabled" class="pass-info-box">
-          <p *ngif="!strongPass" class="pass-note">Password must have at least 6 characters</p>
+          <p *ngif="!strongPass" class="pass-note">{{'passwordCharacters' | translate}}</p>
           <password-strength-meter [password]="notesAppPassword"></password-strength-meter>
           {{passwordStrengthHelperText}}
-          <h4 style="color: #0B0C19; font-size: 12px; font-weight: 400; font-family: 'Poppins';">It’s better to have
+          <h4 style="color: #0B0C19; font-size: 12px; font-weight: 400; font-family: 'Poppins';">{{'itsBetterToHave' | translate}}
           </h4>
           <ul class="pass-list">
-            <li [ngClass]="{'active': upperLower}"><ion-icon name="checkmark-outline"></ion-icon> Upper & lower case
-              letters</li>
-            <li [ngClass]="{'active': specialChar}"><ion-icon name="checkmark-outline"></ion-icon> A symbol (#&$)</li>
+            <li [ngClass]="{'active': upperLower}"><ion-icon name="checkmark-outline"></ion-icon> 
+              {{'upperAndLowerCaseLetters' | translate}}</li>
+            <li [ngClass]="{'active': specialChar}"><ion-icon name="checkmark-outline"></ion-icon> {{'aSymbol' | translate}} (#&$)</li>
             <li [ngClass]="{'active': passwordStrength >= 3}">
-              <ion-icon name="checkmark-outline"></ion-icon> Longer Password
+              <ion-icon name="checkmark-outline"></ion-icon> {{'longerPassword' | translate}}
             </li>
           </ul>
         </div>
 
         <hr style="background: #EAEAF0;"/>
-        <p expand="block" (click)="removePassword()" class="disable-pass-btn" *ngIf="password_enabled">Disable App Password</p>
-        <ion-button expand="block" (click)="save()" *ngIf="!password_enabled">Add App Password</ion-button>
+        <p expand="block" (click)="removePassword()" class="disable-pass-btn" *ngIf="password_enabled">{{'disableAppPassword' | translate}}</p>
+        <ion-button expand="block" (click)="save()" *ngIf="!password_enabled">{{'addAppPassword' | translate}}</ion-button>
 
 
       </ion-content>
@@ -73,9 +73,9 @@
 
   <ion-item>
     <div class="pass-toggle-main" (click)="appPasswordChallengeDialog()">
-      <span class="pass-toggle-btn"><strong>Ask for password when opening App</strong>
-        <span *ngIf="!password_enabled">Not Set</span>
-        <span *ngIf="password_enabled" class="enabled">Enabled</span></span>
+      <span class="pass-toggle-btn"><strong>{{'askForPasswordWhenOpeningApp' | translate}}</strong>
+        <span *ngIf="!password_enabled">{{'notSet' | translate}}</span>
+        <span *ngIf="password_enabled" class="enabled">{{'enabled' | translate}}</span></span>
       <ion-icon name="chevron-forward-outline"></ion-icon>
     </div>
   </ion-item>
@@ -87,19 +87,19 @@
 font-size: 14px;
 font-style: normal;
 font-weight: 600;
-line-height: 150%; ">Wipe Delete</span><br>
+line-height: 150%; ">{{'wipeDelete' | translate}}</span><br>
       <span style="font-family: Poppins;
 font-size: 12px;
 font-style: normal;
 font-weight: 400;
-line-height: 150%; /* 18px */ ">Wipe notes will delete ALL notes<br> on your phone if you enter<br> the password for<br>
-        the app wrongly 20 times in a row.<br> It cannot be turned off.</span></ion-toggle>
+line-height: 150%; /* 18px */ ">{{'wipeNotesWillDeleteALLNotes' | translate }}<br> {{'onYourPhoneIfYouEnter' | translate}}<br> {{'thePasswordFor' | translate}}<br>
+        {{'theAppWrongly20TimesInRow' | translate}}<br> {{'itCanNotBeTurnedOff' | translate}}</span></ion-toggle>
   </ion-item>
 
 
   <hr>
 
-  <p class="disable-pass-btn" expand="full" (click)="deleteWholeAppStorage()">Delete All
-    Notes</p>
+  <p class="disable-pass-btn" expand="full" (click)="deleteWholeAppStorage()">
+    {{'deleteAllNotes' | translate}}</p>
 
 </ion-content>

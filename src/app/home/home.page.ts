@@ -12,6 +12,7 @@ import {NotesService} from "../services/notes.service";
 import {AppProtectorService} from "../services/app-protector.service";
 import { DeleteNoteModalComponent } from '../delete-note-modal/delete-note-modal.component';
 import { ResetPassModalComponent } from '../restpass-modal/resetpass-modal.component';
+import { TranslatorService } from '../services/translator.service';
 
 @Component({
   selector: 'app-home',
@@ -33,6 +34,7 @@ export class HomePage {
   public input_password_app_unlock = "";
 
   public timezone = "UTC";
+  allTranslations:any;
 
   @ViewChild(IonModal) modal: IonModal;
 
@@ -43,10 +45,11 @@ export class HomePage {
               private toastController: ToastController,
               private appProtectorService: AppProtectorService,
               private modalCtrl: ModalController,
-              private loadingController: LoadingController) {}
+              private loadingController: LoadingController,
+              private translatorService: TranslatorService) {}
 
   ionViewWillEnter() {
-
+    this.allTranslations = this.translatorService.allTranslations;
     this.timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
     if(this.noteService.shouldAskForPassword()) {
       this.should_display = false;
@@ -72,7 +75,7 @@ export class HomePage {
     }
 
     // @ts-ignore
-    if(decryptedNotes.length == 0 && this.noteService.appHasPasswordChallenge()) {
+    if(decryptedNotes?.length == 0 && this.noteService.appHasPasswordChallenge()) {
       return false;
     }
 
@@ -112,7 +115,7 @@ export class HomePage {
       this.noteService.setFailedPasswordAppAttempts(0);
     } else {
       const toast = await this.toastController.create({
-        message: 'The password is not correct. Try again.',
+        message: this.allTranslations.passwordIsNotCorrectTryAgain,
         duration: 3000,
         position: 'bottom',
       });
@@ -133,9 +136,14 @@ export class HomePage {
       return [];
     }
 
+    const parser = new DOMParser;
+
     for(let i = 0; i < this.notes.length; i++){
       let note = this.notes[i];
       note.text = note.text.replace(/<[^>]*>/g, '');
+
+      const dom = parser.parseFromString(note.text, 'text/html');
+      note.text = dom.body.textContent;
     }
 
     // @ts-ignore
@@ -216,7 +224,7 @@ export class HomePage {
 
     this.toggleCheckbox();
     const toast = await this.toastController.create({
-      message: 'The selected notes has been deleted.',
+      message: this.allTranslations.theSelectedNotesHasBeenDeleted,
       duration: 2500,
       position: 'bottom',
     });

@@ -20,7 +20,6 @@ export class AppProtectorService {
       if(last_activity_time <= current_timestamp - 150000) {
         this.noteService.setNotesAppPassword("");
         window.location.href = '/home';
-        console.log("INACTIVE 2.5 MINUTES !");
         // @ts-ignore
         if(navigator['app'] !== undefined) {
           // @ts-ignore
@@ -30,7 +29,6 @@ export class AppProtectorService {
     }
 
     App.getState().then(data => {
-      console.log(data.isActive);
       if(data.isActive) {
         this.noteService.setLastActivityTimestamp(Date.now());
       }

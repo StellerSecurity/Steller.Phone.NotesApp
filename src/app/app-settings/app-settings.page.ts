@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild } from '@angular/core';
+import { AfterViewInit, Component, OnInit, ViewChild } from '@angular/core';
 import { AlertController, ModalController, ToastController, NavController } from "@ionic/angular";
 import { PasswordStrengthMeterModule } from 'angular-password-strength-meter';
 import { IonModal } from '@ionic/angular';
@@ -7,12 +7,13 @@ import { CryptoService } from "../services/crypto.service";
 import { AppProtectorService } from "../services/app-protector.service";
 import { ConfirmationModalComponent } from '../confirmation-modal/confirmation-modal.component';
 import { DeleteNoteModalComponent } from '../delete-note-modal/delete-note-modal.component';
+import { TranslatorService } from '../services/translator.service';
 @Component({
   selector: 'app-app-settings',
   templateUrl: './app-settings.page.html',
   styleUrls: ['./app-settings.page.scss'],
 })
-export class AppSettingsPage implements OnInit {
+export class AppSettingsPage implements AfterViewInit {
 
   public appPasswordChallenge: boolean;
 
@@ -32,6 +33,7 @@ export class AppSettingsPage implements OnInit {
   public upperLower = false;
   public specialChar = false;
   public strongPass = false;
+  allTranslations:any;
 
   @ViewChild(IonModal) modal: IonModal;
 
@@ -41,9 +43,12 @@ export class AppSettingsPage implements OnInit {
     private cryptoService: CryptoService,
     private appProtectorService: AppProtectorService,
     private navController: NavController,
-    private modalCtrl: ModalController) { }
+    private modalCtrl: ModalController,
+    private translatorService: TranslatorService) { }
 
-  ngOnInit() { }
+  ionViewWillEnter(): void {
+  this.allTranslations = this.translatorService.allTranslations;
+  }
 
   ngAfterViewInit() {
     if (this.noteService.appHasPasswordChallenge()) {
@@ -72,7 +77,7 @@ export class AppSettingsPage implements OnInit {
 
     if (this.notesAppPassword !== this.confirmPassword) {
       const toast = await this.toastController.create({
-        message: 'The two passwords does not match.',
+        message: this.allTranslations.theTwoPasswordsDoesNotMatch,
         duration: 3000,
         position: 'bottom',
       });
@@ -84,7 +89,7 @@ export class AppSettingsPage implements OnInit {
 
     if (this.notesAppPassword.length < 2) {
       const toast = await this.toastController.create({
-        message: 'The password is weak. Please make your password stronger.',
+        message: this.allTranslations.thePasswordIsWeakPleaseMakeYourPasswordStronger,
         duration: 3000,
         position: 'bottom',
       });
@@ -158,7 +163,7 @@ export class AppSettingsPage implements OnInit {
             window.location.href = "/app-settings";
           }else{
             const toast = await this.toastController.create({
-              message: 'Enter your current password',
+              message: this.allTranslations.enterYourCurrentPassword,
               duration: 3000,
               position: 'bottom',
             });
@@ -177,9 +182,6 @@ export class AppSettingsPage implements OnInit {
 
   public notesAppPasswordChange() {
 
-    // Initialize variables
-    var tips = "";
-
     this.passwordStrength = 0;
 
     if (this.notesAppPassword.length == 0) {
@@ -188,9 +190,7 @@ export class AppSettingsPage implements OnInit {
     }
 
     // Check password length
-    if (this.notesAppPassword.length < 6) {
-      tips += "Make the password longer. ";
-    } else {
+    if (this.notesAppPassword.length > 6) {
       this.passwordStrength += 1;
     }
 
@@ -199,15 +199,12 @@ export class AppSettingsPage implements OnInit {
       this.passwordStrength += 1;
       this.upperLower = true;
     } else {
-      tips += "Use both lowercase and uppercase letters. ";
       this.upperLower = false;
     }
 
     // Check for numbers
     if (this.notesAppPassword.match(/\d/)) {
       this.passwordStrength += 1;
-    } else {
-      tips += "Include at least one number. ";
     }
 
     // Check for special characters
@@ -215,7 +212,6 @@ export class AppSettingsPage implements OnInit {
       this.passwordStrength += 1;
       this.specialChar = true;
     } else {
-      tips += "Include at least one special character. ";
       this.specialChar = false;
     }
 
@@ -224,20 +220,19 @@ export class AppSettingsPage implements OnInit {
       this.passwordStrength += 1;
       this.strongPass = true;
     } else {
-      tips += "Password should have at least 6 characters. ";
       this.strongPass = false;
     }
 
 
     // Return results
     if (this.passwordStrength < 2) {
-      this.passwordStrengthHelperText = "Weak Password!";
+      this.passwordStrengthHelperText = this.allTranslations.weakPassword;
     } else if (this.passwordStrength === 2) {
-      this.passwordStrengthHelperText = "Average Password!";
+      this.passwordStrengthHelperText = this.allTranslations.averagePassword;
     } else if (this.passwordStrength === 3) {
-      this.passwordStrengthHelperText = "Good Password!";
+      this.passwordStrengthHelperText = this.allTranslations.goodPassword;
     } else {
-      this.passwordStrengthHelperText = "Great Password!";
+      this.passwordStrengthHelperText = this.allTranslations.greatPassword;
     }
 
   }
