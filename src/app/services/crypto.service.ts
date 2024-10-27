@@ -1,5 +1,5 @@
-import { Injectable } from '@angular/core';
-import {at} from "ionicons/icons";
+import {Injectable} from '@angular/core';
+
 declare var require: any;
 var CryptoJS = require('crypto-js');
 @Injectable({
@@ -10,13 +10,11 @@ export class CryptoService {
   constructor() { }
   public encrypt(value: any, password: string) {
     // returns the encrypted value in BASE64 encoded.
-    let encrypted = CryptoJS.AES.encrypt(value, password).toString();
-    return encrypted;
+    return CryptoJS.AES.encrypt(value, password).toString();
   }
 
   public decrypt(value: any, password: string) {
-    let decrypted = CryptoJS.AES.decrypt(value, password).toString(CryptoJS.enc.Utf8);
-    return decrypted;
+    return CryptoJS.AES.decrypt(value, password).toString(CryptoJS.enc.Utf8);
   }
 
 }

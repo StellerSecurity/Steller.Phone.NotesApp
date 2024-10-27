@@ -75,8 +75,8 @@ export class AddNotePage {
       ['justifyLeft', 'justifyCenter', 'justifyRight', 'justifyFull', 'indent', 'outdent'],
       ['cut', 'copy', 'delete', 'removeFormat'],
       ['paragraph', 'blockquote', 'removeBlockquote', 'horizontalLine',  'unorderedList'],
-      ['link', 'unlink', 'image', 'video', 'insertVideo', 'horizontalline', 'insertHorizontalRule', 'toggleEditorMode'],
-      ['backgroundColor', 'foregroundColor', 'textColor', 'insertImage']
+      ['video', 'insertVideo', 'horizontalline', 'insertHorizontalRule', 'toggleEditorMode'],
+      ['backgroundColor', 'foregroundColor', 'textColor']
     ],
   };
   allTranslations:any;
@@ -103,6 +103,7 @@ export class AddNotePage {
 
       // @ts-ignore
       this.currentNote = this.notesService.findNoteById(this.notes_id, this.notes);
+
       // @ts-ignore
       if(this.currentNote.protected) {
         this.note_locked = true;
@@ -277,9 +278,6 @@ export class AddNotePage {
 
   public notesPasswordChange() {
 
-    // Initialize variables
-    var tips = "";
-
     this.passwordStrength = 0;
 
     if(this.notes_password_input.length == 0) {
@@ -289,7 +287,6 @@ export class AddNotePage {
 
     // Check password length
     if (this.notes_password_input.length <= 4) {
-      tips +=  this.allTranslations.makeThePasswordLonger +  " ";
     } else {
       this.passwordStrength += 1;
     }
@@ -299,15 +296,12 @@ export class AddNotePage {
       this.passwordStrength += 1;
       this.upperLower = true;
     } else {
-      tips += this.allTranslations.useBothLowercaseAndUppercaseLetters + " ";
       this.upperLower = false;
     }
 
     // Check for numbers
     if (this.notes_password_input.match(/\d/)) {
       this.passwordStrength += 1;
-    } else {
-      tips += this.allTranslations.includeAtLeastOneNumber + " ";
     }
 
     // Check for special characters
@@ -315,7 +309,6 @@ export class AddNotePage {
       this.passwordStrength += 1;
       this.specialChar = true;
     } else {
-      tips += this.allTranslations.includeAtLeastOneSpecialCharacter + " ";
       this.specialChar = false;
     }
 
@@ -325,7 +318,6 @@ export class AddNotePage {
       this.passwordStrength += 1;
       this.strongPass = true;
     } else {
-      tips += this.allTranslations.passwordShouldHaveAtLeast6Characters + " ";
       this.strongPass = false;
     }
 

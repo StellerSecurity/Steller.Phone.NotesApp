@@ -136,9 +136,14 @@ export class HomePage {
       return [];
     }
 
+    const parser = new DOMParser;
+
     for(let i = 0; i < this.notes.length; i++){
       let note = this.notes[i];
       note.text = note.text.replace(/<[^>]*>/g, '');
+
+      const dom = parser.parseFromString(note.text, 'text/html');
+      note.text = dom.body.textContent;
     }
 
     // @ts-ignore

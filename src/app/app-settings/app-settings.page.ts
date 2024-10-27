@@ -182,9 +182,6 @@ export class AppSettingsPage implements AfterViewInit {
 
   public notesAppPasswordChange() {
 
-    // Initialize variables
-    var tips = "";
-
     this.passwordStrength = 0;
 
     if (this.notesAppPassword.length == 0) {
@@ -193,9 +190,7 @@ export class AppSettingsPage implements AfterViewInit {
     }
 
     // Check password length
-    if (this.notesAppPassword.length < 6) {
-      tips += this.allTranslations.makeThePasswordLonger + " ";
-    } else {
+    if (this.notesAppPassword.length > 6) {
       this.passwordStrength += 1;
     }
 
@@ -204,15 +199,12 @@ export class AppSettingsPage implements AfterViewInit {
       this.passwordStrength += 1;
       this.upperLower = true;
     } else {
-      tips += this.allTranslations.useBothLowercaseAndUppercaseLetters + " ";
       this.upperLower = false;
     }
 
     // Check for numbers
     if (this.notesAppPassword.match(/\d/)) {
       this.passwordStrength += 1;
-    } else {
-      tips += this.allTranslations.includeAtLeastOneNumber + " ";
     }
 
     // Check for special characters
@@ -220,7 +212,6 @@ export class AppSettingsPage implements AfterViewInit {
       this.passwordStrength += 1;
       this.specialChar = true;
     } else {
-      tips += this.allTranslations.includeAtLeastOneSpecialCharacter + " ";
       this.specialChar = false;
     }
 
@@ -229,7 +220,6 @@ export class AppSettingsPage implements AfterViewInit {
       this.passwordStrength += 1;
       this.strongPass = true;
     } else {
-      tips += this.allTranslations.passwordShouldHaveAtLeast6Characters + " ";
       this.strongPass = false;
     }
 
