@@ -116,6 +116,7 @@ export class AddNotePage {
 
   }
 
+
   ionViewWillEnter(): void {
     this.allTranslations = this.translatorService.allTranslations; 
   }

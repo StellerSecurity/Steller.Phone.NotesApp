@@ -57,6 +57,7 @@
   content:"" !important;
 }
 
+
 .fa.fa-repeat::before {
 
   background-image: url('/assets/icon/redo-arrow-symbol.png');
@@ -68,6 +69,36 @@
 }
 
 
+.fa.fa-link::before {
+
+  background-image: url('/assets/icon/link-solid.png');
+  background-size : 16px 16px;
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  content:""  !important;
+}
+
+
+.fa.fa-chain-broken::before {
+
+  background-image: url('/assets/icon/link-slash-solid.svg');
+  background-size : 16px 16px;
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  content:""  !important;
+}
+
+.fa.fa-image::before {
+
+  background-image: url('/assets/icon/image-regular.svg');
+  background-size : 16px 16px;
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  content:""  !important;
+}
 
 
 // Strikethrough
