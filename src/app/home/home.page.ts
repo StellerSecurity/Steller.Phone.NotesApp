@@ -95,6 +95,19 @@ export class HomePage {
   // @ts-ignore
   public async unlockNotesApp() {
 
+    if(this.input_password_app_unlock.length == 0) {
+
+      const toast = await this.toastController.create({
+        message: "Please enter your password.",
+        duration: 3000,
+        position: 'bottom',
+      });
+
+      await toast.present();
+
+      return;
+    }
+
     this.noteService.increaseAppNoteAttemptsFailedPasswords();
     if (this.noteService.shouldWipeAllNotesOrNot()) {
       localStorage.clear();
