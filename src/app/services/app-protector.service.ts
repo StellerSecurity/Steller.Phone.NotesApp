@@ -20,11 +20,6 @@ export class AppProtectorService {
       if(last_activity_time <= current_timestamp - 150000) {
         this.noteService.setNotesAppPassword("");
         window.location.href = '/home';
-        // @ts-ignore
-        if(navigator['app'] !== undefined) {
-          // @ts-ignore
-          navigator['app'].exitApp();
-        }
       }
     }
 
