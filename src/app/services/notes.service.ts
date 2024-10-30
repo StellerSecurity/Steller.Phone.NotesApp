@@ -17,7 +17,7 @@ export class NotesService {
    * Max failed attempts in a row before the app wipes it-self.
    * @private
    */
-  private MAX_APP_FAILED_ATTEMPTS = 25;
+  private MAX_APP_FAILED_ATTEMPTS = 20;
 
   /**
    * Controls, when the active time was for the notesApp, when it was active && unlocked.
