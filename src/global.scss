@@ -79,6 +79,15 @@
   content:""  !important;
 }
 
+.angular-editor-toolbar {
+  position: fixed !important;
+  z-indeX: 98 !important;
+}
+
+.angular-editor .angular-editor-wrapper {
+  top: 80px !important;
+}
+
 
 .fa.fa-chain-broken::before {
 
