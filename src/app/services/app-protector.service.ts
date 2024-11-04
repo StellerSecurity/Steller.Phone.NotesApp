@@ -16,9 +16,9 @@ export class AppProtectorService {
 
     if(last_activity_time !== 0) {
       let current_timestamp = Date.now();
-      // inactive for 30 minutes, close the app. (clearing services for data).
+      // inactive for 60 minutes, close the app. (clearing services for data).
       // 600000 = 1 minute in MS.
-      if(last_activity_time <= current_timestamp - (30 * 60000)) {
+      if(last_activity_time <= current_timestamp - (60 * 60000)) {
         this.noteService.setNotesAppPassword("");
         window.location.href = '/home';
       }
