@@ -116,7 +116,13 @@ export class HomePage {
       return false;
     }
 
-    let shouldUnlock = this.setData(this.input_password_app_unlock);
+    let shouldUnlock = false;
+
+    try {
+      shouldUnlock = this.setData(this.input_password_app_unlock);
+    } catch (e) {
+      //console.error(e);
+    }
 
     if(shouldUnlock) {
       this.should_display = true;
@@ -126,12 +132,16 @@ export class HomePage {
       this.noteService.setNotesAppPassword(this.input_password_app_unlock);
       // reset failed attempts.
       this.noteService.setFailedPasswordAppAttempts(0);
+
+      this.input_password_app_unlock = "";
     } else {
       const toast = await this.toastController.create({
         message: this.allTranslations.passwordIsNotCorrectTryAgain,
         duration: 3000,
         position: 'bottom',
       });
+
+      this.input_password_app_unlock = "";
 
       await toast.present();
       return false;
