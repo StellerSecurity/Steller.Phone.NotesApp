@@ -1,9 +1,10 @@
-import {Component, ViewChild} from '@angular/core';
+import {ChangeDetectorRef, Component, ElementRef, QueryList, ViewChild, ViewChildren} from '@angular/core';
 import {
-  AlertController, IonModal,
+  AlertController, GestureController, IonModal,
   LoadingController,
   ModalController,
   NavController,
+  Platform,
   ToastController,
 } from '@ionic/angular';
 
@@ -37,6 +38,9 @@ export class HomePage {
   allTranslations:any;
 
   @ViewChild(IonModal) modal: IonModal;
+  @ViewChildren('longPressElements', { read: ElementRef }) longPressElements: QueryList<ElementRef>;
+  timeout: any;
+  isClicked: boolean = false;
 
   constructor(private cryptoService: CryptoService,
               private alertCtrl: AlertController,
@@ -46,7 +50,10 @@ export class HomePage {
               private appProtectorService: AppProtectorService,
               private modalCtrl: ModalController,
               private loadingController: LoadingController,
-              private translatorService: TranslatorService) {}
+              private translatorService: TranslatorService,
+              private gestureCtrl: GestureController,
+              private platform: Platform,
+              private cdr: ChangeDetectorRef) {}
 
   ionViewWillEnter() {
     this.allTranslations = this.translatorService.allTranslations;
@@ -57,6 +64,54 @@ export class HomePage {
       this.setData(this.noteService.getNotesAppPassword()); // will send a password, if the app is encrypted.
     }
 
+    this.checkboxOpened = false;
+    this.initializePressGesture();
+  }
+
+  ionViewDidEnter() {
+    this.initializePressGesture();
+  }
+
+  initializePressGesture(): void {
+    if (this.platform.is('mobile') || this.platform.is('android') || this.platform.is('ios')) {
+      this.longPressElements.forEach((elementRef: ElementRef) => {
+        this.createLongPressGesture(elementRef);
+      });
+    } 
+  }
+
+  createLongPressGesture(element: ElementRef) {
+    const gesture = this.gestureCtrl.create({
+      el: element.nativeElement,
+      threshold: 0,
+      gestureName: 'long-press',
+      onStart: () => {
+        this.handlePressStart(element.nativeElement);
+      },
+      onEnd: () => {
+        this.handlePressEnd()
+      },
+    });
+    gesture.enable();
+  }
+
+  handlePressStart(element:any) {
+    this.timeout = setTimeout(() => {
+      this.checkboxOpened = true;
+      setTimeout(() => {
+        this.cdr.detectChanges();
+        const checkboxEle = element.children[0].children[0];
+        checkboxEle.click();
+      }, 200)
+    }, 500);
+  }
+
+  handlePressEnd() {
+    clearTimeout(this.timeout);
+  }
+
+  disableNativeContextMenu() {
+    document.addEventListener('contextmenu', (e) => e.preventDefault());
   }
 
   public appHasPasswordChallenge() : boolean {
@@ -190,6 +245,9 @@ export class HomePage {
     if(!this.checkboxOpened) {
       this.listOfCheckedCheckboxes = [];
     }
+    setTimeout(() => {
+      this.cdr.detectChanges();
+    })
   }
 
   public async deleteSelectedNotes() {
@@ -245,7 +303,7 @@ export class HomePage {
 
     this.setData(this.input_password_app_unlock);
 
-    this.toggleCheckbox();
+    // this.toggleCheckbox();
     const toast = await this.toastController.create({
       message: this.allTranslations.theSelectedNotesHasBeenDeleted,
       duration: 2500,
@@ -254,6 +312,7 @@ export class HomePage {
 
     await toast.present();
     await loading.dismiss();
+    window.location.href = "/home";
   }
 
   public async resetPassword() {
@@ -286,6 +345,13 @@ export class HomePage {
    * @param note_id
    */
   public selectNote(event: any, note_id: string) {
+    if (this.isClicked) {
+      event.stopImmediatePropagation();
+      return;
+    }
+
+    this.isClicked = true;
+
     var isChecked = event.currentTarget.checked;
     // checked.
     if(!isChecked) {
@@ -297,6 +363,10 @@ export class HomePage {
         }
       }
     }
+    setTimeout(() => {
+      this.isClicked = false;
+      this.cdr.detectChanges();
+    });
   }
 
   /**

@@ -23,4 +23,8 @@ export class NoteLockedModalComponent {
   public togglePasswordVisibility(): void {
     this.showPassword = !this.showPassword;
   }
+
+  onEnter() {
+    this.dismiss(true);
+  }
 }

@@ -3,7 +3,7 @@
     <ion-title>
       <span *ngIf="checkboxOpened && getNotes().length > 0" (click)="toggleCheckbox()">
         <img src="assets/tabler-icon-x.svg" valign="left" style="position: relative; top: 5px;"
-          class="margin-right-top"> {{listOfCheckedCheckboxes.length / 2}} {{'notesSelected' | translate}}
+          class="margin-right-top"> {{listOfCheckedCheckboxes.length}} {{'notesSelected' | translate}}
       </span>
       <img src="assets/Logo.svg" style="margin-top: 20px" *ngIf="!checkboxOpened">
     </ion-title>
@@ -112,12 +112,12 @@ align-self: stretch; background: #2761FC; color: #fff; border-radius: 250px" (cl
     </ion-row>
   </ion-grid>
 
-
   <ion-list>
-    <ion-item lines="none" *ngFor="let note of getNotes()" (click)="openOrCheckbox(note.id)" [detail]="false">
-      <div class="box-item-main">
-        <ion-checkbox *ngIf="checkboxOpened" (click)="selectNote($event, note.id)" justify="center"
-          style="margin-right: 7px" size="small"></ion-checkbox>
+    <ion-item lines="none" *ngFor="let note of getNotes()" (click)="openOrCheckbox(note.id)" [detail]="false" class="long-press-target" #longPressElements [id]="note.id">
+      <div class="box-item-main" >
+        <ion-checkbox *ngIf="checkboxOpened" (click)="$event.stopPropagation(); selectNote($event, note.id)" justify="center"
+          style="margin-right: 7px" size="small"
+           [checked]="listOfCheckedCheckboxes.includes(note.id) ? true: false" id="checkbox_{{note.id}}"></ion-checkbox>
         <ion-label class="ion-text-wrap" *ngIf="!note.protected">
           <ion-note><span>{{ note.last_modified | date: "yyyy-MM-dd H:mm":"Europe/Copenhagen" }}</span></ion-note>
           <span *ngIf="!note.protected" class="note-txt">
