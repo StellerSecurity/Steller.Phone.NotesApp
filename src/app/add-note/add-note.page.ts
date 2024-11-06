@@ -267,6 +267,9 @@ export class AddNotePage {
           this.back();
         }
       }
+      if(data.role == "backdrop") {
+        this.back();
+      }
     });
 
     return await modal.present();
