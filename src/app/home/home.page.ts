@@ -303,7 +303,7 @@ export class HomePage {
 
     this.setData(this.input_password_app_unlock);
 
-    this.toggleCheckbox();
+    // this.toggleCheckbox();
     const toast = await this.toastController.create({
       message: this.allTranslations.theSelectedNotesHasBeenDeleted,
       duration: 2500,
@@ -312,6 +312,7 @@ export class HomePage {
 
     await toast.present();
     await loading.dismiss();
+    window.location.href = "/home";
   }
 
   public async resetPassword() {
