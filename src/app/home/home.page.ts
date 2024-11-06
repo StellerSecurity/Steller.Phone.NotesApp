@@ -64,6 +64,7 @@ export class HomePage {
       this.setData(this.noteService.getNotesAppPassword()); // will send a password, if the app is encrypted.
     }
 
+    this.checkboxOpened = false;
     this.initializePressGesture();
   }
 
