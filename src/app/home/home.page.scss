@@ -261,3 +261,7 @@ ion-modal {
 .uuid {
   font-size: 10px !important;
 }
+
+.long-press-target {
+  touch-action: manipulation;
+}
