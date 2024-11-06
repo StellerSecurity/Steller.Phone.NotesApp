@@ -3,7 +3,7 @@
   <h2>{{'thisNoteIsLocked' | translate}}</h2>
   <p>{{'enterThePasswordForTheNote' | translate}}<br> {{'toUnlockIt' | translate}}</p>
   <div class="input-group" style="position: relative;">
-    <ion-input #passwordInput type="{{ showPassword ? 'text' : 'password' }}" shape="round" placeholder="{{'password' | translate}}" (keyup.enter)="onEnter($event)"></ion-input>
+    <ion-input #passwordInput type="{{ showPassword ? 'text' : 'password' }}" shape="round" placeholder="{{'password' | translate}}" (keyup.enter)="onEnter()"></ion-input>
     <ion-icon slot="end" [name]="showPassword ? 'eye-off' : 'eye'"
               (click)="togglePasswordVisibility()"></ion-icon>
   </div>
