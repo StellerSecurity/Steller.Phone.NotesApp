@@ -103,7 +103,7 @@ export class HomePage {
         const checkboxEle = element.children[0].children[0];
         checkboxEle.click();
       }, 200)
-    }, 500);
+    }, 300);
   }
 
   handlePressEnd() {

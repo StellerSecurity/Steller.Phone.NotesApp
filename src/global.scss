@@ -89,6 +89,17 @@
 }
 
 
+.fa.fa-font::before {
+
+  background-image: url('/assets/icon/link-slash-solid.svg');
+  background-size : 16px 16px;
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  content:""  !important;
+}
+
+
 .fa.fa-chain-broken::before {
 
   background-image: url('/assets/icon/link-slash-solid.svg');
