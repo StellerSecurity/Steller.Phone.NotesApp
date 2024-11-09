@@ -4,7 +4,7 @@
       <ion-back-button defaultHref="/home"></ion-back-button>
     </ion-buttons>
 
-    <ion-buttons slot="end">
+    <ion-buttons slot="end" *ngIf="!note_locked">
       <ion-button (click)="openLockModal()">
         <ion-icon class="lock-icon" name="lock-open-outline" *ngIf="!note_locked"></ion-icon>
         <ion-icon class="lock-icon" name="lock-closed-outline" *ngIf="note_locked"></ion-icon>
