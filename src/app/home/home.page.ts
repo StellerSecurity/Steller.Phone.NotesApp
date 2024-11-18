@@ -278,9 +278,6 @@ export class HomePage {
    */
   private async deleteNotesConfirm() {
 
-    const loading = await this.loadingController.create();
-    await loading.present();
-
     // delete the selected notes.
     for (let i = 0; this.listOfCheckedCheckboxes.length > i; i++) {
       for (let j = this.notes.length - 1; j >= 0; j--) {
@@ -303,15 +300,6 @@ export class HomePage {
 
     this.setData(this.input_password_app_unlock);
 
-    // this.toggleCheckbox();
-    const toast = await this.toastController.create({
-      message: this.allTranslations.theSelectedNotesHasBeenDeleted,
-      duration: 2500,
-      position: 'bottom',
-    });
-
-    await toast.present();
-    await loading.dismiss();
     window.location.href = "/home";
   }
 
