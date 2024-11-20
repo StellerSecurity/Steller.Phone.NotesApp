@@ -345,8 +345,10 @@ export class HomePage {
    * @param note_id
    */
   public selectNote(event: any, note_id: string) {
+    event.stopImmediatePropagation();
+    event.preventDefault();
+    
     if (this.isClicked) {
-      event.stopImmediatePropagation();
       return;
     }
 
