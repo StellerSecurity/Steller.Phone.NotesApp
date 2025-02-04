@@ -8,6 +8,8 @@ import { HomePageRoutingModule } from './home-routing.module';
 import { DeleteNoteModalModule } from '../delete-note-modal/delete-note-modal.module';
 import { RestPassModalModule } from '../restpass-modal/resetpass-modal.module';
 import { TranslateModule } from '@ngx-translate/core';
+import {AppModule} from "../app.module";
+import {StriphtmlPipe} from "../striphtml.pipe";
 
 @NgModule({
     imports: [
@@ -19,6 +21,6 @@ import { TranslateModule } from '@ngx-translate/core';
         RestPassModalModule,
         TranslateModule
     ],
-  declarations: [HomePage]
+    declarations: [HomePage, StriphtmlPipe]
 })
 export class HomePageModule {}
