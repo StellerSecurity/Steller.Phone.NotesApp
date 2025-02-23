@@ -6,7 +6,20 @@ import { Pipe, PipeTransform } from '@angular/core';
 export class StriphtmlPipe implements PipeTransform {
 
   transform(value: string): any {
-    return value.replace(/<[^>]*>/g, '');
+
+    const parser = new DOMParser;
+
+    value = value.replace("<br>", " ");
+    value = value.replace("<div>", " ");
+
+    value = value.replace(/<[^>]*>/g, '');
+
+    const dom = parser.parseFromString(value, 'text/html');
+    if (typeof dom.body.textContent === "string") {
+      value = dom.body.textContent;
+    }
+
+    return value;
   }
 
 }
