@@ -81,19 +81,47 @@ export class HomePage {
   }
 
   createLongPressGesture(element: ElementRef) {
+    let timeout: any;
+    let isLongPress = false;
+    let startX = 0;
+    let startY = 0;
+
     const gesture = this.gestureCtrl.create({
-      el: element.nativeElement,
-      threshold: 0,
-      gestureName: 'long-press',
-      onStart: () => {
-        this.handlePressStart(element.nativeElement);
-      },
-      onEnd: () => {
-        this.handlePressEnd()
-      },
+        el: element.nativeElement,
+        threshold: 0,
+        gestureName: 'long-press',
+
+        onStart: (detail) => {
+            startX = detail.currentX;
+            startY = detail.currentY;
+
+            timeout = setTimeout(() => {
+                isLongPress = true;
+                this.handlePressStart(element.nativeElement);
+            }, 400); // Faster long-press detection (400ms)
+        },
+
+        onMove: (detail) => {
+            const moveX = Math.abs(detail.currentX - startX);
+            const moveY = Math.abs(detail.currentY - startY);
+
+            // Allow slight movements (15px tolerance) before canceling long press
+            if (moveX > 15 || moveY > 15) {
+                clearTimeout(timeout);
+            }
+        },
+
+        onEnd: () => {
+            clearTimeout(timeout);
+            if (isLongPress) {
+                this.handlePressEnd();
+            }
+            isLongPress = false;
+        },
     });
+
     gesture.enable();
-  }
+}
 
   handlePressStart(element:any) {
     this.timeout = setTimeout(() => {
