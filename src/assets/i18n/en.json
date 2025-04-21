@@ -43,6 +43,8 @@
   "unlock": "Unlock",
   "resetPassword": "Reset Password",
   "yourNotesAwait": "Your Notes Await",
+  "NoResultsFor": "No results for ",
+  "TryAnotherSearchQuery": "Try another search",
   "tapTo": "Tap to",
   "button": "button",
   "toAddNote": "to add note",

@@ -14,6 +14,7 @@ import {AppProtectorService} from "../services/app-protector.service";
 import { DeleteNoteModalComponent } from '../delete-note-modal/delete-note-modal.component';
 import { ResetPassModalComponent } from '../restpass-modal/resetpass-modal.component';
 import { TranslatorService } from '../services/translator.service';
+import {search} from "ionicons/icons";
 
 @Component({
   selector: 'app-home',
@@ -35,6 +36,13 @@ export class HomePage {
   public input_password_app_unlock = "";
 
   public timezone = "UTC";
+
+  public search_query = "";
+
+  public filteredResults : any = [];
+
+  public isSearching = false;
+
   allTranslations:any;
 
   @ViewChild(IonModal) modal: IonModal;
@@ -67,6 +75,35 @@ export class HomePage {
     this.checkboxOpened = false;
     this.initializePressGesture();
   }
+
+
+  search() {
+
+    if(this.search_query.length == 0) {
+      this.isSearching = false;
+      this.filteredResults = this.notes;
+      return;
+    }
+
+    let filteredNewResults = [];
+
+    for(let i = 0; this.notes.length > i; i++) {
+      let noteText = this.notes[i].text;
+
+      let result = noteText.includes(this.search_query);
+
+      // dont search in locked notes.
+      if(result && !this.notes[i].protected) {
+        filteredNewResults.push(this.notes[i]);
+      }
+
+    }
+
+    this.isSearching = true;
+    this.filteredResults = filteredNewResults;
+
+  }
+
 
   ionViewDidEnter() {
     this.initializePressGesture();
@@ -167,6 +204,8 @@ export class HomePage {
       // @ts-ignore
       this.notes = JSON.parse(decryptedNotes);
 
+      this.filteredResults = this.notes;
+
       return true;
 
   }
@@ -238,7 +277,7 @@ export class HomePage {
    * and sort them by last modified.
    */
   getNotes()  {
-    if(this.notes === undefined || this.notes === null) {
+    if(this.filteredResults === undefined || this.filteredResults === null) {
       return [];
     }
 
@@ -253,9 +292,9 @@ export class HomePage {
     }*/
 
     // @ts-ignore
-    this.notes = this.notes.sort((a, b) => b.last_modified - a.last_modified);
+    this.filteredResults = this.filteredResults.sort((a, b) => b.last_modified - a.last_modified);
 
-    return this.notes;
+    return this.filteredResults;
   }
 
   public settings() {
