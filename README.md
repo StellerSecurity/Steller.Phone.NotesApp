@@ -1,4 +1,4 @@
-# Steller.Phone.NotesApp (Steller - Notes)
+# Stellar Notes
 
 A hybrid ionic application that allows users to store notes on their phone using localStorage.
 
@@ -25,5 +25,9 @@ Install:
 1. NPM install
 
 2. ionic serve
+
+Available:
+
+Aurora Store and Play Store.
 
 thats it.
