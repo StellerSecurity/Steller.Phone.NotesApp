@@ -186,6 +186,6 @@ align-self: stretch; background: #2761FC; color: #fff; border-radius: 250px" (cl
 <ion-toolbar slot="fixed" class="toolbar-bottom" *ngIf="checkboxOpened && getNotes().length > 0">
   <ion-button color="danger" shape="round" fill="outline" class="delete-btn" 
   [disabled]="listOfCheckedCheckboxes.length == 0" (click)="deleteSelectedNotes()"><img
-      src="assets/tabler-icon-trash.svg" style="margin-right: 15px"> {{'delete' | translate}}</ion-button><br>
+      src="assets/tabler-icon-trash.svg" style="margin-right: 15px"> {{'delete' | translate}} ({{listOfCheckedCheckboxes.length}}) </ion-button><br>
   <!--<ion-button color="primary" fill="outline" expand="full" (click)="toggleCheckbox()">Cancel</ion-button>-->
 </ion-toolbar>
