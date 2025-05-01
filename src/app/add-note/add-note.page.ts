@@ -97,8 +97,9 @@ export class AddNotePage {
       // @ts-ignore
       this.notes_id = params.get('id');
       if(this.notes_id === null) {
+        console.log('new note created');
         this.notes_id = uuidv4();
-        this.save(null);
+        return;
       }
 
       // @ts-ignore
@@ -115,7 +116,6 @@ export class AddNotePage {
     });
 
   }
-
 
   ionViewWillEnter(): void {
     this.allTranslations = this.translatorService.allTranslations; 
@@ -155,7 +155,7 @@ export class AddNotePage {
     }
 
     // newly created note.
-    var note = {
+    const note = {
       "id": this.notes_id,
       "last_modified": Date.now(),
       "text": encryptedText,
