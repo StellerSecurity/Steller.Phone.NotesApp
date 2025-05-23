@@ -8,6 +8,9 @@ import { NoteLockedModalComponent } from '../note-locked-modal/note-locked-modal
 import { DeleteNoteModalComponent } from '../delete-note-modal/delete-note-modal.component';
 import {AngularEditorConfig} from "@wfpena/angular-wysiwyg";
 import { TranslatorService } from '../services/translator.service';
+import {SecretapiService} from "../services/secretapi.service";
+import {Secret} from "../models/Secret";
+import {sha512} from "js-sha512";
 const { v4: uuidv4 } = require('uuid');
 
 declare var require: any;
@@ -48,6 +51,8 @@ export class AddNotePage {
 
   public note_text = "";
 
+  public note_title = "";
+
   public editorConfig: AngularEditorConfig = {
     editable: true,
     spellcheck: false,
@@ -87,6 +92,7 @@ export class AddNotePage {
               private notesService: NotesService,
               private toastController: ToastController,
               private modalCtrl: ModalController,
+              private secretapi: SecretapiService,
               private alertCtrl: AlertController,
               private translatorService: TranslatorService) {
 
@@ -113,8 +119,43 @@ export class AddNotePage {
 
       // @ts-ignore
       this.note_text = this.currentNote.text;
+
+      // @ts-ignore
+      if(this.currentNote.title !== undefined) {
+        // @ts-ignore
+        this.note_title = this.currentNote.title;
+      }
     });
 
+  }
+
+  public async shareStellarSecret() {
+
+    let addSecretModal = new Secret();
+    let secret_id = uuidv4();
+    addSecretModal.expires_at = "0";
+
+    addSecretModal.id = sha512(secret_id);
+
+    let secretMessage = this.note_title + " " + this.note_text;
+
+    addSecretModal.message = CryptoJS.AES.encrypt(secretMessage, secret_id).toString();
+
+    (this.secretapi.create(addSecretModal)).subscribe(async (response) => {
+          alert(secret_id);
+        },
+        async error => {
+          console.log("error");
+        },
+        async () => {
+
+        })
+
+  }
+
+
+  public noteTitleChange(event: any) {
+    console.log(event);
   }
 
   ionViewWillEnter(): void {
@@ -154,9 +195,17 @@ export class AddNotePage {
       protectedNote = this.currentNote.protected;
     }
 
+    let currentdate = new Date();
+
     // newly created note.
     const note = {
       "id": this.notes_id,
+      "title": currentdate.getDate() + "/"
+          + (currentdate.getMonth()+1)  + "/"
+          + currentdate.getFullYear() + " - "
+          + currentdate.getHours() + ":"
+          + currentdate.getMinutes() + ":"
+          + currentdate.getSeconds(),
       "last_modified": Date.now(),
       "text": encryptedText,
       "protected": protectedNote,

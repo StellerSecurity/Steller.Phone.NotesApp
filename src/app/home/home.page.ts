@@ -92,8 +92,16 @@ export class HomePage {
 
       let result = noteText.includes(this.search_query);
 
+      let titleExists = false;
+
+      if(this.notes[i].title !== undefined) {
+        titleExists = this.notes[i].title.includes(this.search_query);
+      }
+
       // dont search in locked notes.
       if(result && !this.notes[i].protected) {
+        filteredNewResults.push(this.notes[i]);
+      } else if(titleExists) {
         filteredNewResults.push(this.notes[i]);
       }
 

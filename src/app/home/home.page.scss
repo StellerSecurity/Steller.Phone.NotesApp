@@ -49,10 +49,17 @@ ion-item {
 
       .note-txt {
         color: #0B0C19;
+        font-size: 12px;
+        font-family: 'Poppins';
+      }
+
+      .note-txt-title {
+        color: #0B0C19;
         font-size: 14px;
         font-family: 'Poppins';
         font-weight: 600;
       }
+
     }
   }
 }

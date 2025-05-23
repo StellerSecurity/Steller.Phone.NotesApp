@@ -1,5 +1,6 @@
 <ion-header [translucent]="true">
   <ion-toolbar>
+    <ion-title  *ngIf="!note_locked" contenteditable (input)="noteTitleChange(123)">{{note_title}}</ion-title>
     <ion-buttons slot="start">
       <ion-back-button defaultHref="/home"></ion-back-button>
     </ion-buttons>
@@ -10,7 +11,9 @@
         <ion-icon class="lock-icon" name="lock-closed-outline" *ngIf="note_locked"></ion-icon>
       </ion-button>
 
-      <ion-button (click)="deleteNote()"><ion-icon name="trash-outline"></ion-icon></ion-button>
+        <ion-button (click)="shareStellarSecret()"><ion-icon name="share-social-outline"></ion-icon></ion-button>
+
+        <ion-button (click)="deleteNote()"><ion-icon name="trash-outline"></ion-icon></ion-button>
     </ion-buttons>
 
   </ion-toolbar>
