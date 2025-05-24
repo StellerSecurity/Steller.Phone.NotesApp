@@ -1,7 +1,7 @@
 <ion-header [translucent]="true">
   <ion-toolbar>
     <ion-title>
-      <span *ngIf="checkboxOpened && filteredResults.length > 0" (click)="toggleCheckbox()">
+      <span *ngIf="checkboxOpened && filteredResults !== null &&  filteredResults.length > 0" (click)="toggleCheckbox()">
         <img src="assets/tabler-icon-x.svg" valign="left" style="position: relative; top: 5px;"
           class="margin-right-top"> {{listOfCheckedCheckboxes.length}} {{'notesSelected' | translate}}
       </span>
@@ -10,7 +10,7 @@
 
     <ion-buttons slot="end" style="position: relative; top: 5px;">
       <ion-button slot="icon-only" (click)="toggleCheckbox()">
-        <img src="assets/tabler-icon-square-check.svg"  *ngIf="filteredResults.length > 0">
+        <img src="assets/tabler-icon-square-check.svg"  *ngIf="filteredResults !== null && filteredResults.length > 0">
       </ion-button>
       <ion-button slot="icon-only" style="padding-right: 15px" (click)="settings()"><img src="assets/tabler-icon-settings.svg"></ion-button>
       
@@ -76,7 +76,7 @@ align-self: stretch; background: #2761FC; color: #fff; border-radius: 250px" (cl
 </ion-fab>
 
 <ion-content [fullscreen]="true" class="ion-padding">
-  <ion-grid *ngIf="filteredResults.length == 0 && !isSearching" style="height: -webkit-calc(100vh - 170px);
+  <ion-grid *ngIf="filteredResults !== null && filteredResults.length == 0 && !isSearching" style="height: -webkit-calc(100vh - 170px);
   height: calc(100vh - 170px);">
     <ion-row class="ion-align-items-center ion-justify-content-center" style="min-height: 100%;">
       <ion-col size-md="12">
@@ -112,7 +112,7 @@ align-self: stretch; background: #2761FC; color: #fff; border-radius: 250px" (cl
   </ion-grid>
 
     <!-- no results -->
-    <ion-grid *ngIf="filteredResults.length == 0 && isSearching" style="height: -webkit-calc(100vh - 170px);
+    <ion-grid *ngIf="filteredResults !== null && filteredResults.length == 0 && isSearching" style="height: -webkit-calc(100vh - 170px);
   height: calc(100vh - 170px);">
         <ion-row class="ion-align-items-center ion-justify-content-center" style="min-height: 100%;">
             <ion-col size-md="12">
