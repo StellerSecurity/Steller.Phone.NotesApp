@@ -175,7 +175,6 @@ export class HomePage {
       setTimeout(() => {
         this.cdr.detectChanges();
         const checkboxEle = element.children[0].children[0];
-        console.log("lol");
         Haptics.vibrate({duration: 50}).then(r => {});
       }, 100)
     }, 200);
