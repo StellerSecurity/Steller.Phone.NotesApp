@@ -15,6 +15,7 @@ import { DeleteNoteModalComponent } from '../delete-note-modal/delete-note-modal
 import { ResetPassModalComponent } from '../restpass-modal/resetpass-modal.component';
 import { TranslatorService } from '../services/translator.service';
 import {search} from "ionicons/icons";
+import {Haptics, ImpactStyle} from "@capacitor/haptics";
 
 @Component({
   selector: 'app-home',
@@ -174,9 +175,10 @@ export class HomePage {
       setTimeout(() => {
         this.cdr.detectChanges();
         const checkboxEle = element.children[0].children[0];
-        checkboxEle.click();
-      }, 200)
-    }, 300);
+        console.log("lol");
+        Haptics.vibrate({duration: 50}).then(r => {});
+      }, 100)
+    }, 200);
   }
 
   handlePressEnd() {
