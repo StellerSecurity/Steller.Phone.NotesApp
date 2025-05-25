@@ -49,7 +49,7 @@
   // Replace the url to the icon that you want
 
 
-  background-image: url('/assets/icon/undo-circular-arrow.png');
+  background-image: url('./assets/icon/undo-circular-arrow.png');
   background-size : 16px 16px;
   display: inline-block;
   width: 16px;
@@ -60,7 +60,7 @@
 
 .fa.fa-repeat::before {
 
-  background-image: url('/assets/icon/redo-arrow-symbol.png');
+  background-image: url('./assets/icon/redo-arrow-symbol.png');
   background-size : 16px 16px;
   display: inline-block;
   width: 16px;
@@ -71,7 +71,7 @@
 
 .fa.fa-link::before {
 
-  background-image: url('/assets/icon/link-solid.png');
+  background-image: url('./assets/icon/link-solid.png');
   background-size : 16px 16px;
   display: inline-block;
   width: 16px;
@@ -91,7 +91,7 @@
 
 .fa.fa-font::before {
 
-  background-image: url('/assets/icon/link-slash-solid.svg');
+  background-image: url('./assets/icon/link-slash-solid.svg');
   background-size : 16px 16px;
   display: inline-block;
   width: 16px;
@@ -102,7 +102,7 @@
 
 .fa.fa-chain-broken::before {
 
-  background-image: url('/assets/icon/link-slash-solid.svg');
+  background-image: url('./assets/icon/link-slash-solid.svg');
   background-size : 16px 16px;
   display: inline-block;
   width: 16px;
@@ -112,7 +112,7 @@
 
 .fa.fa-image::before {
 
-  background-image: url('/assets/icon/image-regular.svg');
+  background-image: url('./assets/icon/image-regular.svg');
   background-size : 16px 16px;
   display: inline-block;
   width: 16px;
@@ -123,7 +123,7 @@
 
 // Strikethrough
 .fa.fa-strikethrough::before {
-  background-image: url('/assets/icon/line.png');
+  background-image: url('./assets/icon/line.png');
   background-size : 24px 24px;
   display: inline-block;
   width: 16px;
@@ -134,7 +134,7 @@
 
 // Strikethrough
 .fa.fa-list-ul::before {
-  background-image: url('/assets/icon/list.png');
+  background-image: url('./assets/icon/list.png');
   background-size : 24px 24px;
   display: inline-block;
   width: 16px;
@@ -144,7 +144,7 @@
 
 // Strikethrough
 .fa.fa-list-ol::before {
-  background-image: url('/assets/icon/list(1).png');
+  background-image: url('./assets/icon/list(1).png');
   background-size : 24px 24px;
   display: inline-block;
   width: 16px;
@@ -154,7 +154,7 @@
 
 // Strikethrough
 .fa.fa-strikethrough::before {
-  background-image: url('/assets/icon/line.png');
+  background-image: url('./assets/icon/line.png');
   background-size : 16px 16px;
   display: inline-block;
   width: 16px;
@@ -164,7 +164,7 @@
 
 // Bold
 .fa.fa-bold::before {
-  background-image: url('/assets/icon/bold.png');
+  background-image: url('./assets/icon/bold.png');
   background-size : 16px 16px;
   display: inline-block;
   width: 16px;

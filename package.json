@@ -9,7 +9,10 @@
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
-    "lint": "ng lint"
+    "lint": "ng lint",
+    "electron": "electron .",
+    "electron:macBuild": "npm run build && electron-builder --mac",
+    "electron:winBuild": "npm run build && electron-builder --win"
   },
   "private": true,
   "dependencies": {
@@ -63,6 +66,8 @@
     "@types/node": "^12.11.1",
     "@typescript-eslint/eslint-plugin": "5.3.0",
     "@typescript-eslint/parser": "5.3.0",
+    "electron": "^36.3.1",
+    "electron-builder": "^26.0.12",
     "eslint": "^7.26.0",
     "eslint-plugin-import": "2.22.1",
     "eslint-plugin-jsdoc": "30.7.6",
@@ -78,5 +83,25 @@
     "ts-node": "^8.3.0",
     "typescript": "~5.0.2"
   },
-  "description": "An Ionic project"
+  "main": "electron-start.js",
+  "description": "An Ionic project",
+  "build": {
+    "appId": "com.steller.phone.notesapp",
+    "productName": "Steller Phone NotesApp",
+    "files": [
+      "dist/StellerPhoneNotesApp/**/*",
+      "electron-start.js",
+      "package.json"
+    ],
+    "directories": {
+      "buildResources": "icons"
+    },
+    "mac": {
+      "icon": "icons/icon.png"
+    },
+    "win": {
+      "target": "nsis",
+      "icon": "icons/icon.png"
+    }
+  }
 }
