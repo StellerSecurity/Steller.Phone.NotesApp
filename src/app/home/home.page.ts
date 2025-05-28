@@ -175,6 +175,10 @@ export class HomePage {
       setTimeout(() => {
         this.cdr.detectChanges();
         const checkboxEle = element.children[0].children[0];
+
+        checkboxEle.checked = true;
+        this.listOfCheckedCheckboxes.push(element.id);
+        
         Haptics.vibrate({duration: 50}).then(r => {});
       }, 100)
     }, 200);
@@ -421,8 +425,8 @@ export class HomePage {
    * @param note_id
    */
   public selectNote(event: any, note_id: string) {
-    event.stopImmediatePropagation();
-    event.preventDefault();
+    event?.stopImmediatePropagation();
+    event?.preventDefault();
     
     if (this.isClicked) {
       return;
