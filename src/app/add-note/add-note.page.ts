@@ -2,7 +2,7 @@ import {Component, ElementRef, OnInit, ViewChild} from '@angular/core';
 import {at} from "ionicons/icons";
 import {CryptoService} from "../services/crypto.service";
 import {ActivatedRoute, ParamMap, Router} from "@angular/router";
-import {AlertController, IonModal, LoadingController, NavController, ToastController, ModalController} from "@ionic/angular";
+import {AlertController, IonModal, LoadingController, NavController, ToastController, ModalController, IonInput} from "@ionic/angular";
 import {NotesService} from "../services/notes.service";
 import { NoteLockedModalComponent } from '../note-locked-modal/note-locked-modal.component';
 import { DeleteNoteModalComponent } from '../delete-note-modal/delete-note-modal.component';
@@ -85,6 +85,8 @@ export class AddNotePage {
     ],
   };
   allTranslations:any;
+  isEditingTitle: boolean = false;
+  @ViewChild('titleInput', { static: false }) titleInputRef!: IonInput;
 
   constructor(private cryptoService: CryptoService,
               public activatedRoute: ActivatedRoute,
@@ -153,10 +155,18 @@ export class AddNotePage {
 
   }
 
+  enableEditingTitle() {
+    this.isEditingTitle = true;
+
+    setTimeout(() => {
+      this.titleInputRef?.setFocus();
+    }, 100); // Slight delay ensures DOM updates
+  }
+
 
   public noteTitleChange(event: any) {
-    const newTitle = (event.target as HTMLElement).innerText.trim();
-    this.note_title = newTitle || '';
+    const newTitle = event.detail?.value || '';
+    this.note_title = newTitle.trim();
   
 
     for(let i = 0; i < this.notes?.length; i++) {
