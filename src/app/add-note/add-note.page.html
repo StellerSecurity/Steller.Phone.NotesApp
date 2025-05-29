@@ -1,6 +1,6 @@
 <ion-header [translucent]="true">
   <ion-toolbar>
-    <ion-title  *ngIf="!note_locked" contenteditable (input)="noteTitleChange(123)">{{note_title}}</ion-title>
+    <ion-title  *ngIf="!note_locked" contenteditable (input)="noteTitleChange($event)">{{note_title}}</ion-title>
     <ion-buttons slot="start">
       <ion-back-button defaultHref="/home"></ion-back-button>
     </ion-buttons>

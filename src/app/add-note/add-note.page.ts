@@ -29,7 +29,7 @@ export class AddNotePage {
 
   private notes_id = null;
 
-  private notes = null;
+  private notes:any[] = [];
 
   private currentNote = null;
 
@@ -155,7 +155,23 @@ export class AddNotePage {
 
 
   public noteTitleChange(event: any) {
-    console.log(event);
+    const newTitle = (event.target as HTMLElement).innerText.trim();
+    this.note_title = newTitle || '';
+  
+
+    for(let i = 0; i < this.notes?.length; i++) {
+      // @ts-ignore
+      if(this.notes[i].id === this.notes_id) {
+        // @ts-ignore
+        this.notes[i].title = this.note_title;
+        break;
+      }
+    }
+
+    setTimeout(() => {
+        this.save(event)
+    }, 300)
+    
   }
 
   ionViewWillEnter(): void {
@@ -170,7 +186,6 @@ export class AddNotePage {
   }
   // should be called on key enter.
   save(ev: any) {
-
     if(this.notes_id === null) return;
     if(this.note_locked) return;
 
@@ -200,7 +215,7 @@ export class AddNotePage {
     // newly created note.
     const note = {
       "id": this.notes_id,
-      "title": currentdate.getDate() + "/"
+      "title": this.note_title ? this.note_title : currentdate.getDate() + "/"
           + (currentdate.getMonth()+1)  + "/"
           + currentdate.getFullYear() + " - "
           + currentdate.getHours() + ":"
