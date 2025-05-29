@@ -171,3 +171,11 @@
   height: 16px;
   content:""  !important;
 }
+
+ion-button,
+ion-fab-button,
+ion-item {
+  --box-shadow: none!important;
+  box-shadow: none !important;
+  border: 0 !important; 
+}
