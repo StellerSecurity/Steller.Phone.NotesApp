@@ -5,7 +5,11 @@
         <img src="assets/tabler-icon-x.svg" valign="left" style="position: relative; top: 5px;"
           class="margin-right-top"> {{listOfCheckedCheckboxes.length}} {{'notesSelected' | translate}}
       </span>
-      <img src="assets/Logo.svg" style="margin-top: 20px" *ngIf="!checkboxOpened">
+      <!-- <img src="assets/Logo.svg" style="margin-top: 20px" *ngIf="!checkboxOpened"> -->
+      <div class="logo-container" *ngIf="!checkboxOpened">
+          <img class="logo-img" src="./assets/note-logo.png" alt="">
+        <div class="logo-text">Stellar Private Notes</div>
+      </div> 
     </ion-title>
 
     <ion-buttons slot="end" style="position: relative; top: 5px;">
@@ -24,7 +28,13 @@
 <ion-modal trigger="app-ask-password" [isOpen]="!should_display">
   <ng-template>
     <ion-content class="ion-padding">
-      <div align="center"><img src="assets/Logo.svg"></div><br><br><br>
+      <!-- <div align="center"><img src="assets/Logo.svg"></div><br><br><br> -->
+      <div align="center">
+        <div class="logo-container">
+          <img class="logo-img" src="./assets/note-logo.png" alt="">
+        <div class="logo-text">Stellar Private Notes</div>
+      </div> 
+      </div><br><br><br>
 
       <div align="center"><img src="assets/icon-lock.svg"></div><br><br>
       <div style="text-align: center;

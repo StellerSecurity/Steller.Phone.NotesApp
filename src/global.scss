@@ -179,3 +179,25 @@ ion-item {
   box-shadow: none !important;
   border: 0 !important; 
 }
+
+.logo-container {
+  display: flex;
+  align-items: center;
+  justify-content: left;
+  margin-top: 5px;
+}
+
+.logo-img {
+  height: 32px;
+  width: 32px;
+  min-width: 32px;
+  min-height: 32px;
+}
+
+.logo-text {
+  color: #0b0c19;
+  font-weight: 600;
+  font-size: 18px;
+  font-family: Poppins, sans-serif;
+  margin-left: 10px;
+}
