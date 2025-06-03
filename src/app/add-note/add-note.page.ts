@@ -194,6 +194,7 @@ export class AddNotePage {
   toggleConfirmPasswordVisibility() {
     this.confirmShowPassword = !this.confirmShowPassword;
   }
+  
   // should be called on key enter.
   save(ev: any) {
     if(this.notes_id === null) return;
@@ -222,15 +223,27 @@ export class AddNotePage {
 
     let currentdate = new Date();
 
+    const now = new Date();
+
+    const datePart = now.toLocaleDateString('en-US', {
+      weekday: 'long',
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric'
+    });
+    
+    const timePart = now.toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true
+    });
+    
+    const formattedDate = `${datePart} at ${timePart}`;
+
     // newly created note.
     const note = {
       "id": this.notes_id,
-      "title": this.note_title ? this.note_title : currentdate.getDate() + "/"
-          + (currentdate.getMonth()+1)  + "/"
-          + currentdate.getFullYear() + " - "
-          + currentdate.getHours() + ":"
-          + currentdate.getMinutes() + ":"
-          + currentdate.getSeconds(),
+      "title": this.note_title ? this.note_title : formattedDate,
       "last_modified": Date.now(),
       "text": encryptedText,
       "protected": protectedNote,
