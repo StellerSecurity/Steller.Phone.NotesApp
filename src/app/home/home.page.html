@@ -168,8 +168,8 @@ align-self: stretch; background: #2761FC; color: #fff; border-radius: 250px" (cl
         <ion-label class="ion-text-wrap" *ngIf="!note.protected">
           <ion-note><span>{{ note.last_modified | date: "yyyy-MM-dd H:mm":"Europe/Copenhagen" }}</span></ion-note>
           <span *ngIf="!note.protected">
-            <span class="note-txt-title" *ngIf="note.title !== undefined">{{ (note.title.length > 30)? (note.title | striphtml | slice:0:30  ) +'...':(note.title | striphtml) }}<br></span>
-            <span class="note-txt">{{ (note.text.length > 30)? (note.text | striphtml | slice:0:30  ) +'...':(note.text | striphtml) }}</span>
+            <span class="note-txt-title" *ngIf="note.title !== undefined">{{ (note.title.length > 40)? (note.title | striphtml | slice:0:40  ) +'...':(note.title | striphtml) }}<br></span>
+            <span class="note-txt">{{ (note.text.length > 40)? (note.text | striphtml | slice:0:40  ) +'...':(note.text | striphtml) }}</span>
           </span>
           <span class="uuid" *ngIf="note.protected">{{ note.id | slice:note.id.len:4 }}</span>
         </ion-label>
