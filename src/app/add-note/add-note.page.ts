@@ -225,14 +225,14 @@ export class AddNotePage {
 
     const now = new Date();
 
-    const datePart = now.toLocaleDateString('en-US', {
+    const datePart = now.toLocaleDateString(undefined, {
       weekday: 'long',
       month: 'short',
       day: 'numeric',
       year: 'numeric'
     });
     
-    const timePart = now.toLocaleTimeString('en-US', {
+    const timePart = now.toLocaleTimeString(undefined, {
       hour: 'numeric',
       minute: '2-digit',
       hour12: true
