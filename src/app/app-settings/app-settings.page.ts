@@ -75,6 +75,18 @@ export class AppSettingsPage implements AfterViewInit {
 
   public async save() {
 
+    if (this.notesAppPassword.length < 3) {
+      const toast = await this.toastController.create({
+        message: this.allTranslations.thePasswordIsWeakPleaseMakeYourPasswordStronger,
+        duration: 3000,
+        position: 'bottom',
+      });
+
+      await toast.present();
+
+      return;
+    }
+
     if (this.notesAppPassword !== this.confirmPassword) {
       const toast = await this.toastController.create({
         message: this.allTranslations.theTwoPasswordsDoesNotMatch,
@@ -87,17 +99,6 @@ export class AppSettingsPage implements AfterViewInit {
       return;
     }
 
-    if (this.notesAppPassword.length < 2) {
-      const toast = await this.toastController.create({
-        message: this.allTranslations.thePasswordIsWeakPleaseMakeYourPasswordStronger,
-        duration: 3000,
-        position: 'bottom',
-      });
-
-      await toast.present();
-
-      return;
-    }
 
     // can be in encrypted state or decrypted - depends if the app_password_challenge is set.
     let notes = this.noteService.getNotes();
@@ -152,7 +153,19 @@ export class AppSettingsPage implements AfterViewInit {
           if (this.noteService.appHasPasswordChallenge() && inputValue) {
             let notes = this.noteService.getNotes();
             // first, we have to decrypt the notes:
-            let decryptedNotes = this.cryptoService.decrypt(notes, inputValue);
+            let decryptedNotes = null;
+            try {
+              decryptedNotes = this.cryptoService.decrypt(notes, inputValue);
+            } catch (e) {
+              const toast = await this.toastController.create({
+                message: 'The entered password was not correct.',
+                duration: 3000,
+                position: 'bottom',
+              });
+
+              await toast.present();
+              return;
+            }
             this.noteService.setNotes(decryptedNotes);
             this.noteService.setDecryptedNotes(decryptedNotes);
             await this.modal.dismiss();
@@ -161,7 +174,7 @@ export class AppSettingsPage implements AfterViewInit {
             this.noteService.setNotesAppPassword("");
             localStorage.removeItem("app_password_challenge");
             window.location.href = "/app-settings";
-          }else{
+          } else {
             const toast = await this.toastController.create({
               message: this.allTranslations.enterYourCurrentPassword,
               duration: 3000,

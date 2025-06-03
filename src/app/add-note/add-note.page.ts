@@ -2,12 +2,15 @@ import {Component, ElementRef, OnInit, ViewChild} from '@angular/core';
 import {at} from "ionicons/icons";
 import {CryptoService} from "../services/crypto.service";
 import {ActivatedRoute, ParamMap, Router} from "@angular/router";
-import {AlertController, IonModal, LoadingController, NavController, ToastController, ModalController} from "@ionic/angular";
+import {AlertController, IonModal, LoadingController, NavController, ToastController, ModalController, IonInput} from "@ionic/angular";
 import {NotesService} from "../services/notes.service";
 import { NoteLockedModalComponent } from '../note-locked-modal/note-locked-modal.component';
 import { DeleteNoteModalComponent } from '../delete-note-modal/delete-note-modal.component';
 import {AngularEditorConfig} from "@wfpena/angular-wysiwyg";
 import { TranslatorService } from '../services/translator.service';
+import {SecretapiService} from "../services/secretapi.service";
+import {Secret} from "../models/Secret";
+import {sha512} from "js-sha512";
 const { v4: uuidv4 } = require('uuid');
 
 declare var require: any;
@@ -26,7 +29,7 @@ export class AddNotePage {
 
   private notes_id = null;
 
-  private notes = null;
+  private notes:any[] = [];
 
   private currentNote = null;
 
@@ -47,6 +50,8 @@ export class AddNotePage {
   public passwordStrength = 0;
 
   public note_text = "";
+
+  public note_title = "";
 
   public editorConfig: AngularEditorConfig = {
     editable: true,
@@ -80,6 +85,8 @@ export class AddNotePage {
     ],
   };
   allTranslations:any;
+  isEditingTitle: boolean = false;
+  @ViewChild('titleInput', { static: false }) titleInputRef!: IonInput;
 
   constructor(private cryptoService: CryptoService,
               public activatedRoute: ActivatedRoute,
@@ -87,6 +94,7 @@ export class AddNotePage {
               private notesService: NotesService,
               private toastController: ToastController,
               private modalCtrl: ModalController,
+              private secretapi: SecretapiService,
               private alertCtrl: AlertController,
               private translatorService: TranslatorService) {
 
@@ -113,8 +121,67 @@ export class AddNotePage {
 
       // @ts-ignore
       this.note_text = this.currentNote.text;
+
+      // @ts-ignore
+      if(this.currentNote.title !== undefined) {
+        // @ts-ignore
+        this.note_title = this.currentNote.title;
+      }
     });
 
+  }
+
+  public async shareStellarSecret() {
+
+    let addSecretModal = new Secret();
+    let secret_id = uuidv4();
+    addSecretModal.expires_at = "0";
+
+    addSecretModal.id = sha512(secret_id);
+
+    let secretMessage = this.note_title + " " + this.note_text;
+
+    addSecretModal.message = CryptoJS.AES.encrypt(secretMessage, secret_id).toString();
+
+    (this.secretapi.create(addSecretModal)).subscribe(async (response) => {
+          alert(secret_id);
+        },
+        async error => {
+          console.log("error");
+        },
+        async () => {
+
+        })
+
+  }
+
+  enableEditingTitle() {
+    this.isEditingTitle = true;
+
+    setTimeout(() => {
+      this.titleInputRef?.setFocus();
+    }, 100); // Slight delay ensures DOM updates
+  }
+
+
+  public noteTitleChange(event: any) {
+    const newTitle = event.detail?.value || '';
+    this.note_title = newTitle.trim();
+  
+
+    for(let i = 0; i < this.notes?.length; i++) {
+      // @ts-ignore
+      if(this.notes[i].id === this.notes_id) {
+        // @ts-ignore
+        this.notes[i].title = this.note_title;
+        break;
+      }
+    }
+
+    setTimeout(() => {
+        this.save(event)
+    }, 300)
+    
   }
 
   ionViewWillEnter(): void {
@@ -129,7 +196,6 @@ export class AddNotePage {
   }
   // should be called on key enter.
   save(ev: any) {
-
     if(this.notes_id === null) return;
     if(this.note_locked) return;
 
@@ -154,9 +220,17 @@ export class AddNotePage {
       protectedNote = this.currentNote.protected;
     }
 
+    let currentdate = new Date();
+
     // newly created note.
     const note = {
       "id": this.notes_id,
+      "title": this.note_title ? this.note_title : currentdate.getDate() + "/"
+          + (currentdate.getMonth()+1)  + "/"
+          + currentdate.getFullYear() + " - "
+          + currentdate.getHours() + ":"
+          + currentdate.getMinutes() + ":"
+          + currentdate.getSeconds(),
       "last_modified": Date.now(),
       "text": encryptedText,
       "protected": protectedNote,

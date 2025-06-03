@@ -15,6 +15,7 @@ import { DeleteNoteModalComponent } from '../delete-note-modal/delete-note-modal
 import { ResetPassModalComponent } from '../restpass-modal/resetpass-modal.component';
 import { TranslatorService } from '../services/translator.service';
 import {search} from "ionicons/icons";
+import {Haptics, ImpactStyle} from "@capacitor/haptics";
 
 @Component({
   selector: 'app-home',
@@ -92,8 +93,16 @@ export class HomePage {
 
       let result = noteText.includes(this.search_query);
 
+      let titleExists = false;
+
+      if(this.notes[i].title !== undefined) {
+        titleExists = this.notes[i].title.includes(this.search_query);
+      }
+
       // dont search in locked notes.
       if(result && !this.notes[i].protected) {
+        filteredNewResults.push(this.notes[i]);
+      } else if(titleExists) {
         filteredNewResults.push(this.notes[i]);
       }
 
@@ -166,9 +175,13 @@ export class HomePage {
       setTimeout(() => {
         this.cdr.detectChanges();
         const checkboxEle = element.children[0].children[0];
-        checkboxEle.click();
-      }, 200)
-    }, 300);
+
+        checkboxEle.checked = true;
+        this.listOfCheckedCheckboxes.push(element.id);
+        
+        Haptics.vibrate({duration: 50}).then(r => {});
+      }, 100)
+    }, 200);
   }
 
   handlePressEnd() {
@@ -412,8 +425,8 @@ export class HomePage {
    * @param note_id
    */
   public selectNote(event: any, note_id: string) {
-    event.stopImmediatePropagation();
-    event.preventDefault();
+    event?.stopImmediatePropagation();
+    event?.preventDefault();
     
     if (this.isClicked) {
       return;

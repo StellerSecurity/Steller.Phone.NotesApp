@@ -49,10 +49,17 @@ ion-item {
 
       .note-txt {
         color: #0B0C19;
+        font-size: 12px;
+        font-family: 'Poppins';
+      }
+
+      .note-txt-title {
+        color: #0B0C19;
         font-size: 14px;
         font-family: 'Poppins';
         font-weight: 600;
       }
+
     }
   }
 }
@@ -264,4 +271,18 @@ ion-modal {
 
 .long-press-target {
   touch-action: manipulation;
+}
+
+ion-searchbar {
+  --box-shadow: none; /* Removes the internal shadow */
+  box-shadow: none !important; /* Removes any external shadow */
+  padding: 0 15px;
+  margin-top: 8px;
+  margin-bottom: -4px;
+}
+
+::ng-deep ion-searchbar .searchbar-input-container input {
+  border: 0.5px solid #d3d3d3 !important;
+  border-radius: 12px;
+  --border-radius: 12px
 }

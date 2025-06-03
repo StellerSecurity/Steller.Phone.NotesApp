@@ -1,5 +1,33 @@
 <ion-header [translucent]="true">
   <ion-toolbar>
+    <ng-container *ngIf="!note_locked">
+      <ng-container *ngIf="!isEditingTitle; else editing">
+        <ion-title class="editable-title" (click)="enableEditingTitle()">
+          {{ note_title || 'Untitled Note' }}
+        </ion-title>
+      </ng-container>
+    
+      <ng-template #editing>
+        <ion-title class="editable-title-input-wrapper">
+          <ion-input
+            #titleInput
+            [(ngModel)]="note_title"
+            (ionInput)="noteTitleChange($event)"
+            (blur)="isEditingTitle = false"
+            (keyup.enter)="isEditingTitle = false"
+            placeholder="Enter title"
+            class="editable-title-input"
+          ></ion-input>
+        </ion-title>
+      </ng-template>
+    </ng-container>
+    
+    <ion-title *ngIf="note_locked">
+      {{ note_title }}
+    </ion-title>
+    
+     
+    
     <ion-buttons slot="start">
       <ion-back-button defaultHref="/home"></ion-back-button>
     </ion-buttons>
@@ -10,7 +38,9 @@
         <ion-icon class="lock-icon" name="lock-closed-outline" *ngIf="note_locked"></ion-icon>
       </ion-button>
 
-      <ion-button (click)="deleteNote()"><ion-icon name="trash-outline"></ion-icon></ion-button>
+        <ion-button (click)="shareStellarSecret()"><ion-icon name="share-social-outline"></ion-icon></ion-button>
+
+        <ion-button (click)="deleteNote()"><ion-icon name="trash-outline"></ion-icon></ion-button>
     </ion-buttons>
 
   </ion-toolbar>
