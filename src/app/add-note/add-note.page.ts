@@ -6,7 +6,7 @@ import {AlertController, IonModal, LoadingController, NavController, ToastContro
 import {NotesService} from "../services/notes.service";
 import { NoteLockedModalComponent } from '../note-locked-modal/note-locked-modal.component';
 import { DeleteNoteModalComponent } from '../delete-note-modal/delete-note-modal.component';
-import {AngularEditorConfig} from "@wfpena/angular-wysiwyg";
+import {AngularEditorComponent, AngularEditorConfig} from "@wfpena/angular-wysiwyg";
 import { TranslatorService } from '../services/translator.service';
 import {SecretapiService} from "../services/secretapi.service";
 import {Secret} from "../models/Secret";
@@ -87,6 +87,7 @@ export class AddNotePage {
   allTranslations:any;
   isEditingTitle: boolean = false;
   @ViewChild('titleInput', { static: false }) titleInputRef!: IonInput;
+  @ViewChild('editorRef') editorComponent?: AngularEditorComponent;
 
   constructor(private cryptoService: CryptoService,
               public activatedRoute: ActivatedRoute,
@@ -132,6 +133,31 @@ export class AddNotePage {
 
     });
 
+  }
+
+  ionViewDidEnter() {
+      setTimeout(() => {
+        this.placeCursorAtEnd();
+      }, 300);
+  }
+
+  private placeCursorAtEnd() {
+    const editorElem = this.editorComponent?.textArea?.nativeElement;
+
+    if (editorElem) {
+      editorElem.focus();
+
+      const selection = window.getSelection();
+      const range = document.createRange();
+      const lastChild = editorElem.lastChild;
+
+      if (selection && range && lastChild) {
+        range.selectNodeContents(editorElem);
+        range.collapse(false);
+        selection.removeAllRanges();
+        selection.addRange(range);
+      }
+    }
   }
 
   public async shareStellarSecret() {
