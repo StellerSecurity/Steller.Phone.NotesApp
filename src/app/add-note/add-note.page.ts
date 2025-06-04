@@ -126,7 +126,10 @@ export class AddNotePage {
       if(this.currentNote.title !== undefined) {
         // @ts-ignore
         this.note_title = this.currentNote.title;
+      } else {
+        this.note_title = "Untitled";
       }
+
     });
 
   }
