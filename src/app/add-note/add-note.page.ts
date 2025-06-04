@@ -548,6 +548,7 @@ export class AddNotePage {
     await alert.present();
   }
   public async openLockModal() {
+    this.save(null);
     await this.modal.present();
   }
 
