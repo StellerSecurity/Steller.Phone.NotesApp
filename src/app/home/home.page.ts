@@ -215,15 +215,14 @@ export class HomePage {
       return false;
     }
 
-      console.log(decryptedNotes);
-      this.noteService.setDecryptedNotes(decryptedNotes);
-      // @ts-ignore
-      this.notes = JSON.parse(decryptedNotes);
+    this.noteService.setDecryptedNotes(decryptedNotes);
+    // @ts-ignore
+    this.notes = JSON.parse(decryptedNotes);
 
-      this.filteredResults = this.notes;
+    this.filteredResults = this.notes;
 
 
-      return true;
+    return true;
 
   }
 
