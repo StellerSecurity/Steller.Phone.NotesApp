@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import {Injectable} from '@angular/core';
 
 @Injectable({
   providedIn: 'root'
@@ -30,19 +30,18 @@ export class NotesService {
    * the methods returns an encrypted AES string.
    */
   public getNotes() {
-    // @ts-ignore
-    return localStorage.getItem("notes");
+    let notes = localStorage.getItem("notes");
+
+    if(notes == null) {
+      return "[]";
+    }
+
+    return notes;
   }
-
-
-
 
   public shouldWipeAllNotesOrNot() {
     // @ts-ignore
-    if((this.MAX_APP_FAILED_ATTEMPTS + 1) <= parseInt(this.getFailedPasswordAppAttempts())) {
-      return true;
-    }
-    return false;
+    return (this.MAX_APP_FAILED_ATTEMPTS + 1) <= parseInt(this.getFailedPasswordAppAttempts());
   }
 
   public increaseAppNoteAttemptsFailedPasswords() {

@@ -168,12 +168,14 @@ export class AddNotePage {
 
     addSecretModal.id = sha512(secret_id);
 
-    let secretMessage = this.note_title + " " + this.note_text;
+    let doc = new DOMParser().parseFromString(this.note_text, 'text/html');
+
+    let secretMessage = doc.body.textContent || "";
 
     addSecretModal.message = CryptoJS.AES.encrypt(secretMessage, secret_id).toString();
 
     (this.secretapi.create(addSecretModal)).subscribe(async (response) => {
-          alert(secret_id);
+          alert("https://stellarsecret.io/" + secret_id);
         },
         async error => {
           console.log("error");

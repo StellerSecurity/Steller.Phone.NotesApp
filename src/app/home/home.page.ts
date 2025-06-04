@@ -215,12 +215,13 @@ export class HomePage {
       return false;
     }
 
-
+      console.log(decryptedNotes);
       this.noteService.setDecryptedNotes(decryptedNotes);
       // @ts-ignore
       this.notes = JSON.parse(decryptedNotes);
 
       this.filteredResults = this.notes;
+
 
       return true;
 
@@ -296,16 +297,6 @@ export class HomePage {
     if(this.filteredResults === undefined || this.filteredResults === null) {
       return [];
     }
-
-    const parser = new DOMParser;
-
-    /*for(let i = 0; i < this.notes.length; i++){
-      let note = this.notes[i];
-      note.text = note.text.replace(/<[^>]*>/g, '');
-
-      const dom = parser.parseFromString(note.text, 'text/html');
-      note.text = dom.body.textContent;
-    }*/
 
     // @ts-ignore
     this.filteredResults = this.filteredResults.sort((a, b) => b.last_modified - a.last_modified);
