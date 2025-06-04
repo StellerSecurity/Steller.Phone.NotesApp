@@ -144,7 +144,7 @@ export class HomePage {
             timeout = setTimeout(() => {
                 isLongPress = true;
                 this.handlePressStart(element.nativeElement);
-            }, 400); // Faster long-press detection (400ms)
+            }, 200); // Faster long-press detection (200ms)
         },
 
         onMove: (detail) => {
