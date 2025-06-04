@@ -279,10 +279,19 @@ ion-searchbar {
   padding: 0 15px;
   margin-top: 8px;
   margin-bottom: -4px;
+  --background: white
 }
 
 ::ng-deep ion-searchbar .searchbar-input-container input {
   border: 0.5px solid #d3d3d3 !important;
   border-radius: 12px;
   --border-radius: 12px
+}
+
+
+@media (min-width: 500px) {
+  ion-searchbar {
+    width: calc(100% - 15px);
+    --width: calc(100% - 15x)!important;
+  }
 }

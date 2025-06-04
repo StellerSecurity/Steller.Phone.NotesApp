@@ -180,6 +180,9 @@ export class HomePage {
         this.listOfCheckedCheckboxes.push(element.id);
         
         Haptics.vibrate({duration: 50}).then(r => {});
+        setTimeout(() => {
+          this.cdr.detectChanges();
+        }, 300);
       }, 100)
     }, 200);
   }
