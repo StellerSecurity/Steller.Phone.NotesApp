@@ -438,7 +438,7 @@ export class HomePage {
     this.isClicked = true;
 
   
-    if(this.listOfCheckedCheckboxes.includes(note_id) != true) {
+    if(!this.listOfCheckedCheckboxes.includes(note_id)) {
       this.listOfCheckedCheckboxes.push(note_id);
     } else { // removed.
       for(let i = 0; this.listOfCheckedCheckboxes.length > i; i++) {
