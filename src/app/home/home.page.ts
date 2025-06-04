@@ -184,7 +184,7 @@ export class HomePage {
           this.cdr.detectChanges();
         }, 300);
       }, 100)
-    }, 200);
+    }, 100);
   }
 
   handlePressEnd() {

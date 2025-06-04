@@ -209,9 +209,13 @@ export class AddNotePage {
     let encryptedText = value;
     let decryptedText = value;
 
+    let encryptedTitle = this.note_title;
+    let decryptedTitle = this.note_title;
+
     // encrypt the text.
     if(this.notes_password_stored.length > 1) {
       encryptedText = this.cryptoService.encrypt(value, this.notes_password_stored);
+      encryptedTitle = this.cryptoService.encrypt(this.note_title, this.notes_password_stored);
     }
 
     let protectedNote = false;
@@ -243,7 +247,7 @@ export class AddNotePage {
     // newly created note.
     const note = {
       "id": this.notes_id,
-      "title": this.note_title ? this.note_title : formattedDate,
+      "title": encryptedTitle ? encryptedTitle : formattedDate,
       "last_modified": Date.now(),
       "text": encryptedText,
       "protected": protectedNote,
@@ -279,6 +283,7 @@ export class AddNotePage {
       }
 
       this.note_text = decryptedText;
+      this.note_title = decryptedTitle;
     }
 
     this.storeNoteInStorage();
@@ -337,8 +342,13 @@ export class AddNotePage {
               }
 
               // @ts-ignore
+              let decryptedTitle = this.cryptoService.decrypt(this.currentNote.title, inputValue);
+
+              // @ts-ignore
               this.currentNote.text = decryptedText;
               this.note_text = decryptedText;
+
+              this.note_title = decryptedTitle;
 
               this.note_locked = false;
               // Close the modal since the password is correct
@@ -455,14 +465,19 @@ export class AddNotePage {
 
     // @ts-ignore
     let decryptedText = this.currentNote.text;
+    // @ts-ignore
+    let decryptedTitle = this.currentNote.title;
 
     // @ts-ignore
     let encryptedText = this.cryptoService.encrypt(this.currentNote.text, this.notes_password_stored);
-
+    // @ts-ignore
+    let encryptedTitle  = this.cryptoService.encrypt(this.currentNote.title, this.notes_password_stored);
     // @ts-ignore
     this.currentNote.protected = true;
     // @ts-ignore
     this.currentNote.text = encryptedText;
+    // @ts-ignore
+    this.currentNote.title = encryptedTitle;
 
     // find the current note.
     // @ts-ignore
@@ -479,6 +494,8 @@ export class AddNotePage {
 
     // @ts-ignore
     this.currentNote.text = decryptedText;
+    // @ts-ignore
+    this.currentNote.title = decryptedTitle;
 
     this.notes_password_confirm = "";
     this.notes_password_input = "";
@@ -507,6 +524,7 @@ export class AddNotePage {
               if (this.notes[i].id === this.notes_id) {
                 // @ts-ignore
                 this.notes[i].text = this.note_text; // ensure it is not encrypted text.
+                this.notes[i].title = this.note_title; // ensure it is not encrypted text.
                 // @ts-ignore
                 this.notes[i].protected = false;
                 // @ts-ignore
