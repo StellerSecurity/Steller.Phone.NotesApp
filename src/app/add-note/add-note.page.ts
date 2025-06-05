@@ -607,7 +607,7 @@ export class AddNotePage {
           // updated list will not have the current note.
           this.storeNoteInStorage();
           this.currentNote = null;
-          await this.navController.navigateForward('/home');
+          await this.navController.navigateForward('/');
         } else {
           // Handle case when user cancels password input
         }

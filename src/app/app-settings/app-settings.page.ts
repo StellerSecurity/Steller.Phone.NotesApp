@@ -266,7 +266,7 @@ export class AppSettingsPage implements AfterViewInit {
         const { confirm } = data.data;
         if (confirm) {
           localStorage.clear();
-          window.location.href = "/home";
+          window.location.href = "/";
         } else {
           // Handle case when user cancels password input
         }

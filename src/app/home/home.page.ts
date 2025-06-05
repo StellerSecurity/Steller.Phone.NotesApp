@@ -385,7 +385,7 @@ export class HomePage {
 
     await toast.present();
     await loading.dismiss();
-    window.location.href = "/home";
+    window.location.href = "/";
   }
 
   public async resetPassword() {
@@ -402,7 +402,7 @@ export class HomePage {
         if (confirm) {
           localStorage.clear();
           this.app_requires_password = false;
-          window.location.href='/home';
+          window.location.href='/';
         } else {
           // Handle case when user cancels password input
         }

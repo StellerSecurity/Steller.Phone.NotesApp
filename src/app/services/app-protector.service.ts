@@ -20,7 +20,7 @@ export class AppProtectorService {
       // 600000 = 1 minute in MS.
       if(last_activity_time <= current_timestamp - (60 * 60000)) {
         this.noteService.setNotesAppPassword("");
-        window.location.href = '/home';
+        window.location.href = '/';
       }
     }
 
