@@ -22,9 +22,9 @@
       </ng-template>
     </ng-container>
     
-    <!--<ion-title *ngIf="note_locked">
+    <ion-title *ngIf="note_locked">
       {{ note_title }}
-    </ion-title>-->
+    </ion-title>
     
      
     
@@ -100,5 +100,5 @@
   </ion-modal>
 
     <!-- textarea -->
-    <angular-editor [config]="editorConfig" [(ngModel)]="note_text" (ngModelChange)="save($event)" *ngIf="!note_locked"  #editorRef></angular-editor>
+    <angular-editor [config]="editorConfig" [(ngModel)]="note_text" (ngModelChange)="save($event)" *ngIf="!note_locked"></angular-editor>
 </ion-content>
