@@ -272,6 +272,10 @@ export class HomePage {
       this.noteService.setFailedPasswordAppAttempts(0);
 
       this.input_password_app_unlock = "";
+      setTimeout(() => {
+        this.initializePressGesture();
+        this.cdr.detectChanges();
+      }, 300)
     } else {
       const toast = await this.toastController.create({
         message: this.allTranslations.passwordIsNotCorrectTryAgain,
