@@ -50,6 +50,8 @@ export class HomePage {
   @ViewChildren('longPressElements', { read: ElementRef }) longPressElements: QueryList<ElementRef>;
   timeout: any;
   isClicked: boolean = false;
+  searchMode = false;
+  searchQuery = '';
 
   constructor(private cryptoService: CryptoService,
               private alertCtrl: AlertController,
@@ -75,6 +77,15 @@ export class HomePage {
 
     this.checkboxOpened = false;
     this.initializePressGesture();
+  }
+
+  enterSearchMode() {
+    this.searchMode = true;
+  }
+
+  exitSearchMode() {
+    this.searchMode = false;
+    this.searchQuery = '';
   }
 
 

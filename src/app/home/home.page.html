@@ -1,6 +1,6 @@
 <ion-header [translucent]="true">
   <ion-toolbar>
-    <ion-title>
+    <ion-title *ngIf="!searchMode">
       <span *ngIf="checkboxOpened && filteredResults !== null &&  filteredResults.length > 0" (click)="toggleCheckbox()">
         <img src="assets/tabler-icon-x.svg" valign="left" style="position: relative; top: 5px;"
           class="margin-right-top"> {{listOfCheckedCheckboxes.length}} {{'notesSelected' | translate}}
@@ -12,16 +12,28 @@
       </div> 
     </ion-title>
 
+    <ion-searchbar *ngIf="searchMode" [(ngModel)]="search_query" (ionInput)="search()" placeholder="{{'searchNotesInput' | translate}}" show-clear-button="focus" clear-icon="trash-bin"></ion-searchbar>
+
     <ion-buttons slot="end" style="position: relative; top: 5px;">
-      <ion-button slot="icon-only" (click)="toggleCheckbox()">
-        <img src="assets/tabler-icon-square-check.svg"  *ngIf="filteredResults !== null && filteredResults.length > 0">
+      <ng-container *ngIf="!searchMode">
+        <ion-button (click)="enterSearchMode()">
+          <ion-icon name="search-outline" style="font-size: 24px;"></ion-icon>
+        </ion-button>
+        <ion-button slot="icon-only" (click)="toggleCheckbox()">
+          <img src="assets/tabler-icon-square-check.svg"  *ngIf="filteredResults !== null && filteredResults.length > 0">
+        </ion-button>
+        <ion-button slot="icon-only" style="padding-right: 15px" (click)="settings()"><img src="assets/tabler-icon-settings.svg"></ion-button>
+      </ng-container>
+
+      <ng-container *ngIf="searchMode">
+      <ion-button (click)="exitSearchMode()">
+          <ion-icon name="close-outline" style="font-size: 30px;"></ion-icon>
       </ion-button>
-      <ion-button slot="icon-only" style="padding-right: 15px" (click)="settings()"><img src="assets/tabler-icon-settings.svg"></ion-button>
-      
+    </ng-container>
+
     </ion-buttons>
 
   </ion-toolbar>
-    <ion-searchbar [(ngModel)]="search_query" (ionInput)="search()" placeholder="{{'searchNotesInput' | translate}}" show-clear-button="focus" clear-icon="trash-bin"></ion-searchbar>
 </ion-header>
 
 <!-- modal ask for password -->
