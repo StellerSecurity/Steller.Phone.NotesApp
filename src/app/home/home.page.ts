@@ -1,6 +1,7 @@
 import {ChangeDetectorRef, Component, ElementRef, QueryList, ViewChild, ViewChildren} from '@angular/core';
 import {
   AlertController, GestureController, IonModal,
+  IonSearchbar,
   LoadingController,
   ModalController,
   NavController,
@@ -52,6 +53,8 @@ export class HomePage {
   isClicked: boolean = false;
   searchMode = false;
   searchQuery = '';
+  @ViewChild('searchbar') searchbar: IonSearchbar;
+
 
   constructor(private cryptoService: CryptoService,
               private alertCtrl: AlertController,
@@ -81,11 +84,18 @@ export class HomePage {
 
   enterSearchMode() {
     this.searchMode = true;
+    setTimeout(() => {
+      this.searchbar?.setFocus();
+    }, 100); // Delay to ensure DOM renders
   }
 
   exitSearchMode() {
+    this.search_query = '';
     this.searchMode = false;
-    this.searchQuery = '';
+    this.search();
+    setTimeout(() => {
+      this.cdr.detectChanges();
+    }, 300)
   }
 
 
