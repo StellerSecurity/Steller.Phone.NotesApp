@@ -19,8 +19,8 @@
         <ion-button (click)="enterSearchMode()">
           <ion-icon name="search-outline" style="font-size: 24px;"></ion-icon>
         </ion-button>
-        <ion-button slot="icon-only" (click)="toggleCheckbox()">
-          <img src="assets/tabler-icon-square-check.svg"  *ngIf="filteredResults !== null && filteredResults.length > 0">
+        <ion-button *ngIf="filteredResults !== null && filteredResults.length > 0" slot="icon-only" (click)="toggleCheckbox()">
+          <img src="assets/tabler-icon-square-check.svg">
         </ion-button>
         <ion-button slot="icon-only" style="padding-right: 15px" (click)="settings()"><img src="assets/tabler-icon-settings.svg"></ion-button>
       </ng-container>

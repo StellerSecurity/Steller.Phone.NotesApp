@@ -93,6 +93,7 @@ export class HomePage {
     this.search_query = '';
     this.searchMode = false;
     this.search();
+    this.initializePressGesture();
     setTimeout(() => {
       this.cdr.detectChanges();
     }, 300)
