@@ -2,7 +2,7 @@ import { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
   appId: 'Steller.Phone.NotesApp',
-  appName: 'Notes',
+  appName: 'Stellar Notes',
   webDir: 'www',
   server: {
     androidScheme: 'https'
