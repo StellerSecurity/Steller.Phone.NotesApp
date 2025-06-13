@@ -42,7 +42,7 @@
     <ion-content class="ion-padding">
       <!-- <div align="center"><img src="assets/Logo.svg"></div><br><br><br> -->
       <div align="center">
-        <div class="logo-container">
+        <div class="logo-container app-ask-password-logo-container">
           <img class="logo-img" src="./assets/note-logo.png" alt="">
         <div class="logo-text">Stellar Private Notes</div>
       </div> 
@@ -65,7 +65,7 @@ font-style: normal;
 font-weight: 400;
 line-height: 150%; /* 21px */ ">{{'enterYourPasswordToGetAccessToYourNotes' | translate}}</p>
       <div class="input-group" style="position: relative;">
-        <ion-input type="{{ showPassword ? 'text' : 'password' }}" placeholder="{{'enterYourPassword' | translate}}" (keyup)="ionInputAppUnlockInput($event)"
+        <ion-input type="{{ showPassword ? 'text' : 'password' }}" placeholder="{{'yourID' | translate}}" (keyup)="ionInputAppUnlockInput($event)"
           [(ngModel)]="input_password_app_unlock" autofocus="true"></ion-input>
         <ion-icon slot="end" [name]="showPassword ? 'eye-off' : 'eye'" (click)="togglePasswordVisibility()"></ion-icon>
       </div>
