@@ -206,3 +206,16 @@ ion-item {
   font-family: Poppins, sans-serif;
   margin-left: 10px;
 }
+
+
+ion-input {
+  --padding-bottom: 15px!important;
+  --padding-end: 15px!important;
+  --padding-start: 20px!important;
+  --padding-top: 15px!important;
+  flex-direction: column!important;
+  justify-content: center!important;
+  align-items: flex-start!important;
+  align-self: stretch!important;
+  --border-radius: 250px!important;
+}

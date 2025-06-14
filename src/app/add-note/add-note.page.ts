@@ -39,7 +39,7 @@ export class AddNotePage {
 
   public notes_password_confirm = "";
 
-  public passwordStrengthHelperText = "";
+  public passwordStrengthHelperText = "Password must have at least 6 characters";
   
   public showPassword = false;
   public confirmShowPassword = false;
@@ -413,7 +413,7 @@ export class AddNotePage {
     this.passwordStrength = 0;
 
     if(this.notes_password_input.length == 0) {
-      this.passwordStrengthHelperText = "";
+      this.passwordStrengthHelperText = "Password must have at least 6 characters";
       return;
     }
 

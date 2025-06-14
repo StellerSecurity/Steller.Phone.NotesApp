@@ -79,8 +79,8 @@
         </div>
         <div *ngIf="!note_locked && !getProtected()" class="pass-info-box">
           <p *ngif="!strongPass" class="pass-note">{{'passwordCharacters' | translate}}</p>
-          <password-strength-meter [password]="notes_password_input"></password-strength-meter>
           {{passwordStrengthHelperText}}
+          <password-strength-meter [password]="notes_password_input"></password-strength-meter>
           <h4 style="color: #0B0C19; font-size: 12px; font-weight: 400; font-family: 'Poppins';">{{'itsBetterToHave' | translate}}</h4>
           <ul class="pass-list">
             <li [ngClass]="{'active': upperLower}"><ion-icon name="checkmark-outline"></ion-icon> {{'upperAndLowerCaseLetters' | translate}}</li>
