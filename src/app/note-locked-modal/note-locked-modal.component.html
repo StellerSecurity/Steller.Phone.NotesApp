@@ -5,7 +5,7 @@
     <!-- <br> {{'toUnlockIt' | translate}} -->
   </p>
   <div class="input-group" style="position: relative;">
-    <ion-input #passwordInput type="{{ showPassword ? 'text' : 'password' }}" shape="round" placeholder="{{'yourID' | translate}}" (keyup.enter)="onEnter()"></ion-input>
+    <ion-input #passwordInput type="{{ showPassword ? 'text' : 'password' }}" shape="round" placeholder="{{'enterYourPassword' | translate}}" (keyup.enter)="onEnter()"></ion-input>
     <ion-icon slot="end" [name]="showPassword ? 'eye-off' : 'eye'"
               (click)="togglePasswordVisibility()"></ion-icon>
   </div>
