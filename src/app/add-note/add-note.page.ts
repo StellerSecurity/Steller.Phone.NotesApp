@@ -11,6 +11,7 @@ import { TranslatorService } from '../services/translator.service';
 import {SecretapiService} from "../services/secretapi.service";
 import {Secret} from "../models/Secret";
 import {sha512} from "js-sha512";
+import { ShareSecretModalComponent } from '../share-secret-modal/share-secret-modal.component';
 const { v4: uuidv4 } = require('uuid');
 
 declare var require: any;
@@ -39,7 +40,7 @@ export class AddNotePage {
 
   public notes_password_confirm = "";
 
-  public passwordStrengthHelperText = "";
+  public passwordStrengthHelperText = "Password must have at least 6 characters";
   
   public showPassword = false;
   public confirmShowPassword = false;
@@ -160,30 +161,61 @@ export class AddNotePage {
     }
   }
 
+   formatDate(dateString: string): string {
+    const date = new Date(dateString);
+  
+    const hours = String(date.getHours()).padStart(2, '0');     // 14
+    const minutes = String(date.getMinutes()).padStart(2, '0'); // 33
+    const day = String(date.getDate()).padStart(2, '0');        // 14
+    const month = String(date.getMonth() + 1).padStart(2, '0'); // 02 (zero-indexed)
+    const year = date.getFullYear();                            // 2023
+  
+    return `${hours}:${minutes}, ${day}.${month}.${year}`;
+  }
+  
+
   public async shareStellarSecret() {
-
-    let addSecretModal = new Secret();
-    let secret_id = uuidv4();
-    addSecretModal.expires_at = "0";
-
+    // 1. Create a new secret
+    const addSecretModal = new Secret();
+    const secret_id = uuidv4();
+  
+    addSecretModal.expires_at = "0"; // Assuming '0' means never expires
     addSecretModal.id = sha512(secret_id);
-
-    let doc = new DOMParser().parseFromString(this.note_text, 'text/html');
-
-    let secretMessage = doc.body.textContent || "";
-
+  
+    // 2. Extract plain text from HTML (strip tags)
+    const doc = new DOMParser().parseFromString(this.note_text, 'text/html');
+    const secretMessage = doc.body?.textContent?.trim() || '';
+  
+    // 3. Encrypt the secret using AES
     addSecretModal.message = CryptoJS.AES.encrypt(secretMessage, secret_id).toString();
+  
+    // 4. Send to API
+    this.secretapi.create(addSecretModal).subscribe({
+      next: async (response) => {
+        // Show the shareable URL
+        // alert(`https://stellarsecret.io/${secret_id}`);
 
-    (this.secretapi.create(addSecretModal)).subscribe(async (response) => {
-          alert("https://stellarsecret.io/" + secret_id);
-        },
-        async error => {
-          console.log("error");
-        },
-        async () => {
-
-        })
-
+        const modal = await this.modalCtrl.create({
+          component: ShareSecretModalComponent,
+          componentProps: {
+            secretUrl: `https://stellarsecret.io/${secret_id}`,
+            expiryText: `7 days (${this.formatDate(response?.expires_at)})`, // you can generate dynamically
+          },
+          cssClass: 'secret-modal',
+          breakpoints: [0, 0.7],
+          initialBreakpoint: 0.7,
+        });
+  
+        await modal.present();
+      },
+      error: async (error) => {
+        console.error("Failed to create secret:", error);
+        alert("Failed to share secret.");
+      },
+      complete: async () => {
+        // Optional cleanup logic
+      }
+    });
   }
 
   enableEditingTitle() {
@@ -413,7 +445,7 @@ export class AddNotePage {
     this.passwordStrength = 0;
 
     if(this.notes_password_input.length == 0) {
-      this.passwordStrengthHelperText = "";
+      this.passwordStrengthHelperText = "Password must have at least 6 characters";
       return;
     }
 

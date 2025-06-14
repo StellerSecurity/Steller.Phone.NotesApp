@@ -1,6 +1,6 @@
 <ion-header [translucent]="true">
   <ion-toolbar>
-    <ion-title>
+    <ion-title *ngIf="!searchMode">
       <span *ngIf="checkboxOpened && filteredResults !== null &&  filteredResults.length > 0" (click)="toggleCheckbox()">
         <img src="assets/tabler-icon-x.svg" valign="left" style="position: relative; top: 5px;"
           class="margin-right-top"> {{listOfCheckedCheckboxes.length}} {{'notesSelected' | translate}}
@@ -12,16 +12,28 @@
       </div> 
     </ion-title>
 
+    <ion-searchbar *ngIf="searchMode" #searchbar [(ngModel)]="search_query" (ionInput)="search()" placeholder="{{'searchNotesInput' | translate}}" show-clear-button="focus" clear-icon="trash-bin"></ion-searchbar>
+
     <ion-buttons slot="end" style="position: relative; top: 5px;">
-      <ion-button slot="icon-only" (click)="toggleCheckbox()">
-        <img src="assets/tabler-icon-square-check.svg"  *ngIf="filteredResults !== null && filteredResults.length > 0">
+      <ng-container *ngIf="!searchMode">
+        <ion-button *ngIf="filteredResults !== null && filteredResults.length > 0" slot="icon-only" (click)="enterSearchMode()">
+          <ion-icon name="search-outline" style="font-size: 24px;"></ion-icon>
+        </ion-button>
+        <ion-button *ngIf="filteredResults !== null && filteredResults.length > 0" slot="icon-only" (click)="toggleCheckbox()">
+          <img src="assets/tabler-icon-square-check.svg">
+        </ion-button>
+        <ion-button slot="icon-only" style="padding-right: 15px" (click)="settings()"><img src="assets/tabler-icon-settings.svg"></ion-button>
+      </ng-container>
+
+      <ng-container *ngIf="searchMode">
+      <ion-button (click)="exitSearchMode()">
+          <ion-icon name="close-outline" style="font-size: 30px;"></ion-icon>
       </ion-button>
-      <ion-button slot="icon-only" style="padding-right: 15px" (click)="settings()"><img src="assets/tabler-icon-settings.svg"></ion-button>
-      
+    </ng-container>
+
     </ion-buttons>
 
   </ion-toolbar>
-    <ion-searchbar [(ngModel)]="search_query" (ionInput)="search()" placeholder="{{'searchNotesInput' | translate}}" show-clear-button="focus" clear-icon="trash-bin"></ion-searchbar>
 </ion-header>
 
 <!-- modal ask for password -->
@@ -30,7 +42,7 @@
     <ion-content class="ion-padding">
       <!-- <div align="center"><img src="assets/Logo.svg"></div><br><br><br> -->
       <div align="center">
-        <div class="logo-container">
+        <div class="logo-container app-ask-password-logo-container">
           <img class="logo-img" src="./assets/note-logo.png" alt="">
         <div class="logo-text">Stellar Private Notes</div>
       </div> 
@@ -53,7 +65,7 @@ font-style: normal;
 font-weight: 400;
 line-height: 150%; /* 21px */ ">{{'enterYourPasswordToGetAccessToYourNotes' | translate}}</p>
       <div class="input-group" style="position: relative;">
-        <ion-input type="{{ showPassword ? 'text' : 'password' }}" placeholder="{{'enterYourPassword' | translate}}" (keyup)="ionInputAppUnlockInput($event)"
+        <ion-input type="{{ showPassword ? 'text' : 'password' }}" placeholder="{{'yourID' | translate}}" (keyup)="ionInputAppUnlockInput($event)"
           [(ngModel)]="input_password_app_unlock" autofocus="true"></ion-input>
         <ion-icon slot="end" [name]="showPassword ? 'eye-off' : 'eye'" (click)="togglePasswordVisibility()"></ion-icon>
       </div>

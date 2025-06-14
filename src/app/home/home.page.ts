@@ -1,6 +1,7 @@
 import {ChangeDetectorRef, Component, ElementRef, QueryList, ViewChild, ViewChildren} from '@angular/core';
 import {
   AlertController, GestureController, IonModal,
+  IonSearchbar,
   LoadingController,
   ModalController,
   NavController,
@@ -50,6 +51,10 @@ export class HomePage {
   @ViewChildren('longPressElements', { read: ElementRef }) longPressElements: QueryList<ElementRef>;
   timeout: any;
   isClicked: boolean = false;
+  searchMode = false;
+  searchQuery = '';
+  @ViewChild('searchbar') searchbar: IonSearchbar;
+
 
   constructor(private cryptoService: CryptoService,
               private alertCtrl: AlertController,
@@ -75,6 +80,23 @@ export class HomePage {
 
     this.checkboxOpened = false;
     this.initializePressGesture();
+  }
+
+  enterSearchMode() {
+    this.searchMode = true;
+    setTimeout(() => {
+      this.searchbar?.setFocus();
+    }, 100); // Delay to ensure DOM renders
+  }
+
+  exitSearchMode() {
+    this.search_query = '';
+    this.searchMode = false;
+    this.search();
+    this.initializePressGesture();
+    setTimeout(() => {
+      this.cdr.detectChanges();
+    }, 300)
   }
 
 
