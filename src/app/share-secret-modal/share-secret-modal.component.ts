@@ -1,5 +1,5 @@
 import { Component, Input } from '@angular/core';
-import { ModalController } from '@ionic/angular';
+import { ModalController, ToastController } from '@ionic/angular';
 
 @Component({
   selector: 'app-share-secret-modal',
@@ -10,14 +10,23 @@ export class ShareSecretModalComponent {
   @Input() secretUrl: string = '';
   @Input() expiryText: string = '';
 
-  constructor(private modalCtrl: ModalController) {}
+  constructor(private modalCtrl: ModalController,
+    private toastController: ToastController,) {}
 
   closeModal() {
     this.modalCtrl.dismiss();
   }
 
   copyLink() {
-    navigator.clipboard.writeText(this.secretUrl);
+    navigator.clipboard.writeText(this.secretUrl).then(async ()=> {
+      const toast = await this.toastController.create({
+        message: "Link copied.",
+        duration: 3000,
+        position: 'bottom',
+      });
+
+      await toast.present();
+    });
   }
 
   shareLink() {
