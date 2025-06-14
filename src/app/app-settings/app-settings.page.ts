@@ -23,7 +23,7 @@ export class AppSettingsPage implements AfterViewInit {
 
   public confirmPassword: string;
 
-  public passwordStrengthHelperText = "";
+  public passwordStrengthHelperText = "Password must have at least 6 characters";
 
   public passwordStrength = 0;
 
@@ -198,7 +198,7 @@ export class AppSettingsPage implements AfterViewInit {
     this.passwordStrength = 0;
 
     if (this.notesAppPassword.length == 0) {
-      this.passwordStrengthHelperText = "";
+      this.passwordStrengthHelperText = "Password must have at least 6 characters";
       return;
     }
 
