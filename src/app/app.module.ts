@@ -11,13 +11,14 @@ import { AngularEditorModule } from '@wfpena/angular-wysiwyg';
 import { HttpClient, HttpClientModule} from '@angular/common/http';
 import { TranslateLoader, TranslateModule } from '@ngx-translate/core';
 import { TranslateHttpLoader } from '@ngx-translate/http-loader';
+import { ShareSecretModalComponent } from './share-secret-modal/share-secret-modal.component';
 
 export function HttpLoaderFactory(http: HttpClient) {
   return new TranslateHttpLoader(http);
 }
 
 @NgModule({
-  declarations: [AppComponent],
+  declarations: [AppComponent, ShareSecretModalComponent],
   imports: [HttpClientModule, AngularEditorModule, BrowserModule, PasswordStrengthMeterModule.forRoot(), IonicModule.forRoot({innerHTMLTemplatesEnabled: true}), AppRoutingModule, CommonModule, FormsModule,
     TranslateModule.forRoot({
       loader: {
