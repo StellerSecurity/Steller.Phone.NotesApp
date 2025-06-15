@@ -43,11 +43,11 @@ export class ShareSecretModalComponent {
       this.expiryText = ''; // not in use atm.
     },
     error: async (error) => {
-      alert("Failed to share secret.");
+      alert("Failed to share secret. Please check your internet connection or try again.");
     },
     complete: async () => {
       // Optional cleanup logic
-      await loading.dismiss()
+      await loading.dismiss();
       this.isLoading = false;
     }
     });
