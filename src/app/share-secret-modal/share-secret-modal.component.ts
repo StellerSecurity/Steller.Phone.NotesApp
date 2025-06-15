@@ -1,5 +1,5 @@
 import { Component, Input } from '@angular/core';
-import { ModalController, ToastController } from '@ionic/angular';
+import {LoadingController, ModalController, ToastController} from '@ionic/angular';
 import { SecretapiService } from '../services/secretapi.service';
 import { Share } from '@capacitor/share';
 
@@ -18,6 +18,7 @@ export class ShareSecretModalComponent {
 
   constructor(private modalCtrl: ModalController,
     private toastController: ToastController,
+    private loadingController: LoadingController,
     private secretapi: SecretapiService,) {}
 
     ionViewWillEnter() {
@@ -28,20 +29,27 @@ export class ShareSecretModalComponent {
     this.modalCtrl.dismiss();
   }
 
-  creteSecret() {
-     this.secretapi.create(this.addSecretModal).subscribe({
-      next: async (response) => {
+  async createSecret() {
+
+
+    const loading = await this.loadingController.create();
+    await loading.present();
+
+    this.secretapi.create(this.addSecretModal).subscribe({
+    next: async (response) => {
       this.step = 2;
       this.secretUrl = `https://stellarsecret.io/${this.secret_id}`
-      this.expiryText= `7 days (${this.formatDate(response?.expires_at)})`;
-      },
-      error: async (error) => {
-        alert("Failed to share secret.");
-      },
-      complete: async () => {
-        // Optional cleanup logic
-        this.isLoading = false;
-      }
+      //this.expiryText= `7 days (${this.formatDate(response?.expires_at)})`;
+      this.expiryText = ''; // not in use atm.
+    },
+    error: async (error) => {
+      alert("Failed to share secret.");
+    },
+    complete: async () => {
+      // Optional cleanup logic
+      await loading.dismiss()
+      this.isLoading = false;
+    }
     });
   }
 
