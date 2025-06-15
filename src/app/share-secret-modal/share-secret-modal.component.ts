@@ -1,6 +1,7 @@
 import { Component, Input } from '@angular/core';
 import { ModalController, ToastController } from '@ionic/angular';
 import { SecretapiService } from '../services/secretapi.service';
+import { Share } from '@capacitor/share';
 
 @Component({
   selector: 'app-share-secret-modal',
@@ -56,14 +57,21 @@ export class ShareSecretModalComponent {
     });
   }
 
-  shareLink() {
-    if (navigator.share) {
-      navigator.share({
-        title: 'Stellar Secret',
-        text: 'Here is your secret link',
-        url: this.secretUrl,
-      });
-    }
+  async shareLink() {
+    // if (navigator.share) {
+    //   navigator.share({
+    //     title: 'Stellar Secret',
+    //     text: 'Here is your secret link',
+    //     url: this.secretUrl,
+    //   });
+    // }
+
+    await Share.share({
+      title: 'Stellar Secret',
+      text: 'Here is your secret link',
+      url: this.secretUrl,
+      dialogTitle: 'Stellar Private Note',
+    });
   }
 
   burnSecret() {

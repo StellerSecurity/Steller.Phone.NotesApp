@@ -221,11 +221,8 @@ ion-input {
 }
 
 .secret-modal .modal-wrapper {
-  border-radius: 40px!important;
+  border-radius: 40px 40px 0 0!important;
+  --border-radius: 40px 40px 0 0!important;
   overflow: hidden!important;
 }
 
-.secret-modal .modal-wrapper > * {
-  border-radius: inherit!important;
-  overflow: hidden!important;
-}
