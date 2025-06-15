@@ -76,7 +76,7 @@ export class ShareSecretModalComponent {
 
   burnSecret() {
     // TODO: Implement actual burn logic (emit or call service)
-    alert('Burn Secret clicked!');
+    // alert('Burn Secret clicked!');
   }
 
   private formatDate(dateString: string): string {
