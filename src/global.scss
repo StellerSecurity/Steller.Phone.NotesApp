@@ -219,3 +219,18 @@ ion-input {
   align-self: stretch!important;
   --border-radius: 250px!important;
 }
+
+.secret-modal {
+  --border-radius: 24px;
+  --width: 100%;
+  
+  &::part(content) {
+    border-radius: var(--border-radius) var(--border-radius) 0 0;
+  }
+  
+  .modal-box {
+    border-radius: var(--border-radius);
+    overflow: hidden;
+    background: white;
+  }
+}

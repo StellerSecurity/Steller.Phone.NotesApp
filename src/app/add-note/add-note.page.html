@@ -100,5 +100,5 @@
   </ion-modal>
 
     <!-- textarea -->
-    <angular-editor [config]="editorConfig" [(ngModel)]="note_text" (ngModelChange)="save($event)" *ngIf="!note_locked"></angular-editor>
+    <angular-editor #editorRef [config]="editorConfig" [(ngModel)]="note_text" (ngModelChange)="save($event)" *ngIf="!note_locked"></angular-editor>
 </ion-content>
