@@ -220,10 +220,17 @@ ion-input {
   --border-radius: 250px!important;
 }
 
-.secret-modal .modal-sheet {
-  border-top-left-radius: 40px !important;
-  border-top-right-radius: 40px !important;
-  overflow: hidden !important;
-  background: #fff !important;
+.secret-modal {
+  --border-radius: 24px;
+  --width: 100%;
+  
+  &::part(content) {
+    border-radius: var(--border-radius) var(--border-radius) 0 0;
+  }
+  
+  .modal-box {
+    border-radius: var(--border-radius);
+    overflow: hidden;
+    background: white;
+  }
 }
-
