@@ -38,7 +38,10 @@
         <ion-icon class="lock-icon" name="lock-closed-outline" *ngIf="note_locked"></ion-icon>
       </ion-button>
 
-        <ion-button (click)="shareStellarSecret()"><ion-icon name="share-social-outline"></ion-icon></ion-button>
+        <ion-button (click)="shareStellarSecret()">
+          <img src="./assets/note-share-icon.png" width="18" height="18">
+          <!-- <ion-icon name="arrow-redo-outline"></ion-icon> -->
+        </ion-button>
 
         <ion-button (click)="deleteNote()"><ion-icon name="trash-outline"></ion-icon></ion-button>
     </ion-buttons>
