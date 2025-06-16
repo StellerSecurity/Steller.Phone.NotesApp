@@ -12,6 +12,7 @@ import { NoteLockedModalModule } from '../note-locked-modal/note-locked-modal.mo
 import { DeleteNoteModalModule } from '../delete-note-modal/delete-note-modal.module';
 import {AngularEditorModule} from "@wfpena/angular-wysiwyg";
 import { TranslateModule } from '@ngx-translate/core';
+import { RichTextEditorComponent } from './rich-text-editor/rich-text-editor.component';
 @NgModule({
     imports: [
         CommonModule,
@@ -24,6 +25,6 @@ import { TranslateModule } from '@ngx-translate/core';
         AngularEditorModule,
         TranslateModule
     ],
-  declarations: [AddNotePage]
+  declarations: [AddNotePage, RichTextEditorComponent]
 })
 export class AddNotePageModule {}
