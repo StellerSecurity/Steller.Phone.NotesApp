@@ -40,7 +40,7 @@ export class AddNotePage {
 
   public notes_password_confirm = "";
 
-  public passwordStrengthHelperText = "Password must have at least 6 characters";
+  public passwordStrengthHelperText = "";
   
   public showPassword = false;
   public confirmShowPassword = false;
@@ -137,6 +137,7 @@ export class AddNotePage {
   }
 
   ionViewDidEnter() {
+     this.passwordStrengthHelperText = this.allTranslations.passwordAtLeastLength;
       setTimeout(() => {
         this.placeCursorAtEnd();
       }, 300);
@@ -418,7 +419,7 @@ export class AddNotePage {
     this.passwordStrength = 0;
 
     if(this.notes_password_input.length == 0) {
-      this.passwordStrengthHelperText = "Password must have at least 6 characters";
+      this.passwordStrengthHelperText = this.allTranslations.passwordAtLeastLength;
       return;
     }
 

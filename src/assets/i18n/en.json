@@ -80,5 +80,19 @@
   "areYouSureYouWantToRemoveThePasswordForTheNote": "Are you sure, you want to remove the password for the note? It will be stored in a decrypted-state on your device, if the lock is removed.",
   "thePasswordIsWeakPleaseMakeYourPasswordStronger": "The password is weak. Please make your password stronger.",
   "enterYourCurrentPassword": "Enter your current password",
-  "theSelectedNotesHasBeenDeleted": "The selected notes has been deleted."
+  "theSelectedNotesHasBeenDeleted": "The selected notes has been deleted.",
+  "shareNote": "Share note",
+  "stellarSecret": "Stellar Secret",
+  "howItWorks": "How it works?",
+  "shareYourNoteAsAsSecretMessage": "Share your note as a secret message",
+  "shareYourNoteAsAsSecretMessageDesc": "Stellar Secret generates a one-time secret link for your note, which you can share with a recipient.",
+  "yourNoteSecretCreated": "Your note secret created.",
+  "copyLinkOrShareIt": "Copy link or share it.",
+  "copy": "Copy",
+  "share": "Share",
+  "burnSecret": "Burn Secret",
+  "createSecret": "Create Secret",
+  "passwordAtLeastLength": "Password must have at least 6 characters",
+  "": "",
+  "": ""
 }
