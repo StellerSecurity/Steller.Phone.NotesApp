@@ -23,7 +23,7 @@ export class AppSettingsPage implements AfterViewInit {
 
   public confirmPassword: string;
 
-  public passwordStrengthHelperText = "Password must have at least 6 characters";
+  public passwordStrengthHelperText = "";
 
   public passwordStrength = 0;
 
@@ -47,8 +47,12 @@ export class AppSettingsPage implements AfterViewInit {
     private translatorService: TranslatorService) { }
 
   ionViewWillEnter(): void {
-  this.allTranslations = this.translatorService.allTranslations;
+    this.allTranslations = this.translatorService.allTranslations;
   }
+
+  ionViewDidEnter() {
+    this.passwordStrengthHelperText = this.allTranslations.passwordAtLeastLength;
+ }
 
   ngAfterViewInit() {
     if (this.noteService.appHasPasswordChallenge()) {
@@ -198,7 +202,7 @@ export class AppSettingsPage implements AfterViewInit {
     this.passwordStrength = 0;
 
     if (this.notesAppPassword.length == 0) {
-      this.passwordStrengthHelperText = "Password must have at least 6 characters";
+      this.passwordStrengthHelperText = this.allTranslations.passwordAtLeastLength;
       return;
     }
 
