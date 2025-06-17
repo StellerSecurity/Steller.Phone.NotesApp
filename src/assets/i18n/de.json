@@ -34,7 +34,7 @@
     "cancel": "Abbrechen",
     "disable": "Deaktivieren",
     "deleteNotes": "Notizen löschen",
-    "confirmDeleteMsg": "Möchten Sie diese Notiz wirklich dauerhaft löschen?",
+    "confirmDeleteMsg": "Sind Sie sicher, dass Sie die ausgewählten Notizen löschen möchten?",
     "delete": "Löschen",
     "notesSelected": "Notizen ausgewählt",
     "appIsLocked": "App ist gesperrt",

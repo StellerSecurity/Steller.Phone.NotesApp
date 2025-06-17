@@ -34,7 +34,7 @@
     "cancel": "Annuller",
     "disable": "Deaktiver",
     "deleteNotes": "Slet noter",
-    "confirmDeleteMsg": "Du er ved at slette denne note permanent. Er du sikker?",
+    "confirmDeleteMsg": "Er du sikker på, at du vil slette de valgte noter?",
     "delete": "Slet",
     "notesSelected": "Noter valgt",
     "appIsLocked": "Appen er låst",

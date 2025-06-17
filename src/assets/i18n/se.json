@@ -34,7 +34,7 @@
     "cancel": "Avbryt",
     "disable": "Inaktivera",
     "deleteNotes": "Ta bort anteckningar",
-    "confirmDeleteMsg": "Vill du verkligen ta bort den här anteckningen permanent?",
+    "confirmDeleteMsg": "Är du säker på att du vill ta bort de valda anteckningarna?",
     "delete": "Ta bort",
     "notesSelected": "Anteckningar valda",
     "appIsLocked": "Appen är låst",
