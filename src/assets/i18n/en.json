@@ -34,7 +34,7 @@
   "cancel": "Cancel",
   "disable": "Disable",
   "deleteNotes": "Delete Notes",
-  "confirmDeleteMsg": "Your’e gone permanently delete this notes?",
+  "confirmDeleteMsg": "Are you sure, you want to delete the selected notes?",
   "delete": "Delete",
   "notesSelected": "Notes Selected",
   "appIsLocked": "App Is Locked",
