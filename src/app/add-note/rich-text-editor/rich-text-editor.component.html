@@ -1,57 +1,78 @@
-<div class="custom-toolbar">
-
+<div class="editor-container" #editorWrapper>
+  <!-- Custom Toolbar -->
+  <div class="custom-toolbar">
+    <!-- Undo/Redo -->
     <button class="toolbar-btn" (click)="undo()" title="Undo">
-        <img class="icon-img" src="./assets/editor-icon/undo-icon.png" />
-      </button>
-
-      <button class="toolbar-btn" (click)="redo()" title="Redo">
-        <img class="icon-img" src="./assets/editor-icon/undo-icon.png" style=" transform: scaleX(-1);" />
-      </button>
-      
-    <button [class.active]="isBold" (click)="execCommand('bold')">
-        <img class="icon-img" src="./assets/editor-icon/bold-icon.png" />
+      <img class="icon-img" src="./assets/editor-icon/undo-icon.png" alt="Undo">
+    </button>
+    <button class="toolbar-btn" (click)="redo()" title="Redo">
+      <img class="icon-img" src="./assets/editor-icon/undo-icon.png" alt="Redo" style=" transform: scaleX(-1);">
     </button>
 
-    <button [class.active]="isStrikeThrough" (click)="execCommand('strikeThrough')">
-        <img class="icon-img" src="./assets/editor-icon/strikethrough-icon.png" />
+    <!-- Text Formatting -->
+    <button class="toolbar-btn" 
+            [class.active]="isBold" 
+            (click)="toggleBold()" 
+            title="Bold">
+      <img class="icon-img" src="./assets/editor-icon/bold-icon.png" alt="Bold">
     </button>
-  
+    <button class="toolbar-btn" 
+            [class.active]="isStrikeThrough" 
+            (click)="toggleStrikeThrough()" 
+            title="Strikethrough">
+      <img class="icon-img" src="./assets/editor-icon/strikethrough-icon.png" alt="Strikethrough">
+    </button>
+
+    <!-- Headings Dropdown -->
     <div class="dropdown">
-      <button (click)="toggleHeadingDropdown()" [class.active]="isHeadingDropdownOpen">
-        <img class="icon-img" class="icon-img" src="./assets/editor-icon/text-size-icon.png" />
+      <button class="toolbar-btn" 
+              [class.active]="isHeadingDropdownOpen || currentHeading" 
+              (click)="toggleHeadingDropdown()" 
+              title="Headings">
+        <img class="icon-img" src="./assets/editor-icon/text-size-icon.png" alt="Headings">
+        <span *ngIf="currentHeading" class="heading-indicator">{{currentHeading}}</span>
       </button>
       <div class="dropdown-menu" *ngIf="isHeadingDropdownOpen">
-        <div (click)="exec('formatBlock', 'H1')">Heading 1</div>
-        <div (click)="exec('formatBlock', 'H2')">Heading 2</div>
-        <div (click)="exec('formatBlock', 'H3')">Heading 3</div>
-        <div (click)="exec('formatBlock', 'H4')">Heading 4</div>
-        <div (click)="exec('formatBlock', 'H5')">Heading 5</div>  
+        <div (click)="applyHeading('H1')">Heading 1</div>
+        <div (click)="applyHeading('H2')">Heading 2</div>
+        <div (click)="applyHeading('H3')">Heading 3</div>
+        <div (click)="applyHeading('H4')">Heading 4</div>
+        <div (click)="applyHeading('H5')">Heading 5</div>
+        <div (click)="applyHeading('P')">Normal Text</div>
       </div>
     </div>
-  
-    <button (click)="execCommand('insertUnorderedList')">
-        <img class="icon-img" src="./assets/editor-icon/tabler-list-icon.png" />
+
+    <!-- Lists -->
+    <button class="toolbar-btn" 
+            [class.active]="isListActive" 
+            (click)="toggleBulletList()" 
+            title="Bullet List">
+      <img class="icon-img" src="./assets/editor-icon/tabler-list-icon.png" alt="Bullet List">
+    </button>
+    <button class="toolbar-btn" 
+            [class.active]="isOrderedListActive" 
+            (click)="toggleNumberedList()" 
+            title="Numbered List">
+      <img class="icon-img" src="./assets/editor-icon/numbers-icon.png" alt="Numbered List">
     </button>
 
-
-    <button (click)="execCommand('insertOrderedList')">
-        <img class="icon-img" src="./assets/editor-icon/numbers-icon.png" />
+    <!-- Media -->
+    <button class="toolbar-btn" (click)="insertLink()" title="Insert Link">
+      <img class="icon-img" src="./assets/editor-icon/tabler-icon-link.png" alt="Insert Link">
     </button>
-
-    <button class="toolbar-btn" (click)="insertLink()">
-        <img class="icon-img" src="./assets/editor-icon/tabler-icon-link.png" />
-    </button>
-    <button class="toolbar-btn" (click)="insertImage()">
-        <img class="icon-img" src="./assets/editor-icon/photo-plus.png" />
+    <button class="toolbar-btn" (click)="insertImage()" title="Insert Image">
+      <img class="icon-img" src="./assets/editor-icon/photo-plus.png" alt="Insert Image">
     </button>
   </div>
-  
+
+  <!-- Editor -->
   <angular-editor
     #editorRef
     [config]="editorConfig"
     [(ngModel)]="note_text"
-    (ngModelChange)="save($event)"
+    (ngModelChange)="onContentChange($event)"
     (click)="updateToolbarState()"
-    (keyup)="updateToolbarState()">
-  </angular-editor>
-  
+    (keyup)="updateToolbarState()"
+    (focus)="updateToolbarState()"
+  ></angular-editor>
+</div>
