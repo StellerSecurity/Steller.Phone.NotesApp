@@ -1,1 +1,57 @@
-<angular-editor #editorRef [config]="editorConfig" [(ngModel)]="note_text" (ngModelChange)="save($event)"></angular-editor>
+<div class="custom-toolbar">
+
+    <button class="toolbar-btn" (click)="undo()" title="Undo">
+        <img class="icon-img" src="./assets/editor-icon/undo-icon.png" />
+      </button>
+
+      <button class="toolbar-btn" (click)="redo()" title="Redo">
+        <img class="icon-img" src="./assets/editor-icon/undo-icon.png" style=" transform: scaleX(-1);" />
+      </button>
+      
+    <button [class.active]="isBold" (click)="execCommand('bold')">
+        <img class="icon-img" src="./assets/editor-icon/bold-icon.png" />
+    </button>
+
+    <button [class.active]="isStrikeThrough" (click)="execCommand('strikeThrough')">
+        <img class="icon-img" src="./assets/editor-icon/strikethrough-icon.png" />
+    </button>
+  
+    <div class="dropdown">
+      <button (click)="toggleHeadingDropdown()" [class.active]="isHeadingDropdownOpen">
+        <img class="icon-img" class="icon-img" src="./assets/editor-icon/text-size-icon.png" />
+      </button>
+      <div class="dropdown-menu" *ngIf="isHeadingDropdownOpen">
+        <div (click)="exec('formatBlock', 'H1')">Heading 1</div>
+        <div (click)="exec('formatBlock', 'H2')">Heading 2</div>
+        <div (click)="exec('formatBlock', 'H3')">Heading 3</div>
+        <div (click)="exec('formatBlock', 'H4')">Heading 4</div>
+        <div (click)="exec('formatBlock', 'H5')">Heading 5</div>  
+      </div>
+    </div>
+  
+    <button (click)="execCommand('insertUnorderedList')">
+        <img class="icon-img" src="./assets/editor-icon/tabler-list-icon.png" />
+    </button>
+
+
+    <button (click)="execCommand('insertOrderedList')">
+        <img class="icon-img" src="./assets/editor-icon/numbers-icon.png" />
+    </button>
+
+    <button class="toolbar-btn" (click)="insertLink()">
+        <img class="icon-img" src="./assets/editor-icon/tabler-icon-link.png" />
+    </button>
+    <button class="toolbar-btn" (click)="insertImage()">
+        <img class="icon-img" src="./assets/editor-icon/photo-plus.png" />
+    </button>
+  </div>
+  
+  <angular-editor
+    #editorRef
+    [config]="editorConfig"
+    [(ngModel)]="note_text"
+    (ngModelChange)="save($event)"
+    (click)="updateToolbarState()"
+    (keyup)="updateToolbarState()">
+  </angular-editor>
+  
