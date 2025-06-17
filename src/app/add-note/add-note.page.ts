@@ -170,10 +170,11 @@ export class AddNotePage {
     addSecretModal.expires_at = "0"; // Assuming '0' means never expires
     addSecretModal.id = sha512(secret_id);
   
-    // 2. Extract plain text from HTML (strip tags)
-    const doc = new DOMParser().parseFromString(this.note_text, 'text/html');
-    const secretMessage = doc.body?.textContent?.trim() || '';
-  
+    let secretMessage = this.note_text;
+    secretMessage = secretMessage.replace(/<br ?\/?>/g, "\n")
+    const doc = new DOMParser().parseFromString(secretMessage, 'text/html');
+    secretMessage = doc.body?.textContent?.trim() || '';
+
     // 3. Encrypt the secret using AES
     addSecretModal.message = CryptoJS.AES.encrypt(secretMessage, secret_id).toString();
 
