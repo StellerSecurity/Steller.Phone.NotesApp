@@ -31,7 +31,6 @@ export class ShareSecretModalComponent {
 
   async createSecret() {
 
-
     const loading = await this.loadingController.create();
     await loading.present();
 
@@ -68,14 +67,6 @@ export class ShareSecretModalComponent {
   }
 
   async shareLink() {
-    // if (navigator.share) {
-    //   navigator.share({
-    //     title: 'Stellar Secret',
-    //     text: 'Here is your secret link',
-    //     url: this.secretUrl,
-    //   });
-    // }
-
     await Share.share({
       title: 'Stellar Secret',
       text: 'Here is your secret link',
