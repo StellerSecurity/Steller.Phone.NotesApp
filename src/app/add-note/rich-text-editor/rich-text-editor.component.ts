@@ -83,6 +83,7 @@ export class RichTextEditorComponent implements AfterViewInit  {
             box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
             max-height: 350px;
             overflow-y: auto;
+            border-radius: 16px;
           `
         );
       });
