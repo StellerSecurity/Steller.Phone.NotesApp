@@ -141,11 +141,11 @@ export class HomePage {
   }
 
   initializePressGesture(): void {
-    if (this.platform.is('mobile') || this.platform.is('android') || this.platform.is('ios')) {
+    // if (this.platform.is('mobile') || this.platform.is('android') || this.platform.is('ios')) {
       this.longPressElements.forEach((elementRef: ElementRef) => {
         this.createLongPressGesture(elementRef);
       });
-    } 
+    // } 
   }
 
   createLongPressGesture(element: ElementRef) {
@@ -191,21 +191,25 @@ export class HomePage {
     gesture.enable();
 }
 
-  handlePressStart(element:any) {
+  handlePressStart(element: any) {
     this.timeout = setTimeout(() => {
       this.checkboxOpened = true;
       setTimeout(() => {
         this.cdr.detectChanges();
-        const checkboxEle = element.children[0].children[0];
+        const noteId = element.id;
 
-        checkboxEle.checked = true;
-        this.listOfCheckedCheckboxes.push(element.id);
-        
-        Haptics.vibrate({duration: 50}).then(r => {});
+        // ✅ If not already selected, check it
+        if (!this.listOfCheckedCheckboxes.includes(noteId)) {
+          const checkboxEle = element.children[0].children[0];
+          checkboxEle.checked = true;
+          this.listOfCheckedCheckboxes.push(noteId);
+        }
+
+        Haptics.vibrate({ duration: 50 }).then(() => {});
         setTimeout(() => {
           this.cdr.detectChanges();
         }, 300);
-      }, 100)
+      }, 100);
     }, 100);
   }
 
