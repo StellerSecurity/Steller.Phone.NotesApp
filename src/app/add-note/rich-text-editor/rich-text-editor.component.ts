@@ -1,0 +1,109 @@
+import {
+  Component,
+  EventEmitter,
+  Input,
+  Output,
+  ViewChild,
+  ElementRef,
+  HostListener,
+  AfterViewInit,
+  OnDestroy,
+  Renderer2
+} from '@angular/core';
+import { AngularEditorComponent, AngularEditorConfig } from '@wfpena/angular-wysiwyg';
+
+@Component({
+  selector: 'app-rich-text-editor',
+  templateUrl: './rich-text-editor.component.html',
+  styleUrls: ['./rich-text-editor.component.scss']
+})
+export class RichTextEditorComponent implements AfterViewInit  {
+  @ViewChild('editorRef') editorComponent!: AngularEditorComponent;
+  @ViewChild('editorWrapper') editorWrapper!: ElementRef;
+  @Input() note_text: string = '';
+  @Output() noteChange = new EventEmitter<string>();
+
+
+
+  public editorConfig: AngularEditorConfig = {
+    editable: true,
+    spellcheck: false,
+    height: '100vh',
+    minHeight: '0',
+    maxHeight: 'auto',
+    textAreaBackgroundColor: 'white',
+    width: 'auto',
+    minWidth: '0',
+    translate: 'no',
+    enableToolbar: true,
+    showToolbar: true,
+    placeholder: 'Enter your note here..',
+    defaultParagraphSeparator: '',
+    defaultFontName: '',
+    defaultFontSize: '',
+    imageResizeSensitivity: 3,
+    uploadWithCredentials: false,
+    sanitize: true,
+    toolbarPosition: 'top',
+    outline: false,
+    toolbarHiddenButtons: [
+      ['italic', 'underline', 'superscript', 'subscript'],
+      ['fontName', 'fontSize', 'color'],
+      ['justifyLeft', 'justifyCenter', 'justifyRight', 'justifyFull', 'indent', 'outdent'],
+      ['cut', 'copy', 'delete', 'removeFormat'],
+      ['paragraph', 'blockquote', 'removeBlockquote', 'horizontalLine',  'unorderedList'],
+      ['video', 'insertVideo', 'horizontalline', 'insertHorizontalRule', 'toggleEditorMode'],
+      ['backgroundColor', 'foregroundColor', 'textColor'],
+      ['unlink']
+    ],
+  };
+ 
+
+  constructor(private renderer: Renderer2) {}
+
+  ngAfterViewInit() {
+    const label = document.querySelector('.ae-picker-label');
+    const dropdown = document.querySelector('.ae-picker-options');
+  
+    if (label && dropdown) {
+      label.addEventListener('click', () => {
+        const rect = label.getBoundingClientRect();
+  
+        dropdown.setAttribute(
+          'style',
+          `
+            position: fixed !important;
+            top: ${rect.bottom + 4}px;
+            left: ${rect.left}px;
+            z-index: 9999 !important;
+            width: max-content !important;
+            min-width: ${rect.width}px;
+            background: white;
+            border: 1px solid #ddd;
+            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+            max-height: 350px;
+            overflow-y: auto;
+            border-radius: 16px;
+          `
+        );
+      });
+    }
+
+    setTimeout(() => {
+      const linkBtn = document.querySelector('#link-') as HTMLButtonElement;
+      if (linkBtn) {
+        linkBtn.disabled = false;
+        linkBtn.classList.remove('disabled'); // optional
+      }
+    }, 500);
+  }
+  
+
+ 
+
+  onContentChange(content: string): void {
+    this.note_text = content;
+    this.noteChange.emit(content);
+  }
+
+}

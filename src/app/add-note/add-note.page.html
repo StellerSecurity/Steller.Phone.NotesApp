@@ -1,4 +1,4 @@
-<ion-header [translucent]="true">
+<ion-header [translucent]="true" class="header-border-bottom-0 no-border">
   <ion-toolbar>
     <ng-container *ngIf="!note_locked">
       <ng-container *ngIf="!isEditingTitle; else editing">
@@ -103,5 +103,8 @@
   </ion-modal>
 
     <!-- textarea -->
-    <angular-editor #editorRef [config]="editorConfig" [(ngModel)]="note_text" (ngModelChange)="save($event)" *ngIf="!note_locked"></angular-editor>
+    <!-- <angular-editor #editorRef [config]="editorConfig" [(ngModel)]="note_text" (ngModelChange)="save($event)" *ngIf="!note_locked"></angular-editor> -->
+    <div *ngIf="!note_locked">
+      <app-rich-text-editor #richTextEditorComponentRef [note_text]="note_text" (noteChange)="onSave($event)"></app-rich-text-editor>
+    </div>
 </ion-content>

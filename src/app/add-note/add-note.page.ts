@@ -6,12 +6,12 @@ import {AlertController, IonModal, LoadingController, NavController, ToastContro
 import {NotesService} from "../services/notes.service";
 import { NoteLockedModalComponent } from '../note-locked-modal/note-locked-modal.component';
 import { DeleteNoteModalComponent } from '../delete-note-modal/delete-note-modal.component';
-import {AngularEditorComponent, AngularEditorConfig} from "@wfpena/angular-wysiwyg";
 import { TranslatorService } from '../services/translator.service';
 import {SecretapiService} from "../services/secretapi.service";
 import {Secret} from "../models/Secret";
 import {sha512} from "js-sha512";
 import { ShareSecretModalComponent } from '../share-secret-modal/share-secret-modal.component';
+import { RichTextEditorComponent } from './rich-text-editor/rich-text-editor.component';
 const { v4: uuidv4 } = require('uuid');
 
 declare var require: any;
@@ -54,41 +54,11 @@ export class AddNotePage {
 
   public note_title = "";
 
-  public editorConfig: AngularEditorConfig = {
-    editable: true,
-    spellcheck: false,
-    height: '100vh',
-    minHeight: '0',
-    maxHeight: 'auto',
-    textAreaBackgroundColor: 'white',
-    width: 'auto',
-    minWidth: '0',
-    translate: 'no',
-    enableToolbar: true,
-    showToolbar: true,
-    placeholder: 'Enter your note here..',
-    defaultParagraphSeparator: '',
-    defaultFontName: '',
-    defaultFontSize: '',
-    imageResizeSensitivity: 3,
-    uploadWithCredentials: false,
-    sanitize: true,
-    toolbarPosition: 'top',
-    outline: false,
-    toolbarHiddenButtons: [
-      ['italic', 'underline', 'superscript', 'subscript'],
-      ['fontName', 'fontSize', 'color'],
-      ['justifyLeft', 'justifyCenter', 'justifyRight', 'justifyFull', 'indent', 'outdent'],
-      ['cut', 'copy', 'delete', 'removeFormat'],
-      ['paragraph', 'blockquote', 'removeBlockquote', 'horizontalLine',  'unorderedList'],
-      ['video', 'insertVideo', 'horizontalline', 'insertHorizontalRule', 'toggleEditorMode'],
-      ['backgroundColor', 'foregroundColor', 'textColor']
-    ],
-  };
   allTranslations:any;
   isEditingTitle: boolean = false;
   @ViewChild('titleInput', { static: false }) titleInputRef!: IonInput;
-  @ViewChild('editorRef') editorComponent?: AngularEditorComponent;
+  @ViewChild('richTextEditorComponentRef') richTextEditorComponent!: RichTextEditorComponent;
+  
 
   constructor(private cryptoService: CryptoService,
               public activatedRoute: ActivatedRoute,
@@ -144,7 +114,7 @@ export class AddNotePage {
   }
 
   private placeCursorAtEnd() {
-    const editorElem = this.editorComponent?.textArea?.nativeElement;
+    const editorElem = this.richTextEditorComponent?.editorComponent?.textArea?.nativeElement;
 
     if (editorElem) {
       editorElem.focus();
@@ -622,6 +592,11 @@ export class AddNotePage {
     });
 
     return await modal.present();
+  }
+
+  onSave(event:any): void {
+    this.note_text = event;
+    this.save(null)
   }
 
 }

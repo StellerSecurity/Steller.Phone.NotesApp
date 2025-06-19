@@ -48,34 +48,34 @@
 .fa.fa-undo::before {
   // Replace the url to the icon that you want
 
-
-  background-image: url('/assets/icon/undo-circular-arrow.png');
-  background-size : 16px 16px;
+  background-image: url('./assets/editor-icon/undo-icon.png');
+  background-size : 24px 24px;
   display: inline-block;
-  width: 16px;
-  height: 16px;
+  width: 24px;
+  height: 24px;
   content:"" !important;
 }
 
 
 .fa.fa-repeat::before {
 
-  background-image: url('/assets/icon/redo-arrow-symbol.png');
-  background-size : 16px 16px;
+  background-image: url('./assets/editor-icon/undo-icon.png');
+  background-size : 24px 24px;
   display: inline-block;
-  width: 16px;
-  height: 16px;
+  width: 24px;
+  height: 24px;
   content:""  !important;
+  transform: scaleX(-1);
 }
 
 
 .fa.fa-link::before {
 
-  background-image: url('/assets/icon/link-solid.png');
-  background-size : 16px 16px;
+  background-image: url('./assets/editor-icon/tabler-icon-link.png');
+  background-size : 24px 24px;
   display: inline-block;
-  width: 16px;
-  height: 16px;
+  width: 24px;
+  height: 24px;
   content:""  !important;
 }
 
@@ -85,7 +85,7 @@
 }
 
 .angular-editor .angular-editor-wrapper {
-  top: 80px !important;
+  top: 60px !important;
 }
 
 
@@ -112,64 +112,182 @@
 
 .fa.fa-image::before {
 
-  background-image: url('/assets/icon/image-regular.svg');
-  background-size : 16px 16px;
-  display: inline-block;
-  width: 16px;
-  height: 16px;
-  content:""  !important;
-}
-
-
-// Strikethrough
-.fa.fa-strikethrough::before {
-  background-image: url('/assets/icon/line.png');
+  background-image: url('./assets/editor-icon/photo-plus.png');
   background-size : 24px 24px;
   display: inline-block;
-  width: 16px;
-  height: 16px;
+  width: 24px;
+  height: 24px;
   content:""  !important;
 }
 
 
 // Strikethrough
 .fa.fa-list-ul::before {
-  background-image: url('/assets/icon/list.png');
+  background-image: url('./assets/editor-icon/numbers-icon.png');
   background-size : 24px 24px;
   display: inline-block;
-  width: 16px;
-  height: 16px;
+  width: 24px;
+  height: 24px;
   content:""  !important;
 }
 
 // Strikethrough
 .fa.fa-list-ol::before {
-  background-image: url('/assets/icon/list(1).png');
+  background-image: url('./assets/editor-icon/tabler-list-icon.png');
   background-size : 24px 24px;
   display: inline-block;
-  width: 16px;
-  height: 16px;
+  width: 24px;
+  height: 24px;
   content:""  !important;
 }
 
 // Strikethrough
 .fa.fa-strikethrough::before {
-  background-image: url('/assets/icon/line.png');
-  background-size : 16px 16px;
+  background-image: url('./assets/editor-icon/strikethrough-icon.png');
+  background-size : 24px 24px;
   display: inline-block;
-  width: 16px;
-  height: 16px;
+  width: 24px;
+  height: 24px;
   content:""  !important;
 }
 
 // Bold
 .fa.fa-bold::before {
-  background-image: url('/assets/icon/bold.png');
-  background-size : 16px 16px;
+  background-image: url('./assets/editor-icon/bold-icon.png');
+  background-size : 24px 24px;
   display: inline-block;
-  width: 16px;
-  height: 16px;
+  width: 24px;
+  height: 24px;
   content:""  !important;
+}
+
+.select-heading .ae-font.ae-picker {
+  height: 40px;
+  font-size: 16px;
+}
+
+.angular-editor-toolbar {
+  display: flex;
+  flex-direction: row;
+  overflow-x: auto;
+  white-space: nowrap;
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;     
+  padding: 15px;
+  width: 100%;
+  height: 60px;
+  align-items: center;
+  border: 0!important;
+  border-radius: 24px 24px 0 0;
+
+  :-webkit-scrollbar {
+    display: none; /* Chrome, Safari and Opera */
+  }
+}
+
+.angular-editor-toolbar-set {
+  display: flex!important;
+  flex-direction: row!important;
+
+  button {
+    box-shadow: none!important;
+    border: 0!important;
+    border-radius: 50%;
+    width: 44px;
+    height: 44px;
+    background-color: white;
+    margin-right: 10px;
+
+    &:active,
+    &:focus {
+      background-color: #F6F6FD!important;
+    }
+  }
+}
+
+.angular-editor-button.active {
+  background-color: #F6F6FD!important;
+  border: 1px solid #EAEAF0!important;
+}
+
+/* Ensure the dropdown wrapper is properly positioned */
+.ae-picker {
+  position: relative; /* Ensure dropdown positions relative to this */
+}
+
+/* Fix dropdown positioning and width */
+.ae-picker-options {
+  z-index: 9999;
+  right: auto;
+  width: max-content;
+  min-width: 100%; /* Ensures it's not narrower than the toggle */
+  background: #fff;
+  box-shadow: 0px 2px 10px rgba(0,0,0,0.1);
+  border: 1px solid #ddd;
+  overflow: auto;
+  max-height: 300px;
+}
+
+/* Optional: Style dropdown items */
+.ae-picker-item {
+  white-space: nowrap;
+  padding: 8px 12px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.ae-picker-label {
+  border-radius: 0!important;
+}
+
+.ae-picker-item:hover,
+.ae-picker-item.selected {
+  background-color: #f5f5f5!important;
+  border-radius: 0!important;
+}
+
+.select-heading {
+  border: 1px solid #EAEAF0;
+  border-radius: 40px;
+  overflow: hidden;
+  background: white;
+}
+
+.angular-editor-toolbar-set:nth-child(5) {
+  border: 1px solid #EAEAF0;
+  border-radius: 40px;
+
+  .angular-editor-button:nth-child(2) {
+    margin-right: 0;
+  }
+}
+
+.ae-picker-options {
+  background: #F6F6FD!important;
+  min-width: 120px!important;
+  overflow-x: hidden!important;
+}
+
+.ae-font .ae-picker-options .ae-picker-item {
+  padding-left: 15px!important;
+}
+
+.ae-font .ae-picker-options .ae-picker-item.selected {
+  color: black!important;
+  background-color: #fff4c2;
+  font-weight: bold!important;
+}
+
+ion-header.header-border-bottom-0 , ion-toolbar {
+  --border-width: 0px !important;
+  --box-shadow: none !important;
+  border-bottom: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+.angular-editor-textarea {
+  border: 1px solid #F6F6FD!important;
 }
 
 ion-button,

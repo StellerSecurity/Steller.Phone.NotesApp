@@ -18,7 +18,7 @@ export function HttpLoaderFactory(http: HttpClient) {
 }
 
 @NgModule({
-  declarations: [AppComponent, ShareSecretModalComponent],
+  declarations: [AppComponent, ShareSecretModalComponent,],
   imports: [HttpClientModule, AngularEditorModule, BrowserModule, PasswordStrengthMeterModule.forRoot(), IonicModule.forRoot({innerHTMLTemplatesEnabled: true}), AppRoutingModule, CommonModule, FormsModule,
     TranslateModule.forRoot({
       loader: {
