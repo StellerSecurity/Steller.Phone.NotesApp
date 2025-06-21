@@ -360,3 +360,23 @@ ion-input {
     background: white;
   }
 }
+
+.custom-back-button::part(native) {
+  background-image: url('/assets/chevron-left.png');
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  background-size: 40px 40px;
+  
+  /* Hide default icon */
+  ion-icon {
+    display: none;
+  }
+  
+  /* Adjust padding if needed */
+  padding-inline-start: 40px;
+}
+
+.custom-back-button::part(icon) {
+  display: none;
+}
