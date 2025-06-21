@@ -253,6 +253,18 @@
   background: white;
 }
 
+.angular-editor-toolbar-set button {
+  background: white;
+
+  &:active {
+    background: #f5f5f5!important;
+  }
+
+  &:hover {
+    background: white;
+  }
+}
+
 .angular-editor-toolbar-set:nth-child(5) {
   border: 1px solid #EAEAF0;
   border-radius: 40px;

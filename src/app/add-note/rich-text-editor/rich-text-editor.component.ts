@@ -5,9 +5,8 @@ import {
   Output,
   ViewChild,
   ElementRef,
-  HostListener,
+  ChangeDetectorRef,
   AfterViewInit,
-  OnDestroy,
   Renderer2
 } from '@angular/core';
 import { AngularEditorComponent, AngularEditorConfig } from '@wfpena/angular-wysiwyg';
@@ -17,14 +16,12 @@ import { AngularEditorComponent, AngularEditorConfig } from '@wfpena/angular-wys
   templateUrl: './rich-text-editor.component.html',
   styleUrls: ['./rich-text-editor.component.scss']
 })
-export class RichTextEditorComponent implements AfterViewInit  {
+export class RichTextEditorComponent implements AfterViewInit {
   @ViewChild('editorRef') editorComponent!: AngularEditorComponent;
   @ViewChild('editorWrapper') editorWrapper!: ElementRef;
   @Input() note_text: string = '';
   @Output() noteChange = new EventEmitter<string>();
-
-
-
+  updateNote:any = '';
   public editorConfig: AngularEditorConfig = {
     editable: true,
     spellcheck: false,
@@ -51,59 +48,98 @@ export class RichTextEditorComponent implements AfterViewInit  {
       ['fontName', 'fontSize', 'color'],
       ['justifyLeft', 'justifyCenter', 'justifyRight', 'justifyFull', 'indent', 'outdent'],
       ['cut', 'copy', 'delete', 'removeFormat'],
-      ['paragraph', 'blockquote', 'removeBlockquote', 'horizontalLine',  'unorderedList'],
+      ['paragraph', 'blockquote', 'removeBlockquote', 'horizontalLine', 'unorderedList'],
       ['video', 'insertVideo', 'horizontalline', 'insertHorizontalRule', 'toggleEditorMode'],
       ['backgroundColor', 'foregroundColor', 'textColor'],
       ['unlink']
     ],
   };
- 
 
-  constructor(private renderer: Renderer2) {}
+  constructor(
+    private renderer: Renderer2,
+    private cdr: ChangeDetectorRef
+  ) {
+    this.updateNote = JSON.parse(JSON.stringify(this.note_text))
+  }
 
   ngAfterViewInit() {
-    const label = document.querySelector('.ae-picker-label');
-    const dropdown = document.querySelector('.ae-picker-options');
-  
-    if (label && dropdown) {
-      label.addEventListener('click', () => {
-        const rect = label.getBoundingClientRect();
-  
-        dropdown.setAttribute(
-          'style',
-          `
-            position: fixed !important;
-            top: ${rect.bottom + 4}px;
-            left: ${rect.left}px;
-            z-index: 9999 !important;
-            width: max-content !important;
-            min-width: ${rect.width}px;
-            background: white;
-            border: 1px solid #ddd;
-            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
-            max-height: 350px;
-            overflow-y: auto;
-            border-radius: 16px;
-          `
-        );
-      });
-    }
+    this.initializeEditorToolbar();
+    this.setupLinkButton();
+  }
 
+  private initializeEditorToolbar(): void {
+    setTimeout(() => {
+      // Setup picker dropdowns
+      document.querySelectorAll('.ae-picker-label').forEach(label => {
+        this.renderer.listen(label, 'click', () => {
+          const dropdown = label.nextElementSibling as HTMLElement;
+          if (dropdown?.classList.contains('ae-picker-options')) {
+            this.positionDropdown(label, dropdown);
+          }
+        });
+      });
+
+      // Ensure all buttons are enabled and have proper event listeners
+      document.querySelectorAll('.ae-button').forEach(button => {
+        button.removeAttribute('disabled');
+        this.setupButtonEvents(button);
+      });
+    }, 300);
+  }
+
+  private positionDropdown(label: Element, dropdown: HTMLElement): void {
+    const rect = label.getBoundingClientRect();
+    dropdown.style.position = 'fixed';
+    dropdown.style.top = `${rect.bottom + 4}px`;
+    dropdown.style.left = `${rect.left}px`;
+    dropdown.style.zIndex = '9999';
+    dropdown.style.width = 'max-content';
+    dropdown.style.minWidth = `${rect.width}px`;
+    dropdown.style.background = 'white';
+    dropdown.style.border = '1px solid #ddd';
+    dropdown.style.boxShadow = '0px 4px 8px rgba(0, 0, 0, 0.1)';
+    dropdown.style.maxHeight = '350px';
+    dropdown.style.overflowY = 'auto';
+    dropdown.style.borderRadius = '16px';
+  }
+
+  private setupButtonEvents(button: Element): void {
+    this.renderer.listen(button, 'mousedown', (event) => {
+      event.preventDefault();
+      (button as HTMLElement).click();
+    });
+
+    this.renderer.listen(button, 'click', (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      this.cdr.detectChanges();
+    });
+  }
+
+  private setupLinkButton(): void {
     setTimeout(() => {
       const linkBtn = document.querySelector('#link-') as HTMLButtonElement;
       if (linkBtn) {
         linkBtn.disabled = false;
-        linkBtn.classList.remove('disabled'); // optional
+        linkBtn.classList.remove('disabled');
       }
     }, 500);
   }
-  
-
- 
 
   onContentChange(content: string): void {
-    this.note_text = content;
-    this.noteChange.emit(content);
+    // this.note_text = content;
+    // this.noteChange.emit(content);
+    this.updateNote = content;
   }
 
+  onClickEditor(): void {
+    setTimeout(() => {
+      this.cdr.detectChanges();
+    }, 100);
+  }
+
+  onLeave() {
+    // Add cleanup or save logic here
+    this.noteChange.emit(this.updateNote);
+  }
 }

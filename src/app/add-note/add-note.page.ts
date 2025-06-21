@@ -598,5 +598,11 @@ export class AddNotePage {
     this.note_text = event;
     this.save(null)
   }
+  
+  ionViewWillLeave() {
+    if (this.richTextEditorComponent?.onLeave) {
+      this.richTextEditorComponent.onLeave();
+    }
+  }
 
 }
