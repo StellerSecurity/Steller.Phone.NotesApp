@@ -568,7 +568,10 @@ export class AddNotePage {
   public async deleteNote() {
     const modal = await this.modalCtrl.create({
       component: DeleteNoteModalComponent,
-      cssClass: 'confirmation-popup'
+      cssClass: 'confirmation-popup',
+      componentProps: {
+        isSingleDelete: true,                                         
+      }
     });
 
     modal.onDidDismiss().then(async (data) => {
