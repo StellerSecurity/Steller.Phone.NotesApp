@@ -199,11 +199,16 @@
     margin-right: 10px;
 
     &:active{
-      background-color: #F6F6FD;
+      background-color: #F6F6FD!important;
     }
 
-    &:facus{
+    &:facus {
       background-color: white;
+    }
+
+    &:not(.active):hover {
+      background: white!important;
+      background-color: white!important;
     }
   }
 }

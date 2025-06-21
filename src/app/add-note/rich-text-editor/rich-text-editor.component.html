@@ -3,6 +3,7 @@
     [config]="editorConfig" 
     [(ngModel)]="note_text" 
     (ngModelChange)="onContentChange($event)"
-    (onClick)="onClickEditor()">
+    (click)="onClickEditor()"
+    (keydown)="onClickEditor()">
   </angular-editor>
 </div>
