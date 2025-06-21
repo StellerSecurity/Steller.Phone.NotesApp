@@ -133,6 +133,10 @@ export class AddNotePage {
   }
 
   public async shareStellarSecret() {
+    if (this.richTextEditorComponent?.onLeave) {
+      this.richTextEditorComponent.onLeave();
+    }
+
     // 1. Create a new secret
     const addSecretModal = new Secret();
     const secret_id = uuidv4();
@@ -156,7 +160,7 @@ export class AddNotePage {
         secret_id: secret_id,
       },
       cssClass: 'secret-modal',
-      breakpoints: [0, 0.5],
+      breakpoints: [0, 0.7],
       initialBreakpoint: 0.7,
     });
 
