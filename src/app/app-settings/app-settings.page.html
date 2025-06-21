@@ -33,13 +33,13 @@
         <div *ngIf="!password_enabled">
           <div class="input-group" style="position: relative;">
             <ion-input type="{{ showPassword ? 'text' : 'password' }}" shape="round" placeholder="{{'password' | translate}}" (ionInput)="notesAppPasswordChange()"
-              [(ngModel)]="notesAppPassword"></ion-input>
+              [(ngModel)]="notesAppPassword" (keyup.enter)="save()"></ion-input>
             <ion-icon slot="end" [name]="showPassword ? 'eye-off' : 'eye'"
               (click)="togglePasswordVisibility()"></ion-icon>
           </div>
           <div class="input-group">
             <ion-input type="{{ confirmShowPassword ? 'text' : 'password' }}" shape="round" placeholder="{{'confirmPassword' | translate}}"
-              [(ngModel)]="confirmPassword"></ion-input>
+              [(ngModel)]="confirmPassword" (keyup.enter)="save()"></ion-input>
             <ion-icon slot="end" [name]="confirmShowPassword ? 'eye-off' : 'eye'"
               (click)="toggleConfirmPasswordVisibility()"></ion-icon>
           </div>

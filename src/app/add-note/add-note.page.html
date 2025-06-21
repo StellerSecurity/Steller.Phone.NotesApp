@@ -77,11 +77,13 @@
         </p>
         <div *ngIf="!getProtected()">
           <div class="input-group" style="position: relative;">
-            <ion-input type="{{ showPassword ? 'text' : 'password' }}" lines="none" shape="round" (ionInput)="notesPasswordChange()" placeholder="{{'inputPassword' | translate}}"  [(ngModel)]="notes_password_input"></ion-input>
+            <ion-input type="{{ showPassword ? 'text' : 'password' }}" lines="none" shape="round" (ionInput)="notesPasswordChange()" placeholder="{{'inputPassword' | translate}}"  [(ngModel)]="notes_password_input"
+            (keyup.enter)="lockNote()"></ion-input>
             <ion-icon slot="end" [name]="showPassword ? 'eye-off' : 'eye'" (click)="togglePasswordVisibility()"></ion-icon>
           </div>
           <div class="input-group">
-            <ion-input type="{{ confirmShowPassword ? 'text' : 'password' }}" lines="none" shape="round"  placeholder="{{'confirmPassword' | translate}}" [(ngModel)]="notes_password_confirm"></ion-input>
+            <ion-input type="{{ confirmShowPassword ? 'text' : 'password' }}" lines="none" shape="round"  placeholder="{{'confirmPassword' | translate}}" [(ngModel)]="notes_password_confirm"
+            (keyup.enter)="lockNote()"></ion-input>
             <ion-icon slot="end" [name]="confirmShowPassword ? 'eye-off' : 'eye'" (click)="toggleConfirmPasswordVisibility()"></ion-icon>
           </div>
         </div>
