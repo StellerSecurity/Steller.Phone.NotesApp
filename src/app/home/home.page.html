@@ -12,7 +12,8 @@
       </div> 
     </ion-title>
 
-    <ion-searchbar *ngIf="searchMode" #searchbar [(ngModel)]="search_query" (ionInput)="search()" placeholder="{{'searchNotesInput' | translate}}" show-clear-button="focus" clear-icon="trash-bin"></ion-searchbar>
+    <ion-searchbar *ngIf="searchMode" #searchbar [(ngModel)]="search_query" (ionInput)="search()" placeholder="{{'searchNotesInput' | translate}}" show-clear-button="focus" clear-icon="trash-bin"
+    (appClickOutside)="exitSearchMode()" appClickOutside></ion-searchbar>
 
     <ion-buttons slot="end" style="position: relative; top: 5px;">
       <ng-container *ngIf="!searchMode">

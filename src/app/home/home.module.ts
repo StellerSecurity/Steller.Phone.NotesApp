@@ -10,6 +10,7 @@ import { RestPassModalModule } from '../restpass-modal/resetpass-modal.module';
 import { TranslateModule } from '@ngx-translate/core';
 import {AppModule} from "../app.module";
 import {StriphtmlPipe} from "../striphtml.pipe";
+import { ClickOutsideDirective } from '../directives/click-outside.directive';
 
 @NgModule({
     imports: [
@@ -21,6 +22,6 @@ import {StriphtmlPipe} from "../striphtml.pipe";
         RestPassModalModule,
         TranslateModule
     ],
-    declarations: [HomePage, StriphtmlPipe]
+    declarations: [HomePage, StriphtmlPipe, ClickOutsideDirective]
 })
 export class HomePageModule {}
