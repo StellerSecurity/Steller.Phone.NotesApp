@@ -94,8 +94,7 @@
   "copy": "Copy",
   "share": "Share",
   "burnSecret": "Burn Secret",
+  "burningSecret": "Burning Secret...",
   "createSecret": "Create Secret",
-  "passwordAtLeastLength": "Password must have at least 6 characters",
-  "": "",
-  "": ""
+  "passwordAtLeastLength": "Password must have at least 6 characters"
 }

@@ -19,6 +19,7 @@ export class ShareSecretModalComponent {
   isLoading= false;
   createdSecret:any;
   allTranslations:any;
+  isDeletingSecret=false;
 
   constructor(private modalCtrl: ModalController,
     private toastController: ToastController,
@@ -63,10 +64,10 @@ export class ShareSecretModalComponent {
   }
 
   burnSecret() {
+    this.isDeletingSecret = true;
     this.secretapi.delete(this.createdSecret?.id).subscribe({
       next: async (response) => {
         this.closeModal();
-
         const toast = await this.toastController.create({
           message: this.allTranslations.secretDeletedSuccessfully,
           duration: 2500,
@@ -79,6 +80,7 @@ export class ShareSecretModalComponent {
        
       },
       complete: async () => {
+        this.isDeletingSecret = false;
         // Optional cleanup logic
         // await loading.dismiss();
       }
