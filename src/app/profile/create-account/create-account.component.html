@@ -1,6 +1,5 @@
 <ion-content class="create-account-content">
-
-  <!-- Top Blue Section -->
+  <!-- Top Logo Section -->
   <div class="top-section">
     <div class="logo-container">
       <ion-icon name="document-text-outline" class="app-logo"></ion-icon>
@@ -8,8 +7,8 @@
     </div>
   </div>
 
-  <!-- Form Card -->
-  <div class="form-card">
+  <!-- FORM SECTION -->
+  <div class="form-card" *ngIf="!showVerificationSection">
     <ion-button fill="clear" size="small" class="back-button" routerLink="/login">
       <ion-icon name="chevron-back-outline"></ion-icon>
     </ion-button>
@@ -46,4 +45,31 @@
     </div>
   </div>
 
+  <!-- VERIFICATION SECTION -->
+  <div class="form-card" *ngIf="showVerificationSection">
+    <div class="verify-icon">
+      <ion-icon name="mail-outline" class="mail-icon"></ion-icon>
+    </div>
+    <h2 class="title">Please input code</h2>
+    <p class="subtitle">We sent an account verification code to <br /><strong>{{ email }}</strong></p>
+
+    <div class="code-input-wrapper">
+      <input
+          maxlength="1"
+          *ngFor="let code of verificationCode; let i = index"
+          [(ngModel)]="verificationCode[i]"
+          (input)="handleCodeInput($event, i)"
+          (keydown)="handleKeyDown($event, i)" />
+
+    </div>
+
+    <div class="resend-section">
+      Don’t receive a code?
+      <a (click)="resendCode()">Resend code</a>
+    </div>
+
+    <div class="change-email">
+      <a (click)="changeEmail()">Sign up with different email</a>
+    </div>
+  </div>
 </ion-content>
