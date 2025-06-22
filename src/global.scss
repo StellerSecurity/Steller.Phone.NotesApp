@@ -389,11 +389,12 @@ ion-input {
 
 // user login/register/etc pages 
 .user-account-section {
-  --background: #1a5cff;
+  --background: #2761FC;
+  position: relative;
 
   .top-section {
-    height: 45vh;
-    background: url('/assets/images/bg-paper.png') no-repeat center;
+    height: 100vh;
+    background: url('./assets/login-pages-bg.png') no-repeat center;
     background-size: cover;
     display: flex;
     justify-content: center;
@@ -402,6 +403,8 @@ ion-input {
     .logo-container {
       display: flex;
       align-items: center;
+      position: absolute;
+      top: 20%;
       
       .login-app-logo-img {
         width: 40px;
@@ -421,9 +424,12 @@ ion-input {
     border-top-left-radius: 32px;
     border-top-right-radius: 32px;
     background: white;
-    padding: 24px;
-    min-height: 55vh;
-    position: relative;
+    padding: 24px 24px 50px 24px;
+    // min-height: 55vh;
+    width: 100%;
+    position: absolute;
+    bottom: 0;
+    left: 0;
 
     .back-button {
       position: absolute;
@@ -451,7 +457,7 @@ ion-input {
       --background: #f1f1f7;
       --border-radius: 32px;
       margin-bottom: 16px;
-      padding-left: 16px;
+      // padding-left: 16px;
 
       ion-input {
         font-size: 15px;
@@ -467,7 +473,7 @@ ion-input {
     .forgot-password {
       text-align: right;
       font-size: 14px;
-      color: #1a5cff;
+      color: #2761FC;
       margin-bottom: 24px;
       cursor: pointer;
     }
@@ -476,7 +482,7 @@ ion-input {
     .create-button,
     .send-button,
     .confirm-button {
-      --background: #1a5cff;
+      --background: #2761FC;
       --border-radius: 24px;
       font-weight: 600;
       font-size: 16px;
@@ -489,7 +495,7 @@ ion-input {
       font-size: 14px;
 
       a {
-        color: #1a5cff;
+        color: #2761FC;
         font-weight: 500;
         cursor: pointer;
         margin-left: 4px;
@@ -529,7 +535,7 @@ ion-input {
       box-shadow: 0 0 0 1.5px #ccc;
   
       &:focus {
-        box-shadow: 0 0 0 2px #1a5cff;
+        box-shadow: 0 0 0 2px #2761FC;
         background: #fff;
       }
     }
@@ -542,7 +548,7 @@ ion-input {
     margin-top: 8px;
   
     a {
-      color: #1a5cff;
+      color: #2761FC;
       font-weight: 500;
       margin-left: 4px;
       cursor: pointer;
