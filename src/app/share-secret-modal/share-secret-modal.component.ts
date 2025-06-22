@@ -2,6 +2,8 @@ import { Component, Input } from '@angular/core';
 import {LoadingController, ModalController, ToastController} from '@ionic/angular';
 import { SecretapiService } from '../services/secretapi.service';
 import { Share } from '@capacitor/share';
+import { Router } from '@angular/router';
+import { TranslatorService } from '../services/translator.service';
 
 @Component({
   selector: 'app-share-secret-modal',
@@ -15,14 +17,19 @@ export class ShareSecretModalComponent {
   expiryText: string = '';
   step = 1;
   isLoading= false;
+  createdSecret:any;
+  allTranslations:any;
 
   constructor(private modalCtrl: ModalController,
     private toastController: ToastController,
     private loadingController: LoadingController,
-    private secretapi: SecretapiService,) {}
+    private secretapi: SecretapiService,
+    private router: Router,
+    private translatorService: TranslatorService,) {}
 
     ionViewWillEnter() {
       this.step = 1;
+      this.allTranslations = this.translatorService.allTranslations;
     }
 
   closeModal() {
@@ -36,6 +43,7 @@ export class ShareSecretModalComponent {
 
     this.secretapi.create(this.addSecretModal).subscribe({
     next: async (response) => {
+      this.createdSecret = response;
       this.step = 2;
       this.secretUrl = `https://stellarsecret.io/${this.secret_id}`
       //this.expiryText= `7 days (${this.formatDate(response?.expires_at)})`;
@@ -51,6 +59,29 @@ export class ShareSecretModalComponent {
       await loading.dismiss();
       this.isLoading = false;
     }
+    });
+  }
+
+  burnSecret() {
+    this.secretapi.delete(this.createdSecret?.id).subscribe({
+      next: async (response) => {
+        this.closeModal();
+
+        const toast = await this.toastController.create({
+          message: this.allTranslations.secretDeletedSuccessfully,
+          duration: 2500,
+          position: 'bottom',
+        });
+    
+        await toast.present();
+      },
+      error: async (error) => {
+       
+      },
+      complete: async () => {
+        // Optional cleanup logic
+        // await loading.dismiss();
+      }
     });
   }
 
@@ -73,11 +104,6 @@ export class ShareSecretModalComponent {
       url: this.secretUrl,
       dialogTitle: 'Stellar Private Note',
     });
-  }
-
-  burnSecret() {
-    // TODO: Implement actual burn logic (emit or call service)
-    // alert('Burn Secret clicked!');
   }
 
   private formatDate(dateString: string): string {
