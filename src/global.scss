@@ -400,27 +400,24 @@ ion-input {
     align-items: center;
 
     .logo-container {
-      text-align: center;
-
-      .app-logo {
-        font-size: 36px;
-        background: white;
-        padding: 12px;
-        border-radius: 16px;
-        color: #1a5cff;
+      display: flex;
+      align-items: center;
+      
+      .login-app-logo-img {
+        width: 40px;
+        height: 40px;
       }
-
+      
       .app-name {
         color: white;
         font-weight: 600;
-        margin-top: 12px;
-        font-size: 18px;
+        font-size: 17.50px;
+        margin-left: 20px;
       }
     }
   }
 
   .form-card {
-  //   margin-top: -32px;
     border-top-left-radius: 32px;
     border-top-right-radius: 32px;
     background: white;
