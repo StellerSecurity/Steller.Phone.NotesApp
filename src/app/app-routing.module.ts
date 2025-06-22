@@ -25,6 +25,10 @@ const routes: Routes = [
   {
     path: 'account/login',
     loadChildren: () => import('./app-settings/app-settings.module').then( m => m.AppSettingsPageModule)
+  },
+  {
+    path: 'profile',
+    loadChildren: () => import('./profile/profile.module').then( m => m.ProfileModule)
   }
 ];
 
