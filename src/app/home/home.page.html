@@ -12,7 +12,8 @@
       </div> 
     </ion-title>
 
-    <ion-searchbar *ngIf="searchMode" #searchbar [(ngModel)]="search_query" (ionInput)="search()" placeholder="{{'searchNotesInput' | translate}}" show-clear-button="focus" clear-icon="trash-bin"></ion-searchbar>
+    <ion-searchbar *ngIf="searchMode" #searchbar [(ngModel)]="search_query" (ionInput)="search()" placeholder="{{'searchNotesInput' | translate}}" show-clear-button="focus" clear-icon="trash-bin"
+    (appClickOutside)="exitSearchMode()" appClickOutside></ion-searchbar>
 
     <ion-buttons slot="end" style="position: relative; top: 5px;">
       <ng-container *ngIf="!searchMode">
@@ -66,7 +67,8 @@ font-weight: 400;
 line-height: 150%; /* 21px */ ">{{'enterYourPasswordToGetAccessToYourNotes' | translate}}</p>
       <div class="input-group" style="position: relative;">
         <ion-input type="{{ showPassword ? 'text' : 'password' }}" placeholder="{{'enterYourPassword' | translate}}" (keyup)="ionInputAppUnlockInput($event)"
-          [(ngModel)]="input_password_app_unlock" autofocus="true"></ion-input>
+          [(ngModel)]="input_password_app_unlock" autofocus="true"
+          (keyup.enter)="unlockNotesApp()"></ion-input>
         <ion-icon slot="end" [name]="showPassword ? 'eye-off' : 'eye'" (click)="togglePasswordVisibility()"></ion-icon>
       </div>
       <span style="display: flex;

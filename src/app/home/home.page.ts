@@ -357,7 +357,10 @@ export class HomePage {
     // @ts-ignore
     const modal = await this.modalCtrl.create({
       component: DeleteNoteModalComponent,
-      cssClass: 'confirmation-popup'
+      cssClass: 'confirmation-popup',
+      componentProps: {
+        isSingleDelete: this.listOfCheckedCheckboxes?.length == 1 || false,                                         
+      }
     });
 
     modal.onDidDismiss().then(async (data) => {

@@ -22,4 +22,14 @@ export class SecretapiService {
 
   }
 
+  public delete(id: string) {
+    const httpOptions = {
+      headers: new HttpHeaders({
+        'Content-Type':  'application/json'
+      })
+    };
+
+    return this.http.delete<any>(environment.secret_api_url + "v1/secretcontroller/delete?id=" + id,httpOptions).pipe();
+  }
+
 }

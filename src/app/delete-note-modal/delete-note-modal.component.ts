@@ -1,4 +1,4 @@
-import { Component, ViewChild } from '@angular/core';
+import { Component, Input, ViewChild } from '@angular/core';
 import { ModalController } from '@ionic/angular';
 
 @Component({
@@ -7,6 +7,7 @@ import { ModalController } from '@ionic/angular';
   styleUrls: ['./delete-note-modal.component.scss'],
 })
 export class DeleteNoteModalComponent {
+  @Input() isSingleDelete: boolean = false; 
 
   constructor(private modalCtrl: ModalController) { }
 

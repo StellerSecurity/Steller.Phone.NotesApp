@@ -86,6 +86,12 @@
 
 .angular-editor .angular-editor-wrapper {
   top: 60px !important;
+
+  max-width: 100%;
+  display: block;
+  word-wrap: break-word; /* for older compatibility */
+  overflow-wrap: break-word; /* modern standard */
+  white-space: normal; /* allows line breaks */
 }
 
 
@@ -123,7 +129,7 @@
 
 // Strikethrough
 .fa.fa-list-ul::before {
-  background-image: url('./assets/editor-icon/numbers-icon.png');
+  background-image: url('./assets/editor-icon/tabler-list-icon.png');
   background-size : 24px 24px;
   display: inline-block;
   width: 24px;
@@ -133,7 +139,7 @@
 
 // Strikethrough
 .fa.fa-list-ol::before {
-  background-image: url('./assets/editor-icon/tabler-list-icon.png');
+  background-image: url('./assets/editor-icon/numbers-icon.png');
   background-size : 24px 24px;
   display: inline-block;
   width: 24px;
@@ -198,9 +204,17 @@
     background-color: white;
     margin-right: 10px;
 
-    &:active,
-    &:focus {
+    &:active{
       background-color: #F6F6FD!important;
+    }
+
+    &:facus {
+      background-color: white;
+    }
+
+    &:not(.active):hover {
+      background: white!important;
+      background-color: white!important;
     }
   }
 }
@@ -351,4 +365,24 @@ ion-input {
     overflow: hidden;
     background: white;
   }
+}
+
+.custom-back-button::part(native) {
+  background-image: url('/assets/chevron-left.png');
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  background-size: 40px 40px;
+  
+  /* Hide default icon */
+  ion-icon {
+    display: none;
+  }
+  
+  /* Adjust padding if needed */
+  padding-inline-start: 40px;
+}
+
+.custom-back-button::part(icon) {
+  display: none;
 }
