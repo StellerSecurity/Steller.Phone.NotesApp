@@ -1,14 +1,22 @@
-import { Component, OnInit } from '@angular/core';
+import { Component } from '@angular/core';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-forgot-password',
   templateUrl: './forgot-password.component.html',
   styleUrls: ['./forgot-password.component.scss'],
 })
-export class ForgotPasswordComponent  implements OnInit {
+export class ForgotPasswordComponent {
+  email = '';
 
-  constructor() { }
+  constructor(private router: Router) {}
 
-  ngOnInit() {}
+  sendCode() {
+    console.log('Sending code to:', this.email);
+    // Trigger backend/email verification logic
+  }
 
+  backToLogin() {
+    this.router.navigate(['/login']);
+  }
 }

@@ -1,3 +1,43 @@
-<p>
-  login works!
-</p>
+<ion-content class="login-content">
+  <!-- Top Blue Section with Logo -->
+  <div class="top-section">
+    <div class="logo-container">
+      <ion-icon name="document-text-outline" class="app-logo"></ion-icon>
+      <h1 class="app-name">Stellar Notes</h1>
+    </div>
+  </div>
+
+  <!-- White Card Login Form -->
+  <div class="form-card">
+    <h2 class="title">Log In</h2>
+    <p class="subtitle">Please enter your email and password</p>
+
+    <ion-item class="input-field" lines="none">
+      <ion-input [(ngModel)]="email" placeholder="Email" type="email" fill="solid"></ion-input>
+    </ion-item>
+
+    <ion-item class="input-field" lines="none">
+      <ion-input
+        [(ngModel)]="password"
+        [type]="showPassword ? 'text' : 'password'"
+        placeholder="Password"
+        fill="solid">
+      </ion-input>
+      <ion-icon
+        name="{{ showPassword ? 'eye-off-outline' : 'eye-outline' }}"
+        slot="end"
+        class="password-toggle"
+        (click)="togglePasswordVisibility()">
+      </ion-icon>
+    </ion-item>
+
+    <div class="forgot-password" (click)="forgotPassword()">Forgot Password?</div>
+
+    <ion-button expand="block" class="login-button" (click)="login()">Log In</ion-button>
+
+    <div class="footer">
+      <span>Don’t have an account? </span>
+      <a (click)="navigateToRegister()">Create an Account</a>
+    </div>
+  </div>
+</ion-content>

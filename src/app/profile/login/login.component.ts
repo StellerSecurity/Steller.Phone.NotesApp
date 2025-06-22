@@ -1,14 +1,33 @@
-import { Component, OnInit } from '@angular/core';
+import { Component } from '@angular/core';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-login',
   templateUrl: './login.component.html',
   styleUrls: ['./login.component.scss'],
 })
-export class LoginComponent  implements OnInit {
+export class LoginComponent {
+  showPassword = false;
+  email = '';
+  password = '';
 
-  constructor() { }
+  constructor(private router: Router) {}
 
-  ngOnInit() {}
+  togglePasswordVisibility() {
+    this.showPassword = !this.showPassword;
+  }
 
+  login() {
+    // Implement your login logic
+    console.log('Email:', this.email);
+    console.log('Password:', this.password);
+  }
+
+  navigateToRegister() {
+    this.router.navigate(['/register']);
+  }
+
+  forgotPassword() {
+    this.router.navigate(['/forgot-password']);
+  }
 }

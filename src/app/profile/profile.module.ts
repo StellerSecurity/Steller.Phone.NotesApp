@@ -8,10 +8,13 @@ import { IonicModule } from '@ionic/angular';
 import { TranslateModule } from '@ngx-translate/core';
 import { LoginComponent } from './login/login.component';
 import { CreateAccountComponent } from './create-account/create-account.component';
+import { ForgotPasswordComponent } from './forgot-password/forgot-password.component';
+import { CreateNewPasswordComponent } from './create-new-password/create-new-password.component';
 
 
 @NgModule({
-  declarations: [ProfileComponent, LoginComponent, CreateAccountComponent],
+  declarations: [ProfileComponent, LoginComponent, CreateAccountComponent, 
+    ForgotPasswordComponent, CreateNewPasswordComponent],
   imports: [
     CommonModule,
     FormsModule,

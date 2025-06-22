@@ -4,6 +4,7 @@ import { ProfileComponent } from './profile.component';
 import { LoginComponent } from './login/login.component';
 import { CreateAccountComponent } from './create-account/create-account.component';
 import { ForgotPasswordComponent } from './forgot-password/forgot-password.component';
+import { CreateNewPasswordComponent } from './create-new-password/create-new-password.component';
 
 const routes: Routes = [
   {
@@ -19,10 +20,14 @@ const routes: Routes = [
     component: CreateAccountComponent
   },
   {
-    path: 'forgot-pawsword',
+    path: 'forgot-password',
     component: ForgotPasswordComponent
   },
 
+  {
+    path: 'create-new-password',
+    component: CreateNewPasswordComponent
+  }
 ];
 
 @NgModule({
