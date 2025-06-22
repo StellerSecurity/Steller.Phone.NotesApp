@@ -25,7 +25,7 @@ export class CreateAccountComponent {
   }
 
   goToLogin() {
-    this.router.navigate(['/login']);
+    this.router.navigate(['/profile/login']);
   }
 
   resendCode() {

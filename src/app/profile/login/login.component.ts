@@ -24,10 +24,10 @@ export class LoginComponent {
   }
 
   navigateToRegister() {
-    this.router.navigate(['/register']);
+    this.router.navigate(['/profile/create-account']);
   }
 
   forgotPassword() {
-    this.router.navigate(['/forgot-password']);
+    this.router.navigate(['/profile/forgot-password']);
   }
 }
