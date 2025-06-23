@@ -407,7 +407,7 @@ export class HomePage {
       this.noteService.setNotes(JSON.stringify(this.notes));
     }
 
-    this.setData(this.input_password_app_unlock);
+    //this.setData(this.input_password_app_unlock);
 
     // this.toggleCheckbox();
     const toast = await this.toastController.create({
