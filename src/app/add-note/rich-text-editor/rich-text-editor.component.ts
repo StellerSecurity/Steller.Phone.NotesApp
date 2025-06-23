@@ -127,9 +127,9 @@ export class RichTextEditorComponent implements AfterViewInit {
   }
 
   onContentChange(content: string): void {
-    // this.note_text = content;
-    // this.noteChange.emit(content);
-    this.updateNote = content;
+    this.note_text = content;
+    this.noteChange.emit(content);
+    // this.updateNote = content;
   }
 
   onClickEditor(): void {
@@ -140,6 +140,6 @@ export class RichTextEditorComponent implements AfterViewInit {
 
   onLeave() {
     // Add cleanup or save logic here
-    this.noteChange.emit(this.updateNote);
+    // this.noteChange.emit(this.updateNote);
   }
 }
