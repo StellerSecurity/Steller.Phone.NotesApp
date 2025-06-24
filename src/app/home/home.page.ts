@@ -96,7 +96,7 @@ export class HomePage {
     setTimeout(() => {
       this.searchMode = false;
       this.cdr.detectChanges();
-    }, 300)
+    }, 100)
   }
 
 
