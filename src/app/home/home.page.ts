@@ -91,10 +91,10 @@ export class HomePage {
 
   exitSearchMode() {
     this.search_query = '';
-    this.searchMode = false;
     this.search();
     this.initializePressGesture();
     setTimeout(() => {
+      this.searchMode = false;
       this.cdr.detectChanges();
     }, 300)
   }
