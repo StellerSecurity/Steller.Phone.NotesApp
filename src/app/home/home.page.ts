@@ -208,7 +208,7 @@ export class HomePage {
         Haptics.vibrate({ duration: 50 }).then(() => {});
         setTimeout(() => {
           this.cdr.detectChanges();
-        }, 300);
+        }, 200);
       }, 100);
     }, 100);
   }
@@ -301,7 +301,7 @@ export class HomePage {
       setTimeout(() => {
         this.initializePressGesture();
         this.cdr.detectChanges();
-      }, 300)
+      }, 200)
     } else {
       const toast = await this.toastController.create({
         message: this.allTranslations.passwordIsNotCorrectTryAgain,

@@ -110,7 +110,7 @@ export class AddNotePage {
      this.passwordStrengthHelperText = this.allTranslations.passwordAtLeastLength;
       setTimeout(() => {
         this.placeCursorAtEnd();
-      }, 300);
+      }, 100);
   }
 
   private placeCursorAtEnd() {
@@ -192,7 +192,7 @@ export class AddNotePage {
 
     setTimeout(() => {
         this.save(event)
-    }, 300)
+    }, 200)
     
   }
 
