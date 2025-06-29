@@ -33,6 +33,6 @@ export class CreateNewPasswordComponent {
   }
 
   backToLogin() {
-    this.router.navigate(['/login']);
+    this.router.navigate(['/profile/login']);
   }
 }
