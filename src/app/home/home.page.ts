@@ -91,12 +91,12 @@ export class HomePage {
 
   exitSearchMode() {
     this.search_query = '';
-    this.searchMode = false;
     this.search();
     this.initializePressGesture();
     setTimeout(() => {
+      this.searchMode = false;
       this.cdr.detectChanges();
-    }, 300)
+    }, 100)
   }
 
 
@@ -208,7 +208,7 @@ export class HomePage {
         Haptics.vibrate({ duration: 50 }).then(() => {});
         setTimeout(() => {
           this.cdr.detectChanges();
-        }, 300);
+        }, 200);
       }, 100);
     }, 100);
   }
@@ -301,7 +301,7 @@ export class HomePage {
       setTimeout(() => {
         this.initializePressGesture();
         this.cdr.detectChanges();
-      }, 300)
+      }, 200)
     } else {
       const toast = await this.toastController.create({
         message: this.allTranslations.passwordIsNotCorrectTryAgain,
@@ -407,7 +407,7 @@ export class HomePage {
       this.noteService.setNotes(JSON.stringify(this.notes));
     }
 
-    this.setData(this.input_password_app_unlock);
+    //this.setData(this.input_password_app_unlock);
 
     // this.toggleCheckbox();
     const toast = await this.toastController.create({

@@ -110,7 +110,7 @@ export class AddNotePage {
      this.passwordStrengthHelperText = this.allTranslations.passwordAtLeastLength;
       setTimeout(() => {
         this.placeCursorAtEnd();
-      }, 300);
+      }, 100);
   }
 
   private placeCursorAtEnd() {
@@ -192,7 +192,7 @@ export class AddNotePage {
 
     setTimeout(() => {
         this.save(event)
-    }, 300)
+    }, 200)
     
   }
 
@@ -348,13 +348,18 @@ export class AddNotePage {
               // @ts-ignore
               let decryptedText = this.cryptoService.decrypt(this.currentNote.text, inputValue);
 
+              console.log(decryptedText.length);
               if(decryptedText.length == 0) {
                 await this.wrongPasswordEntered();
                 return;
               }
 
-              // @ts-ignore
-              let decryptedTitle = this.cryptoService.decrypt(this.currentNote.title, inputValue);
+              let decryptedTitle = "";
+
+             try {
+                // @ts-ignore
+                decryptedTitle = this.cryptoService.decrypt(this.currentNote.title, inputValue);
+              } catch (e) {}
 
               // @ts-ignore
               this.currentNote.text = decryptedText;
@@ -369,7 +374,6 @@ export class AddNotePage {
             } catch (e) {
               await this.wrongPasswordEntered();
             }
-
 
         } else {
           // Handle case when user cancels password input
