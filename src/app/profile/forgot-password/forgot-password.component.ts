@@ -8,7 +8,15 @@ import { Component } from '@angular/core';
 export class ForgotPasswordComponent {
   email = '';
   showVerification = false;
-  verificationCode: string[] = ['', '', '', ''];
+  otpValue = '';
+  otpConfig = {
+    length: 4,
+    inputClass: 'bottom-border-otp', // must match your CSS class
+    allowNumbersOnly: false,
+    isPasswordInput: false,
+    disableAutoFocus: false,
+    placeholder: ' ',
+  };
 
   sendCode() {
     // Optionally call API to send code to this.email
@@ -21,34 +29,9 @@ export class ForgotPasswordComponent {
 
   useDifferentEmail() {
     this.showVerification = false;
-    this.verificationCode = ['', '', '', ''];
   }
 
-  handleCodeInput(event: any, index: number) {
-    const input = event.target as HTMLInputElement;
-    const value = input.value;
-
-    if (!/^[0-9]$/.test(value)) {
-      input.value = '';
-      this.verificationCode[index] = '';
-      return;
-    }
-
-    this.verificationCode[index] = value;
-
-    if (index < 3) {
-      const nextInput = input.nextElementSibling as HTMLInputElement;
-      if (nextInput) nextInput.focus();
-    } else {
-      const code = this.verificationCode.join('');
-      console.log('Submit code:', code);
-    }
-  }
-
-  handleKeyDown(event: KeyboardEvent, index: number) {
-    const input = event.target as HTMLInputElement;
-    if (event.key === 'Backspace' && !input.value && input.previousElementSibling) {
-      (input.previousElementSibling as HTMLInputElement).focus();
-    }
+  onOtpChange(value: string) {
+    this.otpValue = value;
   }
 }

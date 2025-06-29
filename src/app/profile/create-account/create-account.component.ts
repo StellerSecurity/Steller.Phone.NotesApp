@@ -11,7 +11,15 @@ export class CreateAccountComponent {
   password = '';
   showPassword = false;
   showVerificationSection = false;
-  verificationCode: string[] = ['', '', '', ''];
+  otpValue = '';
+  otpConfig = {
+    length: 4,
+    inputClass: 'bottom-border-otp', // must match your CSS class
+    allowNumbersOnly: false,
+    isPasswordInput: false,
+    disableAutoFocus: false,
+    placeholder: ' ',
+  };
 
   constructor(private router: Router) {}
 
@@ -36,33 +44,8 @@ export class CreateAccountComponent {
     this.showVerificationSection = false;
   }
 
-  handleCodeInput(event: any, index: number) {
-    const input = event.target as HTMLInputElement;
-    const value = input.value;
-  
-    // Allow only digits
-    if (!/^[0-9]$/.test(value)) {
-      input.value = '';
-      this.verificationCode[index] = '';
-      return;
-    }
-  
-    this.verificationCode[index] = value;
-  
-    // Move to next input
-    const nextInput = input.nextElementSibling as HTMLInputElement;
-    if (nextInput && value) {
-      nextInput.focus();
-    }
-  }
-
-  handleKeyDown(event: KeyboardEvent, index: number) {
-    const input = event.target as HTMLInputElement;
-  
-    // On backspace, move to previous input
-    if (event.key === 'Backspace' && !input.value && input.previousElementSibling) {
-      (input.previousElementSibling as HTMLInputElement).focus();
-    }
+  onOtpChange(value: string) {
+    this.otpValue = value;
   }
   
   

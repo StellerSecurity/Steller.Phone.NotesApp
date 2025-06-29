@@ -10,6 +10,7 @@ import { LoginComponent } from './login/login.component';
 import { CreateAccountComponent } from './create-account/create-account.component';
 import { ForgotPasswordComponent } from './forgot-password/forgot-password.component';
 import { CreateNewPasswordComponent } from './create-new-password/create-new-password.component';
+import { NgOtpInputModule } from 'ng-otp-input';
 
 
 @NgModule({
@@ -20,7 +21,8 @@ import { CreateNewPasswordComponent } from './create-new-password/create-new-pas
     FormsModule,
     IonicModule,
     ProfileRoutingModule,
-    TranslateModule
+    TranslateModule,
+    NgOtpInputModule
   ]
 })
 export class ProfileModule { }

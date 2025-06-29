@@ -61,13 +61,11 @@
     <p class="subtitle">We sent an account verification code to <br /><strong>{{ email }}</strong></p>
 
     <div class="code-input-wrapper">
-      <input
-          maxlength="1"
-          *ngFor="let code of verificationCode; let i = index"
-          [(ngModel)]="verificationCode[i]"
-          (input)="handleCodeInput($event, i)"
-          (keydown)="handleKeyDown($event, i)" />
-
+        <ng-otp-input 
+        (onInputChange)="onOtpChange($event)" 
+        [config]="otpConfig"
+        containerClass="ng-ong-otp-box">
+      </ng-otp-input>
     </div>
 
     <div class="resend-section">
