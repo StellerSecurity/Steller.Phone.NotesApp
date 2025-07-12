@@ -111,7 +111,7 @@ export class AddNotePage {
      if(this.note_text.length === 0) {
       setTimeout(() => {
         this.placeCursorAtEnd();
-      }, 300);
+      }, 100);
      }
   }
 
