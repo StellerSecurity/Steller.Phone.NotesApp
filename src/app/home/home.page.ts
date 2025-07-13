@@ -486,4 +486,9 @@ export class HomePage {
     }
   }
 
+  ionViewWillLeave() {
+    this.exitSearchMode();
+    // Perform cleanup, stop timers, dismiss modals, etc.
+  }
+
 }

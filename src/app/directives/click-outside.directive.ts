@@ -4,38 +4,52 @@ import {
   Output,
   EventEmitter,
   HostListener,
-  NgZone
+  NgZone,
+  OnDestroy
 } from '@angular/core';
 
 @Directive({
   selector: '[appClickOutside]'
 })
-export class ClickOutsideDirective {
+export class ClickOutsideDirective implements OnDestroy {
   @Output() appClickOutside = new EventEmitter<void>();
-
   private isListening = false;
 
   constructor(private elementRef: ElementRef, private ngZone: NgZone) {
-    // Delay the initial outside click listening to prevent immediate trigger
-    setTimeout(() => this.isListening = true, 0);
+    setTimeout(() => {
+      this.isListening = true;
+    }, 0);
   }
 
   @HostListener('document:click', ['$event'])
-  onDocumentClick(event: MouseEvent): void {
-    this.handleOutsideClick(event.target as HTMLElement);
-  }
-
   @HostListener('document:touchstart', ['$event'])
-  onDocumentTouch(event: TouchEvent): void {
-    this.handleOutsideClick(event.target as HTMLElement);
-  }
+  onGlobalClick(event: MouseEvent | TouchEvent): void {
+    if (!this.isListening) return;
 
-  private handleOutsideClick(target: HTMLElement) {
+    const target = event.target as HTMLElement;
+    if (!target) return;
+
+    // Define elements that should NOT trigger outside click
+    const exceptions = ['ion-toolbar', 'ion-header', 'ion-menu', '.non-dismissible'];
+
+    const isException = exceptions.some(selector =>
+      target.closest(selector)
+    );
+
+    if (isException) return;
+
     this.ngZone.run(() => {
       const clickedInside = this.elementRef.nativeElement.contains(target);
-      if (!clickedInside && this.isListening) {
-        this.appClickOutside.emit();
+      if (!clickedInside) {
+        setTimeout(() => {
+          this.appClickOutside.emit();
+        }, 1500)
+        
       }
     });
+  }
+
+  ngOnDestroy(): void {
+    this.appClickOutside.complete();
   }
 }
