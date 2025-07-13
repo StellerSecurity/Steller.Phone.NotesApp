@@ -173,7 +173,7 @@ align-self: stretch; background: #2761FC; color: #fff; border-radius: 250px" (cl
 
 
   <ion-list>
-    <ion-item lines="none" *ngFor="let note of getNotes()" (click)="openOrCheckbox(note.id)" [detail]="false" class="long-press-target" #longPressElements [id]="note.id">
+    <ion-item lines="none" *ngFor="let note of getNotes()" (click)="$event.stopPropagation(); openOrCheckbox(note.id)" [detail]="false" class="long-press-target" #longPressElements [id]="note.id">
       <div class="box-item-main" >
         <ion-checkbox *ngIf="checkboxOpened" (click)="$event.stopPropagation(); selectNote($event, note.id)" justify="center"
           style="margin-right: 7px" size="small"
