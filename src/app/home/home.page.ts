@@ -133,6 +133,11 @@ export class HomePage {
     this.isSearching = true;
     this.filteredResults = filteredNewResults;
 
+    this.initializePressGesture();
+    setTimeout(() => {
+      this.cdr.detectChanges();
+    }, 300)
+
   }
 
 
@@ -348,9 +353,10 @@ export class HomePage {
     if(!this.checkboxOpened) {
       this.listOfCheckedCheckboxes = [];
     }
+    this.initializePressGesture();
     setTimeout(() => {
       this.cdr.detectChanges();
-    })
+    }, 300)
   }
 
   public async deleteSelectedNotes() {
@@ -484,6 +490,11 @@ export class HomePage {
     if(ev.key == "Enter") {
       this.unlockNotesApp().then(r => {});
     }
+  }
+
+  ionViewWillLeave() {
+    this.exitSearchMode();
+    // Perform cleanup, stop timers, dismiss modals, etc.
   }
 
 }
