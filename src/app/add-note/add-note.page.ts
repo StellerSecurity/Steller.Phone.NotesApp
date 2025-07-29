@@ -2,12 +2,16 @@ import {Component, ElementRef, OnInit, ViewChild} from '@angular/core';
 import {at} from "ionicons/icons";
 import {CryptoService} from "../services/crypto.service";
 import {ActivatedRoute, ParamMap, Router} from "@angular/router";
-import {AlertController, IonModal, LoadingController, NavController, ToastController, ModalController} from "@ionic/angular";
+import {AlertController, IonModal, LoadingController, NavController, ToastController, ModalController, IonInput} from "@ionic/angular";
 import {NotesService} from "../services/notes.service";
 import { NoteLockedModalComponent } from '../note-locked-modal/note-locked-modal.component';
 import { DeleteNoteModalComponent } from '../delete-note-modal/delete-note-modal.component';
-import {AngularEditorConfig} from "@wfpena/angular-wysiwyg";
 import { TranslatorService } from '../services/translator.service';
+import {SecretapiService} from "../services/secretapi.service";
+import {Secret} from "../models/Secret";
+import {sha512} from "js-sha512";
+import { ShareSecretModalComponent } from '../share-secret-modal/share-secret-modal.component';
+import { RichTextEditorComponent } from './rich-text-editor/rich-text-editor.component';
 const { v4: uuidv4 } = require('uuid');
 
 declare var require: any;
@@ -26,7 +30,7 @@ export class AddNotePage {
 
   private notes_id = null;
 
-  private notes = null;
+  private notes:any[] = [];
 
   private currentNote = null;
 
@@ -48,38 +52,13 @@ export class AddNotePage {
 
   public note_text = "";
 
-  public editorConfig: AngularEditorConfig = {
-    editable: true,
-    spellcheck: false,
-    height: '100vh',
-    minHeight: '0',
-    maxHeight: 'auto',
-    textAreaBackgroundColor: 'white',
-    width: 'auto',
-    minWidth: '0',
-    translate: 'no',
-    enableToolbar: true,
-    showToolbar: true,
-    placeholder: 'Enter your note here..',
-    defaultParagraphSeparator: '',
-    defaultFontName: '',
-    defaultFontSize: '',
-    imageResizeSensitivity: 3,
-    uploadWithCredentials: false,
-    sanitize: true,
-    toolbarPosition: 'top',
-    outline: false,
-    toolbarHiddenButtons: [
-      ['italic', 'underline', 'superscript', 'subscript'],
-      ['fontName', 'fontSize', 'color'],
-      ['justifyLeft', 'justifyCenter', 'justifyRight', 'justifyFull', 'indent', 'outdent'],
-      ['cut', 'copy', 'delete', 'removeFormat'],
-      ['paragraph', 'blockquote', 'removeBlockquote', 'horizontalLine',  'unorderedList'],
-      ['video', 'insertVideo', 'horizontalline', 'insertHorizontalRule', 'toggleEditorMode'],
-      ['backgroundColor', 'foregroundColor', 'textColor']
-    ],
-  };
+  public note_title = "";
+
   allTranslations:any;
+  isEditingTitle: boolean = false;
+  @ViewChild('titleInput', { static: false }) titleInputRef!: IonInput;
+  @ViewChild('richTextEditorComponentRef') richTextEditorComponent!: RichTextEditorComponent;
+  
 
   constructor(private cryptoService: CryptoService,
               public activatedRoute: ActivatedRoute,
@@ -87,6 +66,7 @@ export class AddNotePage {
               private notesService: NotesService,
               private toastController: ToastController,
               private modalCtrl: ModalController,
+              private secretapi: SecretapiService,
               private alertCtrl: AlertController,
               private translatorService: TranslatorService) {
 
@@ -113,8 +93,109 @@ export class AddNotePage {
 
       // @ts-ignore
       this.note_text = this.currentNote.text;
+
+      // @ts-ignore
+      if(this.currentNote.title !== undefined) {
+        // @ts-ignore
+        this.note_title = this.currentNote.title;
+      } else {
+        this.note_title = "Untitled";
+      }
+
     });
 
+  }
+
+  ionViewDidEnter() {
+     this.passwordStrengthHelperText = this.allTranslations.passwordAtLeastLength;
+     if(this.note_text.length === 0) {
+      setTimeout(() => {
+        this.placeCursorAtEnd();
+      }, 100);
+     }
+  }
+
+  private placeCursorAtEnd() {
+    const editorElem = this.richTextEditorComponent?.editorComponent?.textArea?.nativeElement;
+
+    if (editorElem) {
+      editorElem.focus();
+
+      const selection = window.getSelection();
+      const range = document.createRange();
+      const lastChild = editorElem.lastChild;
+
+      if (selection && range && lastChild) {
+        range.selectNodeContents(editorElem);
+        range.collapse(false);
+        selection.removeAllRanges();
+        selection.addRange(range);
+      }
+    }
+  }
+
+  public async shareStellarSecret() {
+    if (this.richTextEditorComponent?.onLeave) {
+      this.richTextEditorComponent.onLeave();
+    }
+
+    // 1. Create a new secret
+    const addSecretModal = new Secret();
+    const secret_id = uuidv4();
+  
+    addSecretModal.expires_at = "0"; // Assuming '0' means never expires
+    addSecretModal.id = sha512(secret_id);
+  
+    let secretMessage = this.note_text;
+    secretMessage = secretMessage.replace(/<br ?\/?>/g, "\n")
+    const doc = new DOMParser().parseFromString(secretMessage, 'text/html');
+    secretMessage = doc.body?.textContent?.trim() || '';
+
+    // 3. Encrypt the secret using AES
+    addSecretModal.message = CryptoJS.AES.encrypt(secretMessage, secret_id).toString();
+
+    // 4. Open to Modal
+    const modal = await this.modalCtrl.create({
+      component: ShareSecretModalComponent,
+      componentProps: {
+        addSecretModal: addSecretModal,
+        secret_id: secret_id,
+      },
+      cssClass: 'secret-modal',
+      breakpoints: [0, 0.7],
+      initialBreakpoint: 0.7,
+    });
+
+    await modal.present();
+  }
+
+  enableEditingTitle() {
+    this.isEditingTitle = true;
+
+    setTimeout(() => {
+      this.titleInputRef?.setFocus();
+    }, 100); // Slight delay ensures DOM updates
+  }
+
+
+  public noteTitleChange(event: any) {
+    const newTitle = event.detail?.value || '';
+    this.note_title = newTitle.trim();
+  
+
+    for(let i = 0; i < this.notes?.length; i++) {
+      // @ts-ignore
+      if(this.notes[i].id === this.notes_id) {
+        // @ts-ignore
+        this.notes[i].title = this.note_title;
+        break;
+      }
+    }
+
+    setTimeout(() => {
+        this.save(event)
+    }, 300)
+    
   }
 
   ionViewWillEnter(): void {
@@ -127,9 +208,9 @@ export class AddNotePage {
   toggleConfirmPasswordVisibility() {
     this.confirmShowPassword = !this.confirmShowPassword;
   }
+  
   // should be called on key enter.
   save(ev: any) {
-
     if(this.notes_id === null) return;
     if(this.note_locked) return;
 
@@ -142,9 +223,13 @@ export class AddNotePage {
     let encryptedText = value;
     let decryptedText = value;
 
+    let encryptedTitle = this.note_title;
+    let decryptedTitle = this.note_title;
+
     // encrypt the text.
     if(this.notes_password_stored.length > 1) {
       encryptedText = this.cryptoService.encrypt(value, this.notes_password_stored);
+      encryptedTitle = this.cryptoService.encrypt(this.note_title, this.notes_password_stored);
     }
 
     let protectedNote = false;
@@ -154,9 +239,29 @@ export class AddNotePage {
       protectedNote = this.currentNote.protected;
     }
 
+    let currentdate = new Date();
+
+    const now = new Date();
+
+    const datePart = now.toLocaleDateString(undefined, {
+      weekday: 'long',
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric'
+    });
+    
+    const timePart = now.toLocaleTimeString(undefined, {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true
+    });
+    
+    const formattedDate = `${datePart} at ${timePart}`;
+
     // newly created note.
     const note = {
       "id": this.notes_id,
+      "title": encryptedTitle ? encryptedTitle : formattedDate,
       "last_modified": Date.now(),
       "text": encryptedText,
       "protected": protectedNote,
@@ -192,6 +297,7 @@ export class AddNotePage {
       }
 
       this.note_text = decryptedText;
+      this.note_title = decryptedTitle;
     }
 
     this.storeNoteInStorage();
@@ -244,14 +350,24 @@ export class AddNotePage {
               // @ts-ignore
               let decryptedText = this.cryptoService.decrypt(this.currentNote.text, inputValue);
 
+              console.log(decryptedText.length);
               if(decryptedText.length == 0) {
                 await this.wrongPasswordEntered();
                 return;
               }
 
+              let decryptedTitle = "";
+
+             try {
+                // @ts-ignore
+                decryptedTitle = this.cryptoService.decrypt(this.currentNote.title, inputValue);
+              } catch (e) {}
+
               // @ts-ignore
               this.currentNote.text = decryptedText;
               this.note_text = decryptedText;
+
+              this.note_title = decryptedTitle;
 
               this.note_locked = false;
               // Close the modal since the password is correct
@@ -260,7 +376,6 @@ export class AddNotePage {
             } catch (e) {
               await this.wrongPasswordEntered();
             }
-
 
         } else {
           // Handle case when user cancels password input
@@ -285,7 +400,7 @@ export class AddNotePage {
     this.passwordStrength = 0;
 
     if(this.notes_password_input.length == 0) {
-      this.passwordStrengthHelperText = "";
+      this.passwordStrengthHelperText = this.allTranslations.passwordAtLeastLength;
       return;
     }
 
@@ -368,14 +483,19 @@ export class AddNotePage {
 
     // @ts-ignore
     let decryptedText = this.currentNote.text;
+    // @ts-ignore
+    let decryptedTitle = this.currentNote.title;
 
     // @ts-ignore
     let encryptedText = this.cryptoService.encrypt(this.currentNote.text, this.notes_password_stored);
-
+    // @ts-ignore
+    let encryptedTitle  = this.cryptoService.encrypt(this.currentNote.title, this.notes_password_stored);
     // @ts-ignore
     this.currentNote.protected = true;
     // @ts-ignore
     this.currentNote.text = encryptedText;
+    // @ts-ignore
+    this.currentNote.title = encryptedTitle;
 
     // find the current note.
     // @ts-ignore
@@ -392,6 +512,8 @@ export class AddNotePage {
 
     // @ts-ignore
     this.currentNote.text = decryptedText;
+    // @ts-ignore
+    this.currentNote.title = decryptedTitle;
 
     this.notes_password_confirm = "";
     this.notes_password_input = "";
@@ -420,6 +542,7 @@ export class AddNotePage {
               if (this.notes[i].id === this.notes_id) {
                 // @ts-ignore
                 this.notes[i].text = this.note_text; // ensure it is not encrypted text.
+                this.notes[i].title = this.note_title; // ensure it is not encrypted text.
                 // @ts-ignore
                 this.notes[i].protected = false;
                 // @ts-ignore
@@ -440,6 +563,7 @@ export class AddNotePage {
     await alert.present();
   }
   public async openLockModal() {
+    this.save(null);
     await this.modal.present();
   }
 
@@ -450,7 +574,10 @@ export class AddNotePage {
   public async deleteNote() {
     const modal = await this.modalCtrl.create({
       component: DeleteNoteModalComponent,
-      cssClass: 'confirmation-popup'
+      cssClass: 'confirmation-popup',
+      componentProps: {
+        isSingleDelete: true,                                         
+      }
     });
 
     modal.onDidDismiss().then(async (data) => {
@@ -470,7 +597,7 @@ export class AddNotePage {
           // updated list will not have the current note.
           this.storeNoteInStorage();
           this.currentNote = null;
-          await this.navController.navigateForward('/home');
+          await this.navController.navigateForward('/');
         } else {
           // Handle case when user cancels password input
         }
@@ -478,6 +605,17 @@ export class AddNotePage {
     });
 
     return await modal.present();
+  }
+
+  onSave(event:any): void {
+    this.note_text = event;
+    this.save(null)
+  }
+  
+  ionViewWillLeave() {
+    if (this.richTextEditorComponent?.onLeave) {
+      this.richTextEditorComponent.onLeave();
+    }
   }
 
 }

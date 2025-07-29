@@ -1,9 +1,11 @@
 <div class="confirmation-modal">
   <img src="./assets/icon-lock.svg" class="burn-img" alt="">
   <h2>{{'thisNoteIsLocked' | translate}}</h2>
-  <p>{{'enterThePasswordForTheNote' | translate}}<br> {{'toUnlockIt' | translate}}</p>
+  <p>{{'enterThePasswordForTheNote' | translate}}
+    <!-- <br> {{'toUnlockIt' | translate}} -->
+  </p>
   <div class="input-group" style="position: relative;">
-    <ion-input #passwordInput type="{{ showPassword ? 'text' : 'password' }}" shape="round" placeholder="{{'password' | translate}}" (keyup.enter)="onEnter()"></ion-input>
+    <ion-input #passwordInput type="{{ showPassword ? 'text' : 'password' }}" shape="round" placeholder="{{'enterYourPassword' | translate}}" (keyup.enter)="onEnter()"></ion-input>
     <ion-icon slot="end" [name]="showPassword ? 'eye-off' : 'eye'"
               (click)="togglePasswordVisibility()"></ion-icon>
   </div>

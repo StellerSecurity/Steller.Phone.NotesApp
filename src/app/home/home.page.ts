@@ -1,6 +1,7 @@
 import {ChangeDetectorRef, Component, ElementRef, QueryList, ViewChild, ViewChildren} from '@angular/core';
 import {
   AlertController, GestureController, IonModal,
+  IonSearchbar,
   LoadingController,
   ModalController,
   NavController,
@@ -15,6 +16,7 @@ import { DeleteNoteModalComponent } from '../delete-note-modal/delete-note-modal
 import { ResetPassModalComponent } from '../restpass-modal/resetpass-modal.component';
 import { TranslatorService } from '../services/translator.service';
 import {search} from "ionicons/icons";
+import {Haptics, ImpactStyle} from "@capacitor/haptics";
 
 @Component({
   selector: 'app-home',
@@ -49,6 +51,10 @@ export class HomePage {
   @ViewChildren('longPressElements', { read: ElementRef }) longPressElements: QueryList<ElementRef>;
   timeout: any;
   isClicked: boolean = false;
+  searchMode = false;
+  searchQuery = '';
+  @ViewChild('searchbar') searchbar: IonSearchbar;
+
 
   constructor(private cryptoService: CryptoService,
               private alertCtrl: AlertController,
@@ -76,6 +82,23 @@ export class HomePage {
     this.initializePressGesture();
   }
 
+  enterSearchMode() {
+    this.searchMode = true;
+    setTimeout(() => {
+      this.searchbar?.setFocus();
+    }, 100); // Delay to ensure DOM renders
+  }
+
+  exitSearchMode() {
+    this.search_query = '';
+    this.search();
+    this.initializePressGesture();
+    setTimeout(() => {
+      this.searchMode = false;
+      this.cdr.detectChanges();
+    }, 500)
+  }
+
 
   search() {
 
@@ -92,8 +115,16 @@ export class HomePage {
 
       let result = noteText.includes(this.search_query);
 
+      let titleExists = false;
+
+      if(this.notes[i].title !== undefined) {
+        titleExists = this.notes[i].title.includes(this.search_query);
+      }
+
       // dont search in locked notes.
       if(result && !this.notes[i].protected) {
+        filteredNewResults.push(this.notes[i]);
+      } else if(titleExists) {
         filteredNewResults.push(this.notes[i]);
       }
 
@@ -101,6 +132,11 @@ export class HomePage {
 
     this.isSearching = true;
     this.filteredResults = filteredNewResults;
+
+    this.initializePressGesture();
+    setTimeout(() => {
+      this.cdr.detectChanges();
+    }, 300)
 
   }
 
@@ -110,11 +146,11 @@ export class HomePage {
   }
 
   initializePressGesture(): void {
-    if (this.platform.is('mobile') || this.platform.is('android') || this.platform.is('ios')) {
+    // if (this.platform.is('mobile') || this.platform.is('android') || this.platform.is('ios')) {
       this.longPressElements.forEach((elementRef: ElementRef) => {
         this.createLongPressGesture(elementRef);
       });
-    } 
+    // } 
   }
 
   createLongPressGesture(element: ElementRef) {
@@ -135,7 +171,7 @@ export class HomePage {
             timeout = setTimeout(() => {
                 isLongPress = true;
                 this.handlePressStart(element.nativeElement);
-            }, 400); // Faster long-press detection (400ms)
+            }, 200); // Faster long-press detection (200ms)
         },
 
         onMove: (detail) => {
@@ -160,15 +196,26 @@ export class HomePage {
     gesture.enable();
 }
 
-  handlePressStart(element:any) {
+  handlePressStart(element: any) {
     this.timeout = setTimeout(() => {
       this.checkboxOpened = true;
       setTimeout(() => {
         this.cdr.detectChanges();
-        const checkboxEle = element.children[0].children[0];
-        checkboxEle.click();
-      }, 200)
-    }, 300);
+        const noteId = element.id;
+
+        // ✅ If not already selected, check it
+        if (!this.listOfCheckedCheckboxes.includes(noteId)) {
+          const checkboxEle = element.children[0].children[0];
+          checkboxEle.checked = true;
+          this.listOfCheckedCheckboxes.push(noteId);
+        }
+
+        Haptics.vibrate({ duration: 50 }).then(() => {});
+        setTimeout(() => {
+          this.cdr.detectChanges();
+        }, 200);
+      }, 100);
+    }, 100);
   }
 
   handlePressEnd() {
@@ -199,14 +246,14 @@ export class HomePage {
       return false;
     }
 
+    this.noteService.setDecryptedNotes(decryptedNotes);
+    // @ts-ignore
+    this.notes = JSON.parse(decryptedNotes);
 
-      this.noteService.setDecryptedNotes(decryptedNotes);
-      // @ts-ignore
-      this.notes = JSON.parse(decryptedNotes);
+    this.filteredResults = this.notes;
 
-      this.filteredResults = this.notes;
 
-      return true;
+    return true;
 
   }
 
@@ -256,6 +303,10 @@ export class HomePage {
       this.noteService.setFailedPasswordAppAttempts(0);
 
       this.input_password_app_unlock = "";
+      setTimeout(() => {
+        this.initializePressGesture();
+        this.cdr.detectChanges();
+      }, 200)
     } else {
       const toast = await this.toastController.create({
         message: this.allTranslations.passwordIsNotCorrectTryAgain,
@@ -281,16 +332,6 @@ export class HomePage {
       return [];
     }
 
-    const parser = new DOMParser;
-
-    /*for(let i = 0; i < this.notes.length; i++){
-      let note = this.notes[i];
-      note.text = note.text.replace(/<[^>]*>/g, '');
-
-      const dom = parser.parseFromString(note.text, 'text/html');
-      note.text = dom.body.textContent;
-    }*/
-
     // @ts-ignore
     this.filteredResults = this.filteredResults.sort((a, b) => b.last_modified - a.last_modified);
 
@@ -312,16 +353,20 @@ export class HomePage {
     if(!this.checkboxOpened) {
       this.listOfCheckedCheckboxes = [];
     }
+    this.initializePressGesture();
     setTimeout(() => {
       this.cdr.detectChanges();
-    })
+    }, 300)
   }
 
   public async deleteSelectedNotes() {
     // @ts-ignore
     const modal = await this.modalCtrl.create({
       component: DeleteNoteModalComponent,
-      cssClass: 'confirmation-popup'
+      cssClass: 'confirmation-popup',
+      componentProps: {
+        isSingleDelete: this.listOfCheckedCheckboxes?.length == 1 || false,                                         
+      }
     });
 
     modal.onDidDismiss().then(async (data) => {
@@ -368,7 +413,7 @@ export class HomePage {
       this.noteService.setNotes(JSON.stringify(this.notes));
     }
 
-    this.setData(this.input_password_app_unlock);
+    //this.setData(this.input_password_app_unlock);
 
     // this.toggleCheckbox();
     const toast = await this.toastController.create({
@@ -379,7 +424,7 @@ export class HomePage {
 
     await toast.present();
     await loading.dismiss();
-    window.location.href = "/home";
+    window.location.href = "/";
   }
 
   public async resetPassword() {
@@ -396,7 +441,7 @@ export class HomePage {
         if (confirm) {
           localStorage.clear();
           this.app_requires_password = false;
-          window.location.href='/home';
+          window.location.href='/';
         } else {
           // Handle case when user cancels password input
         }
@@ -412,8 +457,8 @@ export class HomePage {
    * @param note_id
    */
   public selectNote(event: any, note_id: string) {
-    event.stopImmediatePropagation();
-    event.preventDefault();
+    event?.stopImmediatePropagation();
+    event?.preventDefault();
     
     if (this.isClicked) {
       return;
@@ -422,7 +467,7 @@ export class HomePage {
     this.isClicked = true;
 
   
-    if(this.listOfCheckedCheckboxes.includes(note_id) != true) {
+    if(!this.listOfCheckedCheckboxes.includes(note_id)) {
       this.listOfCheckedCheckboxes.push(note_id);
     } else { // removed.
       for(let i = 0; this.listOfCheckedCheckboxes.length > i; i++) {
@@ -445,6 +490,11 @@ export class HomePage {
     if(ev.key == "Enter") {
       this.unlockNotesApp().then(r => {});
     }
+  }
+
+  ionViewWillLeave() {
+    this.exitSearchMode();
+    // Perform cleanup, stop timers, dismiss modals, etc.
   }
 
 }

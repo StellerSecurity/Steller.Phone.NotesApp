@@ -3,7 +3,8 @@
   <h2>{{'toDisableAppPasswordPleaseEnterCurrentPassword' | translate}} </h2>
   <p>*{{'passwordWarningMsg' | translate}}</p>
   <div class="input-group" style="position: relative;">
-    <ion-input #passwordInput type="{{ showPassword ? 'text' : 'password' }}" shape="round" placeholder="{{'password' | translate}}"></ion-input>
+    <ion-input #passwordInput type="{{ showPassword ? 'text' : 'password' }}" shape="round" placeholder="{{'password' | translate}}"
+    (keyup.enter)="dismiss(true)"></ion-input>
     <ion-icon slot="end" [name]="showPassword ? 'eye-off' : 'eye'"
               (click)="togglePasswordVisibility()"></ion-icon>
   </div>

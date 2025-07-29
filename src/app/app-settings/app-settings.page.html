@@ -1,7 +1,10 @@
 <ion-header [translucent]="true">
   <ion-toolbar>
     <ion-buttons slot="start">
-      <ion-back-button defaultHref="/"></ion-back-button>
+        <ion-back-button defaultHref="/"
+        class="custom-back-button"  text="">
+          <ion-icon slot="icon-only" style="display: none;"></ion-icon>
+      </ion-back-button>
     </ion-buttons>
     <ion-title>{{'settings' | translate}}</ion-title>
   </ion-toolbar>
@@ -33,13 +36,13 @@
         <div *ngIf="!password_enabled">
           <div class="input-group" style="position: relative;">
             <ion-input type="{{ showPassword ? 'text' : 'password' }}" shape="round" placeholder="{{'password' | translate}}" (ionInput)="notesAppPasswordChange()"
-              [(ngModel)]="notesAppPassword"></ion-input>
+              [(ngModel)]="notesAppPassword" (keyup.enter)="save()"></ion-input>
             <ion-icon slot="end" [name]="showPassword ? 'eye-off' : 'eye'"
               (click)="togglePasswordVisibility()"></ion-icon>
           </div>
           <div class="input-group">
             <ion-input type="{{ confirmShowPassword ? 'text' : 'password' }}" shape="round" placeholder="{{'confirmPassword' | translate}}"
-              [(ngModel)]="confirmPassword"></ion-input>
+              [(ngModel)]="confirmPassword" (keyup.enter)="save()"></ion-input>
             <ion-icon slot="end" [name]="confirmShowPassword ? 'eye-off' : 'eye'"
               (click)="toggleConfirmPasswordVisibility()"></ion-icon>
           </div>
@@ -48,8 +51,8 @@
 
         <div *ngIf="!password_enabled" class="pass-info-box">
           <p *ngif="!strongPass" class="pass-note">{{'passwordCharacters' | translate}}</p>
-          <password-strength-meter [password]="notesAppPassword"></password-strength-meter>
           {{passwordStrengthHelperText}}
+          <password-strength-meter [password]="notesAppPassword"></password-strength-meter>
           <h4 style="color: #0B0C19; font-size: 12px; font-weight: 400; font-family: 'Poppins';">{{'itsBetterToHave' | translate}}
           </h4>
           <ul class="pass-list">

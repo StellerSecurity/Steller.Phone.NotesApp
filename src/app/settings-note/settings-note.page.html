@@ -1,6 +1,8 @@
 <ion-header [translucent]="true">
   <ion-buttons slot="start">
-    <ion-back-button icon="chevron-back-outline"></ion-back-button>
+    <ion-back-button  class="custom-back-button"  text="">
+      <ion-icon slot="icon-only" style="display: none;"></ion-icon>
+    </ion-back-button>
   </ion-buttons>
   <ion-toolbar>
     <ion-title>{{'noteSettings' | translate}}</ion-title>

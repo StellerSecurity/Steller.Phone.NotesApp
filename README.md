@@ -1,4 +1,4 @@
-# Stellar Notes
+# Stellar Privacy Notes
 
 A hybrid ionic application that allows users to store notes on their phone using localStorage.
 

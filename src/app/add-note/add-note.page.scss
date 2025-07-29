@@ -112,3 +112,36 @@ ion-icon.lock-icon {
   border: none !important;
 }
 
+.editable-title {
+  font-weight: 500;
+  padding: 8px 12px;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: background-color 0.2s;
+}
+
+.editable-title:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+.editable-title-input-wrapper {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  padding: 0 12px;
+  background-color: transparent;
+}
+
+.editable-title-input {
+  font-weight: 500;
+  width: 100%;
+  border: none;
+  background: transparent;
+  --padding-start: 0px;
+  --padding-end: 0px;
+  --background: transparent;
+  --placeholder-color: #888;
+  --highlight-color-focused: #007bff;
+  --color: #333;
+  margin-bottom: 0;
+}

@@ -1,30 +1,54 @@
 <ion-header [translucent]="true">
   <ion-toolbar>
-    <ion-title>
-      <span *ngIf="checkboxOpened && filteredResults.length > 0" (click)="toggleCheckbox()">
+    <ion-title *ngIf="!searchMode">
+      <span *ngIf="checkboxOpened && filteredResults !== null &&  filteredResults.length > 0" (click)="toggleCheckbox()">
         <img src="assets/tabler-icon-x.svg" valign="left" style="position: relative; top: 5px;"
           class="margin-right-top"> {{listOfCheckedCheckboxes.length}} {{'notesSelected' | translate}}
       </span>
-      <img src="assets/Logo.svg" style="margin-top: 20px" *ngIf="!checkboxOpened">
+      <!-- <img src="assets/Logo.svg" style="margin-top: 20px" *ngIf="!checkboxOpened"> -->
+      <div class="logo-container" *ngIf="!checkboxOpened">
+          <img class="logo-img" src="./assets/note-logo.png" alt="">
+        <div class="logo-text">Stellar Private Notes</div>
+      </div> 
     </ion-title>
 
+    <ion-searchbar *ngIf="searchMode" #searchbar [(ngModel)]="search_query" (ionInput)="search()" placeholder="{{'searchNotesInput' | translate}}" show-clear-button="focus" clear-icon="trash-bin"
+    ></ion-searchbar>
+    <!-- (appClickOutside)="exitSearchMode()" appClickOutside -->
+
     <ion-buttons slot="end" style="position: relative; top: 5px;">
-      <ion-button slot="icon-only" (click)="toggleCheckbox()">
-        <img src="assets/tabler-icon-square-check.svg"  *ngIf="filteredResults.length > 0">
+      <ng-container *ngIf="!searchMode">
+        <ion-button *ngIf="filteredResults !== null && filteredResults.length > 0" slot="icon-only" (click)="enterSearchMode()">
+          <ion-icon name="search-outline" style="font-size: 24px;"></ion-icon>
+        </ion-button>
+        <ion-button *ngIf="filteredResults !== null && filteredResults.length > 0" slot="icon-only" (click)="toggleCheckbox()">
+          <img src="assets/tabler-icon-square-check.svg">
+        </ion-button>
+        <ion-button slot="icon-only" style="padding-right: 15px" (click)="settings()"><img src="assets/tabler-icon-settings.svg"></ion-button>
+      </ng-container>
+
+      <ng-container *ngIf="searchMode">
+      <ion-button (click)="exitSearchMode()">
+          <ion-icon name="close-outline" style="font-size: 30px;"></ion-icon>
       </ion-button>
-      <ion-button slot="icon-only" style="padding-right: 15px" (click)="settings()"><img src="assets/tabler-icon-settings.svg"></ion-button>
-      
+    </ng-container>
+
     </ion-buttons>
 
   </ion-toolbar>
-    <ion-searchbar [(ngModel)]="search_query" (ionInput)="search()" placeholder="{{'searchNotesInput' | translate}}" show-clear-button="focus" clear-icon="trash-bin"></ion-searchbar>
 </ion-header>
 
 <!-- modal ask for password -->
 <ion-modal trigger="app-ask-password" [isOpen]="!should_display">
   <ng-template>
     <ion-content class="ion-padding">
-      <div align="center"><img src="assets/Logo.svg"></div><br><br><br>
+      <!-- <div align="center"><img src="assets/Logo.svg"></div><br><br><br> -->
+      <div align="center">
+        <div class="logo-container app-ask-password-logo-container">
+          <img class="logo-img" src="./assets/note-logo.png" alt="">
+        <div class="logo-text">Stellar Private Notes</div>
+      </div> 
+      </div><br><br><br>
 
       <div align="center"><img src="assets/icon-lock.svg"></div><br><br>
       <div style="text-align: center;
@@ -76,7 +100,7 @@ align-self: stretch; background: #2761FC; color: #fff; border-radius: 250px" (cl
 </ion-fab>
 
 <ion-content [fullscreen]="true" class="ion-padding">
-  <ion-grid *ngIf="filteredResults.length == 0 && !isSearching" style="height: -webkit-calc(100vh - 170px);
+  <ion-grid *ngIf="filteredResults !== null && filteredResults.length == 0 && !isSearching" style="height: -webkit-calc(100vh - 170px);
   height: calc(100vh - 170px);">
     <ion-row class="ion-align-items-center ion-justify-content-center" style="min-height: 100%;">
       <ion-col size-md="12">
@@ -112,7 +136,7 @@ align-self: stretch; background: #2761FC; color: #fff; border-radius: 250px" (cl
   </ion-grid>
 
     <!-- no results -->
-    <ion-grid *ngIf="filteredResults.length == 0 && isSearching" style="height: -webkit-calc(100vh - 170px);
+    <ion-grid *ngIf="filteredResults !== null && filteredResults.length == 0 && isSearching" style="height: -webkit-calc(100vh - 170px);
   height: calc(100vh - 170px);">
         <ion-row class="ion-align-items-center ion-justify-content-center" style="min-height: 100%;">
             <ion-col size-md="12">
@@ -150,16 +174,16 @@ align-self: stretch; background: #2761FC; color: #fff; border-radius: 250px" (cl
 
 
   <ion-list>
-    <ion-item lines="none" *ngFor="let note of getNotes()" (click)="openOrCheckbox(note.id)" [detail]="false" class="long-press-target" #longPressElements [id]="note.id">
+    <ion-item lines="none" *ngFor="let note of getNotes()" (click)="$event.stopPropagation(); openOrCheckbox(note.id)" [detail]="false" class="long-press-target" #longPressElements [id]="note.id">
       <div class="box-item-main" >
         <ion-checkbox *ngIf="checkboxOpened" (click)="$event.stopPropagation(); selectNote($event, note.id)" justify="center"
           style="margin-right: 7px" size="small"
            [checked]="listOfCheckedCheckboxes.includes(note.id) ? true: false" id="checkbox_{{note.id}}"></ion-checkbox>
         <ion-label class="ion-text-wrap" *ngIf="!note.protected">
           <ion-note><span>{{ note.last_modified | date: "yyyy-MM-dd H:mm":"Europe/Copenhagen" }}</span></ion-note>
-          <span *ngIf="!note.protected" class="note-txt">
-
-            {{ (note.text.length > 30)? (note.text | striphtml | slice:0:30  ) +'...':(note.text | striphtml) }}
+          <span *ngIf="!note.protected">
+            <span class="note-txt-title" *ngIf="note.title !== undefined">{{ (note.title.length > 40)? (note.title | striphtml | slice:0:40  ) +'...':(note.title | striphtml) }}<br></span>
+            <span class="note-txt">{{ (note.text.length > 40)? (note.text | striphtml | slice:0:40  ) +'...':(note.text | striphtml) }}</span>
           </span>
           <span class="uuid" *ngIf="note.protected">{{ note.id | slice:note.id.len:4 }}</span>
         </ion-label>
