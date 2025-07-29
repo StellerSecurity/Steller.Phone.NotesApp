@@ -376,7 +376,7 @@ ion-input {
 }
 
 .custom-back-button::part(native) {
-  background-image: url('/assets/chevron-left.png');
+  background-image: url('./assets/chevron-left.png');
   background-repeat: no-repeat;
   background-position: center;
   background-size: contain;
