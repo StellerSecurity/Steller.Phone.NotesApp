@@ -42,6 +42,7 @@
     "crypto-js": "^4.1.1",
     "ionicons": "^7.0.0",
     "js-sha512": "^0.9.0",
+    "ng-otp-input": "^2.0.8",
     "rxjs": "~7.8.0",
     "timestamp-to-date": "^1.1.0",
     "tslib": "^2.3.0",
