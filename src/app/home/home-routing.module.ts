@@ -6,7 +6,24 @@ import { HomePage } from './home.page';
 const routes: Routes = [
   {
     path: '',
-    component: HomePage
+    component: HomePage,
+    children: [
+      {
+        path: 'note',
+        loadChildren: () =>
+          import('../add-note/add-note.module').then(m => m.AddNotePageModule)
+      },
+      {
+        path: 'note/:id',
+        loadChildren: () =>
+          import('../add-note/add-note.module').then(m => m.AddNotePageModule)
+      },
+      {
+        path: '',
+        redirectTo: 'note',
+        pathMatch: 'full'
+      }
+    ]
   }
 ];
 

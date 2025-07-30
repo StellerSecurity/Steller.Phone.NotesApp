@@ -6,10 +6,10 @@ const routes: Routes = [
     path: '',
     loadChildren: () => import('./home/home.module').then( m => m.HomePageModule)
   },
-  {
-    path: 'note',
-    loadChildren: () => import('./add-note/add-note.module').then( m => m.AddNotePageModule)
-  },
+  // {
+  //   path: 'note',
+  //   loadChildren: () => import('./add-note/add-note.module').then( m => m.AddNotePageModule)
+  // },
   // {
   //   path: 'note/:id',
   //   loadChildren: () => import('./add-note/add-note.module').then( m => m.AddNotePageModule)
