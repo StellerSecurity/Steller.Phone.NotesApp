@@ -5,43 +5,48 @@
       <ion-header [translucent]="true">
         <ion-toolbar>
           <ion-title *ngIf="!searchMode">
-            <span *ngIf="checkboxOpened && filteredResults !== null &&  filteredResults.length > 0" (click)="toggleCheckbox()">
+            <span *ngIf="checkboxOpened && filteredResults !== null &&  filteredResults.length > 0"
+              (click)="toggleCheckbox()">
               <img src="assets/tabler-icon-x.svg" valign="left" style="position: relative; top: 5px;"
                 class="margin-right-top"> {{listOfCheckedCheckboxes.length}} {{'notesSelected' | translate}}
             </span>
             <!-- <img src="assets/Logo.svg" style="margin-top: 20px" *ngIf="!checkboxOpened"> -->
             <div class="logo-container" *ngIf="!checkboxOpened">
-                <img class="logo-img" src="./assets/note-logo.png" alt="">
+              <img class="logo-img" src="./assets/note-logo.png" alt="">
               <div class="logo-text">Stellar Private Notes</div>
-            </div> 
+            </div>
           </ion-title>
-      
-          <ion-searchbar *ngIf="searchMode" #searchbar [(ngModel)]="search_query" (ionInput)="search()" placeholder="{{'searchNotesInput' | translate}}" show-clear-button="focus" clear-icon="trash-bin"
-          ></ion-searchbar>
+
+          <ion-searchbar *ngIf="searchMode" #searchbar [(ngModel)]="search_query" (ionInput)="search()"
+            placeholder="{{'searchNotesInput' | translate}}" show-clear-button="focus"
+            clear-icon="trash-bin"></ion-searchbar>
           <!-- (appClickOutside)="exitSearchMode()" appClickOutside -->
-      
+
           <ion-buttons slot="end" style="position: relative; top: 5px;">
             <ng-container *ngIf="!searchMode">
-              <ion-button *ngIf="filteredResults !== null && filteredResults.length > 0" slot="icon-only" (click)="enterSearchMode()">
+              <ion-button *ngIf="filteredResults !== null && filteredResults.length > 0" slot="icon-only"
+                (click)="enterSearchMode()">
                 <ion-icon name="search-outline" style="font-size: 24px;"></ion-icon>
               </ion-button>
-              <ion-button *ngIf="filteredResults !== null && filteredResults.length > 0" slot="icon-only" (click)="toggleCheckbox()">
+              <ion-button *ngIf="filteredResults !== null && filteredResults.length > 0" slot="icon-only"
+                (click)="toggleCheckbox()">
                 <img src="assets/tabler-icon-square-check.svg">
               </ion-button>
-              <ion-button slot="icon-only" style="padding-right: 15px" (click)="settings()"><img src="assets/tabler-icon-settings.svg"></ion-button>
+              <ion-button slot="icon-only" style="padding-right: 15px" (click)="settings()"><img
+                  src="assets/tabler-icon-settings.svg"></ion-button>
             </ng-container>
-      
+
             <ng-container *ngIf="searchMode">
-            <ion-button (click)="exitSearchMode()">
+              <ion-button (click)="exitSearchMode()">
                 <ion-icon name="close-outline" style="font-size: 30px;"></ion-icon>
-            </ion-button>
-          </ng-container>
-      
+              </ion-button>
+            </ng-container>
+
           </ion-buttons>
-      
+
         </ion-toolbar>
       </ion-header>
-      
+
       <!-- modal ask for password -->
       <ion-modal trigger="app-ask-password" [isOpen]="!should_display">
         <ng-template>
@@ -50,10 +55,10 @@
             <div align="center">
               <div class="logo-container app-ask-password-logo-container">
                 <img class="logo-img" src="./assets/note-logo.png" alt="">
-              <div class="logo-text">Stellar Private Notes</div>
-            </div> 
+                <div class="logo-text">Stellar Private Notes</div>
+              </div>
             </div><br><br><br>
-      
+
             <div align="center"><img src="assets/icon-lock.svg"></div><br><br>
             <div style="text-align: center;
       /* Title 1 */
@@ -71,21 +76,24 @@
       font-weight: 400;
       line-height: 150%; /* 21px */ ">{{'enterYourPasswordToGetAccessToYourNotes' | translate}}</p>
             <div class="input-group" style="position: relative;">
-              <ion-input type="{{ showPassword ? 'text' : 'password' }}" placeholder="{{'enterYourPassword' | translate}}" (keyup)="ionInputAppUnlockInput($event)"
+              <ion-input type="{{ showPassword ? 'text' : 'password' }}"
+                placeholder="{{'enterYourPassword' | translate}}" (keyup)="ionInputAppUnlockInput($event)"
                 [(ngModel)]="input_password_app_unlock" autofocus="true"></ion-input>
-              <ion-icon slot="end" [name]="showPassword ? 'eye-off' : 'eye'" (click)="togglePasswordVisibility()"></ion-icon>
+              <ion-icon slot="end" [name]="showPassword ? 'eye-off' : 'eye'"
+                (click)="togglePasswordVisibility()"></ion-icon>
             </div>
             <span style="display: flex;
       padding: 14px 24px;
       justify-content: center;
       align-items: center;
       gap: 10px;
-      align-self: stretch; background: #2761FC; color: #fff; border-radius: 250px" (click)="unlockNotesApp()">{{'unlock' | translate}}</span>
+      align-self: stretch; background: #2761FC; color: #fff; border-radius: 250px"
+              (click)="unlockNotesApp()">{{'unlock' | translate}}</span>
             <br><br>
           </ion-content>
-      
+
           <ion-footer style="  --ion-background-color: #F6F6FD; padding: 20px; background: #F6F6FD; box-shadow: none;">
-      
+
             <div align="center">
               <span
                 style="font-family: Poppins; text-align: center; font-size: 14px; color: #E10000; font-style: normal; font-weight: 600; line-height: 150%;"
@@ -96,15 +104,18 @@
           </ion-footer>
         </ng-template>
       </ion-modal>
-      
+
       <ion-fab slot="bottom" vertical="bottom" horizontal="end" *ngIf="!checkboxOpened && should_display">
         <ion-fab-button routerLink="/note">
           <ion-icon name="add"></ion-icon>
         </ion-fab-button>
       </ion-fab>
-      
+
       <ion-content [fullscreen]="true" class="ion-padding">
-        <ion-grid *ngIf="filteredResults !== null && filteredResults.length == 0 && !isSearching" style="height: -webkit-calc(100vh - 170px);
+        <ion-button routerLink="/note">Create a Note</ion-button>
+
+        <!-- no results -->
+        <ion-grid *ngIf="filteredResults !== null && filteredResults.length == 0 && isSearching" style="height: -webkit-calc(100vh - 170px);
         height: calc(100vh - 170px);">
           <ion-row class="ion-align-items-center ion-justify-content-center" style="min-height: 100%;">
             <ion-col size-md="12">
@@ -125,7 +136,7 @@
           font-style: normal;
           font-weight: 600;
           position: relative;
-         ">{{'yourNotesAwait' | translate}}</span><br>
+         ">{{'NoResultsFor' | translate}} "{{search_query}}"</span><br>
                 <span style="overflow: hidden;
           color: #62626A;
           text-align: center;
@@ -133,90 +144,59 @@
           font-family: Poppins;
           font-size: 14px;
           font-style: normal;
-          font-weight: 400;">{{'tapTo' | translate}} <span style="color: #2761FC; font-weight: bold">+ {{'button' | translate}}</span> {{'toAddNote' | translate}}</span>
+          font-weight: 400;">{{'TryAnotherSearchQuery' | translate}}</span>
               </p>
             </ion-col>
           </ion-row>
         </ion-grid>
-      
-          <!-- no results -->
-          <ion-grid *ngIf="filteredResults !== null && filteredResults.length == 0 && isSearching" style="height: -webkit-calc(100vh - 170px);
-        height: calc(100vh - 170px);">
-              <ion-row class="ion-align-items-center ion-justify-content-center" style="min-height: 100%;">
-                  <ion-col size-md="12">
-                      <p class="ion-padding" align="center">
-                <span style="background: #EAEAF0;
-                border-radius: 50%;
-                height: 72px;
-                width: 72px;
-                display: flex;
-                align-items: center;
-                justify-content: center;">
-                  <img src="assets/tabler-icon-notes.svg" />
-                </span><br>
-                          <span style="color: #0B0C19;
-          text-align: center;
-          font-family: Poppins;
-          font-size: 16px;
-          font-style: normal;
-          font-weight: 600;
-          position: relative;
-         ">{{'NoResultsFor' | translate}} "{{search_query}}"</span><br>
-                          <span style="overflow: hidden;
-          color: #62626A;
-          text-align: center;
-          text-overflow: ellipsis;
-          font-family: Poppins;
-          font-size: 14px;
-          font-style: normal;
-          font-weight: 400;">{{'TryAnotherSearchQuery' | translate}}</span>
-                      </p>
-                  </ion-col>
-              </ion-row>
-          </ion-grid>
-      
-          
-      <ion-button routerLink="/note">Create a Note</ion-button> 
 
-      
         <ion-list>
-          <ion-item lines="none" *ngFor="let note of getNotes()" (click)="$event.stopPropagation(); openOrCheckbox(note.id)" [detail]="false" class="long-press-target" #longPressElements [id]="note.id">
-            <div class="box-item-main" >
-              <ion-checkbox *ngIf="checkboxOpened" (click)="$event.stopPropagation(); selectNote($event, note.id)" justify="center"
-                style="margin-right: 7px" size="small"
-                 [checked]="listOfCheckedCheckboxes.includes(note.id) ? true: false" id="checkbox_{{note.id}}"></ion-checkbox>
+          <ion-item lines="none" *ngFor="let note of getNotes()"
+            (click)="$event.stopPropagation(); openOrCheckbox(note.id)" [detail]="false" class="long-press-target"
+            #longPressElements [id]="note.id">
+            <div class="box-item-main">
+              <ion-checkbox *ngIf="checkboxOpened" (click)="$event.stopPropagation(); selectNote($event, note.id)"
+                justify="center" style="margin-right: 7px" size="small"
+                [checked]="listOfCheckedCheckboxes.includes(note.id) ? true: false"
+                id="checkbox_{{note.id}}"></ion-checkbox>
               <ion-label class="ion-text-wrap" *ngIf="!note.protected">
                 <ion-note><span>{{ note.last_modified | date: "yyyy-MM-dd H:mm":"Europe/Copenhagen" }}</span></ion-note>
                 <span *ngIf="!note.protected">
-                  <span class="note-txt-title" *ngIf="note.title !== undefined">{{ (note.title.length > 40)? (note.title | striphtml | slice:0:40  ) +'...':(note.title | striphtml) }}<br></span>
-                  <span class="note-txt">{{ (note.text.length > 40)? (note.text | striphtml | slice:0:40  ) +'...':(note.text | striphtml) }}</span>
+                  <span class="note-txt-title" *ngIf="note.title !== undefined">{{ (note.title.length > 40)? (note.title
+                    | striphtml | slice:0:40 ) +'...':(note.title | striphtml) }}<br></span>
+                  <span class="note-txt">{{ (note.text.length > 40)? (note.text | striphtml | slice:0:40 )
+                    +'...':(note.text | striphtml) }}</span>
                 </span>
                 <span class="uuid" *ngIf="note.protected">{{ note.id | slice:note.id.len:4 }}</span>
               </ion-label>
-              <ion-label *ngIf="note.protected"><ion-note><span>{{ note.last_modified | date: "yyyy-MM-dd H:mm":"UTC"}}<br>
-                   <span class="uuid" *ngIf="note.protected">{{ note.id | slice:note.id.len:6 }}</span>
-                   </span>
-                 <img src="./assets/tabler-icon-lock.svg"></ion-note></ion-label>
+              <ion-label *ngIf="note.protected"><ion-note><span>{{ note.last_modified | date: "yyyy-MM-dd
+                    H:mm":"UTC"}}<br>
+                    <span class="uuid" *ngIf="note.protected">{{ note.id | slice:note.id.len:6 }}</span>
+                  </span>
+                  <img src="./assets/tabler-icon-lock.svg"></ion-note></ion-label>
             </div>
           </ion-item>
         </ion-list>
-      
-          <ion-button *ngIf="!appHasPasswordChallenge() && getNotes().length > 0" expand="block" (click)="settings()">{{'addNotesAppPassword' | translate}}</ion-button><br>
-          <ion-col size-md="12" *ngIf="getNotes().length > 0">
-              <div align="center">
-                  <img src="./assets/stellar-logo-icon.svg"><span style="
+
+        <ion-button *ngIf="!appHasPasswordChallenge() && getNotes().length > 0" expand="block"
+          (click)="settings()">{{'addNotesAppPassword' | translate}}</ion-button><br>
+        <ion-col size-md="12" *ngIf="getNotes().length > 0">
+          <div align="center">
+            <img src="./assets/stellar-logo-icon.svg"><span style="
                   font-size: 12px;
                   font-weight: 400;
-                  position: relative; top: -9px; left: 15px; color: #62626A">{{'allDataIsStoredOnYourPhoneOnly' | translate}}</span>
-              </div>
-          </ion-col>
-      
+                  position: relative; top: -9px; left: 15px; color: #62626A">{{'allDataIsStoredOnYourPhoneOnly' |
+              translate}}</span>
+          </div>
+        </ion-col>
+
       </ion-content>
-      
+
       <ion-toolbar slot="fixed" class="toolbar-bottom" *ngIf="checkboxOpened && getNotes().length > 0">
-        <ion-button color="danger" shape="round" fill="outline" class="delete-btn" 
-        [disabled]="listOfCheckedCheckboxes.length == 0" (click)="deleteSelectedNotes()"><img
-            src="assets/tabler-icon-trash.svg" style="margin-right: 15px"> {{'delete' | translate}} ({{listOfCheckedCheckboxes.length}}) </ion-button><br>
+        <ion-button color="danger" shape="round" fill="outline" class="delete-btn"
+          [disabled]="listOfCheckedCheckboxes.length == 0" (click)="deleteSelectedNotes()"><img
+            src="assets/tabler-icon-trash.svg" style="margin-right: 15px"> {{'delete' | translate}}
+          ({{listOfCheckedCheckboxes.length}}) </ion-button><br>
         <!--<ion-button color="primary" fill="outline" expand="full" (click)="toggleCheckbox()">Cancel</ion-button>-->
       </ion-toolbar>
     </ion-content>
