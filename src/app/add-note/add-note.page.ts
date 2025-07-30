@@ -30,7 +30,7 @@ export class AddNotePage {
 
   private notes_id = null;
 
-  private notes:any[] = [];
+  notes:any[] = [];
 
   private currentNote = null;
 
