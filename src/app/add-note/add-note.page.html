@@ -1,4 +1,4 @@
-<ion-header [translucent]="true" class="header-border-bottom-0 no-border">
+<ion-header [translucent]="true" class="header-border-bottom-0 no-border ion-padding-start ion-padding-end">
   <ion-toolbar>
     <div *ngIf="!note_locked">
       <ng-container *ngIf="!isEditingTitle; else editing">
@@ -28,11 +28,11 @@
 
      
     
-    <ion-buttons slot="start">
+    <!-- <ion-buttons slot="start">
       <ion-back-button defaultHref="/"
       class="custom-back-button"  text="">
       <ion-icon slot="icon-only" style="display: none;"></ion-icon></ion-back-button>
-    </ion-buttons>
+    </ion-buttons> -->
 
     <ion-buttons slot="end" *ngIf="!note_locked">
       <ion-button (click)="openLockModal()">

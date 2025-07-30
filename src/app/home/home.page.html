@@ -1,6 +1,6 @@
 <ion-split-pane contentId="main-content">
   <!-- Sidebar -->
-  <ion-menu contentId="main-content" type="overlay">
+  <ion-menu contentId="main-content" type="overlay" style="width: 25%;">
     <ion-content class="ion-padding sidebar">
       <ion-header [translucent]="true">
         <ion-toolbar>
@@ -175,6 +175,8 @@
               </ion-row>
           </ion-grid>
       
+          
+      <ion-button routerLink="/note">Add Note</ion-button>
       
       
         <ion-list>
@@ -220,7 +222,7 @@
     </ion-content>
   </ion-menu>
 
-  <div style="width: 100%;">
+  <div class="main-content" id="main-content">
     <app-add-note></app-add-note>
   </div>
 

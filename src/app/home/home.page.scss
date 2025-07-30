@@ -295,3 +295,18 @@ ion-searchbar {
     --width: calc(100% - 15x)!important;
   }
 }
+
+
+ion-split-pane,
+ion-split-pane > .main-content {
+  width: 100% !important;
+  max-width: 100% !important;
+  flex: 1 !important;
+}
+
+ion-split-pane {
+  --side-width: 0px !important; /* effectively hides menu pane width */
+}
+ion-split-pane > .main-content {
+  --width: 100% !important; /* effectively hides menu pane width */
+}
