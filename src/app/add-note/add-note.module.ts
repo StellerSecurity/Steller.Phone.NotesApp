@@ -25,6 +25,6 @@ import { RichTextEditorComponent } from './rich-text-editor/rich-text-editor.com
         AngularEditorModule,
         TranslateModule
     ],
-  declarations: [AddNotePage, RichTextEditorComponent]
+  // declarations: [AddNotePage, RichTextEditorComponent]
 })
 export class AddNotePageModule {}

@@ -11,6 +11,11 @@ import { TranslateModule } from '@ngx-translate/core';
 import {AppModule} from "../app.module";
 import {StriphtmlPipe} from "../striphtml.pipe";
 import { ClickOutsideDirective } from '../directives/click-outside.directive';
+import { AddNotePage } from '../add-note/add-note.page';
+import { PasswordStrengthMeterModule } from 'angular-password-strength-meter';
+import { AngularEditorModule } from '@wfpena/angular-wysiwyg';
+import { NoteLockedModalModule } from '../note-locked-modal/note-locked-modal.module';
+import { RichTextEditorComponent } from '../add-note/rich-text-editor/rich-text-editor.component';
 
 @NgModule({
     imports: [
@@ -18,10 +23,13 @@ import { ClickOutsideDirective } from '../directives/click-outside.directive';
         FormsModule,
         IonicModule,
         HomePageRoutingModule,
+        PasswordStrengthMeterModule,
+        NoteLockedModalModule,
+        AngularEditorModule,
         DeleteNoteModalModule,
         RestPassModalModule,
         TranslateModule
     ],
-    declarations: [HomePage, StriphtmlPipe, ClickOutsideDirective]
+    declarations: [HomePage, AddNotePage, RichTextEditorComponent,  StriphtmlPipe, ClickOutsideDirective]
 })
 export class HomePageModule {}

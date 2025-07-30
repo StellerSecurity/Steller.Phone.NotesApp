@@ -10,10 +10,10 @@ const routes: Routes = [
     path: 'note',
     loadChildren: () => import('./add-note/add-note.module').then( m => m.AddNotePageModule)
   },
-  {
-    path: 'note/:id',
-    loadChildren: () => import('./add-note/add-note.module').then( m => m.AddNotePageModule)
-  },
+  // {
+  //   path: 'note/:id',
+  //   loadChildren: () => import('./add-note/add-note.module').then( m => m.AddNotePageModule)
+  // },
   {
     path: 'settings-note/:id',
     loadChildren: () => import('./settings-note/settings-note.module').then( m => m.SettingsNotePageModule)
