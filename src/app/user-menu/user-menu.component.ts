@@ -7,7 +7,8 @@ import { PopoverController } from '@ionic/angular';
   styleUrls: ['./user-menu.component.scss'],
 })
 export class UserMenuComponent {
-  
+  isUserIsLoggedIn = false;
+
   constructor(private popoverController: PopoverController) {}
 
   openSettings() {
