@@ -51,48 +51,51 @@
       </ion-header>
 
       <!-- modal ask for password -->
-      <ion-modal trigger="app-ask-password" class="app-ask-password-modal" [isOpen]="!should_display"
-        [backdropDismiss]="false">
-        <ng-template>
-          <ion-content class="ion-padding">
-            <div align="center">
-              <div class="logo-container app-ask-password-logo-container" style="margin-top: 10px!important;">
-                <img class="logo-img" src="./assets/note-logo.png" alt="">
-                <div class="logo-text">Stellar Private Notes</div>
+      <ng-container *ngIf="!should_display">
+        <ion-modal trigger="app-ask-password" class="app-ask-password-modal" [isOpen]="!should_display"
+          [backdropDismiss]="false">
+          <ng-template>
+            <ion-content class="ion-padding">
+              <div align="center">
+                <div class="logo-container app-ask-password-logo-container" style="margin-top: 10px!important;">
+                  <img class="logo-img" src="./assets/note-logo.png" alt="">
+                  <div class="logo-text">Stellar Private Notes</div>
+                </div>
+              </div><br><br>
+
+              <div align="center"><img src="assets/icon-lock.svg"></div><br>
+              <div
+                style="text-align: center; font-family: Poppins; font-size: 20px; font-style: normal; font-weight: 700; line-height: 150%;">
+                {{'appIsLocked' | translate}}</div>
+              <p
+                style="text-align: center; color: #62626A; font-family: Poppins; font-size: 14px; font-style: normal; font-weight: 400; line-height: 150%; margin-top: 3px; ">
+                {{'enterYourPasswordToGetAccessToYourNotes' | translate}}</p>
+              <div class="input-group" style="position: relative;">
+                <ion-input type="{{ showPassword ? 'text' : 'password' }}"
+                  placeholder="{{'enterYourPassword' | translate}}" (keyup)="ionInputAppUnlockInput($event)"
+                  [(ngModel)]="input_password_app_unlock" autofocus="true"></ion-input>
+                <ion-icon slot="end" [name]="showPassword ? 'eye-off' : 'eye'"
+                  (click)="togglePasswordVisibility()"></ion-icon>
               </div>
-            </div><br><br>
-
-            <div align="center"><img src="assets/icon-lock.svg"></div><br>
-            <div
-              style="text-align: center; font-family: Poppins; font-size: 20px; font-style: normal; font-weight: 700; line-height: 150%;">
-              {{'appIsLocked' | translate}}</div>
-            <p
-              style="text-align: center; color: #62626A; font-family: Poppins; font-size: 14px; font-style: normal; font-weight: 400; line-height: 150%; margin-top: 3px; ">
-              {{'enterYourPasswordToGetAccessToYourNotes' | translate}}</p>
-            <div class="input-group" style="position: relative;">
-              <ion-input type="{{ showPassword ? 'text' : 'password' }}"
-                placeholder="{{'enterYourPassword' | translate}}" (keyup)="ionInputAppUnlockInput($event)"
-                [(ngModel)]="input_password_app_unlock" autofocus="true"></ion-input>
-              <ion-icon slot="end" [name]="showPassword ? 'eye-off' : 'eye'"
-                (click)="togglePasswordVisibility()"></ion-icon>
-            </div>
-            <span
-              style="display: flex; padding: 14px 24px; justify-content: center; align-items: center; gap: 10px; align-self: stretch; background: #2761FC; color: #fff; border-radius: 250px"
-              (click)="unlockNotesApp()">{{'unlock' | translate}}</span>
-            <br>
-          </ion-content>
-
-          <ion-footer style="  --ion-background-color: #F6F6FD; padding: 20px; background: #F6F6FD; box-shadow: none;">
-            <div align="center">
               <span
-                style="font-family: Poppins; text-align: center; font-size: 14px; color: #E10000; font-style: normal; font-weight: 600; line-height: 150%;"
-                (click)="resetPassword()">
-                <img src="assets/tabler-icon-restore.svg"> <span style="position: relative; top: -6px; left: 10px">
-                  {{'resetPassword' | translate}}</span></span>
-            </div>
-          </ion-footer>
-        </ng-template>
-      </ion-modal>
+                style="display: flex; padding: 14px 24px; justify-content: center; align-items: center; gap: 10px; align-self: stretch; background: #2761FC; color: #fff; border-radius: 250px"
+                (click)="unlockNotesApp()">{{'unlock' | translate}}</span>
+              <br>
+            </ion-content>
+
+            <ion-footer
+              style="  --ion-background-color: #F6F6FD; padding: 20px; background: #F6F6FD; box-shadow: none;">
+              <div align="center">
+                <span
+                  style="font-family: Poppins; text-align: center; font-size: 14px; color: #E10000; font-style: normal; font-weight: 600; line-height: 150%;"
+                  (click)="resetPassword()">
+                  <img src="assets/tabler-icon-restore.svg"> <span style="position: relative; top: -6px; left: 10px">
+                    {{'resetPassword' | translate}}</span></span>
+              </div>
+            </ion-footer>
+          </ng-template>
+        </ion-modal>
+      </ng-container>
 
       <ion-fab slot="bottom" vertical="bottom" horizontal="end" *ngIf="!checkboxOpened && should_display">
         <ion-fab-button routerLink="/note">
