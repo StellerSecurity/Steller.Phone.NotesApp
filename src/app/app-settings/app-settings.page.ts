@@ -1,20 +1,24 @@
-import { AfterViewInit, Component, OnInit, ViewChild } from '@angular/core';
-import { AlertController, ModalController, ToastController, NavController } from "@ionic/angular";
-import { PasswordStrengthMeterModule } from 'angular-password-strength-meter';
-import { IonModal } from '@ionic/angular';
+import { AfterViewInit, Component, OnInit, ViewChild } from "@angular/core";
+import {
+  AlertController,
+  ModalController,
+  ToastController,
+  NavController,
+} from "@ionic/angular";
+import { PasswordStrengthMeterModule } from "angular-password-strength-meter";
+import { IonModal } from "@ionic/angular";
 import { NotesService } from "../services/notes.service";
 import { CryptoService } from "../services/crypto.service";
 import { AppProtectorService } from "../services/app-protector.service";
-import { ConfirmationModalComponent } from '../confirmation-modal/confirmation-modal.component';
-import { DeleteNoteModalComponent } from '../delete-note-modal/delete-note-modal.component';
-import { TranslatorService } from '../services/translator.service';
+import { ConfirmationModalComponent } from "../confirmation-modal/confirmation-modal.component";
+import { DeleteNoteModalComponent } from "../delete-note-modal/delete-note-modal.component";
+import { TranslatorService } from "../services/translator.service";
 @Component({
-  selector: 'app-app-settings',
-  templateUrl: './app-settings.page.html',
-  styleUrls: ['./app-settings.page.scss'],
+  selector: "app-app-settings",
+  templateUrl: "./app-settings.page.html",
+  styleUrls: ["./app-settings.page.scss"],
 })
 export class AppSettingsPage implements AfterViewInit {
-
   public appPasswordChallenge: boolean;
 
   public wipeNotesOnFailedPasswords: boolean = true;
@@ -33,26 +37,30 @@ export class AppSettingsPage implements AfterViewInit {
   public upperLower = false;
   public specialChar = false;
   public strongPass = false;
-  allTranslations:any;
+  allTranslations: any;
+  shouldShowPasswordOnAppContent: boolean = false;
 
   @ViewChild(IonModal) modal: IonModal;
 
-  constructor(public alertController: AlertController,
+  constructor(
+    public alertController: AlertController,
     private toastController: ToastController,
     private noteService: NotesService,
     private cryptoService: CryptoService,
     private appProtectorService: AppProtectorService,
     private navController: NavController,
     public modalCtrl: ModalController,
-    private translatorService: TranslatorService) { }
+    private translatorService: TranslatorService
+  ) {}
 
   ionViewWillEnter(): void {
     this.allTranslations = this.translatorService.allTranslations;
   }
 
   ionViewDidEnter() {
-    this.passwordStrengthHelperText = this.allTranslations.passwordAtLeastLength;
- }
+    this.passwordStrengthHelperText =
+      this.allTranslations.passwordAtLeastLength;
+  }
 
   ngAfterViewInit() {
     if (this.noteService.appHasPasswordChallenge()) {
@@ -63,11 +71,11 @@ export class AppSettingsPage implements AfterViewInit {
 
   cancel() {
     this.appPasswordChallenge = this.noteService.appHasPasswordChallenge();
-    this.modal.dismiss(null, 'cancel');
+    this.modal.dismiss(null, "cancel");
   }
 
   confirm() {
-    this.modal.dismiss("", 'confirm');
+    this.modal.dismiss("", "confirm");
   }
 
   public togglePasswordVisibility() {
@@ -78,12 +86,12 @@ export class AppSettingsPage implements AfterViewInit {
   }
 
   public async save() {
-
     if (this.notesAppPassword.length < 3) {
       const toast = await this.toastController.create({
-        message: this.allTranslations.thePasswordIsWeakPleaseMakeYourPasswordStronger,
+        message:
+          this.allTranslations.thePasswordIsWeakPleaseMakeYourPasswordStronger,
         duration: 3000,
-        position: 'bottom',
+        position: "bottom",
       });
 
       await toast.present();
@@ -95,7 +103,7 @@ export class AppSettingsPage implements AfterViewInit {
       const toast = await this.toastController.create({
         message: this.allTranslations.theTwoPasswordsDoesNotMatch,
         duration: 3000,
-        position: 'bottom',
+        position: "bottom",
       });
 
       await toast.present();
@@ -103,14 +111,16 @@ export class AppSettingsPage implements AfterViewInit {
       return;
     }
 
-
     // can be in encrypted state or decrypted - depends if the app_password_challenge is set.
     let notes = this.noteService.getNotes();
 
     // the note-service has password-protection, meaning the user wants to remove the password.
     if (this.noteService.appHasPasswordChallenge()) {
       // first, we have to decrypt the notes:
-      let decryptedNotes = this.cryptoService.decrypt(notes, this.notesAppPassword);
+      let decryptedNotes = this.cryptoService.decrypt(
+        notes,
+        this.notesAppPassword
+      );
       this.noteService.setNotes(decryptedNotes);
       this.noteService.setDecryptedNotes(decryptedNotes);
       await this.modal.dismiss();
@@ -121,13 +131,15 @@ export class AppSettingsPage implements AfterViewInit {
       window.location.href = "/app-settings";
       this.password_enabled = false;
     } else {
-
-      if(notes === null) {
+      if (notes === null) {
         notes = JSON.stringify([]);
       }
 
       // encrypting notes.
-      let encryptedNotes = this.cryptoService.encrypt(notes, this.notesAppPassword);
+      let encryptedNotes = this.cryptoService.encrypt(
+        notes,
+        this.notesAppPassword
+      );
       this.noteService.setNotes(encryptedNotes);
       await this.modal.dismiss();
       this.noteService.setNotesAppPassword(this.notesAppPassword);
@@ -139,15 +151,12 @@ export class AppSettingsPage implements AfterViewInit {
       localStorage.setItem("app_password_challenge", "1");
       this.password_enabled = true;
     }
-
-
   }
-
 
   public async removePassword() {
     const modal = await this.modalCtrl.create({
       component: ConfirmationModalComponent,
-      cssClass: 'confirmation-popup'
+      cssClass: "confirmation-popup",
     });
 
     modal.onDidDismiss().then(async (data) => {
@@ -162,9 +171,9 @@ export class AppSettingsPage implements AfterViewInit {
               decryptedNotes = this.cryptoService.decrypt(notes, inputValue);
             } catch (e) {
               const toast = await this.toastController.create({
-                message: 'The entered password was not correct.',
+                message: "The entered password was not correct.",
                 duration: 3000,
-                position: 'bottom',
+                position: "bottom",
               });
 
               await toast.present();
@@ -182,12 +191,11 @@ export class AppSettingsPage implements AfterViewInit {
             const toast = await this.toastController.create({
               message: this.allTranslations.enterYourCurrentPassword,
               duration: 3000,
-              position: 'bottom',
+              position: "bottom",
             });
             await toast.present();
           }
         } else {
-
         }
       }
     });
@@ -195,14 +203,12 @@ export class AppSettingsPage implements AfterViewInit {
     return await modal.present();
   }
 
-
-
   public notesAppPasswordChange() {
-
     this.passwordStrength = 0;
 
     if (this.notesAppPassword.length == 0) {
-      this.passwordStrengthHelperText = this.allTranslations.passwordAtLeastLength;
+      this.passwordStrengthHelperText =
+        this.allTranslations.passwordAtLeastLength;
       return;
     }
 
@@ -212,7 +218,10 @@ export class AppSettingsPage implements AfterViewInit {
     }
 
     // Check for mixed case
-    if (this.notesAppPassword.match(/[a-z]/) && this.notesAppPassword.match(/[A-Z]/)) {
+    if (
+      this.notesAppPassword.match(/[a-z]/) &&
+      this.notesAppPassword.match(/[A-Z]/)
+    ) {
       this.passwordStrength += 1;
       this.upperLower = true;
     } else {
@@ -240,7 +249,6 @@ export class AppSettingsPage implements AfterViewInit {
       this.strongPass = false;
     }
 
-
     // Return results
     if (this.passwordStrength < 2) {
       this.passwordStrengthHelperText = this.allTranslations.weakPassword;
@@ -251,18 +259,17 @@ export class AppSettingsPage implements AfterViewInit {
     } else {
       this.passwordStrengthHelperText = this.allTranslations.greatPassword;
     }
-
   }
 
   public async appPasswordChallengeDialog() {
-    await this.modal.present();
+    // await this.modal.present();
+    this.shouldShowPasswordOnAppContent = !this.shouldShowPasswordOnAppContent;
   }
 
   public async deleteWholeAppStorage() {
-
     const modal = await this.modalCtrl.create({
       component: DeleteNoteModalComponent,
-      cssClass: 'confirmation-popup'
+      cssClass: "confirmation-popup",
     });
 
     modal.onDidDismiss().then(async (data) => {
@@ -278,7 +285,5 @@ export class AppSettingsPage implements AfterViewInit {
     });
 
     return await modal.present();
-
   }
-
 }
