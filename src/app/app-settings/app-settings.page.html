@@ -46,10 +46,21 @@
         </div>
       </div>
 
+      <div class="setting-row">
+        <div class="label">Use biometrics</div>
+        <div class="toggle-container">
+          <ion-toggle
+            [(ngModel)]="useBiometrics"
+            mode="ios"
+            (ionChange)="onToggle($event)"
+            class="simple-toggle"
+          ></ion-toggle>
+        </div>
+      </div>
 
       <div *ngIf="!password_enabled" class="pass-info-box">
         <p *ngif="!strongPass" class="pass-note">{{'passwordCharacters' | translate}}</p>
-        {{passwordStrengthHelperText}}
+        <span style="color: #0B0C19; font-size: 12px; font-weight: 600;">{{passwordStrengthHelperText}}</span>
         <password-strength-meter [password]="notesAppPassword"></password-strength-meter>
         <h4 style="color: #0B0C19; font-size: 12px; font-weight: 400; font-family: 'Poppins';">{{'itsBetterToHave' |
           translate}}

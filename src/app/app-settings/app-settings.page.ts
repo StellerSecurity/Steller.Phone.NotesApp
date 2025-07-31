@@ -39,6 +39,7 @@ export class AppSettingsPage implements AfterViewInit {
   public strongPass = false;
   allTranslations: any;
   shouldShowPasswordOnAppContent: boolean = false;
+  useBiometrics = true;
 
   @ViewChild(IonModal) modal: IonModal;
 
@@ -285,5 +286,10 @@ export class AppSettingsPage implements AfterViewInit {
     });
 
     return await modal.present();
+  }
+
+  onToggle(event: any) {
+    // handle change, persist preference, etc.
+    console.log('biometrics toggled:', this.useBiometrics);
   }
 }

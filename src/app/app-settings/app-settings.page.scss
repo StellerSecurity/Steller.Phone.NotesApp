@@ -241,13 +241,55 @@ ion-back-button {
   }
 
   .custom-toggle {
-    --handle-width: 20px;
-    --handle-height: 20px;
-    --track-background: #e0e0e0;
+    --width: 52px;
+  --height: 32px;
+  --handle-width: 26px;
+  --handle-height: 26px;
+  --background: #e4e4e4;
+  --background-checked: #445aff;
+  --handle-background: white;
+  --handle-background-checked: white;
+  --border-radius: 16px;
+  --handle-border-radius: 50%;
+  --box-shadow: none;
+  padding: 0;
+  }
+}
+
+.setting-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 4px;
+  background: #f2f4fb;
+  border-radius: 16px;
+  margin-bottom: 12px;
+
+  .label {
+    font-size: 12px;
+    font-weight: 600;
+    color: #0B0C19;
+    flex: 1;
+  }
+
+  .toggle-container {
+    display: flex;
+    align-items: center;
+    margin-left: 12px;
+  }
+
+  ion-toggle.simple-toggle {
+    --width: 52px;
+    --height: 32px;
+    --handle-width: 26px;
+    --handle-height: 26px;
+    --background: #e4e4e4;
+    --background-checked: #445aff;
     --handle-background: white;
-    --track-border-radius: 9999px;
+    --handle-background-checked: white;
+    --border-radius: 16px;
     --handle-border-radius: 50%;
-    --border-color: transparent;
-    --background: transparent;
+    --box-shadow: none;
+    padding: 0;
   }
 }
