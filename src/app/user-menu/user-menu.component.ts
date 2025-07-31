@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
-import { PopoverController } from '@ionic/angular';
+import { ModalController, PopoverController } from '@ionic/angular';
+import { AppSettingsPage } from '../app-settings/app-settings.page';
 
 @Component({
   selector: 'app-user-menu',
@@ -9,7 +10,8 @@ import { PopoverController } from '@ionic/angular';
 export class UserMenuComponent {
   isUserIsLoggedIn = false;
 
-  constructor(private popoverController: PopoverController) {}
+  constructor(private popoverController: PopoverController,
+    private modalController: ModalController) {}
 
   openSettings() {
     this.popoverController.dismiss();
@@ -19,5 +21,20 @@ export class UserMenuComponent {
   logout() {
     this.popoverController.dismiss();
     // perform logout
+  }
+
+  async openSettingsModal() {
+    const modal = await this.modalController.create({
+      component: AppSettingsPage,
+      cssClass: 'centered-modal',
+      backdropDismiss: true,
+      showBackdrop: true,
+      animated: true
+    });
+  
+    await modal.present();
+  
+    const { data } = await modal.onWillDismiss();
+    console.log('Modal data:', data);
   }
 }

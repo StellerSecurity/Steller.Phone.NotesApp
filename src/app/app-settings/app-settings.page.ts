@@ -43,7 +43,7 @@ export class AppSettingsPage implements AfterViewInit {
     private cryptoService: CryptoService,
     private appProtectorService: AppProtectorService,
     private navController: NavController,
-    private modalCtrl: ModalController,
+    public modalCtrl: ModalController,
     private translatorService: TranslatorService) { }
 
   ionViewWillEnter(): void {

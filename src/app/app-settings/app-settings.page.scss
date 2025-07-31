@@ -216,3 +216,38 @@ ion-back-button {
   font-size: 20px;
   padding: 10px;
 }
+
+.wipe-delete-card {
+  background: white;
+  box-shadow: none;
+  border-radius: 16px;
+  padding: 8px;
+
+  .title {
+    color: #0B0C19;
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  .description {
+    color: #62626A;
+    font-size: 12px;
+  }
+
+  .toggle-col {
+    display: flex;
+    align-items: flex-start;  // 👈 align toggle to the top
+    justify-content: flex-end;
+  }
+
+  .custom-toggle {
+    --handle-width: 20px;
+    --handle-height: 20px;
+    --track-background: #e0e0e0;
+    --handle-background: white;
+    --track-border-radius: 9999px;
+    --handle-border-radius: 50%;
+    --border-color: transparent;
+    --background: transparent;
+  }
+}
