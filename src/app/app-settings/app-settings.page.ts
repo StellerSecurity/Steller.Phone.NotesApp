@@ -124,7 +124,7 @@ export class AppSettingsPage implements AfterViewInit {
       );
       this.noteService.setNotes(decryptedNotes);
       this.noteService.setDecryptedNotes(decryptedNotes);
-      await this.modal.dismiss();
+      // await this.modal.dismiss();
       this.notesAppPassword = "";
       this.confirmPassword = "";
       this.noteService.setNotesAppPassword("");
@@ -142,7 +142,7 @@ export class AppSettingsPage implements AfterViewInit {
         this.notesAppPassword
       );
       this.noteService.setNotes(encryptedNotes);
-      await this.modal.dismiss();
+      // await this.modal.dismiss();
       this.noteService.setNotesAppPassword(this.notesAppPassword);
       this.notesAppPassword = "";
       // init protection
@@ -290,6 +290,6 @@ export class AppSettingsPage implements AfterViewInit {
 
   onToggle(event: any) {
     // handle change, persist preference, etc.
-    console.log('biometrics toggled:', this.useBiometrics);
+    console.log("biometrics toggled:", this.useBiometrics);
   }
 }

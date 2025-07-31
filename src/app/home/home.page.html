@@ -36,7 +36,7 @@
                   src="assets/tabler-icon-settings.svg"></ion-button> -->
 
               <ion-button slot="icon-only" style="padding-right: 15px" (click)="presentUserMenu($event)"><img
-                src="assets/user-circle.svg"></ion-button>
+                  src="assets/user-circle.svg"></ion-button>
             </ng-container>
 
             <ng-container *ngIf="searchMode">
@@ -51,33 +51,24 @@
       </ion-header>
 
       <!-- modal ask for password -->
-      <ion-modal trigger="app-ask-password" [isOpen]="!should_display">
+      <ion-modal trigger="app-ask-password" class="app-ask-password-modal" [isOpen]="!should_display"
+        [backdropDismiss]="false">
         <ng-template>
           <ion-content class="ion-padding">
-            <!-- <div align="center"><img src="assets/Logo.svg"></div><br><br><br> -->
             <div align="center">
-              <div class="logo-container app-ask-password-logo-container">
+              <div class="logo-container app-ask-password-logo-container" style="margin-top: 10px!important;">
                 <img class="logo-img" src="./assets/note-logo.png" alt="">
                 <div class="logo-text">Stellar Private Notes</div>
               </div>
-            </div><br><br><br>
+            </div><br><br>
 
-            <div align="center"><img src="assets/icon-lock.svg"></div><br><br>
-            <div style="text-align: center;
-      /* Title 1 */
-      font-family: Poppins;
-      font-size: 20px;
-      font-style: normal;
-      font-weight: 700;
-      line-height: 150%; /* 30px */ ">{{'appIsLocked' | translate}}</div>
-            <p style="text-align: center;
-      /* Body/Body 14 */
-      color: #62626A;
-      font-family: Poppins;
-      font-size: 14px;
-      font-style: normal;
-      font-weight: 400;
-      line-height: 150%; /* 21px */ ">{{'enterYourPasswordToGetAccessToYourNotes' | translate}}</p>
+            <div align="center"><img src="assets/icon-lock.svg"></div><br>
+            <div
+              style="text-align: center; font-family: Poppins; font-size: 20px; font-style: normal; font-weight: 700; line-height: 150%;">
+              {{'appIsLocked' | translate}}</div>
+            <p
+              style="text-align: center; color: #62626A; font-family: Poppins; font-size: 14px; font-style: normal; font-weight: 400; line-height: 150%; margin-top: 3px; ">
+              {{'enterYourPasswordToGetAccessToYourNotes' | translate}}</p>
             <div class="input-group" style="position: relative;">
               <ion-input type="{{ showPassword ? 'text' : 'password' }}"
                 placeholder="{{'enterYourPassword' | translate}}" (keyup)="ionInputAppUnlockInput($event)"
@@ -85,18 +76,13 @@
               <ion-icon slot="end" [name]="showPassword ? 'eye-off' : 'eye'"
                 (click)="togglePasswordVisibility()"></ion-icon>
             </div>
-            <span style="display: flex;
-      padding: 14px 24px;
-      justify-content: center;
-      align-items: center;
-      gap: 10px;
-      align-self: stretch; background: #2761FC; color: #fff; border-radius: 250px"
+            <span
+              style="display: flex; padding: 14px 24px; justify-content: center; align-items: center; gap: 10px; align-self: stretch; background: #2761FC; color: #fff; border-radius: 250px"
               (click)="unlockNotesApp()">{{'unlock' | translate}}</span>
-            <br><br>
+            <br>
           </ion-content>
 
           <ion-footer style="  --ion-background-color: #F6F6FD; padding: 20px; background: #F6F6FD; box-shadow: none;">
-
             <div align="center">
               <span
                 style="font-family: Poppins; text-align: center; font-size: 14px; color: #E10000; font-style: normal; font-weight: 600; line-height: 150%;"
@@ -123,31 +109,15 @@
           <ion-row class="ion-align-items-center ion-justify-content-center" style="min-height: 100%;">
             <ion-col size-md="12">
               <p class="ion-padding" align="center">
-                <span style="background: #EAEAF0;
-                border-radius: 50%;
-                height: 72px;
-                width: 72px;
-                display: flex;
-                align-items: center;
-                justify-content: center;">
+                <span
+                  style="background: #EAEAF0;border-radius: 50%;height: 72px;width: 72px;display: flex;align-items: center;justify-content: center;">
                   <img src="assets/tabler-icon-notes.svg" />
                 </span><br>
-                <span style="color: #0B0C19;
-          text-align: center;
-          font-family: Poppins;
-          font-size: 16px;
-          font-style: normal;
-          font-weight: 600;
-          position: relative;
+                <span style="color: #0B0C19;text-align: center;font-family: Poppins;font-size: 16px;font-style: normal;font-weight: 600;position: relative;
          ">{{'NoResultsFor' | translate}} "{{search_query}}"</span><br>
-                <span style="overflow: hidden;
-          color: #62626A;
-          text-align: center;
-          text-overflow: ellipsis;
-          font-family: Poppins;
-          font-size: 14px;
-          font-style: normal;
-          font-weight: 400;">{{'TryAnotherSearchQuery' | translate}}</span>
+                <span
+                  style="overflow: hidden;color: #62626A;text-align: center;text-overflow: ellipsis;font-family: Poppins;font-size: 14px;font-style: normal;font-weight: 400;">{{'TryAnotherSearchQuery'
+                  | translate}}</span>
               </p>
             </ion-col>
           </ion-row>
