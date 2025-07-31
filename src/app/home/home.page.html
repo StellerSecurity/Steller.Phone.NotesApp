@@ -112,7 +112,7 @@
       </ion-fab>
 
       <ion-content [fullscreen]="true" class="ion-padding">
-        <ion-button routerLink="/note">Create a Note</ion-button>
+        <ion-button (click)="goToCreateNewNote()">Create a Note</ion-button>
 
         <!-- no results -->
         <ion-grid *ngIf="filteredResults !== null && filteredResults.length == 0 && isSearching" style="height: -webkit-calc(100vh - 170px);

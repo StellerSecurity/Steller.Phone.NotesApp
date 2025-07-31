@@ -95,7 +95,7 @@
     </ng-template>
   </ion-modal>
 
-  <ion-grid *ngIf="notes?.length == 0 || notes == null" style="height: -webkit-calc(100vh - 40px); height: calc(100vh - 40px);
+  <ion-grid *ngIf="(notes?.length == 0 || notes == null) && shouldShowNoNoteTemplate == true" style="height: -webkit-calc(100vh - 40px); height: calc(100vh - 40px);
     background: white;
     margin: 20px;
     border-radius: 24px;">
@@ -118,7 +118,7 @@
     </ion-row>
   </ion-grid>
 
-  <div *ngIf="notes && notes.length > 0">
+  <div *ngIf="((notes && notes.length > 0)|| shouldShowNoNoteTemplate != true )">
     <div *ngIf="!note_locked">
       <app-rich-text-editor #richTextEditorComponentRef [note_text]="note_text"
         (noteChange)="onSave($event)"></app-rich-text-editor>

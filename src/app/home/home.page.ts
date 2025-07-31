@@ -17,6 +17,7 @@ import { ResetPassModalComponent } from '../restpass-modal/resetpass-modal.compo
 import { TranslatorService } from '../services/translator.service';
 import {search} from "ionicons/icons";
 import {Haptics, ImpactStyle} from "@capacitor/haptics";
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-home',
@@ -67,7 +68,8 @@ export class HomePage {
               private translatorService: TranslatorService,
               private gestureCtrl: GestureController,
               private platform: Platform,
-              private cdr: ChangeDetectorRef) {}
+              private cdr: ChangeDetectorRef,
+              private router: Router) {}
 
   ionViewWillEnter() {
     this.allTranslations = this.translatorService.allTranslations;
@@ -235,6 +237,11 @@ export class HomePage {
     let decryptedNotes = null;
     if(this.noteService.appHasPasswordChallenge()) {
       let notes = this.noteService.getNotes();
+      if(notes == null || notes == undefined || notes.length == 0) {
+        this.noteService.setShouldShowNoNoteTemplate(true)
+      } else {
+        this.noteService.setShouldShowNoNoteTemplate(false)
+      }
       decryptedNotes = this.cryptoService.decrypt(notes, password);
     } else {
       this.noteService.setDecryptedNotes(this.noteService.getNotes());
@@ -495,6 +502,11 @@ export class HomePage {
   ionViewWillLeave() {
     this.exitSearchMode();
     // Perform cleanup, stop timers, dismiss modals, etc.
+  }
+
+  goToCreateNewNote(): void {
+    this.noteService.setShouldShowNoNoteTemplate(false)
+    this.router.navigate(['/note'])
   }
 
 }

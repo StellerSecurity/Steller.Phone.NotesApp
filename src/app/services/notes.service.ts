@@ -1,9 +1,13 @@
 import {Injectable} from '@angular/core';
+import { BehaviorSubject } from 'rxjs';
 
 @Injectable({
   providedIn: 'root'
 })
 export class NotesService {
+
+  private shouldShowNoNoteTemplateSubject = new BehaviorSubject<boolean>(true);
+  shouldShowNoNoteTemplate$ = this.shouldShowNoNoteTemplateSubject.asObservable();
 
   private decryptedNotes : any = null;
 
@@ -148,6 +152,10 @@ export class NotesService {
    */
   public getLastActivityTimestamp() {
     return this.LAST_ACTIVITY_TIMESTAMP;
+  }
+
+  setShouldShowNoNoteTemplate(value: boolean): void {
+    this.shouldShowNoNoteTemplateSubject.next(value);
   }
 
 }

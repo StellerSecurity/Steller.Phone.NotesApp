@@ -12,6 +12,7 @@ import {Secret} from "../models/Secret";
 import {sha512} from "js-sha512";
 import { ShareSecretModalComponent } from '../share-secret-modal/share-secret-modal.component';
 import { RichTextEditorComponent } from './rich-text-editor/rich-text-editor.component';
+import { Subscription } from 'rxjs';
 const { v4: uuidv4 } = require('uuid');
 
 declare var require: any;
@@ -58,6 +59,8 @@ export class AddNotePage {
   isEditingTitle: boolean = false;
   @ViewChild('titleInput', { static: false }) titleInputRef!: IonInput;
   @ViewChild('richTextEditorComponentRef') richTextEditorComponent!: RichTextEditorComponent;
+  shouldShowNoNoteTemplate:any = true;
+  subscriptions:Subscription[] = [];
   
 
   constructor(private cryptoService: CryptoService,
@@ -113,6 +116,10 @@ export class AddNotePage {
         this.placeCursorAtEnd();
       }, 100);
      }
+
+     this.subscriptions.push( this.notesService.shouldShowNoNoteTemplate$.subscribe(value => {
+      this.shouldShowNoNoteTemplate = value;
+    }));
   }
 
   private placeCursorAtEnd() {
@@ -616,6 +623,7 @@ export class AddNotePage {
     if (this.richTextEditorComponent?.onLeave) {
       this.richTextEditorComponent.onLeave();
     }
+    this.subscriptions.forEach(s => s.unsubscribe());
   }
-
+  
 }
