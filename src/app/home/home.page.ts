@@ -6,6 +6,7 @@ import {
   ModalController,
   NavController,
   Platform,
+  PopoverController,
   ToastController,
 } from '@ionic/angular';
 
@@ -18,6 +19,7 @@ import { TranslatorService } from '../services/translator.service';
 import {search} from "ionicons/icons";
 import {Haptics, ImpactStyle} from "@capacitor/haptics";
 import { Router } from '@angular/router';
+import { UserMenuComponent } from '../user-menu/user-menu.component';
 
 @Component({
   selector: 'app-home',
@@ -69,7 +71,8 @@ export class HomePage {
               private gestureCtrl: GestureController,
               private platform: Platform,
               private cdr: ChangeDetectorRef,
-              private router: Router) {}
+              private router: Router,
+              private popoverController: PopoverController) {}
 
   ionViewWillEnter() {
     this.allTranslations = this.translatorService.allTranslations;
@@ -507,6 +510,19 @@ export class HomePage {
   goToCreateNewNote(): void {
     this.noteService.setShouldShowNoNoteTemplate(false)
     this.router.navigate(['/note'])
+  }
+
+  async presentUserMenu(ev: Event) {
+    const popover = await this.popoverController.create({
+      component: UserMenuComponent,
+      event: ev,
+      side: 'bottom',
+      alignment: 'end',
+      translucent: true,
+      showBackdrop: false,
+      cssClass: 'user-menu-popover'
+    });
+    await popover.present();
   }
 
 }

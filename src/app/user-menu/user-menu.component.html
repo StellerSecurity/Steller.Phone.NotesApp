@@ -1,0 +1,20 @@
+<div class="user-popover">
+  <div class="user-info">
+    <div class="label">Account Name</div>
+    <div class="name">Kelly Sikkema</div>
+  </div>
+
+  <div class="menu-item-container">
+    <div class="menu-item" (click)="openSettings()">
+      <!-- <ion-icon name="settings-outline"></ion-icon> -->
+      <img src="assets/setting-horizontal.svg" />
+      <span>Settings</span>
+    </div>
+
+    <div class="menu-item" (click)="logout()" style="border-top: 1px solid #EAEAF0;">
+      <!-- <ion-icon name="log-out-outline"></ion-icon> -->
+      <img src="assets/tabler-icon-logout.svg" />
+      <span>Logout</span>
+    </div>
+  </div>
+</div>

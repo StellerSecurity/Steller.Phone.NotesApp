@@ -32,8 +32,11 @@
                 (click)="toggleCheckbox()">
                 <img src="assets/tabler-icon-square-check.svg">
               </ion-button>
-              <ion-button slot="icon-only" style="padding-right: 15px" (click)="settings()"><img
-                  src="assets/tabler-icon-settings.svg"></ion-button>
+              <!-- <ion-button slot="icon-only" style="padding-right: 15px" (click)="settings()"><img
+                  src="assets/tabler-icon-settings.svg"></ion-button> -->
+
+              <ion-button slot="icon-only" style="padding-right: 15px" (click)="presentUserMenu($event)"><img
+                src="assets/user-circle.svg"></ion-button>
             </ng-container>
 
             <ng-container *ngIf="searchMode">

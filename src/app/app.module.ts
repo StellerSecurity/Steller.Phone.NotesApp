@@ -11,13 +11,14 @@ import { HttpClient, HttpClientModule} from '@angular/common/http';
 import { TranslateLoader, TranslateModule } from '@ngx-translate/core';
 import { TranslateHttpLoader } from '@ngx-translate/http-loader';
 import { ShareSecretModalComponent } from './share-secret-modal/share-secret-modal.component';
+import { UserMenuComponent } from './user-menu/user-menu.component';
 
 export function HttpLoaderFactory(http: HttpClient) {
   return new TranslateHttpLoader(http);
 }
 
 @NgModule({
-  declarations: [AppComponent, ShareSecretModalComponent,],
+  declarations: [AppComponent, ShareSecretModalComponent, UserMenuComponent],
   imports: [HttpClientModule, BrowserModule, PasswordStrengthMeterModule.forRoot(), IonicModule.forRoot({innerHTMLTemplatesEnabled: true}), AppRoutingModule, CommonModule, FormsModule,
     TranslateModule.forRoot({
       loader: {
