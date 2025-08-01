@@ -33,26 +33,27 @@
 </ion-header>
 
 <ion-content [fullscreen]="true">
-  <ion-modal #modal trigger="open-modal">
+  <!-- app lock modal -->
+  <ion-modal #modal trigger="open-modal" class="lock-note-modal">
     <ng-template>
       <ion-header>
         <ion-toolbar>
-          <ion-buttons slot="start">
+          <ion-title style="font-size: 20px;color: #0B0C19; font-weight: 700;">{{'lockNote' | translate}}</ion-title>
+          <ion-buttons slot="end">
             <ion-button (click)="dismissModal()"> <ion-icon name="close"
                 style="color: #62626A; font-size: 18px;"></ion-icon> </ion-button>
           </ion-buttons>
-          <ion-title>{{'lockNote' | translate}}</ion-title>
         </ion-toolbar>
       </ion-header>
       <ion-content class="ion-padding">
-        <h2 style="font-size: 16px; color: #0B0C19; font-family: 'Poppins'; font-weight: 600;">{{'lockNoteWithPassword'
+        <h2 style="font-size: 16px; color: #0B0C19; font-family: 'Poppins'; font-weight: 600; margin-top: -10px;">{{'lockNoteWithPassword'
           | translate}}</h2>
         <p *ngIf="note_locked">
           {{'pleaseEnterYourPasswordToConfirm' | translate}}
           <br><br>
           <span style="color: red">* {{'passwordWarningMsg' | translate}}</span>
         </p>
-        <div *ngIf="!getProtected()">
+        <div *ngIf="!getProtected()" class="ion-margin-top">
           <div class="input-group" style="position: relative;">
             <ion-input type="{{ showPassword ? 'text' : 'password' }}" lines="none" shape="round"
               (ionInput)="notesPasswordChange()" placeholder="{{'inputPassword' | translate}}"
@@ -70,7 +71,7 @@
         </div>
         <div *ngIf="!note_locked && !getProtected()" class="pass-info-box">
           <p *ngif="!strongPass" class="pass-note">{{'passwordCharacters' | translate}}</p>
-          {{passwordStrengthHelperText}}
+          <span style="font-size: 12px; font-weight: 600; color: #0B0C19;">{{passwordStrengthHelperText}}</span>
           <password-strength-meter [password]="notes_password_input"></password-strength-meter>
           <h4 style="color: #0B0C19; font-size: 12px; font-weight: 400; font-family: 'Poppins';">{{'itsBetterToHave' |
             translate}}</h4>
@@ -84,7 +85,7 @@
             </li>
           </ul>
         </div>
-        <ion-button expand="block" class="p" *ngIf="!getProtected()" (click)="lockNote()">{{'lockNote' |
+        <ion-button style="text-transform: none;" expand="block" class="p" *ngIf="!getProtected()" (click)="lockNote()">{{'lockNote' |
           translate}}</ion-button>
 
         <p *ngIf="getProtected()">{{'changeTheNotePasswordMsg' | translate}}</p>

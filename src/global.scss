@@ -656,3 +656,17 @@ ion-modal.app-ask-password-modal .modal-wrapper {
   background: transparent;
   box-shadow: none;
 }
+
+ion-modal.lock-note-modal {
+  --width: 100%;
+  --min-width: 0;
+  --max-width: 392px;
+  --max-height: 516px;
+  --border-radius: 24px;
+  box-shadow: none;
+  --box-shadow: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px;
+}
