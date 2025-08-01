@@ -1,5 +1,5 @@
-<ion-header *ngIf="notes && notes.length > 0" [translucent]="true"
-  class="header-border-bottom-0 no-border ion-padding-start ion-padding-end">
+<ion-header *ngIf="((notes && notes.length > 0)|| shouldShowNoNoteTemplate != true )" [translucent]="true"
+  class="header-border-bottom-0 no-border ion-padding-start ion-padding-end" style="background: #F6F6FD; --background: #F6F6FD" >
   <ion-toolbar>
     <div *ngIf="!note_locked">
       <ng-container *ngIf="!isEditingTitle; else editing">

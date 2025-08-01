@@ -1,7 +1,7 @@
 <ion-split-pane contentId="main-content">
   <!-- Sidebar -->
   <ion-menu contentId="main-content" type="overlay" style="width: 25%; min-width: 400px;">
-    <ion-content class="ion-padding sidebar">
+    <ion-content class="ion-padding sidebar" scroll-y="false">
       <ion-header [translucent]="true">
         <ion-toolbar>
           <ion-title *ngIf="!searchMode">
@@ -97,14 +97,9 @@
         </ion-modal>
       </ng-container>
 
-      <ion-fab slot="bottom" vertical="bottom" horizontal="end" *ngIf="!checkboxOpened && should_display">
-        <ion-fab-button routerLink="/note">
-          <ion-icon name="add"></ion-icon>
-        </ion-fab-button>
-      </ion-fab>
-
       <ion-content [fullscreen]="true" class="ion-padding">
-        <ion-button (click)="goToCreateNewNote()">Create a Note</ion-button>
+
+        <ion-button (click)="goToCreateNewNote()" class="ion-margin-bottom">Create a Note</ion-button>
 
         <!-- no results -->
         <ion-grid *ngIf="filteredResults !== null && filteredResults.length == 0 && isSearching" style="height: -webkit-calc(100vh - 170px);
@@ -145,8 +140,8 @@
                 </span>
                 <span class="uuid" *ngIf="note.protected">{{ note.id | slice:note.id.len:4 }}</span>
               </ion-label>
-              <ion-label *ngIf="note.protected"><ion-note><span>{{ note.last_modified | date: "yyyy-MM-dd
-                    H:mm":"UTC"}}<br>
+              <ion-label *ngIf="note.protected"><ion-note>
+                  <span>{{ note.last_modified | date: "yyyy-MM-dd H:mm":"UTC"}}<br>
                     <span class="uuid" *ngIf="note.protected">{{ note.id | slice:note.id.len:6 }}</span>
                   </span>
                   <img src="./assets/tabler-icon-lock.svg"></ion-note></ion-label>
@@ -154,8 +149,9 @@
           </ion-item>
         </ion-list>
 
-        <ion-button *ngIf="!appHasPasswordChallenge() && getNotes().length > 0" expand="block"
-          (click)="settings()">{{'addNotesAppPassword' | translate}}</ion-button><br>
+        <!-- <ion-button *ngIf="!appHasPasswordChallenge() && getNotes().length > 0" expand="block"
+          (click)="settings()">{{'addNotesAppPassword' | translate}}</ion-button><br> -->
+
         <ion-col size-md="12" *ngIf="getNotes().length > 0">
           <div align="center">
             <img src="./assets/stellar-logo-icon.svg"><span style="
@@ -171,9 +167,8 @@
       <ion-toolbar slot="fixed" class="toolbar-bottom" *ngIf="checkboxOpened && getNotes().length > 0">
         <ion-button color="danger" shape="round" fill="outline" class="delete-btn"
           [disabled]="listOfCheckedCheckboxes.length == 0" (click)="deleteSelectedNotes()"><img
-            src="assets/tabler-icon-trash.svg" style="margin-right: 15px"> {{'delete' | translate}}
-          ({{listOfCheckedCheckboxes.length}}) </ion-button><br>
-        <!--<ion-button color="primary" fill="outline" expand="full" (click)="toggleCheckbox()">Cancel</ion-button>-->
+            src="assets/tabler-icon-trash.svg" style="margin-right: 15px">
+          {{'delete' | translate}} ({{listOfCheckedCheckboxes.length}}) </ion-button><br>
       </ion-toolbar>
     </ion-content>
   </ion-menu>
