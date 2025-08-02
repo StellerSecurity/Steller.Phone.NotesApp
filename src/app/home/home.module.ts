@@ -16,6 +16,7 @@ import { PasswordStrengthMeterModule } from 'angular-password-strength-meter';
 import { AngularEditorModule } from '@wfpena/angular-wysiwyg';
 import { NoteLockedModalModule } from '../note-locked-modal/note-locked-modal.module';
 import { RichTextEditorComponent } from '../add-note/rich-text-editor/rich-text-editor.component';
+import { InitialComponent } from '../initial/initial.component';
 
 @NgModule({
     imports: [
@@ -30,6 +31,6 @@ import { RichTextEditorComponent } from '../add-note/rich-text-editor/rich-text-
         RestPassModalModule,
         TranslateModule
     ],
-    declarations: [HomePage, AddNotePage, RichTextEditorComponent,  StriphtmlPipe, ClickOutsideDirective]
+    declarations: [HomePage, AddNotePage, RichTextEditorComponent,  StriphtmlPipe, ClickOutsideDirective, InitialComponent]
 })
 export class HomePageModule {}

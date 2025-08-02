@@ -73,7 +73,8 @@ export class AddNotePage {
               private alertCtrl: AlertController,
               private translatorService: TranslatorService) {
 
-    this.activatedRoute.paramMap.subscribe((params: ParamMap) => {
+    // @ts-ignore
+    this.subscriptions.push(this.activatedRoute.paramMap.subscribe((params: ParamMap) => {
 
       this.notes = JSON.parse(this.notesService.getDecryptedNotes());
 
@@ -105,8 +106,7 @@ export class AddNotePage {
         this.note_title = "Untitled";
       }
 
-    });
-
+    }));
   }
 
   ionViewDidEnter() {

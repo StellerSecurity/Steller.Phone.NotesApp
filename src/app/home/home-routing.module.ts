@@ -2,12 +2,17 @@ import { NgModule } from '@angular/core';
 import { Routes, RouterModule } from '@angular/router';
 
 import { HomePage } from './home.page';
+import { InitialComponent } from '../initial/initial.component';
 
 const routes: Routes = [
   {
     path: '',
     component: HomePage,
     children: [
+      {
+        path: 'home',
+        component: InitialComponent
+      },
       {
         path: 'note',
         loadChildren: () =>
@@ -20,7 +25,7 @@ const routes: Routes = [
       },
       {
         path: '',
-        redirectTo: 'note',
+        redirectTo: 'home',
         pathMatch: 'full'
       }
     ]
