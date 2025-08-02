@@ -121,36 +121,45 @@
         </ion-row>
       </ion-grid>
 
-      <ion-list>
-        <ion-item lines="none" *ngFor="let note of getNotes()"
-          (click)="$event.stopPropagation(); openOrCheckbox(note.id)" [detail]="false" class="long-press-target"
-          #longPressElements [id]="note.id">
-          <div class="box-item-main">
-            <ion-checkbox *ngIf="checkboxOpened" (click)="$event.stopPropagation(); selectNote($event, note.id)"
-              justify="center" style="margin-right: 7px" size="small"
-              [checked]="listOfCheckedCheckboxes.includes(note.id) ? true: false"
-              id="checkbox_{{note.id}}"></ion-checkbox>
-            <ion-label class="ion-text-wrap" *ngIf="!note.protected">
-              <ion-note><span>{{ note.last_modified | date: "yyyy-MM-dd H:mm":"Europe/Copenhagen" }}</span></ion-note>
-              <span *ngIf="!note.protected">
-                <span class="note-txt-title" *ngIf="note.title !== undefined">{{ (note.title.length > 40)? (note.title
-                  | striphtml | slice:0:40 ) +'...':(note.title | striphtml) }}<br></span>
-                <span class="note-txt">{{ (note.text.length > 40)? (note.text | striphtml | slice:0:40 )
-                  +'...':(note.text | striphtml) }}</span>
-              </span>
-              <span class="uuid" *ngIf="note.protected">{{ note.id | slice:note.id.len:4 }}</span>
-            </ion-label>
-            <ion-label *ngIf="note.protected"><ion-note>
-                <span>{{ note.last_modified | date: "yyyy-MM-dd H:mm":"UTC"}}<br>
-                  <span class="uuid" *ngIf="note.protected">{{ note.id | slice:note.id.len:6 }}</span>
+      <div class="home-note-list" style="height: calc(100vh - 225px); overflow-y: auto;margin-left: -20px; margin-right: -20px;">
+        <ion-list style="margin: 0 13px 0 20px;">
+          <ion-item lines="none" *ngFor="let note of getNotes()"
+            (click)="$event.stopPropagation(); openOrCheckbox(note.id)" [detail]="false" class="long-press-target"
+            #longPressElements [id]="note.id">
+            <div class="box-item-main">
+              <ion-checkbox *ngIf="checkboxOpened" (click)="$event.stopPropagation(); selectNote($event, note.id)"
+                justify="center" style="margin-right: 7px" size="small"
+                [checked]="listOfCheckedCheckboxes.includes(note.id) ? true: false"
+                id="checkbox_{{note.id}}"></ion-checkbox>
+              <ion-label class="ion-text-wrap" *ngIf="!note.protected">
+                <ion-note><span>{{ note.last_modified | date: "yyyy-MM-dd H:mm":"Europe/Copenhagen" }}</span></ion-note>
+                <span *ngIf="!note.protected">
+                  <span class="note-txt-title" *ngIf="note.title !== undefined">{{ (note.title.length > 40)? (note.title
+                    | striphtml | slice:0:40 ) +'...':(note.title | striphtml) }}<br></span>
+                  <span class="note-txt">{{ (note.text.length > 40)? (note.text | striphtml | slice:0:40 )
+                    +'...':(note.text | striphtml) }}</span>
                 </span>
-                <img src="./assets/tabler-icon-lock.svg"></ion-note></ion-label>
-          </div>
-        </ion-item>
-      </ion-list>
+                <span class="uuid" *ngIf="note.protected">{{ note.id | slice:note.id.len:4 }}</span>
+              </ion-label>
+              <ion-label *ngIf="note.protected"><ion-note>
+                  <span>{{ note.last_modified | date: "yyyy-MM-dd H:mm":"UTC"}}<br>
+                    <span class="uuid" *ngIf="note.protected">{{ note.id | slice:note.id.len:6 }}</span>
+                  </span>
+                  <img src="./assets/tabler-icon-lock.svg"></ion-note></ion-label>
+            </div>
+          </ion-item>
+        </ion-list>
+      </div>
 
       <!-- <ion-button *ngIf="!appHasPasswordChallenge() && getNotes().length > 0" expand="block"
           (click)="settings()">{{'addNotesAppPassword' | translate}}</ion-button><br> -->
+
+      <div class="toolbar-bottom" *ngIf="checkboxOpened && getNotes().length > 0">
+        <ion-button color="danger" shape="round" fill="outline" class="delete-btn"
+          [disabled]="listOfCheckedCheckboxes.length == 0" (click)="deleteSelectedNotes()"><img
+            src="assets/tabler-icon-trash.svg" style="margin-right: 15px">
+          {{'delete' | translate}} ({{listOfCheckedCheckboxes.length}}) </ion-button><br>
+      </div>
 
       <ion-col size-md="12" *ngIf="getNotes().length > 0">
         <div align="center">
@@ -159,13 +168,6 @@
             {{'allDataIsStoredOnYourPhoneOnly' | translate}}</span>
         </div>
       </ion-col>
-
-      <div class="toolbar-bottom" *ngIf="checkboxOpened && getNotes().length > 0">
-        <ion-button color="danger" shape="round" fill="outline" class="delete-btn"
-          [disabled]="listOfCheckedCheckboxes.length == 0" (click)="deleteSelectedNotes()"><img
-            src="assets/tabler-icon-trash.svg" style="margin-right: 15px">
-          {{'delete' | translate}} ({{listOfCheckedCheckboxes.length}}) </ion-button><br>
-      </div>
     </ion-content>
   </ion-menu>
 
