@@ -10,6 +10,7 @@ import {
   Renderer2
 } from '@angular/core';
 import { AngularEditorComponent, AngularEditorConfig } from '@wfpena/angular-wysiwyg';
+import { NotesService } from 'src/app/services/notes.service';
 
 @Component({
   selector: 'app-rich-text-editor',
@@ -57,7 +58,8 @@ export class RichTextEditorComponent implements AfterViewInit {
 
   constructor(
     private renderer: Renderer2,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private noteService: NotesService
   ) {
     this.updateNote = JSON.parse(JSON.stringify(this.note_text))
   }
@@ -129,6 +131,7 @@ export class RichTextEditorComponent implements AfterViewInit {
   onContentChange(content: string): void {
     this.note_text = content;
     this.noteChange.emit(content);
+    this.noteService.setNoteIsUpdatedSubject(true)
     // this.updateNote = content;
   }
 

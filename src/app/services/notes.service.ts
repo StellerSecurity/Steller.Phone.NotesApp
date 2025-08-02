@@ -6,8 +6,8 @@ import { BehaviorSubject } from 'rxjs';
 })
 export class NotesService {
 
-  private shouldShowNoNoteTemplateSubject = new BehaviorSubject<boolean>(true);
-  shouldShowNoNoteTemplate$ = this.shouldShowNoNoteTemplateSubject.asObservable();
+  private noteIsUpdatedSubject = new BehaviorSubject<boolean>(true);
+  noteIsUpdated$ = this.noteIsUpdatedSubject.asObservable();
 
   private decryptedNotes : any = null;
 
@@ -154,8 +154,8 @@ export class NotesService {
     return this.LAST_ACTIVITY_TIMESTAMP;
   }
 
-  setShouldShowNoNoteTemplate(value: boolean): void {
-    this.shouldShowNoNoteTemplateSubject.next(value);
+  setNoteIsUpdatedSubject(value: boolean): void {
+    this.noteIsUpdatedSubject.next(value);
   }
 
 }

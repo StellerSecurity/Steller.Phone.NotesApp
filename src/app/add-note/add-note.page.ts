@@ -59,7 +59,6 @@ export class AddNotePage {
   isEditingTitle: boolean = false;
   @ViewChild('titleInput', { static: false }) titleInputRef!: IonInput;
   @ViewChild('richTextEditorComponentRef') richTextEditorComponent!: RichTextEditorComponent;
-  shouldShowNoNoteTemplate:any = true;
   subscriptions:Subscription[] = [];
   
 
@@ -116,10 +115,6 @@ export class AddNotePage {
         this.placeCursorAtEnd();
       }, 100);
      }
-
-     this.subscriptions.push( this.notesService.shouldShowNoNoteTemplate$.subscribe(value => {
-      this.shouldShowNoNoteTemplate = value;
-    }));
   }
 
   private placeCursorAtEnd() {
