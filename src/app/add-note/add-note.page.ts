@@ -164,8 +164,6 @@ export class AddNotePage {
         secret_id: secret_id,
       },
       cssClass: 'secret-modal',
-      breakpoints: [0, 0.7],
-      initialBreakpoint: 0.7,
     });
 
     await modal.present();

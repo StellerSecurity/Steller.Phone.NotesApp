@@ -366,10 +366,11 @@ ion-input {
 
 .secret-modal {
   --border-radius: 24px;
-  --width: 100%;
+  --width: 392px;
+  --height: 388px;
   
   &::part(content) {
-    border-radius: var(--border-radius) var(--border-radius) 0 0;
+    border-radius: var(--border-radius);
   }
   
   .modal-box {

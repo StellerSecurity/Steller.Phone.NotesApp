@@ -89,6 +89,7 @@
   "howItWorks": "How it works?",
   "shareYourNoteAsAsSecretMessage": "Share your note as a secret message",
   "shareYourNoteAsAsSecretMessageDesc": "Stellar Secret generates a one-time secret link for your note, which you can share with a recipient.",
+  "shareYourNoteAsAsSecretMessageDescForDesktop": "Write and send message, it will be deleted once read.",
   "yourNoteSecretCreated": "Your note secret created.",
   "copyLinkOrShareIt": "Copy link or share it.",
   "copy": "Copy",
