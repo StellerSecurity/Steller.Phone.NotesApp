@@ -526,7 +526,11 @@ export class HomePage {
   }
 
   goToCreateNewNote(): void {
-    this.router.navigate(["/note"]);
+    this.router.navigate(["/home"]);
+    setTimeout(() => {
+      this.router.navigate(["/note"]);
+    })
+
   }
 
   async presentUserMenu(ev: Event) {
