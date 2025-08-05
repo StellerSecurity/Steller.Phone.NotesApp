@@ -27,9 +27,9 @@ import { ResetPassModalComponent } from "../restpass-modal/resetpass-modal.compo
 import { TranslatorService } from "../services/translator.service";
 import { search } from "ionicons/icons";
 import { Haptics, ImpactStyle } from "@capacitor/haptics";
-import { ActivatedRoute, Router } from "@angular/router";
+import { ActivatedRoute, NavigationEnd, Router } from "@angular/router";
 import { UserMenuComponent } from "../user-menu/user-menu.component";
-import { Subscription } from "rxjs";
+import { Subscription, filter } from "rxjs";
 
 @Component({
   selector: "app-home",
@@ -88,7 +88,10 @@ export class HomePage {
     private popoverController: PopoverController,
     private activatedRoute: ActivatedRoute
   ) {
-    this.setSelectedNoteId();
+    // for make selected note on sidebar
+    const urlParts = this.router.url.split('/');
+    const id = urlParts[urlParts.length - 1]; // assuming the id is the last segment
+    this.noteId = id;
   }
 
   ionViewWillEnter() {
@@ -107,6 +110,16 @@ export class HomePage {
 
   setSelectedNoteId(noteId: string | null = null): void {
     this.noteId = noteId ?? this.activatedRoute.snapshot.paramMap.get('id');
+  }
+
+  subscribeNoteIdOnRouteChange(): void {
+    this.subscriptions.push(   this.router.events
+      .pipe(filter(event => event instanceof NavigationEnd))
+      .subscribe(() => {
+        const urlParts = this.router.url.split('/');
+        const id = urlParts[urlParts.length - 1]; // assuming the id is the last segment
+        this.noteId = id;
+      }));
   }
 
   subscribeNoteUpdated(): void {
@@ -176,6 +189,7 @@ export class HomePage {
 
   ionViewDidEnter() {
     this.initializePressGesture();
+    this.subscribeNoteIdOnRouteChange()
   }
 
   initializePressGesture(): void {
