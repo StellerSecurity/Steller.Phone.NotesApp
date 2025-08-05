@@ -37,13 +37,21 @@ export class ShareSecretModalComponent {
     this.modalCtrl.dismiss();
   }
 
-  async createSecret() {
+  changeModalClass() {
+    const newClass = 'secretshare-copy-modal';
+    const modalEl = document.querySelector('ion-modal.secret-modal') as HTMLIonModalElement;
+    if (modalEl) {
+      modalEl.classList.add(newClass); // Add a new class
+    }
+  }
 
+  async createSecret() {
     const loading = await this.loadingController.create();
     await loading.present();
 
     this.secretapi.create(this.addSecretModal).subscribe({
     next: async (response) => {
+      this.changeModalClass();
       this.createdSecret = response;
       this.step = 2;
       this.secretUrl = `https://stellarsecret.io/${this.secret_id}`

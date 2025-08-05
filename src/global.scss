@@ -364,10 +364,14 @@ ion-input {
   --border-radius: 250px!important;
 }
 
+.secretshare-copy-modal {
+  --height: 516px!important;
+}
+
 .secret-modal {
   --border-radius: 24px;
   --width: 392px;
-  --height: 388px;
+  --height: 395px;
   
   &::part(content) {
     border-radius: var(--border-radius);
