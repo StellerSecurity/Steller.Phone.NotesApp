@@ -124,7 +124,8 @@
       <div class="home-note-list" style="height: calc(100vh - 225px); overflow-y: auto;margin-left: -20px; margin-right: -20px;">
         <ion-list style="margin: 0 13px 0 20px;">
           <ion-item lines="none" *ngFor="let note of getNotes()"
-            (click)="$event.stopPropagation(); openOrCheckbox(note.id)" [detail]="false" class="long-press-target"
+            (click)="$event.stopPropagation(); openOrCheckbox(note.id); setSelectedNoteId(note.id)" [detail]="false" class="long-press-target cursor-pointer"
+            [ngClass]="{ 'note-active-on-sidebar': note?.id == noteId }"
             #longPressElements [id]="note.id">
             <div class="box-item-main">
               <ion-checkbox *ngIf="checkboxOpened" (click)="$event.stopPropagation(); selectNote($event, note.id)"

@@ -27,7 +27,7 @@ import { ResetPassModalComponent } from "../restpass-modal/resetpass-modal.compo
 import { TranslatorService } from "../services/translator.service";
 import { search } from "ionicons/icons";
 import { Haptics, ImpactStyle } from "@capacitor/haptics";
-import { Router } from "@angular/router";
+import { ActivatedRoute, Router } from "@angular/router";
 import { UserMenuComponent } from "../user-menu/user-menu.component";
 import { Subscription } from "rxjs";
 
@@ -69,6 +69,7 @@ export class HomePage {
   searchQuery = "";
   @ViewChild("searchbar") searchbar: IonSearchbar;
   subscriptions: Subscription[] = [];
+  noteId: any = '';
 
   constructor(
     private cryptoService: CryptoService,
@@ -85,9 +86,9 @@ export class HomePage {
     private cdr: ChangeDetectorRef,
     private router: Router,
     private popoverController: PopoverController,
-    private notesService: NotesService
+    private activatedRoute: ActivatedRoute
   ) {
-    
+    this.setSelectedNoteId();
   }
 
   ionViewWillEnter() {
@@ -104,9 +105,13 @@ export class HomePage {
     this.subscribeNoteUpdated();
   }
 
+  setSelectedNoteId(noteId: string | null = null): void {
+    this.noteId = noteId ?? this.activatedRoute.snapshot.paramMap.get('id');
+  }
+
   subscribeNoteUpdated(): void {
     this.subscriptions.push(
-      this.notesService.noteIsUpdated$.subscribe((value) => {
+      this.noteService.noteIsUpdated$.subscribe((value) => {
         if (value) {
           this.setData(this.noteService.getNotesAppPassword());
           this.cdr.detectChanges();
