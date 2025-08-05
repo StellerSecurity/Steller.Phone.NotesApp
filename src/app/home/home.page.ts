@@ -70,6 +70,7 @@ export class HomePage {
   @ViewChild("searchbar") searchbar: IonSearchbar;
   subscriptions: Subscription[] = [];
   noteId: any = '';
+  userPopover:any;
 
   constructor(
     private cryptoService: CryptoService,
@@ -116,6 +117,7 @@ export class HomePage {
     this.subscriptions.push(   this.router.events
       .pipe(filter(event => event instanceof NavigationEnd))
       .subscribe(() => {
+        this.userPopover.dismiss();
         const urlParts = this.router.url.split('/');
         const id = urlParts[urlParts.length - 1]; // assuming the id is the last segment
         this.noteId = id;
@@ -553,7 +555,7 @@ export class HomePage {
   }
 
   async presentUserMenu(ev: Event) {
-    const popover = await this.popoverController.create({
+    this.userPopover = await this.popoverController.create({
       component: UserMenuComponent,
       event: ev,
       side: "bottom",
@@ -562,7 +564,7 @@ export class HomePage {
       showBackdrop: false,
       cssClass: "user-menu-popover",
     });
-    await popover.present();
+    await this.userPopover.present();
   }
 
   ionViewDidLeave() {
