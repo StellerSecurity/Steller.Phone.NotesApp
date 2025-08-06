@@ -469,6 +469,7 @@ ion-input {
     display: flex;
     justify-content: center;
     align-items: center;
+    position: relative;
     
     .form-card-content {
       width: 480px;
@@ -477,8 +478,9 @@ ion-input {
     .back-button {
       position: absolute;
       top: 20px;
-      left: 0;
+      left: 15px;
       --color: #000;
+      cursor: pointer;
     }
 
     .title {
