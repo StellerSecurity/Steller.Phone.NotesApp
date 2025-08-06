@@ -132,7 +132,7 @@
                 justify="center" style="margin-right: 7px" size="small"
                 [checked]="listOfCheckedCheckboxes.includes(note.id) ? true: false"
                 id="checkbox_{{note.id}}"></ion-checkbox>
-              <ion-label class="ion-text-wrap" *ngIf="!note.protected">
+              <ion-label class="ion-text-wrap m-0" *ngIf="!note.protected">
                 <ion-note><span>{{ note.last_modified | date: "yyyy-MM-dd H:mm":"Europe/Copenhagen" }}</span></ion-note>
                 <span *ngIf="!note.protected">
                   <span class="note-txt-title" *ngIf="note.title !== undefined">{{ (note.title.length > 40)? (note.title
@@ -142,7 +142,7 @@
                 </span>
                 <span class="uuid" *ngIf="note.protected">{{ note.id | slice:note.id.len:4 }}</span>
               </ion-label>
-              <ion-label *ngIf="note.protected"><ion-note>
+              <ion-label *ngIf="note.protected" class="m-0"><ion-note>
                   <span>{{ note.last_modified | date: "yyyy-MM-dd H:mm":"UTC"}}<br>
                     <span class="uuid" *ngIf="note.protected">{{ note.id | slice:note.id.len:6 }}</span>
                   </span>
@@ -162,7 +162,7 @@
           {{'delete' | translate}} ({{listOfCheckedCheckboxes.length}}) </ion-button><br>
       </div>
 
-      <ion-col size-md="12" *ngIf="getNotes().length > 0">
+      <ion-col size-md="12">
         <div align="center">
           <img src="./assets/stellar-logo-icon.svg">
           <span style="font-size: 12px;font-weight: 400;position: relative; top: -9px; left: 15px; color: #62626A">
