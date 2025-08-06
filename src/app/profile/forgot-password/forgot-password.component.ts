@@ -7,7 +7,7 @@ import { Router } from "@angular/router";
   styleUrls: ["./forgot-password.component.scss"],
 })
 export class ForgotPasswordComponent {
-  email = "";
+  email = "peter_parker@gmail.com";
   showVerification = false;
   otpValue = "";
   otpConfig = {

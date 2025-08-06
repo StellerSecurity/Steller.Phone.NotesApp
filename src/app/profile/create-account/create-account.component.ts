@@ -7,7 +7,7 @@ import { Router } from '@angular/router';
   styleUrls: ['./create-account.component.scss'],
 })
 export class CreateAccountComponent {
-  email = '';
+  email = 'peter_parker@gmail.com';
   password = '';
   showPassword = false;
   showVerificationSection = false;

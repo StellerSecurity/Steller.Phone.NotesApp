@@ -50,7 +50,7 @@
           <img src="./assets/tabler-icon-mail-forward.png" width="40" height="40">
         </div>
         <div class="title" style="margin-top: 14px;">Please input code</div>
-        <p class="subtitle">We sent an account verification code to <br /><strong>{{ email }}</strong></p>
+        <p class="subtitle">We sent an account verification code to <strong>{{ email }}</strong></p>
 
         <div class="code-input-wrapper">
           <ng-otp-input (onInputChange)="onOtpChange($event)" [config]="otpConfig" containerClass="ng-ong-otp-box">
