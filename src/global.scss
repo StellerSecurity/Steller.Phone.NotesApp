@@ -416,24 +416,33 @@ ion-input {
   min-height: 25px!important;
 }
 
+.user-account-section-container {
+  --background: #2761FC;
+}
+
 // user login/register/etc pages 
 .user-account-section {
   --background: #2761FC;
-  position: relative;
+  display: flex;
+  flex-direction: row;
+  height: 100vh;
 
   .top-section {
-    height: 100vh;
     background: url('./assets/login-pages-bg.png') no-repeat center;
     background-size: cover;
     display: flex;
     justify-content: center;
     align-items: center;
+    width: 25%;
+    min-width: 300px;
+    height: calc(100% - 30px);
+    border-radius: 24px;
+    margin-right: 25px;
 
     .logo-container {
       display: flex;
       align-items: center;
-      position: absolute;
-      top: 20%;
+      
       
       .login-app-logo-img {
         width: 40px;
@@ -450,15 +459,20 @@ ion-input {
   }
 
   .form-card {
-    border-top-left-radius: 32px;
-    border-top-right-radius: 32px;
+    // border-top-left-radius: 32px;
+    // border-top-right-radius: 32px;
     background: white;
-    padding: 24px 24px 40px 24px;
-    // min-height: 55vh;
-    width: 100%;
-    position: absolute;
-    bottom: 0;
-    left: 0;
+    padding: 24px 24px 24px;
+    border-radius: 24px;
+    width: 75%;
+    height: calc(100% - 30px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    
+    .form-card-content {
+      width: 480px;
+    }
 
     .back-button {
       position: absolute;
@@ -614,6 +628,16 @@ ion-input {
       text-decoration: none;
     }
   }  
+}
+
+@media (max-width: 800px) {
+  .top-section {
+    display: none!important;
+  }
+
+  .form-card {
+    width: 100%!important;
+  }
 }
 
 ion-popover.user-menu-popover::part(content) {
