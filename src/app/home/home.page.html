@@ -11,7 +11,7 @@
                 class="margin-right-top"> {{listOfCheckedCheckboxes.length}} {{'notesSelected' | translate}}
             </span>
             <!-- <img src="assets/Logo.svg" style="margin-top: 20px" *ngIf="!checkboxOpened"> -->
-            <div class="logo-container" *ngIf="!checkboxOpened">
+            <div class="logo-container" *ngIf="!checkboxOpened" (click)="navigateToHome()" style="cursor: pointer;">
               <img class="logo-img" src="./assets/note-logo.png" alt="">
               <div class="logo-text">Stellar Private Notes</div>
             </div>

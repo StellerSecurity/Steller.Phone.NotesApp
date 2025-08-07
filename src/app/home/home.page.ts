@@ -493,7 +493,9 @@ export class HomePage {
         if (confirm) {
           localStorage.clear();
           this.app_requires_password = false;
-          window.location.href = "/";
+          setTimeout(() => {
+            window.location.href = "/home";
+          })
         } else {
           // Handle case when user cancels password input
         }
@@ -567,6 +569,10 @@ export class HomePage {
       cssClass: "user-menu-popover",
     });
     await this.userPopover.present();
+  }
+
+  navigateToHome(): void {
+    window.location.href = '/home';
   }
 
   ionViewDidLeave() {
