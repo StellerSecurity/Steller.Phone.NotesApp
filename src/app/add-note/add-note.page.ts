@@ -315,6 +315,7 @@ export class AddNotePage {
       this.notesService.setNotes(JSON.stringify(this.notes));
     }
 
+    this.notesService.setNoteIsUpdatedSubject(true)
   }
 
   public back() {
@@ -519,6 +520,10 @@ export class AddNotePage {
     this.notes_password_input = "";
 
     await this.dismissModal();
+
+    setTimeout(() => {
+      window.location.href = '/home';
+    })
   }
 
   public async removeLock() {
