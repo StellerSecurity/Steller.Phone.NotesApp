@@ -1,21 +1,21 @@
-import {Injectable} from '@angular/core';
-import { BehaviorSubject } from 'rxjs';
+import { Injectable } from "@angular/core";
+import { BehaviorSubject } from "rxjs";
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: "root",
 })
 export class NotesService {
-
+  selectedNoteId: any = "";
   private noteIsUpdatedSubject = new BehaviorSubject<boolean>(true);
   noteIsUpdated$ = this.noteIsUpdatedSubject.asObservable();
 
-  private decryptedNotes : any = null;
+  private decryptedNotes: any = null;
 
   /**
    * Holds the app password if there is any.
    * @private
    */
-  private notesAppPassword : string = "";
+  private notesAppPassword: string = "";
 
   /**
    * Max failed attempts in a row before the app wipes it-self.
@@ -36,7 +36,7 @@ export class NotesService {
   public getNotes() {
     let notes = localStorage.getItem("notes");
 
-    if(notes == null) {
+    if (notes == null) {
       return "[]";
     }
 
@@ -45,7 +45,10 @@ export class NotesService {
 
   public shouldWipeAllNotesOrNot() {
     // @ts-ignore
-    return (this.MAX_APP_FAILED_ATTEMPTS + 1) <= parseInt(this.getFailedPasswordAppAttempts());
+    return (
+      this.MAX_APP_FAILED_ATTEMPTS + 1 <=
+      parseInt(this.getFailedPasswordAppAttempts())
+    );
   }
 
   public increaseAppNoteAttemptsFailedPasswords() {
@@ -53,7 +56,7 @@ export class NotesService {
 
     let failedAttemptsUpdated = 0;
 
-    if(failedAttempts === null) {
+    if (failedAttempts === null) {
       failedAttemptsUpdated = 1;
     } else {
       failedAttemptsUpdated = parseInt(failedAttempts) + 1;
@@ -70,7 +73,7 @@ export class NotesService {
   }
 
   public getFailedPasswordAppAttempts() {
-    return localStorage.getItem("failedAttemptsApp");
+    return localStorage.getItem("failedAttemptsApp") as any;
   }
 
   /**
@@ -79,15 +82,14 @@ export class NotesService {
    * @param notes
    */
   public findNoteById(id: string, notes: any) {
-
-    if(notes === null) return;
+    if (notes === null) return;
 
     let note = null;
 
     // @ts-ignore
-    for(let i = 0; i < notes.length; i++) {
+    for (let i = 0; i < notes.length; i++) {
       // @ts-ignore
-      if(notes[i].id === id) {
+      if (notes[i].id === id) {
         // @ts-ignore
         note = notes[i];
         break;
@@ -99,7 +101,7 @@ export class NotesService {
   /**
    * Determines if we should ask the user about the password for app-access.
    */
-  public shouldAskForPassword() : boolean {
+  public shouldAskForPassword(): boolean {
     return this.appHasPasswordChallenge() && this.notesAppPassword == "";
   }
 
@@ -130,7 +132,7 @@ export class NotesService {
    * Will reveal the notesAppPassword, if it's in a state that can be revealed,
    * such as if the user just opened the app.
    */
-  public getNotesAppPassword() : string {
+  public getNotesAppPassword(): string {
     return this.notesAppPassword;
   }
 
@@ -157,5 +159,4 @@ export class NotesService {
   setNoteIsUpdatedSubject(value: boolean): void {
     this.noteIsUpdatedSubject.next(value);
   }
-
 }

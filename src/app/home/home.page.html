@@ -97,7 +97,8 @@
         </ion-modal>
       </ng-container>
 
-      <ion-button (click)="goToCreateNewNote()" class="ion-margin-bottom ion-margin-top" style="border-radius: 12px!important;--border-radius:12px">
+      <ion-button (click)="goToCreateNewNote()" class="ion-margin-bottom ion-margin-top"
+        style="border-radius: 12px!important;--border-radius:12px">
         <ion-icon name="add-outline"></ion-icon><span style="margin-left: 5px;">Create a Note</span>
       </ion-button>
 
@@ -121,12 +122,14 @@
         </ion-row>
       </ion-grid>
 
-      <div class="home-note-list" style="height: calc(100vh - 225px); overflow-y: auto;margin-left: -20px; margin-right: -20px;">
+      <div class="home-note-list"
+        style="height: calc(100vh - 225px); overflow-y: auto;margin-left: -20px; margin-right: -20px;">
         <ion-list style="margin: 0 13px 0 20px;">
           <ion-item lines="none" *ngFor="let note of getNotes()"
-            (click)="$event.stopPropagation(); openOrCheckbox(note.id); setSelectedNoteId(note.id)" [detail]="false" class="long-press-target cursor-pointer"
-            [ngClass]="{ 'note-active-on-sidebar': note?.id == noteId }"
-            #longPressElements [id]="note.id">
+            (click)="$event.stopPropagation(); openOrCheckbox(note.id); setSelectedNoteId(note.id)" [detail]="false"
+            class="long-press-target cursor-pointer"
+            [ngClass]="{ 'note-active-on-sidebar': note?.id == noteService.selectedNoteId }" #longPressElements
+            [id]="note.id">
             <div class="box-item-main">
               <ion-checkbox *ngIf="checkboxOpened" (click)="$event.stopPropagation(); selectNote($event, note.id)"
                 justify="center" style="margin-right: 7px" size="small"

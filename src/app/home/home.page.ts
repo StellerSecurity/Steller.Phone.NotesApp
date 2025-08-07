@@ -69,13 +69,13 @@ export class HomePage {
   searchQuery = "";
   @ViewChild("searchbar") searchbar: IonSearchbar;
   subscriptions: Subscription[] = [];
-  noteId: any = '';
-  userPopover:any;
+  noteId: any = "";
+  userPopover: any;
 
   constructor(
     private cryptoService: CryptoService,
     private alertCtrl: AlertController,
-    private noteService: NotesService,
+    public noteService: NotesService,
     private navController: NavController,
     private toastController: ToastController,
     private appProtectorService: AppProtectorService,
@@ -90,9 +90,9 @@ export class HomePage {
     private activatedRoute: ActivatedRoute
   ) {
     // for make selected note on sidebar
-    const urlParts = this.router.url.split('/');
+    const urlParts = this.router.url.split("/");
     const id = urlParts[urlParts.length - 1]; // assuming the id is the last segment
-    this.noteId = id;
+    this.noteId = this.noteService.selectedNoteId = id;
   }
 
   ionViewWillEnter() {
@@ -110,18 +110,21 @@ export class HomePage {
   }
 
   setSelectedNoteId(noteId: string | null = null): void {
-    this.noteId = noteId ?? this.activatedRoute.snapshot.paramMap.get('id');
+    this.noteId = this.noteService.selectedNoteId =
+      noteId ?? this.activatedRoute.snapshot.paramMap.get("id");
   }
 
   subscribeNoteIdOnRouteChange(): void {
-    this.subscriptions.push(   this.router.events
-      .pipe(filter(event => event instanceof NavigationEnd))
-      .subscribe(() => {
-        this.userPopover.dismiss();
-        const urlParts = this.router.url.split('/');
-        const id = urlParts[urlParts.length - 1]; // assuming the id is the last segment
-        this.noteId = id;
-      }));
+    this.subscriptions.push(
+      this.router.events
+        .pipe(filter((event) => event instanceof NavigationEnd))
+        .subscribe(() => {
+          this.userPopover.dismiss();
+          const urlParts = this.router.url.split("/");
+          const id = urlParts[urlParts.length - 1]; // assuming the id is the last segment
+          this.noteId = this.noteService.selectedNoteId = id;
+        })
+    );
   }
 
   subscribeNoteUpdated(): void {
@@ -191,7 +194,7 @@ export class HomePage {
 
   ionViewDidEnter() {
     this.initializePressGesture();
-    this.subscribeNoteIdOnRouteChange()
+    this.subscribeNoteIdOnRouteChange();
   }
 
   initializePressGesture(): void {
@@ -381,7 +384,7 @@ export class HomePage {
 
     // @ts-ignore
     this.filteredResults = this.filteredResults.sort(
-      (a:any, b:any) => b.last_modified - a.last_modified
+      (a: any, b: any) => b.last_modified - a.last_modified
     );
 
     return this.filteredResults;
@@ -550,8 +553,7 @@ export class HomePage {
     this.router.navigate(["/home"]);
     setTimeout(() => {
       this.router.navigate(["/note"]);
-    })
-
+    });
   }
 
   async presentUserMenu(ev: Event) {
