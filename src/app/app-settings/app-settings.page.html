@@ -96,36 +96,29 @@
       </div>
     </ion-item>
 
-    <ion-item *ngIf="password_enabled">
+    <!-- <ion-item *ngIf="password_enabled">
       <ion-toggle [(ngModel)]="wipeNotesOnFailedPasswords" [enableOnOffLabels]="true" [disabled]="password_enabled"
         [checked]="password_enabled">
 
-        <span style="font-family: Poppins;
-font-size: 14px;
-font-style: normal;
-font-weight: 600;
-line-height: 150%; ">{{'wipeDelete' | translate}}</span><br>
-        <span style="font-family: Poppins;
-font-size: 12px;
-font-style: normal;
-font-weight: 400;
-line-height: 150%; /* 18px */ ">{{'wipeNotesWillDeleteALLNotes' | translate }}<br> {{'onYourPhoneIfYouEnter' |
-          translate}}<br> {{'thePasswordFor' | translate}}<br>
+        <span style="font-family: Poppins;font-size: 14px;font-style: normal;font-weight: 600;line-height: 150%; ">{{'wipeDelete' | translate}}</span><br>
+        <span style="font-family: Poppins;font-size: 12px;font-style: normal;font-weight: 400;line-height: 150%; /* 18px */ ">
+        {{'wipeNotesWillDeleteALLNotes' | translate }}<br> 
+        {{'onYourPhoneIfYouEnter' |translate}}<br> {{'thePasswordFor' | translate}}<br>
           {{'theAppWrongly20TimesInRow' | translate}}<br> {{'itCanNotBeTurnedOff' | translate}}</span></ion-toggle>
-    </ion-item>
+    </ion-item> -->
 
-    <div class="wipe-delete-card">
+    <div class="wipe-delete-card" *ngIf="password_enabled">
       <ion-row>
         <ion-col size="10">
-          <span class="title">Wipe Delete</span>
+          <span class="title">{{'wipeDelete' | translate}}</span>
           <br />
           <span class="description">
-            Wipe notes will delete All notes on your phone if you enter te password for the app wrongly 20 times in a
-            row. It cannot be turned off.
+            {{'wipeNotesWillDeleteALLNotes' | translate }}  {{'onYourPhoneIfYouEnter' |translate}} {{'thePasswordFor' | translate}} {{'theAppWrongly20TimesInRow' | translate}} {{'itCanNotBeTurnedOff' | translate}}
           </span>
         </ion-col>
         <ion-col size="2" class="toggle-col">
-          <ion-toggle checked="true" disabled="true" mode="ios" class="custom-toggle"></ion-toggle>
+          <ion-toggle [(ngModel)]="wipeNotesOnFailedPasswords" [enableOnOffLabels]="true" [disabled]="password_enabled"
+        [checked]="password_enabled"></ion-toggle>
         </ion-col>
       </ion-row>
     </div>
