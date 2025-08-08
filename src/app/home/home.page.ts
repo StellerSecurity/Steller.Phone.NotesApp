@@ -119,7 +119,7 @@ export class HomePage {
       this.router.events
         .pipe(filter((event) => event instanceof NavigationEnd))
         .subscribe(() => {
-          this.userPopover.dismiss();
+          this.userPopover?.dismiss();
           const urlParts = this.router.url.split("/");
           const id = urlParts[urlParts.length - 1]; // assuming the id is the last segment
           this.noteId = this.noteService.selectedNoteId = id;
@@ -132,7 +132,12 @@ export class HomePage {
       this.noteService.noteIsUpdated$.subscribe((value) => {
         if (value) {
           this.setData(this.noteService.getNotesAppPassword());
-          this.cdr.detectChanges();
+
+          setTimeout(() => {
+            this.initializePressGesture();
+            this.cdr.detectChanges();
+          }, 300)
+          
         }
       })
     );
