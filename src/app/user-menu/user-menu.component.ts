@@ -1,4 +1,4 @@
-import { Component, OnInit } from "@angular/core";
+import { Component } from "@angular/core";
 import { ModalController, PopoverController } from "@ionic/angular";
 import { AppSettingsPage } from "../app-settings/app-settings.page";
 import { Router } from "@angular/router";
@@ -17,17 +17,14 @@ export class UserMenuComponent {
     private router: Router
   ) {}
 
-  openSettings() {
-    this.popoverController.dismiss();
-    // navigate to settings page
-  }
-
   logout() {
     this.popoverController.dismiss();
     // perform logout
   }
 
   async openSettingsModal() {
+    this.popoverController.dismiss();
+
     const modal = await this.modalController.create({
       component: AppSettingsPage,
       cssClass: "centered-modal",
@@ -43,6 +40,7 @@ export class UserMenuComponent {
   }
 
   goToLogin(): void {
-    this.router.navigate(['/profile/login']);
+    this.popoverController.dismiss();
+    this.router.navigate(["/profile/login"]);
   }
 }
