@@ -123,6 +123,12 @@ export class HomePage {
           const urlParts = this.router.url.split("/");
           const id = urlParts[urlParts.length - 1]; // assuming the id is the last segment
           this.noteId = this.noteService.selectedNoteId = id;
+          console.log("urlParts", urlParts);
+          if (this.noteId) {
+            setTimeout(() => {
+              localStorage.setItem("recentOpenedNoteId", this.noteId);
+            }, 300);
+          }
         })
     );
   }
@@ -136,8 +142,7 @@ export class HomePage {
           setTimeout(() => {
             this.initializePressGesture();
             this.cdr.detectChanges();
-          }, 300)
-          
+          }, 300);
         }
       })
     );
@@ -500,7 +505,7 @@ export class HomePage {
           this.app_requires_password = false;
           setTimeout(() => {
             window.location.href = "/home";
-          })
+          });
         } else {
           // Handle case when user cancels password input
         }
@@ -577,7 +582,10 @@ export class HomePage {
   }
 
   navigateToHome(): void {
-    window.location.href = '/home';
+    localStorage.removeItem("recentOpenedNoteId");
+    setTimeout(() => {
+      window.location.href = "/home";
+    });
   }
 
   ionViewDidLeave() {
