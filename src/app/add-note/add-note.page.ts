@@ -573,9 +573,11 @@ export class AddNotePage {
 
     await this.dismissModal();
 
+    localStorage.removeItem('recentOpenedNoteId');
+    
     setTimeout(() => {
-      window.location.href = "/home";
-    });
+      window.location.href = "/";
+    }, 300);
   }
 
   public async removeLock() {
