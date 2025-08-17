@@ -339,6 +339,8 @@ export class AddNotePage {
       this.note_title = decryptedTitle;
     }
 
+    this.notesService.selectedNoteId = this.notes_id;
+
     this.storeNoteInStorage();
   }
 
