@@ -30,4 +30,8 @@ export class LoginComponent {
   forgotPassword() {
     this.router.navigate(['/profile/forgot-password']);
   }
+
+  backToApp() {
+    this.router.navigate(['/']);
+  }
 }

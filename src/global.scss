@@ -736,3 +736,7 @@ ion-modal.lock-note-modal {
 .m-0 {
   margin: 0!important;
 }
+
+ion-button::part(native) {
+  cursor: pointer !important;
+}
