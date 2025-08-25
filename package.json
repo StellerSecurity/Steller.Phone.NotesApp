@@ -1,5 +1,6 @@
 {
   "name": "Steller.Phone.NotesApp",
+  "productName": "Stellar Private Notes",
   "version": "0.0.1",
   "author": "Ionic Framework",
   "homepage": "https://ionicframework.com/",
@@ -93,7 +94,7 @@
   "description": "An Ionic project",
   "build": {
     "appId": "com.steller.phone.notesapp",
-    "productName": "Steller Phone NotesApp",
+    "productName": "Stellar Private Notes",
     "files": [
       "dist/StellerPhoneNotesApp/**/*",
       "electron-start.js",
