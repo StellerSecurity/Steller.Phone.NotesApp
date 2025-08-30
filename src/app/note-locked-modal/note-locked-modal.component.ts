@@ -1,5 +1,5 @@
 import { Component, ViewChild } from '@angular/core';
-import { ModalController } from '@ionic/angular';
+import { IonInput, ModalController } from '@ionic/angular';
 
 @Component({
   selector: 'app-note-locked-modal',
@@ -8,9 +8,15 @@ import { ModalController } from '@ionic/angular';
 })
 export class NoteLockedModalComponent {
   public showPassword: boolean = false;
-  @ViewChild('passwordInput', { static: false }) passwordInput: { value: any; };
+  @ViewChild('passwordInput', { static: false }) passwordInput!: IonInput;
 
   constructor(private modalCtrl: ModalController) { }
+
+  ionViewDidEnter() {
+    setTimeout(() => {
+      this.passwordInput?.setFocus();
+    }, 300); 
+  }
 
   // Dismiss the modal with the confirmation result
   public dismiss(confirm: boolean): void {
