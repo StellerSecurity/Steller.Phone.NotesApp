@@ -151,6 +151,8 @@ export class AppSettingsPage implements AfterViewInit {
       this.noteService.setFailedPasswordAppAttempts(0);
       localStorage.setItem("app_password_challenge", "1");
       this.password_enabled = true;
+      window.location.href = "/home";
+      window?.location?.reload();
     }
   }
 

@@ -505,6 +505,7 @@ export class HomePage {
           this.app_requires_password = false;
           setTimeout(() => {
             window.location.href = "/home";
+            window.location.reload();
           });
         } else {
           // Handle case when user cancels password input
