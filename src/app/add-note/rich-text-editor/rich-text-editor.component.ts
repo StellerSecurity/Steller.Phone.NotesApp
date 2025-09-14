@@ -14,6 +14,7 @@ import {
   AngularEditorConfig,
 } from "@wfpena/angular-wysiwyg";
 import { NotesService } from "src/app/services/notes.service";
+import { AlertController } from "@ionic/angular";
 
 @Component({
   selector: "app-rich-text-editor",
@@ -26,6 +27,9 @@ export class RichTextEditorComponent implements AfterViewInit {
   @Input() note_text: string = "";
   @Output() noteChange = new EventEmitter<string>();
   updateNote: any = "";
+
+  private savedSelection: Range[] = [];
+
   public editorConfig: AngularEditorConfig = {
     editable: true,
     spellcheck: false,
@@ -81,19 +85,23 @@ export class RichTextEditorComponent implements AfterViewInit {
   constructor(
     private renderer: Renderer2,
     private cdr: ChangeDetectorRef,
-    private noteService: NotesService
+    private noteService: NotesService,
+    private alertCtrl: AlertController
   ) {
     this.updateNote = JSON.parse(JSON.stringify(this.note_text));
   }
 
   ngAfterViewInit() {
     this.initializeEditorToolbar();
-    this.setupLinkButton();
+    this.setupLinkButtonOverride();
+    this.interceptEditorLinks();
   }
 
+  // ---------------------------
+  // Toolbar setup
+  // ---------------------------
   private initializeEditorToolbar(): void {
     setTimeout(() => {
-      // Setup picker dropdowns
       document.querySelectorAll(".ae-picker-label").forEach((label) => {
         this.renderer.listen(label, "click", () => {
           const dropdown = label.nextElementSibling as HTMLElement;
@@ -103,7 +111,6 @@ export class RichTextEditorComponent implements AfterViewInit {
         });
       });
 
-      // Ensure all buttons are enabled and have proper event listeners
       document.querySelectorAll(".ae-button").forEach((button) => {
         button.removeAttribute("disabled");
         this.setupButtonEvents(button);
@@ -115,7 +122,6 @@ export class RichTextEditorComponent implements AfterViewInit {
     const rect = label.getBoundingClientRect();
     dropdown.style.position = "fixed";
     dropdown.style.top = `${rect.bottom + 4}px`;
-    // dropdown.style.left = `${rect.left}px`;
     dropdown.style.zIndex = "9999";
     dropdown.style.width = "max-content";
     dropdown.style.minWidth = `${rect.width}px`;
@@ -140,21 +146,135 @@ export class RichTextEditorComponent implements AfterViewInit {
     });
   }
 
-  private setupLinkButton(): void {
-    setTimeout(() => {
-      const linkBtn = document.querySelector("#link-") as HTMLButtonElement;
-      if (linkBtn) {
-        linkBtn.disabled = false;
-        linkBtn.classList.remove("disabled");
+  // ---------------------------
+  // Save + restore selection
+  // ---------------------------
+  private saveSelection() {
+    const sel = window.getSelection();
+    this.savedSelection = [];
+    if (sel && sel.rangeCount > 0) {
+      for (let i = 0; i < sel.rangeCount; i++) {
+        this.savedSelection.push(sel.getRangeAt(i).cloneRange());
       }
+    }
+  }
+
+  private restoreSelection() {
+    const sel = window.getSelection();
+    if (sel && this.savedSelection.length) {
+      sel.removeAllRanges();
+      this.savedSelection.forEach((r) => sel.addRange(r));
+    }
+  }
+
+  // ---------------------------
+  // Override link button
+  // ---------------------------
+  private setupLinkButtonOverride(): void {
+    setTimeout(() => {
+      const linkBtn = document.querySelector("#link-") as HTMLButtonElement | null;
+      if (!linkBtn) return;
+
+      // Replace button to override default prompt()
+      const cloned = linkBtn.cloneNode(true) as HTMLButtonElement;
+      linkBtn.parentNode?.replaceChild(cloned, linkBtn);
+
+      cloned.disabled = false;
+      cloned.classList.remove("disabled");
+
+      cloned.addEventListener("mousedown", () => {
+        this.saveSelection(); // ✅ save selection before losing focus
+      });
+
+      cloned.addEventListener("click", async (e) => {
+        e.preventDefault();
+        await this.openLinkPrompt();
+      });
     }, 500);
   }
 
+  private async openLinkPrompt() {
+    const alert = await this.alertCtrl.create({
+      header: "Insert Link",
+      inputs: [{ name: "url", type: "url", placeholder: "https://example.com" }],
+      buttons: [
+        { text: "Cancel", role: "cancel" },
+        {
+          text: "Insert",
+          handler: (data) => {
+            const url = (data?.url || "").trim();
+            if (!url) return;
+            this.insertLink(this.normalizeUrl(url));
+          },
+        },
+      ],
+    });
+
+    await alert.present();
+  }
+
+  private normalizeUrl(u: string): string {
+    if (/^(mailto:|tel:)/i.test(u)) return u;
+    if (!/^https?:\/\//i.test(u)) return `https://${u}`;
+    return u;
+  }
+
+  private insertLink(url: string) {
+    const editorDiv: HTMLElement | null =
+      document.querySelector(".angular-editor-textarea");
+    if (!editorDiv) return;
+
+    this.restoreSelection(); // ✅ restore user’s text selection
+    editorDiv.focus();
+
+    document.execCommand("createLink", false, url);
+
+    // update model
+    setTimeout(() => {
+      const html = editorDiv.innerHTML;
+      this.note_text = html;
+      this.noteChange.emit(html);
+      this.noteService.setNoteIsUpdatedSubject(true);
+      this.cdr.detectChanges();
+    }, 50);
+
+    this.interceptEditorLinks();
+  }
+
+  // ---------------------------
+  // External link interception
+  // ---------------------------
+  private interceptEditorLinks(): void {
+    setTimeout(() => {
+      const editorDiv: HTMLElement | null =
+        document.querySelector(".angular-editor-textarea");
+      if (!editorDiv) return;
+
+      editorDiv.querySelectorAll("a").forEach((link: HTMLAnchorElement) => {
+        link.setAttribute("target", "_blank");
+        if (!(link as any)._bound) {
+          link.addEventListener("click", (event) => {
+            event.preventDefault();
+            const href = link.href;
+            if ((window as any).electronAPI?.openExternal) {
+              (window as any).electronAPI.openExternal(href);
+            } else {
+              window.open(href, "_blank");
+            }
+          });
+          (link as any)._bound = true;
+        }
+      });
+    }, 300);
+  }
+
+  // ---------------------------
+  // Change detection
+  // ---------------------------
   onContentChange(content: string): void {
     this.note_text = content;
     this.noteChange.emit(content);
     this.noteService.setNoteIsUpdatedSubject(true);
-    // this.updateNote = content;
   }
 
   onClickEditor(): void {
@@ -164,7 +284,6 @@ export class RichTextEditorComponent implements AfterViewInit {
   }
 
   onLeave() {
-    // Add cleanup or save logic here
-    // this.noteChange.emit(this.updateNote);
+    // optional cleanup
   }
 }

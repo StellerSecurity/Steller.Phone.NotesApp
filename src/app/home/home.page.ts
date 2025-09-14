@@ -123,7 +123,6 @@ export class HomePage {
           const urlParts = this.router.url.split("/");
           const id = urlParts[urlParts.length - 1]; // assuming the id is the last segment
           this.noteId = this.noteService.selectedNoteId = id;
-          console.log("urlParts", urlParts);
           if (this.noteId) {
             setTimeout(() => {
               localStorage.setItem("recentOpenedNoteId", this.noteId);
@@ -186,7 +185,7 @@ export class HomePage {
       }
 
       // dont search in locked notes.
-      if (result && !this.notes[i].protected) {
+      if (result && !this.notes[i]?.protected) {
         filteredNewResults.push(this.notes[i]);
       } else if (titleExists) {
         filteredNewResults.push(this.notes[i]);

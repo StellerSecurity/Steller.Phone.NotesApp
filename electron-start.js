@@ -23,7 +23,8 @@ function createWindow() {
     })
   );
 
-  mainWindow.webContents.openDevTools();
+  // dev tools
+  // mainWindow.webContents.openDevTools();
 
   // catch target="_blank"
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
