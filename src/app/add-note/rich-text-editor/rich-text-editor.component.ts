@@ -95,7 +95,26 @@ export class RichTextEditorComponent implements AfterViewInit {
     this.initializeEditorToolbar();
     this.setupLinkButtonOverride();
     this.interceptEditorLinks();
+  
+    // 🔥 Auto focus editor
+    setTimeout(() => {
+      const editorDiv: HTMLElement | null =
+        this.editorWrapper.nativeElement.querySelector(".angular-editor-textarea");
+  
+      if (editorDiv) {
+        editorDiv.focus();
+  
+        // optional: place caret at end of existing content
+        const range = document.createRange();
+        range.selectNodeContents(editorDiv);
+        range.collapse(false);
+        const sel = window.getSelection();
+        sel?.removeAllRanges();
+        sel?.addRange(range);
+      }
+    }, 300); // delay to ensure editor is fully rendered
   }
+  
 
   // ---------------------------
   // Toolbar setup
