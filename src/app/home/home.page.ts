@@ -562,7 +562,7 @@ export class HomePage {
   }
 
   goToCreateNewNote(): void {
-    this.router.navigate(["/home"]);
+    this.router.navigate(["/dummy-route"]);
     setTimeout(() => {
       this.router.navigate(["/note"]);
     });

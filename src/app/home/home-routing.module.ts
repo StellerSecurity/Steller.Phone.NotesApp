@@ -24,6 +24,10 @@ const routes: Routes = [
           import('../add-note/add-note.module').then(m => m.AddNotePageModule)
       },
       {
+        path: 'dummy-route',
+        component: HomePage,
+      },
+      {
         path: '',
         redirectTo: 'home',
         pathMatch: 'full'
