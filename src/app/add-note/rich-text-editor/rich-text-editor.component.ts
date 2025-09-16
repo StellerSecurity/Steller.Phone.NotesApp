@@ -215,22 +215,52 @@ export class RichTextEditorComponent implements AfterViewInit {
   private async openLinkPrompt() {
     const alert = await this.alertCtrl.create({
       header: "Insert Link",
-      inputs: [{ name: "url", type: "url", placeholder: "https://example.com" }],
+      inputs: [
+        {
+          name: "url",
+          type: "url",
+          placeholder: "https://example.com",
+        },
+      ],
       buttons: [
         { text: "Cancel", role: "cancel" },
         {
           text: "Insert",
           handler: (data) => {
             const url = (data?.url || "").trim();
-            if (!url) return;
+            if (!url) return false;
             this.insertLink(this.normalizeUrl(url));
+            return true;
           },
         },
       ],
     });
-
+  
     await alert.present();
-  }
+  
+    // Wait a tick so DOM is ready
+    setTimeout(() => {
+      const input = alert.querySelector("input");
+      if (input) {
+        // 1) Auto focus
+        (input as HTMLInputElement).focus();
+  
+        // 2) Enter = Insert
+        input.addEventListener("keydown", (ev: KeyboardEvent) => {
+          if (ev.key === "Enter") {
+            ev.preventDefault();
+  
+            // Find Insert button (the second button in buttons array)
+            const buttons = alert.querySelectorAll("button.alert-button");
+            const insertBtn = Array.from(buttons).find(
+              (btn) => btn.textContent?.trim() === "Insert"
+            );
+            (insertBtn as HTMLButtonElement)?.click();
+          }
+        });
+      }
+    }, 100);
+  }  
 
   private normalizeUrl(u: string): string {
     if (/^(mailto:|tel:)/i.test(u)) return u;
