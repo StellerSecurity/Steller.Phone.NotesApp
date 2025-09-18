@@ -11,7 +11,7 @@ export class ProfileComponent  {
   constructor(private router: Router) {}
 
   goToSettings() {
-    
+    this.router.navigate(['/app-settings']);
   }
 
   logout() {

@@ -342,6 +342,10 @@ export class HomePage {
     this.navController.navigateForward('app-settings').then(r => {});
   }
 
+  goToProfile() {
+    this.navController.navigateForward('profile').then(r => {});
+  }
+
   public openOrCheckbox(note_id: string) {
     if(!this.checkboxOpened) {
       this.navController.navigateForward('/note/' + note_id).then(r => {});

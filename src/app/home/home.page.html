@@ -24,7 +24,10 @@
         <ion-button *ngIf="filteredResults !== null && filteredResults.length > 0" slot="icon-only" (click)="toggleCheckbox()">
           <img src="assets/tabler-icon-square-check.svg">
         </ion-button>
-        <ion-button slot="icon-only" style="padding-right: 15px" (click)="settings()"><img src="assets/tabler-icon-settings.svg"></ion-button>
+        <!-- <ion-button slot="icon-only" style="padding-right: 15px" (click)="settings()"><img src="assets/tabler-icon-settings.svg"></ion-button> -->
+        <ion-button slot="icon-only" style="padding-right: 15px" (click)="goToProfile()">
+          <img src="assets/user-circle.png" width="24px" height="24px">
+        </ion-button>
       </ng-container>
 
       <ng-container *ngIf="searchMode">
