@@ -13,7 +13,8 @@
     </ion-title>
 
     <ion-searchbar *ngIf="searchMode" #searchbar [(ngModel)]="search_query" (ionInput)="search()" placeholder="{{'searchNotesInput' | translate}}" show-clear-button="focus" clear-icon="trash-bin"
-    (appClickOutside)="exitSearchMode()" appClickOutside></ion-searchbar>
+    ></ion-searchbar>
+    <!-- (appClickOutside)="exitSearchMode()" appClickOutside -->
 
     <ion-buttons slot="end" style="position: relative; top: 5px;">
       <ng-container *ngIf="!searchMode">
@@ -173,7 +174,7 @@ align-self: stretch; background: #2761FC; color: #fff; border-radius: 250px" (cl
 
 
   <ion-list>
-    <ion-item lines="none" *ngFor="let note of getNotes()" (click)="openOrCheckbox(note.id)" [detail]="false" class="long-press-target" #longPressElements [id]="note.id">
+    <ion-item lines="none" *ngFor="let note of getNotes()" (click)="$event.stopPropagation(); openOrCheckbox(note.id)" [detail]="false" class="long-press-target" #longPressElements [id]="note.id">
       <div class="box-item-main" >
         <ion-checkbox *ngIf="checkboxOpened" (click)="$event.stopPropagation(); selectNote($event, note.id)" justify="center"
           style="margin-right: 7px" size="small"

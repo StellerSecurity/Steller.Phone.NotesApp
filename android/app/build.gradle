@@ -2,13 +2,13 @@ apply plugin: 'com.android.application'
 
 android {
     namespace "Steller.Phone.NotesApp"
-    compileSdkVersion 34
+    compileSdkVersion 35
     defaultConfig {
         applicationId "steller.phone.notesapp"
         minSdkVersion 22
-        targetSdkVersion 34
-        versionCode 17
-        versionName "2.60"
+        targetSdkVersion 35
+        versionCode 20
+        versionName "2.63"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.

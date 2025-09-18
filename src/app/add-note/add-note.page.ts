@@ -108,9 +108,11 @@ export class AddNotePage {
 
   ionViewDidEnter() {
      this.passwordStrengthHelperText = this.allTranslations.passwordAtLeastLength;
+     if(this.note_text.length === 0) {
       setTimeout(() => {
         this.placeCursorAtEnd();
       }, 100);
+     }
   }
 
   private placeCursorAtEnd() {
@@ -192,7 +194,7 @@ export class AddNotePage {
 
     setTimeout(() => {
         this.save(event)
-    }, 200)
+    }, 300)
     
   }
 
