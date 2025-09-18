@@ -2,7 +2,6 @@ import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from 'src/app/services/auth.service';
-import { ToastrService } from 'ngx-toastr';
 
 @Component({
   selector: 'app-create-account',
@@ -27,7 +26,7 @@ export class CreateAccountComponent implements OnInit {
   isSaving = false;
 
   constructor(private router: Router, private fb: FormBuilder,
-    private authService: AuthService, private toastrService: ToastrService,) {}
+    private authService: AuthService) {}
 
   ngOnInit(): void {
     this.initCreateUserForm();
@@ -61,18 +60,17 @@ export class CreateAccountComponent implements OnInit {
       this.authService.createAccount(createUserObj).subscribe({
         next: (response) => {
           this.isSaving = false;
-          debugger
           if (response.response_code == 200) {
             this.showVerificationSection = true;
             // this.localStorageService.storeToLocalStorage("ssToken", response.token);
             // this.router.navigate(["/stellar-account/login"]);
           } else {
-            this.toastrService.error(response.response_message);
+            // this.toastrService.error(response.response_message);
           }
         },
         error: (error) => {
           this.isSaving = false;
-          this.toastrService.error(error?.error?.message);
+          // this.toastrService.error(error?.error?.message);
         },
       });
     }
