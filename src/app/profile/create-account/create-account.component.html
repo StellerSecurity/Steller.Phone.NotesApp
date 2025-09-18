@@ -68,7 +68,7 @@
       </ion-text>
     
       <!-- Submit -->
-      <ion-button class="create-button" expand="block" type="submit">
+      <ion-button class="create-button" expand="block" type="submit" [disabled]="isSaving">
         {{!isSaving ? 'Create Account': 'Creating Account...' }}
       </ion-button>
     </form>
