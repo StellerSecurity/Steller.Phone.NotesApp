@@ -1,4 +1,5 @@
 import { Component } from '@angular/core';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-profile',
@@ -7,7 +8,7 @@ import { Component } from '@angular/core';
 })
 export class ProfileComponent  {
 
-  constructor() {}
+  constructor(private router: Router) {}
 
   goToSettings() {
     
@@ -16,6 +17,10 @@ export class ProfileComponent  {
   logout() {
     // handle logout logic
     console.log('Logging out...');
+  }
+
+  goToLogin() {
+    this.router.navigate(['/profile/login']);
   }
 
 }
