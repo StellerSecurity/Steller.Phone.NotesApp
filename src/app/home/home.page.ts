@@ -96,7 +96,7 @@ export class HomePage {
     setTimeout(() => {
       this.searchMode = false;
       this.cdr.detectChanges();
-    }, 500)
+    }, 200)
   }
 
 
@@ -136,7 +136,7 @@ export class HomePage {
     this.initializePressGesture();
     setTimeout(() => {
       this.cdr.detectChanges();
-    }, 300)
+    }, 200)
 
   }
 
@@ -220,14 +220,6 @@ export class HomePage {
 
   handlePressEnd() {
     clearTimeout(this.timeout);
-  }
-
-  disableNativeContextMenu() {
-    document.addEventListener('contextmenu', (e) => e.preventDefault());
-  }
-
-  public appHasPasswordChallenge() : boolean {
-    return this.noteService.appHasPasswordChallenge();
   }
 
   private setData(password: string = ""): boolean {
@@ -360,7 +352,7 @@ export class HomePage {
     this.initializePressGesture();
     setTimeout(() => {
       this.cdr.detectChanges();
-    }, 300)
+    }, 200)
   }
 
   public async deleteSelectedNotes() {
@@ -378,8 +370,6 @@ export class HomePage {
         const { confirm } = data.data;
         if (confirm) {
           await this.deleteNotesConfirm();
-        } else {
-          // Handle case when user cancels password input
         }
       }
     });
@@ -393,9 +383,6 @@ export class HomePage {
    * @private
    */
   private async deleteNotesConfirm() {
-
-    const loading = await this.loadingController.create();
-    await loading.present();
 
     // delete the selected notes.
     for (let i = 0; this.listOfCheckedCheckboxes.length > i; i++) {
@@ -417,18 +404,12 @@ export class HomePage {
       this.noteService.setNotes(JSON.stringify(this.notes));
     }
 
+    this.noteService.setDecryptedNotes(this.noteService.getNotes());
+
+    this.listOfCheckedCheckboxes = [];
+    this.toggleCheckbox();
     //this.setData(this.input_password_app_unlock);
 
-    // this.toggleCheckbox();
-    const toast = await this.toastController.create({
-      message: this.allTranslations.theSelectedNotesHasBeenDeleted,
-      duration: 2500,
-      position: 'bottom',
-    });
-
-    await toast.present();
-    await loading.dismiss();
-    window.location.href = "/";
   }
 
   public async resetPassword() {
@@ -470,7 +451,6 @@ export class HomePage {
 
     this.isClicked = true;
 
-  
     if(!this.listOfCheckedCheckboxes.includes(note_id)) {
       this.listOfCheckedCheckboxes.push(note_id);
     } else { // removed.
