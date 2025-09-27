@@ -226,10 +226,6 @@ export class HomePage {
     document.addEventListener('contextmenu', (e) => e.preventDefault());
   }
 
-  public appHasPasswordChallenge() : boolean {
-    return this.noteService.appHasPasswordChallenge();
-  }
-
   private setData(password: string = ""): boolean {
 
     let decryptedNotes = null;
@@ -407,6 +403,8 @@ export class HomePage {
     } else {
       this.noteService.setNotes(JSON.stringify(this.notes));
     }
+
+    this.noteService.setDecryptedNotes(this.noteService.getNotes());
 
     this.listOfCheckedCheckboxes = [];
     this.toggleCheckbox();
