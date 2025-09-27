@@ -165,41 +165,88 @@ export class HomePage {
   }
 
   search() {
-    if (this.search_query.length == 0) {
+
+    if(this.search_query.length == 0) {
       this.isSearching = false;
       this.filteredResults = this.notes;
       return;
     }
-
+  
     let filteredNewResults = [];
-
-    for (let i = 0; this.notes.length > i; i++) {
-      let noteText = this.notes[i].text;
-
-      let result = noteText.includes(this.search_query);
-
+  
+    // helper: normalize / decode / map to stable searchable form
+    const normalize = (input: any) => {
+      if (input === null || input === undefined) return '';
+      let s = String(input);
+  
+      // 1) decode HTML entities if stored that way (safe in browser)
+      try {
+        const ta = document.createElement('textarea');
+        ta.innerHTML = s;
+        s = ta.value;
+      } catch (e) {
+        // ignore if document not available (SSR); keep raw string
+      }
+  
+      // 2) compatibility normalization + lowercase
+      if (s.normalize) s = s.normalize('NFKC');
+      s = s.toLowerCase();
+  
+      // 3) remove invisible/zero-width chars
+      s = s.replace(/[\u200B-\u200D\uFEFF]/g, '');
+  
+      // 4) decompose and remove combining diacritics (so á -> a)
+      if (s.normalize) s = s.normalize('NFD');
+      s = s.replace(/[\u0300-\u036f]/g, '');
+      if (s.normalize) s = s.normalize('NFC');
+  
+      // 5) map common ligatures / special letters to ASCII-ish equivalents
+      //    (helps when user types 'ae' vs stored 'æ', or to normalize visible differences)
+      s = s.replace(/æ/g, 'ae')
+           .replace(/œ/g, 'oe')
+           .replace(/ø/g, 'o')
+           .replace(/å/g, 'a')
+           .replace(/ß/g, 'ss');
+  
+      // 6) collapse whitespace
+      s = s.replace(/\s+/g, ' ').trim();
+  
+      return s;
+    };
+  
+    const normalizedQuery = normalize(this.search_query);
+  
+    for(let i = 0; this.notes.length > i; i++) {
+      // make safe even if text/title are null/objects
+      const normalizedText = normalize(this.notes[i]?.text);
+      const result = normalizedText.includes(normalizedQuery);
+  
       let titleExists = false;
-
-      if (this.notes[i].title !== undefined) {
-        titleExists = this.notes[i].title.includes(this.search_query);
+  
+      if(this.notes[i].title !== undefined) {
+        const normalizedTitle = normalize(this.notes[i]?.title);
+        titleExists = normalizedTitle.includes(normalizedQuery);
       }
-
+  
       // dont search in locked notes.
-      if (result && !this.notes[i]?.protected) {
+      if(result && !this.notes[i].protected) {
         filteredNewResults.push(this.notes[i]);
-      } else if (titleExists) {
+      } else if(titleExists) {
         filteredNewResults.push(this.notes[i]);
       }
+  
     }
-
+  
     this.isSearching = true;
     this.filteredResults = filteredNewResults;
-
+  
     this.initializePressGesture();
     setTimeout(() => {
       this.cdr.detectChanges();
-    }, 300);
+    }, 200)
+  
   }
+  
 
   ionViewDidEnter() {
     this.initializePressGesture();
