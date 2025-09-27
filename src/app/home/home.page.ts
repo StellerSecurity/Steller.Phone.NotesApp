@@ -136,7 +136,7 @@ export class HomePage {
     this.initializePressGesture();
     setTimeout(() => {
       this.cdr.detectChanges();
-    }, 300)
+    }, 200)
 
   }
 
@@ -220,10 +220,6 @@ export class HomePage {
 
   handlePressEnd() {
     clearTimeout(this.timeout);
-  }
-
-  disableNativeContextMenu() {
-    document.addEventListener('contextmenu', (e) => e.preventDefault());
   }
 
   private setData(password: string = ""): boolean {
