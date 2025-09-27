@@ -17,23 +17,55 @@
         <div class="title">Log In</div>
         <p class="subtitle">Please enter your email and password</p>
 
-        <ion-item class="input-field" lines="none">
-          <ion-input [(ngModel)]="email" placeholder="Email" type="email" lines="none" shape="round">
-          </ion-input>
-        </ion-item>
-
-        <ion-item class="input-field" lines="none">
-          <ion-input [(ngModel)]="password" [type]="showPassword ? 'text' : 'password'" placeholder="Password"
-            lines="none" shape="round">
-          </ion-input>
-          <ion-icon name="{{ showPassword ? 'eye-off' : 'eye' }}" slot="end" class="password-toggle"
-            (click)="togglePasswordVisibility()">
-          </ion-icon>
-        </ion-item>
-
-        <div class="forgot-password" (click)="forgotPassword()">Forgot Password?</div>
-
-        <ion-button class="login-button" (click)="login()">Log In</ion-button>
+        <form [formGroup]="loginForm">
+          <!-- Email -->
+          <ion-item class="input-field" lines="none" style="margin-bottom: 0;">
+            <ion-input
+              placeholder="Email"
+              type="email"
+              formControlName="email"
+              [ngClass]="{'border-danger': loginForm.get('email')?.invalid && loginForm.get('email')?.touched}">
+            </ion-input>
+          </ion-item>
+          <ion-text color="danger" *ngIf="loginForm.get('email')?.hasError('required') && loginForm.get('email')?.touched">
+            <small>Email is required</small>
+          </ion-text>
+          <ion-text color="danger" *ngIf="loginForm.get('email')?.hasError('email') && loginForm.get('email')?.touched">
+            <small>Invalid email format</small>
+          </ion-text>
+        
+          <!-- Password -->
+          <ion-item 
+            class="input-field" 
+            lines="none" 
+            style="margin-top: 16px"
+            [ngClass]="{
+              'mb-0': loginForm.get('password')?.invalid && loginForm.get('password')?.touched
+            }"
+          >
+            <ion-input
+              [type]="showPassword ? 'text' : 'password'"
+              placeholder="Password"
+              formControlName="password"
+              [ngClass]="{
+                'border-danger': loginForm.get('password')?.invalid && loginForm.get('password')?.touched
+              }"
+            ></ion-input>
+          
+            <ion-icon
+              name="{{ showPassword ? 'eye-off-outline' : 'eye-outline' }}"
+              slot="end"
+              class="password-toggle"
+              (click)="togglePasswordVisibility()"
+            ></ion-icon>
+          </ion-item>
+    
+          <div class="forgot-password" (click)="forgotPassword()">Forgot Password?</div>
+    
+          <ion-button class="login-button" (click)="login()" [disabled]="isSaving">
+            {{!isSaving ? 'Log In': 'Logging into...' }}
+          </ion-button>
+        </form>
 
         <div class="footer">
           <span class="label-beforee-link">Don’t have an account? </span>
