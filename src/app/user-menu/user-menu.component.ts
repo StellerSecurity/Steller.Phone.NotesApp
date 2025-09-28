@@ -12,7 +12,7 @@ export class UserMenuComponent {
   isUserIsLoggedIn = false;
 
   constructor(
-    private popoverController: PopoverController,
+    public popoverController: PopoverController,
     private modalController: ModalController,
     private router: Router
   ) {}
