@@ -44,7 +44,8 @@ export class LoginComponent implements OnInit {
         next: (response:any) => {
           this.isSaving = false;
           if (response.response_code == 200) {
-            // this.localStorageService.storeToLocalStorage("ssToken", response.token);
+            localStorage.setItem("ssToken", response.token);
+            localStorage.setItem("ssUser", JSON.stringify(response.user));
             // this.toastrService.success(this.translatorService.allTranslations.loggedInSuccessfully);
             this.router.navigate(["/"]);
           } else {
