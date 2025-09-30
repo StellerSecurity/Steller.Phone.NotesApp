@@ -39,6 +39,10 @@ export class ProfileComponent implements OnInit {
     // this.router.navigate(['/profile/login']); // redirect after logout
   }
 
+  navigateToRegister() {
+    this.router.navigate(['/profile/create-account']);
+  }
+
   goToLogin() {
     this.router.navigate(['/profile/login']);
   }

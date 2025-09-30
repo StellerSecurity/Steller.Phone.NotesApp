@@ -6,6 +6,16 @@ ion-toolbar {
   --ion-background-color: #F6F6FD;
 }
 
+.footer {
+  font-size: 14px;
+  text-align: center;
+}
+
+.footer a {
+  font-weight: bold;
+  cursor: pointer;
+}
+
 .account-menu-content {
     .account-name-card {
       border-radius: 16px;

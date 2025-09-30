@@ -23,10 +23,14 @@
 
     <ng-template #loginBlock>
       <div class="login-profile-box">
-        <div class="login-title">Log In to your Profile</div>
-        <div class="login-sub-title">Please enter your email and password</div>
-
+        <div class="login-title">Log In to your Stellar ID</div>
+        <div class="login-sub-title">Sign into your Stellar ID to sync your notes. All notes are end-to-end encrypted.</div>
         <ion-button expand="block" class="login-button" (click)="goToLogin()">Log In</ion-button>
+        <br>
+        <div class="footer">
+            <span class="label-beforee-link">Don’t have an Stellar ID? </span>
+            <a (click)="navigateToRegister()">Create Stellar ID</a>
+        </div>
       </div>
     </ng-template>
 
