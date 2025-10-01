@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { AuthService } from 'src/app/services/auth.service';
+import { ToastMessageService } from 'src/app/services/toast-message.service';
 
 @Component({
   selector: 'app-forgot-password',
@@ -22,7 +23,8 @@ export class ForgotPasswordComponent implements OnInit {
   forgotPasswordForm: FormGroup;
   isProcessing = false;
 
-  constructor(private fb: FormBuilder, private authService: AuthService) {
+  constructor(private fb: FormBuilder, private authService: AuthService,
+    private toastMessageService: ToastMessageService) {
 
   }
 
@@ -44,13 +46,11 @@ export class ForgotPasswordComponent implements OnInit {
           this.isProcessing = false;
           if (response.response_code == 200) {
             this.showVerification = true;        
-          } else {
-            // this.toastrService.error(response.response_message);
           }
         },
         error: (error) => {
           this.isProcessing = false;
-          // this.toastrService.error(error?.error?.message);
+          this.toastMessageService.showError(error?.error?.message);
         }
       })
     }

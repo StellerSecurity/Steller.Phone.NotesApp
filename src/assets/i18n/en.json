@@ -124,9 +124,5 @@
   "stellarIDLogin": "Stellar ID - Login",
   "pleaseEnterYourEmailAndPassword": "Please enter your email and password",
   "loggingInto": "Logging into...",
-  "dontHaveAnStellarID": "Don’t have an Stellar ID?",
-  "": "",
-  "": "",
-  "": "",
-  "": ""
+  "dontHaveAnStellarID": "Don’t have an Stellar ID?"
 }

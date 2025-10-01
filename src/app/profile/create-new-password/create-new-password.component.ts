@@ -3,6 +3,7 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { AuthService } from 'src/app/services/auth.service';
+import { ToastMessageService } from 'src/app/services/toast-message.service';
 
 @Component({
   selector: 'app-create-new-password',
@@ -22,7 +23,8 @@ export class CreateNewPasswordComponent implements OnInit {
   email = '';
 
   constructor(private router: Router, private fb: FormBuilder,
-    private authService: AuthService, private activatedRoute: ActivatedRoute,) {}
+    private authService: AuthService, private activatedRoute: ActivatedRoute,
+    private toastMessageService: ToastMessageService) {}
 
   ngOnInit(): void {
     this.initPasswordForm();
@@ -90,6 +92,7 @@ export class CreateNewPasswordComponent implements OnInit {
           },
           error: (error: any) => {
             this.isSaving = false;
+            this.toastMessageService.showError(error?.error?.message);
           },
         });
     }
