@@ -3,6 +3,7 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { loginDto } from 'src/app/constants/models/authDto';
 import { AuthService } from 'src/app/services/auth.service';
+import { ToastMessageService } from 'src/app/services/toast-message.service';
 
 @Component({
   selector: 'app-login',
@@ -14,7 +15,8 @@ export class LoginComponent {
   loginForm: FormGroup;
   isSaving = false;
 
-  constructor(private router: Router, private fb: FormBuilder, private authService: AuthService) {}
+  constructor(private router: Router, private fb: FormBuilder, private authService: AuthService,
+    private toastMessageService: ToastMessageService) {}
 
   ngOnInit(): void {
     this.initLoginForm();
@@ -47,12 +49,12 @@ export class LoginComponent {
             // this.toastrService.success(this.translatorService.allTranslations.loggedInSuccessfully);
             this.router.navigate(["/"]);
           } else {
-            // this.toastrService.error(response.response_message);
+            this.toastMessageService.showError(response.response_message);
           }
         },
         error: (error) => {
           this.isSaving = false;
-          // this.toastrService.error(error?.error?.message);
+          this.toastMessageService.showError(error?.error?.message);
         },
       });
     }

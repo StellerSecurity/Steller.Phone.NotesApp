@@ -3,6 +3,7 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { AuthService } from 'src/app/services/auth.service';
+import { ToastMessageService } from 'src/app/services/toast-message.service';
 
 @Component({
   selector: 'app-create-new-password',
@@ -21,7 +22,8 @@ export class CreateNewPasswordComponent implements OnInit, OnDestroy {
   subscriptions: Subscription[] = [];
 
   constructor(private router: Router, private fb: FormBuilder,
-    private authService: AuthService, private activatedRoute: ActivatedRoute) {}
+    private authService: AuthService, private activatedRoute: ActivatedRoute,
+    private toastMessageService: ToastMessageService) {}
 
     ngOnInit(): void {
       this.initPasswordForm();
@@ -84,13 +86,13 @@ export class CreateNewPasswordComponent implements OnInit, OnDestroy {
             this.isSaving = false;
             if (response.response_code == 200) {
               this.backToLogin();
-              
             } else {
-              // this.toastrService.error(error?.error?.message);
+              this.toastMessageService.showError(response.response_message);
             }
           },
           error: (error: any) => {
             this.isSaving = false;
+            this.toastMessageService.showError(error?.error?.message);
           },
         });
     }
