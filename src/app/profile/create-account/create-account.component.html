@@ -4,7 +4,7 @@
     <div class="top-section">
       <div class="logo-container">
         <img class="login-app-logo-img" src="./assets/note-logo-white-bg.png" alt="">
-        <div class="app-name">Stellar Private Notes</div>
+        <div class="app-name">{{'stellarPrivateNotes' | translate}}</div>
       </div>
     </div>
 
@@ -15,8 +15,8 @@
       </ion-button>
 
       <div class="form-card-content">
-        <div class="title">Create an account</div>
-        <p class="subtitle">Please enter email and password to create your free account.</p>
+        <div class="title">{{'createStellarID' | translate}}</div>
+        <p class="subtitle">{{'pleaseEnterEmailAndPasswordToCreateYourFreeStellarID' | translate}}</p>
 
         <form [formGroup]="createUserForm" (ngSubmit)="createAccount()">
           <!-- Email -->
@@ -29,10 +29,10 @@
             </ion-input>
           </ion-item>
           <ion-text color="danger" *ngIf="createUserForm.get('email')?.hasError('required') && createUserForm.get('email')?.touched">
-            <small>Email is required</small>
+            <small>{{'emailIsRequired' | translate}}</small>
           </ion-text>
           <ion-text color="danger" *ngIf="createUserForm.get('email')?.hasError('email') && createUserForm.get('email')?.touched">
-            <small>Invalid email format</small>
+            <small>{{'invalidEmailFormat' | translate}}</small>
           </ion-text>
         
         
@@ -63,21 +63,21 @@
           </ion-item>
         
           <ion-text color="danger" *ngIf="createUserForm.get('password')?.hasError('required') && createUserForm.get('password')?.touched">
-            <small>Password is required</small>
+            <small>{{'passwordIsRequired' | translate}}</small>
           </ion-text>
           <ion-text color="danger" *ngIf="createUserForm.get('password')?.hasError('minlength') && createUserForm.get('password')?.touched">
-            <small>Password must be at least 6 characters</small>
+            <small>{{'passwordAtLeastLength' | translate}}</small>
           </ion-text>
         
           <!-- Submit -->
           <ion-button class="create-button" expand="block" type="submit" [disabled]="isSaving">
-            {{!isSaving ? 'Create Account': 'Creating Account...' }}
+            {{!isSaving ? ('createAccount' | translate) : ('creatingAccount' | translate)}}
           </ion-button>
         </form>
 
         <div class="footer">
-          <span class="label-beforee-link">Already have an account? </span>
-          <a (click)="goToLogin()">Log in</a>
+          <span class="label-beforee-link">{{'alreadyHaveStellarID' | translate}} </span>
+          <a (click)="goToLogin()">{{'login' | translate}}</a>
         </div>
       </div>
     </div>
@@ -89,8 +89,8 @@
           <!-- <ion-icon name="mail-outline" class="mail-icon"></ion-icon> -->
           <img src="./assets/tabler-icon-mail-forward.png" width="40" height="40">
         </div>
-        <div class="title" style="margin-top: 14px;">Please input code</div>
-        <p class="subtitle">We sent an account verification code to <strong>{{ email }}</strong></p>
+        <div class="title" style="margin-top: 14px;">{{'pleaseInputCode' | translate}}</div>
+        <p class="subtitle">{{'weSentAnAccountVerificationCodeTo' | translate}} <strong>{{ email }}</strong></p>
 
         <div class="code-input-wrapper">
           <ng-otp-input (onInputChange)="onOtpChange($event)" [config]="otpConfig" containerClass="ng-ong-otp-box">
@@ -98,13 +98,13 @@
         </div>
 
         <div class="resend-section">
-          Don’t receive a code?
-          <a (click)="resendCode()">Resend code</a>
+          {{'dontReceiveACode' | translate}}
+          <a (click)="resendCode()">{{'resenCode' | translate}}</a>
         </div>
 
         <div class="footer">
           <div class="change-email">
-            <a (click)="changeEmail()">Sign up with different email</a>
+            <a (click)="changeEmail()">{{'signupWithDifferentEmail' | translate}}</a>
           </div>
         </div>
       </div>
