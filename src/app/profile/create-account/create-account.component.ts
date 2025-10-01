@@ -60,7 +60,9 @@ export class CreateAccountComponent implements OnInit {
           this.isSaving = false;
           if (response.response_code == 200) {
             this.showVerificationSection = true;
-          } 
+          } else {
+            this.toastMessageService.showError(response.response_message);
+          }
         },
         error: (error) => {
           this.isSaving = false;

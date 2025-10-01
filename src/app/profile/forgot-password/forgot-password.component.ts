@@ -46,6 +46,8 @@ export class ForgotPasswordComponent implements OnInit {
           this.isProcessing = false;
           if (response.response_code == 200) {
             this.showVerification = true;        
+          } else {
+            this.toastMessageService.showError(response.response_message);
           }
         },
         error: (error) => {

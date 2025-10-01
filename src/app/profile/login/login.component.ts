@@ -49,6 +49,8 @@ export class LoginComponent implements OnInit {
             localStorage.setItem("ssToken", response.token);
             localStorage.setItem("ssUser", JSON.stringify(response.user));
             this.router.navigate(["/"]);
+          } else {
+            this.toastMessageService.showError(response.response_message);
           }
         },
         error: (error) => {

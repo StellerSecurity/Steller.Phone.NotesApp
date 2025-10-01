@@ -87,7 +87,7 @@ export class CreateNewPasswordComponent implements OnInit {
             if (response.response_code == 200) {
               this.router.navigate(['/']);
             } else {
-              
+              this.toastMessageService.showError(response.response_message);
             }
           },
           error: (error: any) => {
