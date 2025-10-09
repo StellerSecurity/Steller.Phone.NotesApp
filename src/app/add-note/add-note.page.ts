@@ -76,7 +76,6 @@ export class AddNotePage {
                 private notesService: NotesService,
                 private toastController: ToastController,
                 private modalCtrl: ModalController,
-                private secretapi: SecretapiService,
                 private alertCtrl: AlertController,
                 private notesApiV1Service: NotesApiV1Service,
                 private translatorService: TranslatorService) {
@@ -90,7 +89,6 @@ export class AddNotePage {
             if(this.notes_id === null) {
                 console.log('new note created');
                 this.notes_id = uuidv4();
-                this.pauseLiveSync();
                 return;
             }
 
@@ -114,14 +112,13 @@ export class AddNotePage {
                 this.note_title = "Untitled";
             }
 
-             this.fetchLiveNote();
+            this.startLiveNotePolling();
 
         });
 
     }
 
     ionViewDidEnter() {
-        this.startLiveNotePolling();
         this.passwordStrengthHelperText = this.allTranslations.passwordAtLeastLength;
         if(this.note_text.length === 0) {
             setTimeout(() => {
@@ -372,6 +369,10 @@ export class AddNotePage {
 
         if(serverSync) {
             this.notesApiV1Service.upload(0, this.notes).subscribe(res => {});
+            // newly created notes...
+            if(this.liveNoteTimer === null || this.liveNoteTimer === undefined) {
+                this.startLiveNotePolling();
+            }
         }
 
     }

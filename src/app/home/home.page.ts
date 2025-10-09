@@ -395,6 +395,10 @@ export class HomePage {
         return this.filteredResults;
     }
 
+    public settings() {
+        this.navController.navigateForward('app-settings').then(r => {});
+    }
+
     goToProfile() {
         this.navController.navigateForward('profile').then(r => {});
     }
