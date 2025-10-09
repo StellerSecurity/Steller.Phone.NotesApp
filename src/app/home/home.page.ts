@@ -46,7 +46,7 @@ export class HomePage {
 
     public isSearching = false;
 
-    public isSynching = false;
+    public isSyncing = false;
 
     allTranslations:any;
 
@@ -294,18 +294,18 @@ export class HomePage {
     }
 
     private syncFromServer() {
-        this.isSynching = true;
+        this.isSyncing = true;
         this.notesApiServiceV1.download(0).subscribe({
             next: ({ notes, watermark }) => {
                 // ignore any tombstones from server
                 const keep = notes.filter(n => !n.deleted);
                 this.notes = keep;
                 this.filteredResults = this.notes;
-                this.isSynching = false;
+                this.isSyncing = false;
                 this.noteService.setNotes(JSON.stringify(keep));
             },
             error: (err) => {
-                this.isSynching = false;
+                this.isSyncing = false;
                 console.error('download failed', err)
             },
         });
@@ -393,10 +393,6 @@ export class HomePage {
         this.filteredResults = this.filteredResults.sort((a, b) => b.last_modified - a.last_modified);
 
         return this.filteredResults;
-    }
-
-    public settings() {
-        this.navController.navigateForward('app-settings').then(r => {});
     }
 
     goToProfile() {

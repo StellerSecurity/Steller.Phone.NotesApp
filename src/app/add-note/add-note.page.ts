@@ -61,7 +61,7 @@ export class AddNotePage {
     isEditingTitle: boolean = false;
 
     private liveNoteTimer?: number;
-    private fetchLiveNoteBound = () => this.fetchLiveNote();
+    private fetchLiveNoteBound = () => {}
     private typing = false;
     private typingTimeout: any;
     private isPaused = false;
@@ -90,6 +90,7 @@ export class AddNotePage {
             if(this.notes_id === null) {
                 console.log('new note created');
                 this.notes_id = uuidv4();
+                this.pauseLiveSync();
                 return;
             }
 
@@ -112,6 +113,8 @@ export class AddNotePage {
             } else {
                 this.note_title = "Untitled";
             }
+
+             this.fetchLiveNote();
 
         });
 
@@ -559,10 +562,16 @@ export class AddNotePage {
             // @ts-ignore
             if (this.notes[i].id === this.notes_id) {
                 // @ts-ignore
+                this.currentNote.last_modified = Date.now();
+                // @ts-ignore
                 this.notes[i] = this.currentNote;
                 break;
             }
         }
+
+        this.typing = true;
+        console.log(JSON.stringify(this.notes));
+        this.notesApiV1Service.upload(0, this.notes).subscribe(res => {});
 
         this.storeNoteInStorage();
 
@@ -599,6 +608,7 @@ export class AddNotePage {
                                 // @ts-ignore
                                 this.notes[i].text = this.note_text; // ensure it is not encrypted text.
                                 this.notes[i].title = this.note_title; // ensure it is not encrypted text.
+                                this.notes[i].last_modified = Date.now();
                                 // @ts-ignore
                                 this.notes[i].protected = false;
                                 // @ts-ignore
@@ -607,6 +617,9 @@ export class AddNotePage {
                                 break;
                             }
                         }
+
+                        this.typing = true;
+                        this.notesApiV1Service.upload(0, this.notes).subscribe(res => {});
 
                         // update.
                         this.storeNoteInStorage();

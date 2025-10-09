@@ -17,7 +17,7 @@
     <!-- (appClickOutside)="exitSearchMode()" appClickOutside -->
 
     <ion-buttons slot="end" style="position: relative; top: 5px;">
-     <ion-spinner color="primary" *ngIf="isSynching"></ion-spinner>
+     <ion-spinner color="primary" *ngIf="isSyncing"></ion-spinner>
       <ng-container *ngIf="!searchMode">
         <ion-button *ngIf="filteredResults !== null && filteredResults.length > 0" slot="icon-only" (click)="enterSearchMode()">
           <ion-icon name="search-outline" style="font-size: 24px;"></ion-icon>
