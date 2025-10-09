@@ -48,6 +48,8 @@ export class HomePage {
 
     public isSyncing = false;
 
+    private pauseSync = false;
+
     allTranslations:any;
 
     @ViewChild(IonModal) modal: IonModal;
@@ -91,6 +93,7 @@ export class HomePage {
 
     exitSearchMode() {
         this.search_query = '';
+        this.pauseSync = false;
         this.search();
         this.initializePressGesture();
         setTimeout(() => {
@@ -174,6 +177,7 @@ export class HomePage {
         }
 
         this.isSearching = true;
+        this.pauseSync = true;
         this.filteredResults = filteredNewResults;
 
         this.initializePressGesture();
@@ -294,6 +298,10 @@ export class HomePage {
     }
 
     private syncFromServer() {
+
+        setTimeout(() => { this.syncFromServer(); }, 30_000);
+        if(this.pauseSync) return;
+
         this.isSyncing = true;
         this.notesApiServiceV1.download(0).subscribe({
             next: ({ notes, watermark }) => {
@@ -310,7 +318,6 @@ export class HomePage {
             },
         });
 
-        setTimeout(() => { this.syncFromServer(); }, 30_000);
         console.log('Synching in 30 seconds...');
     }
 
@@ -413,6 +420,9 @@ export class HomePage {
         this.checkboxOpened = !this.checkboxOpened;
         if(!this.checkboxOpened) {
             this.listOfCheckedCheckboxes = [];
+            this.pauseSync = false;
+        } else {
+            this.pauseSync = true;
         }
         this.initializePressGesture();
         setTimeout(() => {
