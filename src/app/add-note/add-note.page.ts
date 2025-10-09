@@ -253,6 +253,8 @@ export class AddNotePage {
             next: (note) => {
                 this.note_title = note.title;
                 this.note_text = note.text;
+
+                if(note.deleted) { this.navController.navigateForward('/'); }
                 console.log(this.note_text);
             },
             error: () => { /* ignore; try again on next tick */ }
