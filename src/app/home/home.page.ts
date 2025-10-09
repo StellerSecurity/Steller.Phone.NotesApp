@@ -59,17 +59,14 @@ export class HomePage {
     @ViewChild('searchbar') searchbar: IonSearchbar;
 
     constructor(private cryptoService: CryptoService,
-                private alertCtrl: AlertController,
                 private noteService: NotesService,
                 private navController: NavController,
                 private toastController: ToastController,
                 private appProtectorService: AppProtectorService,
                 private modalCtrl: ModalController,
                 private notesApiServiceV1: NotesApiV1Service,
-                private loadingController: LoadingController,
                 private translatorService: TranslatorService,
                 private gestureCtrl: GestureController,
-                private platform: Platform,
                 private cdr: ChangeDetectorRef) {}
 
     ionViewWillEnter() {
