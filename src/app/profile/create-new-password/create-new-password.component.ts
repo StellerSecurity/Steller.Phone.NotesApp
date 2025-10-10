@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subscription } from 'rxjs';
@@ -10,7 +10,7 @@ import { ToastMessageService } from 'src/app/services/toast-message.service';
   templateUrl: './create-new-password.component.html',
   styleUrls: ['./create-new-password.component.scss'],
 })
-export class CreateNewPasswordComponent implements OnInit {
+export class CreateNewPasswordComponent implements OnInit, OnDestroy {
   newPassword = '';
   confirmPassword = '';
   showNewPassword = false;
@@ -28,6 +28,7 @@ export class CreateNewPasswordComponent implements OnInit {
 
   ngOnInit(): void {
     this.initPasswordForm();
+    this.getQueryParams();
   }
 
   getQueryParams(): void {
@@ -100,5 +101,9 @@ export class CreateNewPasswordComponent implements OnInit {
 
   backToLogin() {
     this.router.navigate(['/profile/login']);
+  }
+
+  ngOnDestroy(): void {
+    this.subscriptions.forEach(sub => sub.unsubscribe());
   }
 }

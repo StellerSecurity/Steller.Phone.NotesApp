@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { Router } from '@angular/router';
 import { AuthService } from 'src/app/services/auth.service';
 import { ToastMessageService } from 'src/app/services/toast-message.service';
 
@@ -23,7 +24,8 @@ export class ForgotPasswordComponent implements OnInit {
   isProcessing = false;
 
   constructor(private fb: FormBuilder, private authService: AuthService,
-    private toastMessageService: ToastMessageService) {
+    private toastMessageService: ToastMessageService,
+    private router: Router) {
 
   }
 
@@ -67,5 +69,14 @@ export class ForgotPasswordComponent implements OnInit {
 
   onOtpChange(value: string) {
     this.otpValue = value;
+
+    if(this.otpValue?.length == 4 ) {
+      this.router.navigate(['/profile/create-new-password'], {
+        queryParams: {
+          confirmationCode: this.otpValue,
+          email: this.forgotPasswordForm.get('email')?.value
+        }
+      })
+    }
   }
 }
