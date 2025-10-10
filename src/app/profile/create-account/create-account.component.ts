@@ -5,6 +5,7 @@ import { AuthService } from 'src/app/services/auth.service';
 import { ToastMessageService } from 'src/app/services/toast-message.service';
 import {NotesService} from "../../services/notes.service";
 import {NotesApiV1Service} from "../../services/notes-api-v1.service";
+import {CryptoKeyService, exportServerBundleFromHeader} from "../../services/crypto-key.service";
 
 @Component({
   selector: 'app-create-account',
@@ -30,7 +31,7 @@ export class CreateAccountComponent implements OnInit {
 
   constructor(private router: Router, private fb: FormBuilder,
     private notesService: NotesService,
-    private notesApiV1Service: NotesApiV1Service,
+    private notesApiV1Service: NotesApiV1Service, private crypto: CryptoKeyService,
     private authService: AuthService, private toastMessageService: ToastMessageService) {}
 
   ngOnInit(): void {
@@ -47,19 +48,49 @@ export class CreateAccountComponent implements OnInit {
     });
   }
 
+    /** Map vault header → your server columns */
+    private headerToServerFields(header: any) {
+        return {
+            crypto_version: 'v1',
+            // store base64 values as strings; server will base64_decode to BLOBs
+            eak: header.mk_wrapped_b64,
+            kdf_salt: header.kdf.salt_b64,
+            kdf_params: {
+                algo: header.kdf.algo, // 'PBKDF2'
+                hash: header.kdf.hash, // 'SHA-256'
+                iters: header.kdf.iters // e.g., 210000
+            }
+            // eak_recovery: '...' // optional, if you implement recovery
+        };
+    }
+
   togglePasswordVisibility() {
     this.showPassword = !this.showPassword;
   }
 
-  createAccount() {
+  async createAccount() {
     // Simulate API call and show verification
     if (this.createUserForm.valid) {
-      this.isSaving = true;
-      const createUserObj = {
-        username: this.createUserForm.get("email")?.value,
-        password: this.createUserForm.get("password")?.value,
-      };
-      this.authService.createAccount(createUserObj).subscribe({
+    this.isSaving = true;
+    // inside your submit handler
+    const createUserObj = {
+        // your form fields
+        username: this.createUserForm.get('email')?.value,      // prefer 'email'
+        password: this.createUserForm.get('password')?.value,
+    };
+
+    await this.crypto.createVault(createUserObj.password);
+    const header = this.crypto.exportRecoveryHeader();
+
+    // DB-compatible payload (packs IV into eak):
+    const bundle = exportServerBundleFromHeader(header);
+
+    const payload = {
+        ...createUserObj,
+        ...bundle,
+    };
+
+      this.authService.createAccount(payload).subscribe({
         next: (response) => {
           this.isSaving = false;
           if (response.response_code == 200) {
