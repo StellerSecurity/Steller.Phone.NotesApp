@@ -62,9 +62,3 @@ export class NotesApiV1Service {
         );
     }
 }
-
-export interface DownloadResponseV1 {
-    notes: NoteV1[];
-    has_more?: boolean;
-    watermark?: number;
-}
