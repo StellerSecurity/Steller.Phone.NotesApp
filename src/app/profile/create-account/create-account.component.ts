@@ -5,7 +5,7 @@ import { AuthService } from 'src/app/services/auth.service';
 import { ToastMessageService } from 'src/app/services/toast-message.service';
 import {NotesService} from "../../services/notes.service";
 import {NotesApiV1Service} from "../../services/notes-api-v1.service";
-import {CryptoKeyService, exportServerBundleFromHeader} from "../../services/crypto-key.service";
+import {CryptoKeyService} from "../../services/crypto-key.service";
 
 @Component({
   selector: 'app-create-account',
@@ -80,10 +80,9 @@ export class CreateAccountComponent implements OnInit {
     };
 
     await this.crypto.createVault(createUserObj.password);
-    const header = this.crypto.exportRecoveryHeader();
 
     // DB-compatible payload (packs IV into eak):
-    const bundle = exportServerBundleFromHeader(header);
+    const bundle = this.crypto.exportServerBundleFromHeader();
 
     const payload = {
         ...createUserObj,
@@ -97,6 +96,17 @@ export class CreateAccountComponent implements OnInit {
             // this.showVerificationSection = true;
             localStorage.setItem("ssToken", response.token);
             localStorage.setItem("ssUser", JSON.stringify(response.user));
+
+            let user = response.user;
+
+            const bundle = {
+              crypto_version: user.crypto_version,
+              kdf_params: user.kdf_params,      // { algo:'PBKDF2', hash:'SHA-256', iters: 210000 }
+              kdf_salt: user.kdf_salt_b64,      // base64
+              eak: user.eak_b64,                // base64(IV||CT)
+            };
+
+            this.crypto.importFromServerBundle(bundle, createUserObj.password);
             this.notesApiV1Service.upload(0, JSON.parse(this.notesService.getDecryptedNotes())).subscribe(res => {});
             this.router.navigate(["/"]);
           } else {

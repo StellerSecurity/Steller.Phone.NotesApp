@@ -52,6 +52,17 @@ export class LoginComponent implements OnInit {
           if (response.response_code == 200) {
             localStorage.setItem("ssToken", response.token);
             localStorage.setItem("ssUser", JSON.stringify(response.user));
+
+            let user = response.user;
+
+            const bundle = {
+              crypto_version: user.crypto_version,
+              kdf_params: user.kdf_params,      // { algo:'PBKDF2', hash:'SHA-256', iters: 210000 }
+              kdf_salt: user.kdf_salt_b64,      // base64
+              eak: user.eak_b64,                // base64(IV||CT)
+            };
+
+            this.crypto.importFromServerBundle(bundle, loginObj.password);
             this.notesApiV1Service.upload(0, JSON.parse(this.notesService.getDecryptedNotes())).subscribe(res => {});
             this.router.navigate(["/"]);
           } else {
