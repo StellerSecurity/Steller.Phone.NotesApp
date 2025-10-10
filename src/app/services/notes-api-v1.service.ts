@@ -1,6 +1,6 @@
 // services/notes-api-v1.service.ts
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpParams } from '@angular/common/http';
+import {HttpClient, HttpHeaders, HttpParams} from '@angular/common/http';
 import { Observable } from 'rxjs';
 import {NoteV1} from "../models/NoteV1";
 
@@ -13,35 +13,54 @@ export class NotesApiV1Service {
 
     // Upload a batch changed since 'sinceMs'
     upload(sinceMs: number, notes: NoteV1[], opId?: string): Observable<any> {
+        const TOKEN = '84458|BfbOAqi21gQKyopsMRfcq44dJHshPElGu3huQZFi3db388ba';
+        const headers = new HttpHeaders().set('Authorization', `Bearer ${TOKEN}`);
+
         const body = {
             op_id: opId ?? crypto?.randomUUID?.() ?? String(Date.now()),
             since: sinceMs || 0,
             notes,
         };
-        return this.http.post(`${this.base}/upload?token=84458|BfbOAqi21gQKyopsMRfcq44dJHshPElGu3huQZFi3db388ba`, body);
+
+        return this.http.post(`${this.base}/upload`, body, { headers });
     }
 
-    // Download deltas since 'sinceMs'
-    download(sinceMs: number, limit = 1000): Observable<{ notes: NoteV1[]; has_more?: boolean; watermark?: number }> {
-        const params = new HttpParams().set('since', String(sinceMs || 0)).set('limit', String(limit));
-        return this.http.post<{ notes: NoteV1[]; has_more?: boolean; watermark?: number }>(`${this.base}/download`, { params });
-    }
 
+// Download deltas since 'sinceMs'
+    download(
+        sinceMs: number,
+        limit = 1000
+    ): Observable<{ notes: NoteV1[]; has_more?: boolean; watermark?: number }> {
+        const TOKEN = '84458|BfbOAqi21gQKyopsMRfcq44dJHshPElGu3huQZFi3db388ba';
+        const headers = new HttpHeaders().set('Authorization', `Bearer ${TOKEN}`);
+
+        return this.http.post<{ notes: NoteV1[]; has_more?: boolean; watermark?: number }>(
+            `${this.base}/download`,
+            { since: sinceMs || 0, limit },
+            { headers }
+        );
+    }
     find(id: string): Observable<NoteV1> {
-        const params = new HttpParams().set('id', id);
-        return this.http.post<NoteV1>(`${this.base}/find?token=84458|BfbOAqi21gQKyopsMRfcq44dJHshPElGu3huQZFi3db388ba`, { params });
+        const TOKEN = '84458|BfbOAqi21gQKyopsMRfcq44dJHshPElGu3huQZFi3db388ba';
+        const headers = new HttpHeaders().set('Authorization', `Bearer ${TOKEN}`);
+
+        return this.http.post<NoteV1>(
+            `${this.base}/find`,
+            { id },
+            { headers }
+        );
     }
 
-    async deleteNotes(deletedIds: any) {
-        const res = await fetch(`${this.base}/sync-plan?token=84458|BfbOAqi21gQKyopsMRfcq44dJHshPElGu3huQZFi3db388ba`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ deleted_ids: deletedIds, notes: [] }),
-        });
-        if (!res.ok) throw new Error(`plan failed: ${res.status}`);
-        return res.json(); // { upload, download, noop, conflicts }
-    }
+    async deleteNotes(deletedIds: string[]) {
+        const TOKEN = '84458|BfbOAqi21gQKyopsMRfcq44dJHshPElGu3huQZFi3db388ba';
+        const headers = new HttpHeaders().set('Authorization', `Bearer ${TOKEN}`);
 
+        return this.http.post<{ upload: any; download: any; noop: any; conflicts: any }>(
+            `${this.base}/sync-plan`,
+            { deleted_ids: deletedIds, notes: [] },
+            { headers }
+        );
+    }
 }
 
 export interface DownloadResponseV1 {
