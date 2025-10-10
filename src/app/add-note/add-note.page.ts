@@ -66,6 +66,7 @@ export class AddNotePage {
     private typingTimeout: any;
     private isPaused = false;
 
+
     @ViewChild('titleInput', { static: false }) titleInputRef!: IonInput;
     @ViewChild('richTextEditorComponentRef') richTextEditorComponent!: RichTextEditorComponent;
 
@@ -251,11 +252,51 @@ export class AddNotePage {
         if (this.notes_id == null) return;
         this.notesApiV1Service.find(this.notes_id).subscribe({
             next: (note) => {
-                this.note_title = note.title;
-                this.note_text = note.text;
 
-                if(note.deleted) { this.navController.navigateForward('/'); }
-                console.log(this.note_text);
+                console.log('Fetched Live Note');
+                if(note.deleted) { this.navController.navigateForward('/'); return; }
+
+                // @ts-ignore
+                if(note.protected !== this.currentNote.protected) {
+                    this.navController.navigateForward('/');
+                }
+
+                if(!note.protected) {
+                    this.notes_password_stored = "";
+                }
+
+                // @ts-ignore
+                if(this.currentNote.last_modified == note.last_modified)
+                {
+                    console.log('Modification times are equal');
+                    return;
+                }
+
+                // @ts-ignore
+                if(this.currentNote.last_modified > note.last_modified)
+                {
+                    console.log('Modification times are higher.');
+                    return;
+                }
+
+                if(note.protected) {
+                    let decrypted = this.decryptNote(this.notes_password_stored, note);
+                    // the user has changed the note password in another device, while the user is viewing the note in a second device.
+                    // the only solution is to force the user to go back, and then let user go to the note again.
+                    if (!decrypted) {
+                        this.dismissModal();
+                        this.navController.navigateForward('/');
+                    }
+                } else {
+                    this.note_title = note.title;
+                    this.note_text = note.text;
+
+                    // @ts-ignore
+                    this.currentNote.text = this.note_text;
+                    // @ts-ignore
+                    this.currentNote.title = this.note_title;
+                }
+
             },
             error: () => { /* ignore; try again on next tick */ }
         });
@@ -290,8 +331,6 @@ export class AddNotePage {
             // @ts-ignore
             protectedNote = this.currentNote.protected;
         }
-
-        let currentdate = new Date();
 
         const now = new Date();
 
@@ -406,35 +445,12 @@ export class AddNotePage {
                 if (confirm) {
                     this.notes_password_stored = inputValue;
 
-                    try {
-                        // @ts-ignore
-                        let decryptedText = this.cryptoService.decrypt(this.currentNote.text, inputValue);
+                    let decryptNote = this.decryptNote(this.notes_password_stored, this.currentNote);
 
-                        console.log(decryptedText.length);
-                        if(decryptedText.length == 0) {
-                            await this.wrongPasswordEntered();
-                            return;
-                        }
-
-                        let decryptedTitle = "";
-
-                        try {
-                            // @ts-ignore
-                            decryptedTitle = this.cryptoService.decrypt(this.currentNote.title, inputValue);
-                        } catch (e) {}
-
-                        // @ts-ignore
-                        this.currentNote.text = decryptedText;
-                        this.note_text = decryptedText;
-
-                        this.note_title = decryptedTitle;
-
-                        this.note_locked = false;
-                        // Close the modal since the password is correct
-                        await modal.dismiss();
-
-                    } catch (e) {
-                        await this.wrongPasswordEntered();
+                    if(!decryptNote) {
+                        this.wrongPasswordEntered();
+                    } else {
+                        modal.dismiss();
                     }
 
                 } else {
@@ -449,6 +465,40 @@ export class AddNotePage {
 
         return await modal.present();
 
+    }
+
+    private decryptNote(notePassword: string, noteToDecrypt: any) {
+
+        if(notePassword.length == 0) return false;
+
+        let decryptedText = null;
+
+        try {
+            // @ts-ignore
+            decryptedText = this.cryptoService.decrypt(noteToDecrypt.text, notePassword);
+        } catch (e) {
+            return false;
+        }
+
+        if(decryptedText == null) return false;
+        if(decryptedText.length == 0) return false;
+
+        let decryptedTitle = "";
+
+        try {
+            // @ts-ignore
+            decryptedTitle = this.cryptoService.decrypt(noteToDecrypt.title, notePassword);
+        } catch (e) {}
+
+        // @ts-ignore
+        this.currentNote.text = decryptedText;
+        this.note_text = decryptedText;
+
+        this.note_title = decryptedTitle;
+
+        this.note_locked = false;
+
+        return true;
     }
 
     public async dismissModal() {
@@ -659,7 +709,7 @@ export class AddNotePage {
                         // @ts-ignore
                         if (this.notes[i].id === this.notes_id) {
                             this.notes[i].deleted = true;
-                            await this.notesApiV1Service.deleteNotes(this.notes[i].id);
+                            await this.notesApiV1Service.deleteNotes(this.notes[i].id).subscribe({});
                             // @ts-ignore
                             this.notes.splice(i, 1);
                             break;

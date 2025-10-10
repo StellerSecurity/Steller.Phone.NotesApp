@@ -51,7 +51,7 @@ export class NotesApiV1Service {
         );
     }
 
-    async deleteNotes(deletedIds: string[]) {
+    deleteNotes(deletedIds: string[]) {
         const TOKEN = '84458|BfbOAqi21gQKyopsMRfcq44dJHshPElGu3huQZFi3db388ba';
         const headers = new HttpHeaders().set('Authorization', `Bearer ${TOKEN}`);
 

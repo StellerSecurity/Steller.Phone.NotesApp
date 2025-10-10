@@ -80,8 +80,13 @@ export class HomePage {
             this.setData(this.noteService.getNotesAppPassword()); // will send a password, if the app is encrypted.
         }
 
+        if(this.pauseSync) {
+            this.pauseSync = false;
+        }
+
         this.checkboxOpened = false;
         this.initializePressGesture();
+        this.syncFromServer();
     }
 
     enterSearchMode() {
@@ -190,7 +195,7 @@ export class HomePage {
 
     ionViewDidEnter() {
         this.initializePressGesture();
-        window.addEventListener('online', () => { this.syncFromServer() });
+        //window.addEventListener('online', () => { this.syncFromServer() });
     }
 
     initializePressGesture(): void {
@@ -292,25 +297,65 @@ export class HomePage {
 
         this.filteredResults = this.notes;
 
-        this.syncFromServer();
         return true;
 
     }
 
     private syncFromServer() {
-
-        setTimeout(() => { this.syncFromServer(); }, 30_000);
         if(this.pauseSync) return;
+        setTimeout(() => { this.syncFromServer(); }, 30_000);
 
         this.isSyncing = true;
         this.notesApiServiceV1.download(0).subscribe({
             next: ({ notes, watermark }) => {
-                // ignore any tombstones from server
-                const keep = notes.filter(n => !n.deleted);
-                this.notes = keep;
-                this.filteredResults = this.notes;
+
+
+                const serverNotes = notes ?? [];
+
+                // Start from what you already show locally (includes local-only/new notes)
+                const map = new Map<string, any>((this.notes ?? []).map((n: { id: any; }) => [n.id, n]));
+
+                for (const s of serverNotes) {
+                    const l = map.get(s.id);
+
+                    // If server says deleted:
+                    if (s.deleted) {
+                        console.log("deleted" + s.id);
+                        // Only remove if server deletion is as new/newer than local
+                        if (!l || (s.last_modified ?? 0) >= (l.last_modified ?? 0)) {
+                            map.delete(s.id);
+                        }
+                        continue;
+                    }
+
+                    // Not deleted:
+                    if (!l) {
+                        // New to this device
+                        map.set(s.id, s);
+                        continue;
+                    }
+
+                    // Both exist → pick the newer by last_modified
+                    if ((s.last_modified ?? 0) >= (l.last_modified ?? 0)) {
+                        // Server is newer or equal → take server
+                        map.set(s.id, { ...l, ...s });
+                    } else {
+                        // Local is newer → keep local (it may not have uploaded yet)
+                        // do nothing
+                    }
+                }
+
+                // Result (locals that server didn't return yet remain)
+                const merged = Array.from(map.values()).filter(n => !n.deleted);
+
+                console.log(merged);
+
+                this.notes = merged;
+                this.filteredResults = merged;
                 this.isSyncing = false;
-                this.noteService.setNotes(JSON.stringify(keep));
+                this.noteService.setNotes(JSON.stringify(merged));
+                this.setData(this.noteService.getNotesAppPassword());
+
             },
             error: (err) => {
                 this.isSyncing = false;
@@ -480,7 +525,7 @@ export class HomePage {
         }
 
         this.noteService.setDecryptedNotes(this.noteService.getNotes());
-        this.notesApiServiceV1.deleteNotes(this.listOfCheckedCheckboxes);
+        this.notesApiServiceV1.deleteNotes(this.listOfCheckedCheckboxes).subscribe();
 
         this.listOfCheckedCheckboxes = [];
         this.toggleCheckbox();
@@ -554,6 +599,7 @@ export class HomePage {
 
     ionViewWillLeave() {
         this.exitSearchMode();
+        this.pauseSync = true;
         // Perform cleanup, stop timers, dismiss modals, etc.
     }
 
