@@ -7,7 +7,7 @@ import {NoteV1} from "../models/NoteV1";
 @Injectable({ providedIn: 'root' })
 export class NotesApiV1Service {
     // 🔧 adjust this to your backend root, e.g. '/api/v1/notecontroller/'
-    private base = 'https://stellarprivatenotesapiprod.azurewebsites.net/api/v1/notecontroller';
+    private base = 'https://stellarprivatenotesuiappapiprod-dmefgreabahpcsbm.swedencentral-01.azurewebsites.net/api/v1/notescontroller';
 
     constructor(private http: HttpClient) {}
 
