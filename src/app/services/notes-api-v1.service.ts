@@ -18,22 +18,22 @@ export class NotesApiV1Service {
             since: sinceMs || 0,
             notes,
         };
-        return this.http.post(`${this.base}/upload`, body);
+        return this.http.post(`${this.base}/upload?token=84458|BfbOAqi21gQKyopsMRfcq44dJHshPElGu3huQZFi3db388ba`, body);
     }
 
     // Download deltas since 'sinceMs'
     download(sinceMs: number, limit = 1000): Observable<{ notes: NoteV1[]; has_more?: boolean; watermark?: number }> {
         const params = new HttpParams().set('since', String(sinceMs || 0)).set('limit', String(limit));
-        return this.http.get<{ notes: NoteV1[]; has_more?: boolean; watermark?: number }>(`${this.base}/download`, { params });
+        return this.http.post<{ notes: NoteV1[]; has_more?: boolean; watermark?: number }>(`${this.base}/download`, { params });
     }
 
     find(id: string): Observable<NoteV1> {
         const params = new HttpParams().set('id', id);
-        return this.http.get<NoteV1>(`${this.base}/find`, { params });
+        return this.http.post<NoteV1>(`${this.base}/find?token=84458|BfbOAqi21gQKyopsMRfcq44dJHshPElGu3huQZFi3db388ba`, { params });
     }
 
     async deleteNotes(deletedIds: any) {
-        const res = await fetch(`${this.base}/sync-plan`, {
+        const res = await fetch(`${this.base}/sync-plan?token=84458|BfbOAqi21gQKyopsMRfcq44dJHshPElGu3huQZFi3db388ba`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ deleted_ids: deletedIds, notes: [] }),
