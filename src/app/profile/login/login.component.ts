@@ -6,6 +6,7 @@ import { AuthService } from 'src/app/services/auth.service';
 import { ToastMessageService } from 'src/app/services/toast-message.service';
 import {NotesService} from "../../services/notes.service";
 import {NotesApiV1Service} from "../../services/notes-api-v1.service";
+import {CryptoKeyService} from "../../services/crypto-key.service";
 
 @Component({
   selector: 'app-login',
@@ -20,6 +21,7 @@ export class LoginComponent implements OnInit {
   constructor(private router: Router, private fb: FormBuilder,
      private notesService: NotesService,
      private notesApiV1Service: NotesApiV1Service,
+     private crypto: CryptoKeyService,
      private authService: AuthService, private toastMessageService: ToastMessageService) {}
 
 
