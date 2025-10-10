@@ -59,7 +59,10 @@ export class CreateAccountComponent implements OnInit {
         next: (response) => {
           this.isSaving = false;
           if (response.response_code == 200) {
-            this.showVerificationSection = true;
+            // this.showVerificationSection = true;
+            localStorage.setItem("ssToken", response.token);
+            localStorage.setItem("ssUser", JSON.stringify(response.user));
+            this.router.navigate(["/"]);
           } else {
             this.toastMessageService.showError(response.response_message);
           }

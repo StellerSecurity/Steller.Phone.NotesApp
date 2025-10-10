@@ -9,7 +9,6 @@ import { ToastMessageService } from 'src/app/services/toast-message.service';
   styleUrls: ['./forgot-password.component.scss'],
 })
 export class ForgotPasswordComponent implements OnInit {
-  email = '';
   showVerification = false;
   otpValue = '';
   otpConfig = {
@@ -59,7 +58,7 @@ export class ForgotPasswordComponent implements OnInit {
   }
 
   resendCode() {
-    console.log('Resend code to', this.email);
+    this.sendCode();
   }
 
   useDifferentEmail() {
