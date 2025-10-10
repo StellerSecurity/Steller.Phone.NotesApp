@@ -4,6 +4,8 @@ import { Router } from '@angular/router';
 import { loginDto } from 'src/app/constants/models/authDto';
 import { AuthService } from 'src/app/services/auth.service';
 import { ToastMessageService } from 'src/app/services/toast-message.service';
+import {NotesService} from "../../services/notes.service";
+import {NotesApiV1Service} from "../../services/notes-api-v1.service";
 
 @Component({
   selector: 'app-login',
@@ -16,6 +18,8 @@ export class LoginComponent implements OnInit {
   isSaving = false;
 
   constructor(private router: Router, private fb: FormBuilder,
+     private notesService: NotesService,
+     private notesApiV1Service: NotesApiV1Service,
      private authService: AuthService, private toastMessageService: ToastMessageService) {}
 
 
@@ -48,6 +52,7 @@ export class LoginComponent implements OnInit {
           if (response.response_code == 200) {
             localStorage.setItem("ssToken", response.token);
             localStorage.setItem("ssUser", JSON.stringify(response.user));
+            this.notesApiV1Service.upload(0, JSON.parse(this.notesService.getDecryptedNotes())).subscribe(res => {});
             this.router.navigate(["/"]);
           } else {
             this.toastMessageService.showError(response.response_message);

@@ -3,6 +3,8 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from 'src/app/services/auth.service';
 import { ToastMessageService } from 'src/app/services/toast-message.service';
+import {NotesService} from "../../services/notes.service";
+import {NotesApiV1Service} from "../../services/notes-api-v1.service";
 
 @Component({
   selector: 'app-create-account',
@@ -27,6 +29,8 @@ export class CreateAccountComponent implements OnInit {
   isSaving = false;
 
   constructor(private router: Router, private fb: FormBuilder,
+    private notesService: NotesService,
+    private notesApiV1Service: NotesApiV1Service,
     private authService: AuthService, private toastMessageService: ToastMessageService) {}
 
   ngOnInit(): void {
@@ -62,6 +66,7 @@ export class CreateAccountComponent implements OnInit {
             // this.showVerificationSection = true;
             localStorage.setItem("ssToken", response.token);
             localStorage.setItem("ssUser", JSON.stringify(response.user));
+            this.notesApiV1Service.upload(0, JSON.parse(this.notesService.getDecryptedNotes())).subscribe(res => {});
             this.router.navigate(["/"]);
           } else {
             this.toastMessageService.showError(response.response_message);
