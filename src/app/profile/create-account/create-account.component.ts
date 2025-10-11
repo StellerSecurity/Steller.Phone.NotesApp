@@ -7,6 +7,7 @@ import {NotesService} from "../../services/notes.service";
 import {NotesApiV1Service} from "../../services/notes-api-v1.service";
 import {CryptoKeyService} from "../../services/crypto-key.service";
 import {firstValueFrom} from "rxjs";
+import { SecureStorageService } from 'src/app/services/secure-storage.service';
 
 @Component({
   selector: 'app-create-account',
@@ -33,7 +34,8 @@ export class CreateAccountComponent implements OnInit {
   constructor(private router: Router, private fb: FormBuilder,
     private notesService: NotesService,
     private notesApiV1Service: NotesApiV1Service, private crypto: CryptoKeyService,
-    private authService: AuthService, private toastMessageService: ToastMessageService) {}
+    private authService: AuthService, private toastMessageService: ToastMessageService,
+    private secureStorageService: SecureStorageService) {}
 
   ngOnInit(): void {
     this.initCreateUserForm();
@@ -95,8 +97,8 @@ export class CreateAccountComponent implements OnInit {
           this.isSaving = false;
           if (response.response_code == 200) {
             // this.showVerificationSection = true;
-            localStorage.setItem("ssToken", response.token);
-            localStorage.setItem("ssUser", JSON.stringify(response.user));
+            this.secureStorageService.setItem("ssToken", response.token);
+            this.secureStorageService.setItem("ssUser", JSON.stringify(response.user));
 
             let user = response.user;
 

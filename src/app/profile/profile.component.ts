@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
+import { SecureStorageService } from '../services/secure-storage.service';
 
 @Component({
   selector: 'app-profile',
@@ -10,7 +11,8 @@ export class ProfileComponent implements OnInit {
   user: any = {};
   isLoggedIn = false;
 
-  constructor(private router: Router) {}
+  constructor(private router: Router,
+    private secureStorageService: SecureStorageService) {}
 
   ngOnInit() {
     // runs only once when component is initialized
@@ -22,9 +24,13 @@ export class ProfileComponent implements OnInit {
     this.loadUserData();
   }
 
-  private loadUserData() {
-    this.user = JSON.parse(localStorage.getItem('ssUser') || '{}');
-    this.isLoggedIn = !!localStorage.getItem('ssToken');
+  private async  loadUserData() {
+    const user = await this.secureStorageService.getItem('ssUser');
+    if(user) {
+      this.user = JSON.parse(user);
+    }
+    const token = await this.secureStorageService.getItem('ssToken');
+    this.isLoggedIn = !!token;
   }
 
   goToSettings() {
@@ -32,8 +38,8 @@ export class ProfileComponent implements OnInit {
   }
 
   logout() {
-    localStorage.removeItem('ssToken');
-    localStorage.removeItem('ssUser');
+    this.secureStorageService.removeItem('ssToken');
+    this.secureStorageService.removeItem('ssUser');
     this.isLoggedIn = false;
     this.user = {};
     // this.router.navigate(['/profile/login']); // redirect after logout

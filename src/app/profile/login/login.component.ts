@@ -8,6 +8,7 @@ import {NotesService} from "../../services/notes.service";
 import {NotesApiV1Service} from "../../services/notes-api-v1.service";
 import {CryptoKeyService, packCipherBlob} from "../../services/crypto-key.service";
 import {firstValueFrom} from "rxjs";
+import { SecureStorageService } from 'src/app/services/secure-storage.service';
 
 @Component({
   selector: 'app-login',
@@ -23,7 +24,9 @@ export class LoginComponent implements OnInit {
      private notesService: NotesService,
      private notesApiV1Service: NotesApiV1Service,
      private crypto: CryptoKeyService,
-     private authService: AuthService, private toastMessageService: ToastMessageService) {}
+     private authService: AuthService,
+     private toastMessageService: ToastMessageService,
+     private secureStorageService: SecureStorageService) {}
 
 
   ngOnInit(): void {
@@ -53,8 +56,8 @@ export class LoginComponent implements OnInit {
         next: (response:any) => {
           this.isSaving = false;
           if (response.response_code == 200) {
-            localStorage.setItem("ssToken", response.token);
-            localStorage.setItem("ssUser", JSON.stringify(response.user));
+            this.secureStorageService.setItem("ssToken", response.token);
+            this.secureStorageService.setItem("ssUser", JSON.stringify(response.user));
 
             let user = response.user;
 

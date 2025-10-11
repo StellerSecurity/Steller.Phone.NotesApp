@@ -36,6 +36,7 @@
     "@zxcvbn-ts/language-en": "^2.1.0",
     "angular-froala-wysiwyg": "^4.2.0",
     "angular-password-strength-meter": "^6.0.0",
+    "capacitor-secure-storage-plugin": "^0.9.0",
     "crypto-js": "^4.1.1",
     "ionicons": "^7.0.0",
     "js-sha512": "^0.9.0",
