@@ -19,8 +19,6 @@ export class NotesApiV1Service {
         let bundle = localStorage.getItem("bundle");
         let password = localStorage.getItem("password");
 
-        console.log(10);
-
         // @ts-ignore
         await this.crypto.importFromServerBundle(JSON.parse(bundle), password);
 
