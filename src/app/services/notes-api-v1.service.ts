@@ -3,24 +3,31 @@ import { Injectable } from '@angular/core';
 import {HttpClient, HttpHeaders, HttpParams} from '@angular/common/http';
 import {firstValueFrom, Observable} from 'rxjs';
 import {NoteV1} from "../models/NoteV1";
-import {CryptoKeyService, packCipherBlob} from "./crypto-key.service";
+import {CryptoKeyService, extractPlainEAK, packCipherBlob} from "./crypto-key.service";
 import {CryptoService} from "./crypto.service";
+import {StorageEncryptionService} from "./storage-encryption.service";
+import {SecureStorageService} from "./secure-storage.service";
 
 @Injectable({ providedIn: 'root' })
 export class NotesApiV1Service {
     // 🔧 adjust this to your backend root, e.g. '/api/v1/notecontroller/'
     private base = 'https://stellarprivatenotesuiappapiprod-dmefgreabahpcsbm.swedencentral-01.azurewebsites.net/api/v1/notescontroller';
 
-    constructor(private http: HttpClient, private crypto: CryptoKeyService) { }
+    constructor(private http: HttpClient,
+                private secureStorageService: SecureStorageService,
+                private crypto: CryptoKeyService, private storageEncryption: StorageEncryptionService) { }
 
     // Upload a batch changed since 'sinceMs'
     async upload(sinceMs: number, notes: NoteV1[], opId?: string): Promise<Object> {
 
-        let bundle = localStorage.getItem("bundle");
-        let password = localStorage.getItem("password");
+        let bundle = await this.storageEncryption.getBundleJson();
 
-        // @ts-ignore
-        await this.crypto.importFromServerBundle(JSON.parse(bundle), password);
+        let eakB64 = await this.secureStorageService.getItem("ssEakB64");
+        if(eakB64 !== null) {
+            await this.crypto.importEAK(eakB64);
+        }
+
+        // BRUGEREN LOGGER PÅ --> VI BRUGER, BRUGERENS PASSWORD TIL
 
         let encryptedNotes = [];
         for(let i = 0; i < notes.length; i++) {
@@ -32,7 +39,7 @@ export class NotesApiV1Service {
             encryptedNotes.push(copiedNote);
         }
 
-        const TOKEN = '84458|BfbOAqi21gQKyopsMRfcq44dJHshPElGu3huQZFi3db388ba';
+        const TOKEN = await this.secureStorageService.getItem("ssToken");
         const headers = new HttpHeaders().set('Authorization', `Bearer ${TOKEN}`);
 
         notes = encryptedNotes;
@@ -48,32 +55,32 @@ export class NotesApiV1Service {
 
 
 // Download deltas since 'sinceMs'
-    download(
+    async download(
         sinceMs: number,
         limit = 1000
-    ): Observable<{ notes: NoteV1[]; has_more?: boolean; watermark?: number }> {
-        const TOKEN = '84458|BfbOAqi21gQKyopsMRfcq44dJHshPElGu3huQZFi3db388ba';
-        const headers = new HttpHeaders().set('Authorization', `Bearer ${TOKEN}`);
+    ): Promise<{ notes: NoteV1[]; has_more?: boolean; watermark?: number }> {
+        const TOKEN = await this.secureStorageService.getItem('ssToken');
+        const headers = new HttpHeaders().set('Authorization', `Bearer ${TOKEN ?? ''}`);
 
-        return this.http.post<{ notes: NoteV1[]; has_more?: boolean; watermark?: number }>(
-            `${this.base}/download`,
-            { since: sinceMs || 0, limit },
-            { headers }
+        return firstValueFrom(
+            this.http.post<{ notes: NoteV1[]; has_more?: boolean; watermark?: number }>(
+                `${this.base}/download`,
+                { since: sinceMs || 0, limit },
+                { headers }
+            )
         );
     }
-    find(id: string): Observable<NoteV1> {
-        const TOKEN = '84458|BfbOAqi21gQKyopsMRfcq44dJHshPElGu3huQZFi3db388ba';
+    async find(id: string): Promise<NoteV1> {
+        const TOKEN = await this.secureStorageService.getItem("ssToken");
         const headers = new HttpHeaders().set('Authorization', `Bearer ${TOKEN}`);
-
-        return this.http.post<NoteV1>(
-            `${this.base}/find`,
-            { id },
-            { headers }
+        return firstValueFrom(
+            this.http.post<NoteV1>(`${this.base}/find`, { id }, { headers })
         );
     }
 
-    deleteNotes(deletedIds: string[]) {
-        const TOKEN = '84458|BfbOAqi21gQKyopsMRfcq44dJHshPElGu3huQZFi3db388ba';
+
+    async deleteNotes(deletedIds: string[]) {
+        const TOKEN = await this.secureStorageService.getItem("ssToken");
         const headers = new HttpHeaders().set('Authorization', `Bearer ${TOKEN}`);
 
         return this.http.post<{ upload: any; download: any; noop: any; conflicts: any }>(

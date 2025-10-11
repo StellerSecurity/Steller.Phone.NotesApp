@@ -16,8 +16,15 @@ import {ResetPassModalComponent} from '../restpass-modal/resetpass-modal.compone
 import {TranslatorService} from '../services/translator.service';
 import {Haptics} from "@capacitor/haptics";
 import {NotesApiV1Service} from "../services/notes-api-v1.service";
-import {CryptoKeyService, unpackCipherBlob} from "../services/crypto-key.service";
+import {
+    CryptoKeyService, extractPlainEAK,
+    loadWrappedBundle,
+    unpackCipherBlob,
+    unwrapBundleWithPassword_WebCrypto, wrapBundleWithPassword_WebCrypto
+} from "../services/crypto-key.service";
 import {firstValueFrom} from "rxjs";
+import {StorageEncryptionService} from "../services/storage-encryption.service";
+import {SecureStorageService} from "../services/secure-storage.service";
 
 @Component({
     selector: 'app-home',
@@ -66,19 +73,19 @@ export class HomePage {
                 private toastController: ToastController,
                 private appProtectorService: AppProtectorService,
                 private modalCtrl: ModalController,
+                private storageEncryptionService: StorageEncryptionService,
                 private notesApiServiceV1: NotesApiV1Service,
                 private translatorService: TranslatorService,
                 private gestureCtrl: GestureController,
                 private crypto: CryptoKeyService,
+                private secureStorageService: SecureStorageService,
                 private cdr: ChangeDetectorRef) {}
 
-    ionViewWillEnter() {
+    async ionViewWillEnter() {
         this.allTranslations = this.translatorService.allTranslations;
         this.timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
         if(this.noteService.shouldAskForPassword()) {
             this.should_display = false;
-        } else {
-            this.setData(this.noteService.getNotesAppPassword()); // will send a password, if the app is encrypted.
         }
 
         if(this.pauseSync) {
@@ -87,7 +94,7 @@ export class HomePage {
 
         this.checkboxOpened = false;
         this.initializePressGesture();
-        this.syncFromServer();
+        await this.syncFromServer();
     }
 
     enterSearchMode() {
@@ -303,81 +310,49 @@ export class HomePage {
     }
 
     async syncFromServer() {
+
         if(this.pauseSync) return;
         setTimeout(() => { this.syncFromServer(); }, 30_000);
 
         this.isSyncing = true;
-        const res = await firstValueFrom(this.notesApiServiceV1.download(0));
+        try {
+            const res = await this.notesApiServiceV1.download(0);
 
-        let bundle = localStorage.getItem("bundle");
-        let password = localStorage.getItem("password");
+            const eakB64 = await this.secureStorageService.getItem('ssEakB64');
+            if (eakB64) await this.crypto.importEAK(eakB64);
 
-        // @ts-ignore
-        await this.crypto.importFromServerBundle(JSON.parse(bundle), password);
+            const serverNotes = res?.notes ?? [];
+            const map = new Map<string, any>((this.notes ?? []).map((n: any) => [n.id, n]));
 
-        const serverNotes = res.notes ?? [];
+            for (const s of serverNotes) {
+                const local = map.get(s.id);
 
-        // Start from what you already show locally (includes local-only/new notes)
-        const map = new Map<string, any>((this.notes ?? []).map((n: { id: any; }) => [n.id, n]));
-
-        for (const s of serverNotes) {
-
-            console.log(s.id);
-            const l = map.get(s.id);
-
-            // If server says deleted:
-            if (s.deleted) {
-                console.log("deleted" + s.id);
-                // Only remove if server deletion is as new/newer than local
-                if (!l || (s.last_modified ?? 0) >= (l.last_modified ?? 0)) {
-                    map.delete(s.id);
+                if (s.deleted) {
+                    if (!local || (s.last_modified ?? 0) >= (local?.last_modified ?? 0)) map.delete(s.id);
+                    continue;
                 }
-                continue;
+
+                const blobText  = unpackCipherBlob(s.text);
+                s.text  = await this.crypto.decryptText({ ...blobText, v: 1, aad_b64: btoa(s.id) });
+
+                const blobTitle = unpackCipherBlob(s.title);
+                s.title = await this.crypto.decryptText({ ...blobTitle, v: 1, aad_b64: btoa(s.id + '#title') });
+
+                if (!local) { map.set(s.id, s); continue; }
+                if ((s.last_modified ?? 0) >= (local.last_modified ?? 0)) map.set(s.id, { ...local, ...s });
             }
 
-            const blobText = unpackCipherBlob(s.text);
-            s.text = await this.crypto.decryptText({
-                ...blobText,
-                v: 1,
-                aad_b64: btoa(s.id),
-            });
-
-            const blobTitle = unpackCipherBlob(s.title);
-            s.title = await this.crypto.decryptText({
-                ...blobTitle,
-                v: 1,
-                aad_b64: btoa(s.id + '#title'),
-            });
-
-            // Not deleted:
-            if (!l) {
-                // New to this device
-                map.set(s.id, s);
-                continue;
-            }
-
-            // Both exist → pick the newer by last_modified
-            if ((s.last_modified ?? 0) >= (l.last_modified ?? 0)) {
-                // Server is newer or equal → take server
-                map.set(s.id, { ...l, ...s });
-            } else {
-                // Local is newer → keep local (it may not have uploaded yet)
-                // do nothing
-            }
+            const merged = Array.from(map.values()).filter((n: any) => !n.deleted);
+            this.notes = merged;
+            this.filteredResults = merged;
+            this.isSyncing = false;
+            this.noteService.setNotes(JSON.stringify(merged));
+            this.setData(this.noteService.getNotesAppPassword());
+            console.log('Synching in 30 seconds...');
+        } catch (err) {
+            console.error('Sync failed:', err);
+            this.isSyncing = false;
         }
-
-        // Result (locals that server didn't return yet remain)
-        const merged = Array.from(map.values()).filter(n => !n.deleted);
-
-        console.log(merged);
-
-        this.notes = merged;
-        this.filteredResults = merged;
-        this.isSyncing = false;
-        this.noteService.setNotes(JSON.stringify(merged));
-        this.setData(this.noteService.getNotesAppPassword());
-
-        console.log('Synching in 30 seconds...');
 
     }
 
@@ -389,7 +364,6 @@ export class HomePage {
     public async unlockNotesApp() {
 
         if(this.input_password_app_unlock.length == 0) {
-
             const toast = await this.toastController.create({
                 message: "Please enter your password.",
                 duration: 3000,
@@ -397,41 +371,36 @@ export class HomePage {
             });
 
             await toast.present();
-
             return;
         }
 
-        this.noteService.increaseAppNoteAttemptsFailedPasswords();
-        if (this.noteService.shouldWipeAllNotesOrNot()) {
-            localStorage.clear();
+      /*  try {
             // @ts-ignore
-            navigator['app'].exitApp();
-            return false;
-        }
+            let password = localStorage.getItem("password");
+            const wrapped = await loadWrappedBundle(); // <-- reads what you stored
+            const plainJson = await unwrapBundleWithPassword_WebCrypto(this.input_password_app_unlock, wrapped);
+            // @ts-ignore
+            await this.crypto.importFromServerBundle(JSON.parse(plainJson), password);
 
-        let shouldUnlock = false;
-
-        try {
-            shouldUnlock = this.setData(this.input_password_app_unlock);
-        } catch (e) {
-            //console.error(e);
-        }
-
-        if(shouldUnlock) {
             this.should_display = true;
+
+            // @ts-ignore
+            this.noteService.setNotesAppPassword(password);
+
             // init protection
             this.appProtectorService.init();
-            // store the notes app password in a service.
-            this.noteService.setNotesAppPassword(this.input_password_app_unlock);
-            // reset failed attempts.
-            this.noteService.setFailedPasswordAppAttempts(0);
 
             this.input_password_app_unlock = "";
             setTimeout(() => {
                 this.initializePressGesture();
                 this.cdr.detectChanges();
-            }, 200)
-        } else {
+            }, 200);
+
+            return;
+
+        } catch (e: any) {
+            console.error(e);
+            // Wrong password OR corrupted bundle
             const toast = await this.toastController.create({
                 message: this.allTranslations.passwordIsNotCorrectTryAgain,
                 duration: 3000,
@@ -441,10 +410,9 @@ export class HomePage {
             this.input_password_app_unlock = "";
 
             await toast.present();
-            return false;
-        }
+            return;
+        }*/
 
-        return true;
     }
 
     /**
@@ -540,7 +508,7 @@ export class HomePage {
         }
 
         this.noteService.setDecryptedNotes(this.noteService.getNotes());
-        this.notesApiServiceV1.deleteNotes(this.listOfCheckedCheckboxes).subscribe();
+        this.notesApiServiceV1.deleteNotes(this.listOfCheckedCheckboxes).then(result => {})
 
         this.listOfCheckedCheckboxes = [];
         this.toggleCheckbox();

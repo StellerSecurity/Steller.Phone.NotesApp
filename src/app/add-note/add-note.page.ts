@@ -253,57 +253,38 @@ export class AddNotePage {
     private fetchLiveNote() {
         if (this.typing) return; // skip while user is typing
         if (this.notes_id == null) return;
-        this.notesApiV1Service.find(this.notes_id).subscribe({
-            next: (note) => {
-
+        this.notesApiV1Service.find(this.notes_id)
+            .then((note) => {
                 console.log('Fetched Live Note');
-                if(note.deleted) { this.navController.navigateForward('/'); return; }
+                if(this.currentNote == null) return;
+                if (note.deleted) { this.navController.navigateForward('/'); return; }
 
                 // @ts-ignore
-                if(note.protected !== this.currentNote.protected) {
-                    console.log('Notes protection mismatch, redirect back'  + note.protected);
-                    this.navController.navigateForward('/');
+                if (note.protected !== this.currentNote.protected) {
+                    console.log('Notes protection mismatch, redirect back' + note.protected);
+                    this.navController.navigateForward('/'); return;
                 }
 
-                if(!note.protected) {
-                    this.notes_password_stored = "";
-                }
+                if (!note.protected) this.notes_password_stored = "";
 
                 // @ts-ignore
-                if(this.currentNote.last_modified == note.last_modified)
-                {
-                    console.log('Modification times are equal');
-                    return;
-                }
-
+                if (this.currentNote.last_modified == note.last_modified) { console.log('Equal'); return; }
                 // @ts-ignore
-                if(this.currentNote.last_modified > note.last_modified)
-                {
-                    console.log('Modification times are higher.');
-                    return;
-                }
+                if (this.currentNote.last_modified >  note.last_modified)  { console.log('Higher'); return; }
 
-                if(note.protected) {
-                    let decrypted = this.decryptNote(this.notes_password_stored, note);
-                    // the user has changed the note password in another device, while the user is viewing the note in a second device.
-                    // the only solution is to force the user to go back, and then let user go to the note again.
-                    if (!decrypted) {
-                        this.dismissModal();
-                        this.navController.navigateForward('/');
-                    }
+                if (note.protected) {
+                    const ok = this.decryptNote(this.notes_password_stored, note);
+                    if (!ok) { this.dismissModal().then(r => {}); this.navController.navigateForward('/'); }
                 } else {
                     this.note_title = note.title;
-                    this.note_text = note.text;
-
+                    this.note_text  = note.text;
                     // @ts-ignore
-                    this.currentNote.text = this.note_text;
+                    this.currentNote.text  = this.note_text as any;
                     // @ts-ignore
-                    this.currentNote.title = this.note_title;
+                    this.currentNote.title = this.note_title as any;
                 }
-
-            },
-            error: () => { /* ignore; try again on next tick */ }
-        });
+            })
+            .catch(() => { /* ignore; try again on next tick */ });
     }
 
     // should be called on key enter.
@@ -713,7 +694,7 @@ export class AddNotePage {
                         // @ts-ignore
                         if (this.notes[i].id === this.notes_id) {
                             this.notes[i].deleted = true;
-                            await this.notesApiV1Service.deleteNotes(this.notes[i].id).subscribe({});
+                            await this.notesApiV1Service.deleteNotes(this.notes[i].id).then((data) => {});
                             // @ts-ignore
                             this.notes.splice(i, 1);
                             break;

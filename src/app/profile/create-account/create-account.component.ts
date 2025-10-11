@@ -5,7 +5,7 @@ import { AuthService } from 'src/app/services/auth.service';
 import { ToastMessageService } from 'src/app/services/toast-message.service';
 import {NotesService} from "../../services/notes.service";
 import {NotesApiV1Service} from "../../services/notes-api-v1.service";
-import {CryptoKeyService} from "../../services/crypto-key.service";
+import {CryptoKeyService, extractPlainEAK} from "../../services/crypto-key.service";
 import {firstValueFrom} from "rxjs";
 import { SecureStorageService } from 'src/app/services/secure-storage.service';
 
@@ -82,7 +82,6 @@ export class CreateAccountComponent implements OnInit {
         password: this.createUserForm.get('password')?.value,
     };
 
-    await this.crypto.createVault(createUserObj.password);
 
     // DB-compatible payload (packs IV into eak):
     const bundle = this.crypto.exportServerBundleFromHeader();
@@ -109,8 +108,9 @@ export class CreateAccountComponent implements OnInit {
               eak: user.eak_b64,                // base64(IV||CT)
             };
 
-            this.crypto.importFromServerBundle(bundle, createUserObj.password);
-            //firstValueFrom(this.notesApiV1Service.upload(0, JSON.parse(this.notesService.getDecryptedNotes())));
+            extractPlainEAK(createUserObj.password, bundle).then(({ eakB64 }) => {
+              this.secureStorageService.setItem("ssEakB64", eakB64).then(() => {});
+            }).catch(err => console.error('Failed:', err));
 
             this.router.navigate(["/"]);
           } else {

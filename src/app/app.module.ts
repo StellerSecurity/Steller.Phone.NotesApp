@@ -13,10 +13,19 @@ import { TranslateHttpLoader } from '@ngx-translate/http-loader';
 import { ShareSecretModalComponent } from './share-secret-modal/share-secret-modal.component';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { ToastrModule } from 'ngx-toastr';
+import * as sodium from 'libsodium-wrappers';
 
 export function HttpLoaderFactory(http: HttpClient) {
   return new TranslateHttpLoader(http);
 }
+
+export function initSodium() {
+    return async () => {
+        // On mobile, ensure path is correct for your WebView base href:
+        await sodium.ready;
+    };
+}
+
 
 @NgModule({
   declarations: [AppComponent, ShareSecretModalComponent,],

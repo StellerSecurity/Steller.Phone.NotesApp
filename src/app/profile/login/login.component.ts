@@ -6,7 +6,12 @@ import { AuthService } from 'src/app/services/auth.service';
 import { ToastMessageService } from 'src/app/services/toast-message.service';
 import {NotesService} from "../../services/notes.service";
 import {NotesApiV1Service} from "../../services/notes-api-v1.service";
-import {CryptoKeyService, packCipherBlob} from "../../services/crypto-key.service";
+import {
+    CryptoKeyService, extractPlainEAK,
+    packCipherBlob,
+    saveWrappedBundle,
+    wrapBundleWithPassword_WebCrypto
+} from "../../services/crypto-key.service";
 import {firstValueFrom} from "rxjs";
 import { SecureStorageService } from 'src/app/services/secure-storage.service';
 
@@ -68,10 +73,20 @@ export class LoginComponent implements OnInit {
               eak: user.eak_b64,                // base64(IV||CT)
             };
 
-            console.log(bundle);
+            extractPlainEAK(loginObj.password, bundle).then(({ eakB64 }) => {
+              this.secureStorageService.setItem("ssEakB64", eakB64).then(() => {});
+            }).catch(err => console.error('Failed:', err));
+
+            // default we wrap the bundle with 'password'
+            wrapBundleWithPassword_WebCrypto("password", JSON.stringify(bundle)).then(wrapped =>
+                saveWrappedBundle(wrapped))
+            .then(() => {
+              // success (optional)
+            }).catch(err => {
+              console.error("wrap/save failed:", err);
+            });
 
             localStorage.setItem("password", loginObj.password);
-            localStorage.setItem("bundle", JSON.stringify(bundle));
 
             this.notesApiV1Service.upload(0, this.notesService.getDecryptedNotes());
             this.router.navigate(["/"]);

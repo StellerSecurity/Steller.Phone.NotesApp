@@ -14,12 +14,6 @@ export class NotesService {
   private notesAppPassword : string = "";
 
   /**
-   * Max failed attempts in a row before the app wipes it-self.
-   * @private
-   */
-  private MAX_APP_FAILED_ATTEMPTS = 20;
-
-  /**
    * Controls, when the active time was for the notesApp, when it was active && unlocked.
    * @private
    */
@@ -37,28 +31,6 @@ export class NotesService {
     }
 
     return notes;
-  }
-
-  public shouldWipeAllNotesOrNot() {
-    // @ts-ignore
-    return (this.MAX_APP_FAILED_ATTEMPTS + 1) <= parseInt(this.getFailedPasswordAppAttempts());
-  }
-
-  public increaseAppNoteAttemptsFailedPasswords() {
-    let failedAttempts = this.getFailedPasswordAppAttempts();
-
-    let failedAttemptsUpdated = 0;
-
-    if(failedAttempts === null) {
-      failedAttemptsUpdated = 1;
-    } else {
-      failedAttemptsUpdated = parseInt(failedAttempts) + 1;
-    }
-
-    this.setFailedPasswordAppAttempts(failedAttemptsUpdated);
-
-    // @ts-ignore
-    return parseInt(this.getFailedPasswordAppAttempts());
   }
 
   public setFailedPasswordAppAttempts(attempts: number) {
