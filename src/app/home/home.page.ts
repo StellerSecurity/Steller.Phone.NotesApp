@@ -1,23 +1,23 @@
 import {ChangeDetectorRef, Component, ElementRef, QueryList, ViewChild, ViewChildren} from '@angular/core';
 import {
-    AlertController, GestureController, IonModal,
+    GestureController,
+    IonModal,
     IonSearchbar,
-    LoadingController,
     ModalController,
     NavController,
-    Platform,
     ToastController,
 } from '@ionic/angular';
 
 import {CryptoService} from "../services/crypto.service";
 import {NotesService} from "../services/notes.service";
 import {AppProtectorService} from "../services/app-protector.service";
-import { DeleteNoteModalComponent } from '../delete-note-modal/delete-note-modal.component';
-import { ResetPassModalComponent } from '../restpass-modal/resetpass-modal.component';
-import { TranslatorService } from '../services/translator.service';
-import {search} from "ionicons/icons";
-import {Haptics, ImpactStyle} from "@capacitor/haptics";
+import {DeleteNoteModalComponent} from '../delete-note-modal/delete-note-modal.component';
+import {ResetPassModalComponent} from '../restpass-modal/resetpass-modal.component';
+import {TranslatorService} from '../services/translator.service';
+import {Haptics} from "@capacitor/haptics";
 import {NotesApiV1Service} from "../services/notes-api-v1.service";
+import {CryptoKeyService, unpackCipherBlob} from "../services/crypto-key.service";
+import {firstValueFrom} from "rxjs";
 
 @Component({
     selector: 'app-home',
@@ -69,6 +69,7 @@ export class HomePage {
                 private notesApiServiceV1: NotesApiV1Service,
                 private translatorService: TranslatorService,
                 private gestureCtrl: GestureController,
+                private crypto: CryptoKeyService,
                 private cdr: ChangeDetectorRef) {}
 
     ionViewWillEnter() {
@@ -301,69 +302,83 @@ export class HomePage {
 
     }
 
-    private syncFromServer() {
+    async syncFromServer() {
         if(this.pauseSync) return;
         setTimeout(() => { this.syncFromServer(); }, 30_000);
 
         this.isSyncing = true;
-        this.notesApiServiceV1.download(0).subscribe({
-            next: ({ notes, watermark }) => {
+        const res = await firstValueFrom(this.notesApiServiceV1.download(0));
 
+        let bundle = localStorage.getItem("bundle");
+        let password = localStorage.getItem("password");
 
-                const serverNotes = notes ?? [];
+        // @ts-ignore
+        await this.crypto.importFromServerBundle(JSON.parse(bundle), password);
 
-                // Start from what you already show locally (includes local-only/new notes)
-                const map = new Map<string, any>((this.notes ?? []).map((n: { id: any; }) => [n.id, n]));
+        const serverNotes = res.notes ?? [];
 
-                for (const s of serverNotes) {
-                    const l = map.get(s.id);
+        // Start from what you already show locally (includes local-only/new notes)
+        const map = new Map<string, any>((this.notes ?? []).map((n: { id: any; }) => [n.id, n]));
 
-                    // If server says deleted:
-                    if (s.deleted) {
-                        console.log("deleted" + s.id);
-                        // Only remove if server deletion is as new/newer than local
-                        if (!l || (s.last_modified ?? 0) >= (l.last_modified ?? 0)) {
-                            map.delete(s.id);
-                        }
-                        continue;
-                    }
+        for (const s of serverNotes) {
 
-                    // Not deleted:
-                    if (!l) {
-                        // New to this device
-                        map.set(s.id, s);
-                        continue;
-                    }
+            console.log(s.id);
+            const l = map.get(s.id);
 
-                    // Both exist → pick the newer by last_modified
-                    if ((s.last_modified ?? 0) >= (l.last_modified ?? 0)) {
-                        // Server is newer or equal → take server
-                        map.set(s.id, { ...l, ...s });
-                    } else {
-                        // Local is newer → keep local (it may not have uploaded yet)
-                        // do nothing
-                    }
+            // If server says deleted:
+            if (s.deleted) {
+                console.log("deleted" + s.id);
+                // Only remove if server deletion is as new/newer than local
+                if (!l || (s.last_modified ?? 0) >= (l.last_modified ?? 0)) {
+                    map.delete(s.id);
                 }
+                continue;
+            }
 
-                // Result (locals that server didn't return yet remain)
-                const merged = Array.from(map.values()).filter(n => !n.deleted);
+            const blobText = unpackCipherBlob(s.text);
+            s.text = await this.crypto.decryptText({
+                ...blobText,
+                v: 1,
+                aad_b64: btoa(s.id),
+            });
 
-                console.log(merged);
+            const blobTitle = unpackCipherBlob(s.title);
+            s.title = await this.crypto.decryptText({
+                ...blobTitle,
+                v: 1,
+                aad_b64: btoa(s.id + '#title'),
+            });
 
-                this.notes = merged;
-                this.filteredResults = merged;
-                this.isSyncing = false;
-                this.noteService.setNotes(JSON.stringify(merged));
-                this.setData(this.noteService.getNotesAppPassword());
+            // Not deleted:
+            if (!l) {
+                // New to this device
+                map.set(s.id, s);
+                continue;
+            }
 
-            },
-            error: (err) => {
-                this.isSyncing = false;
-                console.error('download failed', err)
-            },
-        });
+            // Both exist → pick the newer by last_modified
+            if ((s.last_modified ?? 0) >= (l.last_modified ?? 0)) {
+                // Server is newer or equal → take server
+                map.set(s.id, { ...l, ...s });
+            } else {
+                // Local is newer → keep local (it may not have uploaded yet)
+                // do nothing
+            }
+        }
+
+        // Result (locals that server didn't return yet remain)
+        const merged = Array.from(map.values()).filter(n => !n.deleted);
+
+        console.log(merged);
+
+        this.notes = merged;
+        this.filteredResults = merged;
+        this.isSyncing = false;
+        this.noteService.setNotes(JSON.stringify(merged));
+        this.setData(this.noteService.getNotesAppPassword());
 
         console.log('Synching in 30 seconds...');
+
     }
 
     public togglePasswordVisibility() {

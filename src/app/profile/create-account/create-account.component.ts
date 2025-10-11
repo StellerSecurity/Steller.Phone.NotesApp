@@ -6,6 +6,7 @@ import { ToastMessageService } from 'src/app/services/toast-message.service';
 import {NotesService} from "../../services/notes.service";
 import {NotesApiV1Service} from "../../services/notes-api-v1.service";
 import {CryptoKeyService} from "../../services/crypto-key.service";
+import {firstValueFrom} from "rxjs";
 
 @Component({
   selector: 'app-create-account',
@@ -107,7 +108,8 @@ export class CreateAccountComponent implements OnInit {
             };
 
             this.crypto.importFromServerBundle(bundle, createUserObj.password);
-            this.notesApiV1Service.upload(0, JSON.parse(this.notesService.getDecryptedNotes())).subscribe(res => {});
+            //firstValueFrom(this.notesApiV1Service.upload(0, JSON.parse(this.notesService.getDecryptedNotes())));
+
             this.router.navigate(["/"]);
           } else {
             this.toastMessageService.showError(response.response_message);

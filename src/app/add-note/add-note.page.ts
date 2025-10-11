@@ -13,6 +13,8 @@ import {sha512} from "js-sha512";
 import { ShareSecretModalComponent } from '../share-secret-modal/share-secret-modal.component';
 import { RichTextEditorComponent } from './rich-text-editor/rich-text-editor.component';
 import {NotesApiV1Service} from "../services/notes-api-v1.service";
+import {CryptoKeyService, packCipherBlob} from "../services/crypto-key.service";
+import {firstValueFrom} from "rxjs";
 const { v4: uuidv4 } = require('uuid');
 
 declare var require: any;
@@ -75,6 +77,7 @@ export class AddNotePage {
                 public activatedRoute: ActivatedRoute,
                 private navController: NavController,
                 private notesService: NotesService,
+                private crypto: CryptoKeyService,
                 private toastController: ToastController,
                 private modalCtrl: ModalController,
                 private alertCtrl: AlertController,
@@ -258,6 +261,7 @@ export class AddNotePage {
 
                 // @ts-ignore
                 if(note.protected !== this.currentNote.protected) {
+                    console.log('Notes protection mismatch, redirect back'  + note.protected);
                     this.navController.navigateForward('/');
                 }
 
@@ -394,7 +398,7 @@ export class AddNotePage {
         this.storeNoteInStorage();
     }
 
-    private storeNoteInStorage(serverSync = true) {
+    async storeNoteInStorage(serverSync = true) {
         if(this.notesService.appHasPasswordChallenge()) {
             // newly notes to save into storage.
             let encryptedNotesSave = this.cryptoService.encrypt(JSON.stringify(this.notes), this.notesService.getNotesAppPassword());
@@ -407,7 +411,7 @@ export class AddNotePage {
         }
 
         if(serverSync) {
-            this.notesApiV1Service.upload(0, this.notes).subscribe(res => {});
+            await this.notesApiV1Service.upload(0, this.notes);
             // newly created notes...
             if(this.liveNoteTimer === null || this.liveNoteTimer === undefined) {
                 this.startLiveNotePolling();
@@ -622,9 +626,9 @@ export class AddNotePage {
 
         this.typing = true;
         console.log(JSON.stringify(this.notes));
-        this.notesApiV1Service.upload(0, this.notes).subscribe(res => {});
+        await this.notesApiV1Service.upload(0, this.notes);
 
-        this.storeNoteInStorage();
+        await this.storeNoteInStorage();
 
         // @ts-ignore
         this.currentNote.text = decryptedText;
@@ -670,7 +674,7 @@ export class AddNotePage {
                         }
 
                         this.typing = true;
-                        this.notesApiV1Service.upload(0, this.notes).subscribe(res => {});
+                        this.notesApiV1Service.upload(0, this.notes);
 
                         // update.
                         this.storeNoteInStorage();

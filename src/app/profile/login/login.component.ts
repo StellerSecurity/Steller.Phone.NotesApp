@@ -6,7 +6,8 @@ import { AuthService } from 'src/app/services/auth.service';
 import { ToastMessageService } from 'src/app/services/toast-message.service';
 import {NotesService} from "../../services/notes.service";
 import {NotesApiV1Service} from "../../services/notes-api-v1.service";
-import {CryptoKeyService} from "../../services/crypto-key.service";
+import {CryptoKeyService, packCipherBlob} from "../../services/crypto-key.service";
+import {firstValueFrom} from "rxjs";
 
 @Component({
   selector: 'app-login',
@@ -40,7 +41,7 @@ export class LoginComponent implements OnInit {
     this.showPassword = !this.showPassword;
   }
 
-  login() {
+  async login() {
     if (this.loginForm.valid) {
       this.isSaving = true;
       const loginObj: loginDto = {
@@ -64,8 +65,12 @@ export class LoginComponent implements OnInit {
               eak: user.eak_b64,                // base64(IV||CT)
             };
 
-            this.crypto.importFromServerBundle(bundle, loginObj.password);
-            this.notesApiV1Service.upload(0, JSON.parse(this.notesService.getDecryptedNotes())).subscribe(res => {});
+            console.log(bundle);
+
+            localStorage.setItem("password", loginObj.password);
+            localStorage.setItem("bundle", JSON.stringify(bundle));
+
+            this.notesApiV1Service.upload(0, this.notesService.getDecryptedNotes());
             this.router.navigate(["/"]);
           } else {
             this.toastMessageService.showError(response.response_message);
