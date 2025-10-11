@@ -94,6 +94,7 @@ export class HomePage {
 
         this.checkboxOpened = false;
         this.initializePressGesture();
+        this.setData("");
         await this.syncFromServer();
     }
 
