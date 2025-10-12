@@ -73,6 +73,9 @@ export class AddNotePage {
 
     private livePoolingTimer: any = null;
 
+    // class field
+    private hiddenId: string | null = null;
+
     @ViewChild('titleInput', { static: false }) titleInputRef!: IonInput;
     @ViewChild('richTextEditorComponentRef') richTextEditorComponent!: RichTextEditorComponent;
 
@@ -753,14 +756,14 @@ export class AddNotePage {
                             try {
                                 const user = await this.secureStorageService.getItem('ssUser');
                                 if(user) {
-                                    await this.notesApiV1Service.deleteNotes(this.notes[i].id);
+                                    this.notesApiV1Service.deleteNotes(this.notes[i].id).then(() => {});
                                 }
                                 } catch (err) {
                                 // only gets here if your service rethrows
                                 console.error('Failed to read ssUser', err);
                             }
 
-                        // @ts-ignore
+                            // @ts-ignore
                             this.notes.splice(i, 1);
                             break;
                         }
@@ -769,7 +772,7 @@ export class AddNotePage {
                     // updated list will not have the current note.
                     await this.storeNoteInStorage(true);
                     this.currentNote = null;
-                    await this.navController.navigateForward('/');
+                    await this.navController.navigateForward('/?force_download=1&hide_ids=' + this.notes_id);
                 } else {
                     // Handle case when user cancels password input
                 }

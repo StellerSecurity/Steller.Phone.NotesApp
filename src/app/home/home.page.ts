@@ -25,6 +25,7 @@ import {
 import {firstValueFrom} from "rxjs";
 import {StorageEncryptionService} from "../services/storage-encryption.service";
 import {SecureStorageService} from "../services/secure-storage.service";
+import {ActivatedRoute} from "@angular/router";
 
 @Component({
     selector: 'app-home',
@@ -59,6 +60,9 @@ export class HomePage {
 
     allTranslations:any;
 
+    private hiddenId: string | null = null;
+
+
     @ViewChild(IonModal) modal: IonModal;
     @ViewChildren('longPressElements', { read: ElementRef }) longPressElements: QueryList<ElementRef>;
     timeout: any;
@@ -73,6 +77,7 @@ export class HomePage {
                 private toastController: ToastController,
                 private appProtectorService: AppProtectorService,
                 private modalCtrl: ModalController,
+                private route: ActivatedRoute,
                 private storageEncryptionService: StorageEncryptionService,
                 private notesApiServiceV1: NotesApiV1Service,
                 private translatorService: TranslatorService,
@@ -86,6 +91,8 @@ export class HomePage {
         if(this.pauseSync) {
             this.pauseSync = false;
         }
+
+        this.hiddenId = this.route.snapshot.queryParamMap.get('hide_ids');
 
         this.allTranslations = this.translatorService.allTranslations;
         this.timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -339,6 +346,11 @@ export class HomePage {
 
                 for (const s of serverNotes) {
                     const local = map.get(s.id);
+
+                    if(this.hiddenId === s.id) {
+                        map.delete(s.id);
+                        continue;
+                    }
 
                     if (s.deleted) {
                         if (!local || (s.last_modified ?? 0) >= (local?.last_modified ?? 0)) map.delete(s.id);
