@@ -480,8 +480,8 @@ export class AddNotePage {
                 if (confirm) {
                     this.notes_password_stored = inputValue;
 
+                    console.log('Lets try to decrypt it..');
                     let decryptNote = this.decryptNote(this.notes_password_stored, this.currentNote);
-
                     if(!decryptNote) {
                         await this.wrongPasswordEntered();
                     } else {
@@ -507,9 +507,6 @@ export class AddNotePage {
         if(notePassword.length == 0) return false;
 
         let decryptedText = null;
-
-        console.log(notePassword);
-        console.log(noteToDecrypt.text);
 
         try {
             // @ts-ignore
@@ -635,9 +632,6 @@ export class AddNotePage {
         // @ts-ignore
         let decryptedTitle = this.note_title;
 
-        console.log('decrypted');
-        console.log(decryptedText);
-
         // @ts-ignore
         let encryptedText = this.cryptoService.encrypt(this.note_text, this.notes_password_stored);
         // @ts-ignore
@@ -649,18 +643,24 @@ export class AddNotePage {
         // @ts-ignore
         this.currentNote.title = encryptedTitle;
 
-        // find the current note.
-        // @ts-ignore
+        const newNotes = [];
+
         for (let i = 0; i < this.notes.length; i++) {
-            // @ts-ignore
-            if (this.notes[i].id === this.notes_id) {
-                // @ts-ignore
-                this.currentNote.last_modified = Date.now();
-                // @ts-ignore
-                this.notes[i] = this.currentNote;
-                break;
+            const note = this.notes[i];
+            if (note.id === this.notes_id) {
+                const updated = {
+                    ...note,                 // start from existing note
+                    // @ts-ignore - currentNote is object-like at runtime
+                    ...this.currentNote,     // merge fields from currentNote
+                    last_modified: Date.now(),
+                };
+                newNotes.push(updated);    // push UPDATED clone
+            } else {
+                newNotes.push(note);       // push original
             }
         }
+
+        this.notes = newNotes;
 
         await this.storeNoteInStorage();
 

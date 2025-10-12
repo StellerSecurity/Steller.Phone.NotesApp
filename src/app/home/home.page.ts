@@ -85,7 +85,7 @@ export class HomePage {
         this.allTranslations = this.translatorService.allTranslations;
         this.timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
         if(this.noteService.shouldAskForPassword()) {
-            console.log(10);
+            console.log("Asking for password");
             this.should_display = false;
         } else {
             console.log(11);
@@ -320,7 +320,7 @@ export class HomePage {
         try {
             const user = await this.secureStorageService.getItem('ssUser');
             if(this.pauseSync) return;
-            setTimeout(() => { this.syncFromServer(); }, 30_000);
+            setTimeout(() => { this.syncFromServer(); }, 10_000);
 
             this.isSyncing = true;
             try {
@@ -356,7 +356,6 @@ export class HomePage {
                 this.isSyncing = false;
 
                 if(this.noteService.appHasPasswordChallenge()) {
-                    console.log(this.noteService.getNotesAppPassword());
                     // newly notes to save into storage.
                     let encryptedNotesSave = this.cryptoService.encrypt(JSON.stringify(merged), this.noteService.getNotesAppPassword());
                     //update notes, and store.

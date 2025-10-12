@@ -18,7 +18,7 @@ export class NotesApiV1Service {
                 private crypto: CryptoKeyService, private storageEncryption: StorageEncryptionService) { }
 
     // Upload a batch changed since 'sinceMs'
-    async upload(sinceMs: number, notes: NoteV1[], opId?: string): Promise<Object> {
+    async upload(sinceMs: number, notes: NoteV1[], opId?: string, source = "lol"): Promise<Object> {
 
         let eakB64 = await this.secureStorageService.getItem("ssEakB64");
         if(eakB64 !== null) {
