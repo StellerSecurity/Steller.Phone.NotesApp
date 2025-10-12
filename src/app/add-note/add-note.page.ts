@@ -235,7 +235,7 @@ export class AddNotePage {
         this.liveNoteTimer = window.setInterval(() => {
             if (this.isPaused || document.hidden || !navigator.onLine) return;
             this.fetchLiveNote();
-        }, 30000);
+        }, 10000);
     }
 
     pauseLiveSync() {
