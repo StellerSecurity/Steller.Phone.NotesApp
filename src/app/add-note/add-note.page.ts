@@ -703,8 +703,19 @@ export class AddNotePage {
                         // @ts-ignore
                         if (this.notes[i].id === this.notes_id) {
                             this.notes[i].deleted = true;
-                            await this.notesApiV1Service.deleteNotes(this.notes[i].id).then((data) => {});
-                            // @ts-ignore
+
+                            try {
+                                const user = await this.secureStorageService.getItem('ssUser');
+                                if(!user) {
+                                    await this.notesApiV1Service.deleteNotes(this.notes[i].id).then((data) => {
+                                    });
+                                }
+                                } catch (err) {
+                                // only gets here if your service rethrows
+                                console.error('Failed to read ssUser', err);
+                            }
+
+                        // @ts-ignore
                             this.notes.splice(i, 1);
                             break;
                         }

@@ -531,7 +531,15 @@ export class HomePage {
         this.noteService.setNotes(JSON.stringify(this.notes));
 
         this.noteService.setDecryptedNotes(this.noteService.getNotes());
-        this.notesApiServiceV1.deleteNotes(this.listOfCheckedCheckboxes).then(result => {})
+        try {
+            const user = await this.secureStorageService.getItem('ssUser');
+            if(!user) {
+                this.notesApiServiceV1.deleteNotes(this.listOfCheckedCheckboxes).then(result => {})
+            }
+        } catch (err) {
+            // only gets here if your service rethrows
+            console.error('Failed to read ssUser', err);
+        }
 
         this.listOfCheckedCheckboxes = [];
         this.toggleCheckbox();
