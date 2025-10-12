@@ -104,6 +104,9 @@ export class AddNotePage {
             // @ts-ignore
             this.currentNote = this.notesService.findNoteById(this.notes_id, this.notes);
 
+            console.log("Current notes");
+            console.log(this.notes);
+
             // @ts-ignore
             if(this.currentNote.protected) {
                 this.note_locked = true;

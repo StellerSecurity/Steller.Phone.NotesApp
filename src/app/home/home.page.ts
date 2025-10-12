@@ -82,6 +82,11 @@ export class HomePage {
                 private cdr: ChangeDetectorRef) {}
 
     async ionViewWillEnter() {
+
+        if(this.pauseSync) {
+            this.pauseSync = false;
+        }
+
         this.allTranslations = this.translatorService.allTranslations;
         this.timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
         if(this.noteService.shouldAskForPassword()) {
@@ -94,10 +99,6 @@ export class HomePage {
         }
 
         console.log('view enter');
-
-        if(this.pauseSync) {
-            this.pauseSync = false;
-        }
 
         this.checkboxOpened = false;
         this.initializePressGesture();
@@ -319,7 +320,11 @@ export class HomePage {
     async syncFromServer() {
         try {
             const user = await this.secureStorageService.getItem('ssUser');
-            if(this.pauseSync) return;
+            if(this.pauseSync) {
+                console.log('Sync has paused.');
+                return;
+            }
+            console.log('Sync has started');
             setTimeout(() => { this.syncFromServer(); }, 10_000);
 
             this.isSyncing = true;
@@ -363,6 +368,8 @@ export class HomePage {
                 } else {
                     this.noteService.setNotes(JSON.stringify(merged));
                 }
+
+                this.setData(this.noteService.getNotesAppPassword());
 
                 //this.setData(this.noteService.getNotesAppPassword());
                 console.log('Synching in 30 seconds...');
