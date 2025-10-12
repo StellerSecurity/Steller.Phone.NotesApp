@@ -10,7 +10,6 @@ import {SecureStorageService} from "./secure-storage.service";
 
 @Injectable({ providedIn: 'root' })
 export class NotesApiV1Service {
-    // 🔧 adjust this to your backend root, e.g. '/api/v1/notecontroller/'
     private base = 'https://stellarprivatenotesuiappapiprod-dmefgreabahpcsbm.swedencentral-01.azurewebsites.net/api/v1/notescontroller';
 
     constructor(private http: HttpClient,
