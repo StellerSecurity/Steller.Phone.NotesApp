@@ -69,9 +69,9 @@ export class AddNotePage {
     private typingTimeout: any;
     private isPaused = false;
 
-    private stopSynching = false;
+    private stopSyncing = false;
 
-
+    private livePoolingTimer: any = null;
 
     @ViewChild('titleInput', { static: false }) titleInputRef!: IonInput;
     @ViewChild('richTextEditorComponentRef') richTextEditorComponent!: RichTextEditorComponent;
@@ -232,11 +232,10 @@ export class AddNotePage {
     }
 
     startLiveNotePolling() {
-        this.fetchLiveNote();
         this.liveNoteTimer = window.setInterval(() => {
             if (this.isPaused || document.hidden || !navigator.onLine) return;
             this.fetchLiveNote();
-        }, 50000);
+        }, 30000);
     }
 
     pauseLiveSync() {
@@ -257,7 +256,7 @@ export class AddNotePage {
 // your existing method (kept simple)
     private async fetchLiveNote() {
 
-        if(this.stopSynching) return;
+        if(this.stopSyncing) return;
 
         if(this.note_locked) return;
 
@@ -284,9 +283,9 @@ export class AddNotePage {
                     if (!note.protected) this.notes_password_stored = "";
 
                     // @ts-ignore
-                    //if (this.currentNote.last_modified == note.last_modified) { console.log('Equal'); return; }
+                    if (this.currentNote.last_modified == note.last_modified) { console.log('Equal'); return; }
                     // @ts-ignore
-                    //if (this.currentNote.last_modified >  note.last_modified)  { console.log('Higher'); return; }
+                    if (this.currentNote.last_modified >  note.last_modified)  { console.log('Higher'); return; }
 
                     console.log('Note from server {encrypted, we have to decrypt it}.', note);
 
@@ -431,20 +430,24 @@ export class AddNotePage {
             this.notesService.setNotes(JSON.stringify(this.notes));
         }
 
-        try {
-            const user = await this.secureStorageService.getItem('ssUser');
-            if(serverSync && user) {
-                await this.notesApiV1Service.upload(0, this.notes);
-                // newly created notes...
-                if(this.liveNoteTimer === null || this.liveNoteTimer === undefined) {
-                    this.startLiveNotePolling();
-                }
-            }
-        } catch (err) {
-            // only gets here if your service rethrows
-            console.error('Upload notes not done.', err);
-        }
+        this.saveTimeout = window.setTimeout(() => {
+            (async () => {
+                try {
+                    const user = await this.secureStorageService.getItem('ssUser');
 
+                    if (serverSync && user) {
+                        // If upload() returns Observable<...>
+                        await this.notesApiV1Service.upload(0, this.notes)
+
+                        if (this.liveNoteTimer == null) {
+                            this.startLiveNotePolling();
+                        }
+                    }
+                } catch (err) {
+                    console.error('Upload notes not done.', err);
+                }
+            })();
+        }, 500);
 
     }
 
@@ -628,14 +631,17 @@ export class AddNotePage {
         this.notes_password_stored = this.notes_password_input;
 
         // @ts-ignore
-        let decryptedText = this.currentNote.text;
+        let decryptedText = this.note_text;
         // @ts-ignore
-        let decryptedTitle = this.currentNote.title;
+        let decryptedTitle = this.note_title;
+
+        console.log('decrypted');
+        console.log(decryptedText);
 
         // @ts-ignore
-        let encryptedText = this.cryptoService.encrypt(this.currentNote.text, this.notes_password_stored);
+        let encryptedText = this.cryptoService.encrypt(this.note_text, this.notes_password_stored);
         // @ts-ignore
-        let encryptedTitle  = this.cryptoService.encrypt(this.currentNote.title, this.notes_password_stored);
+        let encryptedTitle  = this.cryptoService.encrypt(this.note_title, this.notes_password_stored);
         // @ts-ignore
         this.currentNote.protected = true;
         // @ts-ignore
@@ -655,10 +661,6 @@ export class AddNotePage {
                 break;
             }
         }
-
-        this.stopSynching = true;
-        await this.notesApiV1Service.upload(0, this.notes);
-        this.stopSynching = false;
 
         await this.storeNoteInStorage();
 
@@ -705,9 +707,9 @@ export class AddNotePage {
                             }
                         }
 
-                        this.stopSynching = true;
+                        this.stopSyncing = true;
                         this.notesApiV1Service.upload(0, this.notes);
-                        this.stopSynching = false;
+                        this.stopSyncing = false;
 
                         // update.
                         this.storeNoteInStorage();
@@ -785,9 +787,7 @@ export class AddNotePage {
         clearTimeout(this.saveTimeout);
 
         // Set a new one — only trigger save if no new input for 1 second
-        this.saveTimeout = setTimeout(() => {
-            this.save(null);
-        }, 500);
+        this.save(null);
     }
 
     ionViewWillLeave() {
