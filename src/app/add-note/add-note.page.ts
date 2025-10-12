@@ -259,6 +259,8 @@ export class AddNotePage {
 
         if(this.stopSynching) return;
 
+        if(this.note_locked) return;
+
         if (this.typing) {
             console.log('Do not fetch live note');
             return;
@@ -420,25 +422,19 @@ export class AddNotePage {
 
     async storeNoteInStorage(serverSync = true) {
 
-        let notesToServer = null;
         if(this.notesService.appHasPasswordChallenge()) {
             // newly notes to save into storage.
             let encryptedNotesSave = this.cryptoService.encrypt(JSON.stringify(this.notes), this.notesService.getNotesAppPassword());
             // notes in the app is stored.
-            localStorage.setItem("app_password_challenge", "1");
-            //update notes, and store.
             this.notesService.setNotes(encryptedNotesSave);
-            notesToServer = encryptedNotesSave;
         } else {
             this.notesService.setNotes(JSON.stringify(this.notes));
-            notesToServer = this.notes;
         }
 
         try {
             const user = await this.secureStorageService.getItem('ssUser');
             if(serverSync && user) {
-                console.log(this.notes);
-                await this.notesApiV1Service.upload(0, notesToServer);
+                await this.notesApiV1Service.upload(0, this.notes);
                 // newly created notes...
                 if(this.liveNoteTimer === null || this.liveNoteTimer === undefined) {
                     this.startLiveNotePolling();

@@ -354,8 +354,18 @@ export class HomePage {
                 this.notes = merged;
                 this.filteredResults = merged;
                 this.isSyncing = false;
-                this.noteService.setNotes(JSON.stringify(merged));
-                this.setData(this.noteService.getNotesAppPassword());
+
+                if(this.noteService.appHasPasswordChallenge()) {
+                    console.log(this.noteService.getNotesAppPassword());
+                    // newly notes to save into storage.
+                    let encryptedNotesSave = this.cryptoService.encrypt(JSON.stringify(merged), this.noteService.getNotesAppPassword());
+                    //update notes, and store.
+                    this.noteService.setNotes(encryptedNotesSave);
+                } else {
+                    this.noteService.setNotes(JSON.stringify(merged));
+                }
+
+                //this.setData(this.noteService.getNotesAppPassword());
                 console.log('Synching in 30 seconds...');
             } catch (err) {
                 console.error('Sync failed:', err);
