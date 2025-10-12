@@ -428,6 +428,7 @@ export class HomePage {
                 position: 'bottom',
             });
 
+            this.should_display = false;
             this.input_password_app_unlock = "";
 
             await toast.present();
@@ -517,7 +518,7 @@ export class HomePage {
             }
         }
 
-        /*if (this.noteService.appHasPasswordChallenge()) {
+        if (this.noteService.appHasPasswordChallenge()) {
             // newly notes to save into storage.
             let encryptedNotesSave = this.cryptoService.encrypt(JSON.stringify(this.notes), this.noteService.getNotesAppPassword());
             // notes in the app is stored.
@@ -526,9 +527,7 @@ export class HomePage {
             this.noteService.setNotes(encryptedNotesSave);
         } else {
             this.noteService.setNotes(JSON.stringify(this.notes));
-        }*/
-
-        this.noteService.setNotes(JSON.stringify(this.notes));
+        }
 
         this.noteService.setDecryptedNotes(this.noteService.getNotes());
         try {

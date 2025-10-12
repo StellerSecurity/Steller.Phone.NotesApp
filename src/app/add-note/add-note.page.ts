@@ -252,41 +252,52 @@ export class AddNotePage {
     }
 
 // your existing method (kept simple)
-    private fetchLiveNote() {
+    private async fetchLiveNote() {
         if (this.typing) return; // skip while user is typing
         if (this.notes_id == null) return;
-        this.notesApiV1Service.find(this.notes_id)
-            .then((note) => {
-                console.log('Fetched Live Note');
-                if(this.currentNote == null) return;
-                if (note.deleted) { this.navController.navigateForward('/'); return; }
 
-                // @ts-ignore
-                if (note.protected !== this.currentNote.protected) {
-                    console.log('Notes protection mismatch, redirect back' + note.protected);
-                    this.navController.navigateForward('/'); return;
-                }
+        try {
+            const user = await this.secureStorageService.getItem('ssUser');
+            if(user) {
+                this.notesApiV1Service.find(this.notes_id)
+                    .then((note) => {
+                        console.log('Fetched Live Note');
+                        if(this.currentNote == null) return;
+                        if (note.deleted) { this.navController.navigateForward('/'); return; }
 
-                if (!note.protected) this.notes_password_stored = "";
+                        // @ts-ignore
+                        if (note.protected !== this.currentNote.protected) {
+                            console.log('Notes protection mismatch, redirect back' + note.protected);
+                            this.navController.navigateForward('/'); return;
+                        }
 
-                // @ts-ignore
-                if (this.currentNote.last_modified == note.last_modified) { console.log('Equal'); return; }
-                // @ts-ignore
-                if (this.currentNote.last_modified >  note.last_modified)  { console.log('Higher'); return; }
+                        if (!note.protected) this.notes_password_stored = "";
 
-                if (note.protected) {
-                    const ok = this.decryptNote(this.notes_password_stored, note);
-                    if (!ok) { this.dismissModal().then(r => {}); this.navController.navigateForward('/'); }
-                } else {
-                    this.note_title = note.title;
-                    this.note_text  = note.text;
-                    // @ts-ignore
-                    this.currentNote.text  = this.note_text as any;
-                    // @ts-ignore
-                    this.currentNote.title = this.note_title as any;
-                }
-            })
-            .catch(() => { /* ignore; try again on next tick */ });
+                        // @ts-ignore
+                        if (this.currentNote.last_modified == note.last_modified) { console.log('Equal'); return; }
+                        // @ts-ignore
+                        if (this.currentNote.last_modified >  note.last_modified)  { console.log('Higher'); return; }
+
+                        if (note.protected) {
+                            const ok = this.decryptNote(this.notes_password_stored, note);
+                            if (!ok) { this.dismissModal().then(r => {}); this.navController.navigateForward('/'); }
+                        } else {
+                            this.note_title = note.title;
+                            this.note_text  = note.text;
+                            // @ts-ignore
+                            this.currentNote.text  = this.note_text as any;
+                            // @ts-ignore
+                            this.currentNote.title = this.note_title as any;
+                        }
+                    })
+                    .catch(() => { /* ignore; try again on next tick */ });
+            }
+        } catch (err) {
+            // only gets here if your service rethrows
+            console.error('Find notes not done.', err);
+        }
+
+
     }
 
     // should be called on key enter.
@@ -404,7 +415,7 @@ export class AddNotePage {
             }
         } catch (err) {
             // only gets here if your service rethrows
-            console.error('Failed to read ssUser', err);
+            console.error('Upload notes not done.', err);
         }
 
 
@@ -615,7 +626,6 @@ export class AddNotePage {
         }
 
         this.typing = true;
-        console.log(JSON.stringify(this.notes));
         await this.notesApiV1Service.upload(0, this.notes);
 
         await this.storeNoteInStorage();
