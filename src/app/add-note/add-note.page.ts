@@ -217,9 +217,7 @@ export class AddNotePage {
             }
         }
 
-        setTimeout(() => {
-            this.save(event)
-        }, 300)
+        this.onSave(newTitle, 'note_title');
 
     }
 
@@ -781,8 +779,12 @@ export class AddNotePage {
         return await modal.present();
     }
 
-    onSave(event: any): void {
-        this.note_text = event;
+    onSave(event: any, type: string = "note_text"): void {
+        if(type == "note_text") {
+            this.note_text = event;
+        } else {
+            this.note_title = event;
+        }
         this.typing = true;
         this.typingTimeout = setTimeout(() => this.typing = false, 10000); // idle 1s
 

@@ -113,6 +113,6 @@
     <!-- <angular-editor #editorRef [config]="editorConfig" [(ngModel)]="note_text" (ngModelChange)="save($event)" *ngIf="!note_locked"></angular-editor> -->
     <div *ngIf="!note_locked">
       <app-rich-text-editor #richTextEditorComponentRef   (focus)="pauseLiveSync()"
-                            (blur)="resumeLiveSync()" [note_text]="note_text" (noteChange)="onSave($event)"></app-rich-text-editor>
+                            (blur)="resumeLiveSync()" [note_text]="note_text" (noteChange)="onSave($event, 'note_text')"></app-rich-text-editor>
     </div>
 </ion-content>
