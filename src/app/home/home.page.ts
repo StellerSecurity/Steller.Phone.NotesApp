@@ -561,7 +561,7 @@ export class HomePage {
         try {
             const user = await this.secureStorageService.getItem('ssUser');
             if(user) {
-                await this.notesApiServiceV1.deleteNotes(this.listOfCheckedCheckboxes);
+                this.notesApiServiceV1.deleteNotes(this.listOfCheckedCheckboxes).then((data) => {})
             }
         } catch (err) {
             // only gets here if your service rethrows
