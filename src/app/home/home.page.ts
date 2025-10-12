@@ -532,8 +532,8 @@ export class HomePage {
         this.noteService.setDecryptedNotes(this.noteService.getNotes());
         try {
             const user = await this.secureStorageService.getItem('ssUser');
-            if(!user) {
-                this.notesApiServiceV1.deleteNotes(this.listOfCheckedCheckboxes).then(result => {})
+            if(user) {
+                await this.notesApiServiceV1.deleteNotes(this.listOfCheckedCheckboxes);
             }
         } catch (err) {
             // only gets here if your service rethrows
@@ -542,7 +542,6 @@ export class HomePage {
 
         this.listOfCheckedCheckboxes = [];
         this.toggleCheckbox();
-        //this.setData(this.input_password_app_unlock);
 
     }
 

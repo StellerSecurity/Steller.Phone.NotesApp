@@ -13,7 +13,7 @@ import {sha512} from "js-sha512";
 import { ShareSecretModalComponent } from '../share-secret-modal/share-secret-modal.component';
 import { RichTextEditorComponent } from './rich-text-editor/rich-text-editor.component';
 import {NotesApiV1Service} from "../services/notes-api-v1.service";
-import {CryptoKeyService, packCipherBlob} from "../services/crypto-key.service";
+import {CryptoKeyService, packCipherBlob, unpackCipherBlob} from "../services/crypto-key.service";
 import {firstValueFrom} from "rxjs";
 import {SecureStorageService} from "../services/secure-storage.service";
 const { v4: uuidv4 } = require('uuid');
@@ -68,6 +68,9 @@ export class AddNotePage {
     private typing = false;
     private typingTimeout: any;
     private isPaused = false;
+
+    private stopSynching = false;
+
 
 
     @ViewChild('titleInput', { static: false }) titleInputRef!: IonInput;
@@ -233,7 +236,7 @@ export class AddNotePage {
         this.liveNoteTimer = window.setInterval(() => {
             if (this.isPaused || document.hidden || !navigator.onLine) return;
             this.fetchLiveNote();
-        }, 5000);
+        }, 50000);
     }
 
     pauseLiveSync() {
@@ -242,7 +245,7 @@ export class AddNotePage {
 
     resumeLiveSync() {
         this.isPaused = false;
-        this.fetchLiveNote(); // grab latest once user stops editing
+        this.fetchLiveNote().then(r => {}); // grab latest once user stops editing
     }
 
     private stopLiveNotePolling() {
@@ -253,44 +256,67 @@ export class AddNotePage {
 
 // your existing method (kept simple)
     private async fetchLiveNote() {
-        if (this.typing) return; // skip while user is typing
+
+        if(this.stopSynching) return;
+
+        if (this.typing) {
+            console.log('Do not fetch live note');
+            return;
+        }
         if (this.notes_id == null) return;
 
         try {
             const user = await this.secureStorageService.getItem('ssUser');
             if(user) {
-                this.notesApiV1Service.find(this.notes_id)
-                    .then((note) => {
-                        console.log('Fetched Live Note');
-                        if(this.currentNote == null) return;
-                        if (note.deleted) { this.navController.navigateForward('/'); return; }
+                this.notesApiV1Service.find(this.notes_id).then(async (note) => {
+                    console.log('Fetched Live Note');
+                    if(this.currentNote == null) return;
+                    if (note.deleted) { await this.navController.navigateForward('/'); return; }
 
-                        // @ts-ignore
-                        if (note.protected !== this.currentNote.protected) {
-                            console.log('Notes protection mismatch, redirect back' + note.protected);
-                            this.navController.navigateForward('/'); return;
-                        }
+                    // @ts-ignore
+                    if (note.protected !== this.currentNote.protected) {
+                        console.log('Notes protection mismatch, redirect back' + note.protected);
+                        await this.navController.navigateForward('/'); return;
+                    }
 
-                        if (!note.protected) this.notes_password_stored = "";
+                    if (!note.protected) this.notes_password_stored = "";
 
-                        // @ts-ignore
-                        if (this.currentNote.last_modified == note.last_modified) { console.log('Equal'); return; }
-                        // @ts-ignore
-                        if (this.currentNote.last_modified >  note.last_modified)  { console.log('Higher'); return; }
+                    // @ts-ignore
+                    //if (this.currentNote.last_modified == note.last_modified) { console.log('Equal'); return; }
+                    // @ts-ignore
+                    //if (this.currentNote.last_modified >  note.last_modified)  { console.log('Higher'); return; }
 
-                        if (note.protected) {
-                            const ok = this.decryptNote(this.notes_password_stored, note);
-                            if (!ok) { this.dismissModal().then(r => {}); this.navController.navigateForward('/'); }
-                        } else {
-                            this.note_title = note.title;
-                            this.note_text  = note.text;
-                            // @ts-ignore
-                            this.currentNote.text  = this.note_text as any;
-                            // @ts-ignore
-                            this.currentNote.title = this.note_title as any;
-                        }
-                    })
-                    .catch(() => { /* ignore; try again on next tick */ });
+                    console.log('Note from server {encrypted, we have to decrypt it}.', note);
+
+                    const blobText = unpackCipherBlob(note.text);
+                    // @ts-ignore
+                    note.text = await this.crypto.decryptText({ ...blobText, v: 1, aad_b64: btoa(this.notes_id) });
+
+                    const blobTitle = unpackCipherBlob(note.title);
+                    // @ts-ignore
+                    note.title = await this.crypto.decryptText({ ...blobTitle, v: 1, aad_b64: btoa(this.notes_id+ '#title') });
+
+                    console.log(note.title + " " + note.text);
+
+                    // @ts-ignore
+                    this.currentNote.text = note.text;
+
+                    this.note_title = note.title;
+                    this.note_text  = note.text;
+                    // @ts-ignore
+                    this.currentNote.text  = this.note_text;
+                    // @ts-ignore
+                    this.currentNote.title = this.note_title;
+
+                    if (note.protected) {
+                        console.log('Note is protected, lets decrypt it.')
+                        const ok = this.decryptNote(this.notes_password_stored, note);
+                        console.log('Note decrypted...');
+                        //if (!ok) { this.dismissModal().then(r => {}); this.navController.navigateForward('/'); }
+                    }
+
+                })
+                .catch(() => { /* ignore; try again on next tick */ });
             }
         } catch (err) {
             // only gets here if your service rethrows
@@ -393,6 +419,8 @@ export class AddNotePage {
     }
 
     async storeNoteInStorage(serverSync = true) {
+
+        let notesToServer = null;
         if(this.notesService.appHasPasswordChallenge()) {
             // newly notes to save into storage.
             let encryptedNotesSave = this.cryptoService.encrypt(JSON.stringify(this.notes), this.notesService.getNotesAppPassword());
@@ -400,14 +428,17 @@ export class AddNotePage {
             localStorage.setItem("app_password_challenge", "1");
             //update notes, and store.
             this.notesService.setNotes(encryptedNotesSave);
+            notesToServer = encryptedNotesSave;
         } else {
             this.notesService.setNotes(JSON.stringify(this.notes));
+            notesToServer = this.notes;
         }
 
         try {
             const user = await this.secureStorageService.getItem('ssUser');
             if(serverSync && user) {
-                await this.notesApiV1Service.upload(0, this.notes);
+                console.log(this.notes);
+                await this.notesApiV1Service.upload(0, notesToServer);
                 // newly created notes...
                 if(this.liveNoteTimer === null || this.liveNoteTimer === undefined) {
                     this.startLiveNotePolling();
@@ -453,9 +484,9 @@ export class AddNotePage {
                     let decryptNote = this.decryptNote(this.notes_password_stored, this.currentNote);
 
                     if(!decryptNote) {
-                        this.wrongPasswordEntered();
+                        await this.wrongPasswordEntered();
                     } else {
-                        modal.dismiss();
+                        await modal.dismiss();
                     }
 
                 } else {
@@ -478,10 +509,14 @@ export class AddNotePage {
 
         let decryptedText = null;
 
+        console.log(notePassword);
+        console.log(noteToDecrypt.text);
+
         try {
             // @ts-ignore
             decryptedText = this.cryptoService.decrypt(noteToDecrypt.text, notePassword);
         } catch (e) {
+            console.error(e);
             return false;
         }
 
@@ -625,8 +660,9 @@ export class AddNotePage {
             }
         }
 
-        this.typing = true;
+        this.stopSynching = true;
         await this.notesApiV1Service.upload(0, this.notes);
+        this.stopSynching = false;
 
         await this.storeNoteInStorage();
 
@@ -673,8 +709,9 @@ export class AddNotePage {
                             }
                         }
 
-                        this.typing = true;
+                        this.stopSynching = true;
                         this.notesApiV1Service.upload(0, this.notes);
+                        this.stopSynching = false;
 
                         // update.
                         this.storeNoteInStorage();
@@ -716,9 +753,8 @@ export class AddNotePage {
 
                             try {
                                 const user = await this.secureStorageService.getItem('ssUser');
-                                if(!user) {
-                                    await this.notesApiV1Service.deleteNotes(this.notes[i].id).then((data) => {
-                                    });
+                                if(user) {
+                                    await this.notesApiV1Service.deleteNotes(this.notes[i].id);
                                 }
                                 } catch (err) {
                                 // only gets here if your service rethrows
@@ -732,7 +768,7 @@ export class AddNotePage {
                     }
 
                     // updated list will not have the current note.
-                    this.storeNoteInStorage(false);
+                    await this.storeNoteInStorage(true);
                     this.currentNote = null;
                     await this.navController.navigateForward('/');
                 } else {

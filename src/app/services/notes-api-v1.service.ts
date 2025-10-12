@@ -78,13 +78,15 @@ export class NotesApiV1Service {
 
 
     async deleteNotes(deletedIds: string[]) {
+
+        console.log(deletedIds);
         const TOKEN = await this.secureStorageService.getItem("ssToken");
         const headers = new HttpHeaders().set('Authorization', `Bearer ${TOKEN}`);
 
-        return this.http.post<{ upload: any; download: any; noop: any; conflicts: any }>(
+        return await firstValueFrom(this.http.post<{ upload: any; download: any; noop: any; conflicts: any }>(
             `${this.base}/sync-plan`,
             { deleted_ids: deletedIds, notes: [] },
             { headers }
-        );
+        ));
     }
 }
