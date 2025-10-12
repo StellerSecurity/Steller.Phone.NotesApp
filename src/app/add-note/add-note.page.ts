@@ -312,7 +312,7 @@ export class AddNotePage {
                         console.log('Note is protected, lets decrypt it.')
                         const ok = this.decryptNote(this.notes_password_stored, note);
                         console.log('Note decrypted...');
-                        //if (!ok) { this.dismissModal().then(r => {}); this.navController.navigateForward('/'); }
+                        if (!ok) { this.dismissModal().then(r => {}); this.navController.navigateForward('/'); }
                     }
 
                 })
