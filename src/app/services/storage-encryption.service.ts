@@ -6,7 +6,7 @@ import {loadWrappedBundle, unwrapBundleWithPassword_WebCrypto} from "./crypto-ke
 })
 export class StorageEncryptionService {
 
-    // default, password.
+    // default, password. --> this is the notes_app_password.
     private bundlePassword: string = "password";
 
     public getBundlePassword() {

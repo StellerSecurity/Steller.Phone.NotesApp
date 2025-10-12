@@ -103,7 +103,7 @@ align-self: stretch; background: #2761FC; color: #fff; border-radius: 250px" (cl
   </ion-fab-button>
 </ion-fab>
 
-<ion-content [fullscreen]="true" class="ion-padding">
+<ion-content [fullscreen]="true" class="ion-padding" *ngIf="should_display">
   <ion-grid *ngIf="filteredResults !== null && filteredResults.length == 0 && !isSearching" style="height: -webkit-calc(100vh - 170px);
   height: calc(100vh - 170px);">
     <ion-row class="ion-align-items-center ion-justify-content-center" style="min-height: 100%;">

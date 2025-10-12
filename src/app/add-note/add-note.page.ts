@@ -15,6 +15,7 @@ import { RichTextEditorComponent } from './rich-text-editor/rich-text-editor.com
 import {NotesApiV1Service} from "../services/notes-api-v1.service";
 import {CryptoKeyService, packCipherBlob} from "../services/crypto-key.service";
 import {firstValueFrom} from "rxjs";
+import {SecureStorageService} from "../services/secure-storage.service";
 const { v4: uuidv4 } = require('uuid');
 
 declare var require: any;
@@ -78,6 +79,7 @@ export class AddNotePage {
                 private navController: NavController,
                 private notesService: NotesService,
                 private crypto: CryptoKeyService,
+                private secureStorageService: SecureStorageService,
                 private toastController: ToastController,
                 private modalCtrl: ModalController,
                 private alertCtrl: AlertController,
@@ -376,7 +378,7 @@ export class AddNotePage {
             this.note_title = decryptedTitle;
         }
 
-        this.storeNoteInStorage();
+        this.storeNoteInStorage().then(r => {});
     }
 
     async storeNoteInStorage(serverSync = true) {
@@ -391,13 +393,20 @@ export class AddNotePage {
             this.notesService.setNotes(JSON.stringify(this.notes));
         }
 
-        if(serverSync) {
-            await this.notesApiV1Service.upload(0, this.notes);
-            // newly created notes...
-            if(this.liveNoteTimer === null || this.liveNoteTimer === undefined) {
-                this.startLiveNotePolling();
+        try {
+            const user = await this.secureStorageService.getItem('ssUser');
+            if(serverSync && user) {
+                await this.notesApiV1Service.upload(0, this.notes);
+                // newly created notes...
+                if(this.liveNoteTimer === null || this.liveNoteTimer === undefined) {
+                    this.startLiveNotePolling();
+                }
             }
+        } catch (err) {
+            // only gets here if your service rethrows
+            console.error('Failed to read ssUser', err);
         }
+
 
     }
 

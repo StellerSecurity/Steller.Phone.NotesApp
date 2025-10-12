@@ -20,8 +20,6 @@ export class NotesApiV1Service {
     // Upload a batch changed since 'sinceMs'
     async upload(sinceMs: number, notes: NoteV1[], opId?: string): Promise<Object> {
 
-        let bundle = await this.storageEncryption.getBundleJson();
-
         let eakB64 = await this.secureStorageService.getItem("ssEakB64");
         if(eakB64 !== null) {
             await this.crypto.importEAK(eakB64);

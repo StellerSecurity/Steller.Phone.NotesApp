@@ -18,7 +18,7 @@ import {Haptics} from "@capacitor/haptics";
 import {NotesApiV1Service} from "../services/notes-api-v1.service";
 import {
     CryptoKeyService, extractPlainEAK,
-    loadWrappedBundle,
+    loadWrappedBundle, saveWrappedBundle,
     unpackCipherBlob,
     unwrapBundleWithPassword_WebCrypto, wrapBundleWithPassword_WebCrypto
 } from "../services/crypto-key.service";
@@ -85,8 +85,15 @@ export class HomePage {
         this.allTranslations = this.translatorService.allTranslations;
         this.timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
         if(this.noteService.shouldAskForPassword()) {
+            console.log(10);
             this.should_display = false;
+        } else {
+            console.log(11);
+            this.setData(this.noteService.getNotesAppPassword());
+            await this.syncFromServer();
         }
+
+        console.log('view enter');
 
         if(this.pauseSync) {
             this.pauseSync = false;
@@ -94,8 +101,6 @@ export class HomePage {
 
         this.checkboxOpened = false;
         this.initializePressGesture();
-        this.setData("");
-        await this.syncFromServer();
     }
 
     enterSearchMode() {
@@ -306,53 +311,59 @@ export class HomePage {
 
         this.filteredResults = this.notes;
 
+
         return true;
 
     }
 
     async syncFromServer() {
-
-        if(this.pauseSync) return;
-        setTimeout(() => { this.syncFromServer(); }, 30_000);
-
-        this.isSyncing = true;
         try {
-            const res = await this.notesApiServiceV1.download(0);
+            const user = await this.secureStorageService.getItem('ssUser');
+            if(this.pauseSync) return;
+            setTimeout(() => { this.syncFromServer(); }, 30_000);
 
-            const eakB64 = await this.secureStorageService.getItem('ssEakB64');
-            if (eakB64) await this.crypto.importEAK(eakB64);
+            this.isSyncing = true;
+            try {
+                const res = await this.notesApiServiceV1.download(0);
 
-            const serverNotes = res?.notes ?? [];
-            const map = new Map<string, any>((this.notes ?? []).map((n: any) => [n.id, n]));
+                const eakB64 = await this.secureStorageService.getItem('ssEakB64');
+                if (eakB64) await this.crypto.importEAK(eakB64);
 
-            for (const s of serverNotes) {
-                const local = map.get(s.id);
+                const serverNotes = res?.notes ?? [];
+                const map = new Map<string, any>((this.notes ?? []).map((n: any) => [n.id, n]));
 
-                if (s.deleted) {
-                    if (!local || (s.last_modified ?? 0) >= (local?.last_modified ?? 0)) map.delete(s.id);
-                    continue;
+                for (const s of serverNotes) {
+                    const local = map.get(s.id);
+
+                    if (s.deleted) {
+                        if (!local || (s.last_modified ?? 0) >= (local?.last_modified ?? 0)) map.delete(s.id);
+                        continue;
+                    }
+
+                    const blobText  = unpackCipherBlob(s.text);
+                    s.text  = await this.crypto.decryptText({ ...blobText, v: 1, aad_b64: btoa(s.id) });
+
+                    const blobTitle = unpackCipherBlob(s.title);
+                    s.title = await this.crypto.decryptText({ ...blobTitle, v: 1, aad_b64: btoa(s.id + '#title') });
+
+                    if (!local) { map.set(s.id, s); continue; }
+                    if ((s.last_modified ?? 0) >= (local.last_modified ?? 0)) map.set(s.id, { ...local, ...s });
                 }
 
-                const blobText  = unpackCipherBlob(s.text);
-                s.text  = await this.crypto.decryptText({ ...blobText, v: 1, aad_b64: btoa(s.id) });
-
-                const blobTitle = unpackCipherBlob(s.title);
-                s.title = await this.crypto.decryptText({ ...blobTitle, v: 1, aad_b64: btoa(s.id + '#title') });
-
-                if (!local) { map.set(s.id, s); continue; }
-                if ((s.last_modified ?? 0) >= (local.last_modified ?? 0)) map.set(s.id, { ...local, ...s });
+                const merged = Array.from(map.values()).filter((n: any) => !n.deleted);
+                this.notes = merged;
+                this.filteredResults = merged;
+                this.isSyncing = false;
+                this.noteService.setNotes(JSON.stringify(merged));
+                this.setData(this.noteService.getNotesAppPassword());
+                console.log('Synching in 30 seconds...');
+            } catch (err) {
+                console.error('Sync failed:', err);
+                this.isSyncing = false;
             }
-
-            const merged = Array.from(map.values()).filter((n: any) => !n.deleted);
-            this.notes = merged;
-            this.filteredResults = merged;
-            this.isSyncing = false;
-            this.noteService.setNotes(JSON.stringify(merged));
-            this.setData(this.noteService.getNotesAppPassword());
-            console.log('Synching in 30 seconds...');
         } catch (err) {
-            console.error('Sync failed:', err);
-            this.isSyncing = false;
+            // only gets here if your service rethrows
+            console.error('Failed to read ssUser', err);
         }
 
     }
@@ -375,23 +386,32 @@ export class HomePage {
             return;
         }
 
-      /*  try {
-            // @ts-ignore
-            let password = localStorage.getItem("password");
-            const wrapped = await loadWrappedBundle(); // <-- reads what you stored
-            const plainJson = await unwrapBundleWithPassword_WebCrypto(this.input_password_app_unlock, wrapped);
-            // @ts-ignore
-            await this.crypto.importFromServerBundle(JSON.parse(plainJson), password);
+        try {
+
+            try {
+                const user = await this.secureStorageService.getItem('ssUser');
+                if(user) {
+                    // @ts-ignore
+                    const wrapped = await loadWrappedBundle(); // <-- reads what you stored
+                    const plainJson = await unwrapBundleWithPassword_WebCrypto(this.input_password_app_unlock, wrapped);
+                }
+            } catch (err) {
+                // only gets here if your service rethrows
+                console.error('Failed to read ssUser', err);
+            }
 
             this.should_display = true;
 
-            // @ts-ignore
-            this.noteService.setNotesAppPassword(password);
+            this.noteService.setNotesAppPassword(this.input_password_app_unlock);
+            this.setData(this.input_password_app_unlock);
 
             // init protection
             this.appProtectorService.init();
 
             this.input_password_app_unlock = "";
+
+            this.syncFromServer().then(() => {});
+
             setTimeout(() => {
                 this.initializePressGesture();
                 this.cdr.detectChanges();
@@ -412,7 +432,7 @@ export class HomePage {
 
             await toast.present();
             return;
-        }*/
+        }
 
     }
 
@@ -497,7 +517,7 @@ export class HomePage {
             }
         }
 
-        if (this.noteService.appHasPasswordChallenge()) {
+        /*if (this.noteService.appHasPasswordChallenge()) {
             // newly notes to save into storage.
             let encryptedNotesSave = this.cryptoService.encrypt(JSON.stringify(this.notes), this.noteService.getNotesAppPassword());
             // notes in the app is stored.
@@ -506,7 +526,9 @@ export class HomePage {
             this.noteService.setNotes(encryptedNotesSave);
         } else {
             this.noteService.setNotes(JSON.stringify(this.notes));
-        }
+        }*/
+
+        this.noteService.setNotes(JSON.stringify(this.notes));
 
         this.noteService.setDecryptedNotes(this.noteService.getNotes());
         this.notesApiServiceV1.deleteNotes(this.listOfCheckedCheckboxes).then(result => {})

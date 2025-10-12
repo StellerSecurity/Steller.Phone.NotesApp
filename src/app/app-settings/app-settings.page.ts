@@ -13,6 +13,8 @@ import {
     wrapBundleWithPassword,
     wrapBundleWithPassword_WebCrypto
 } from "../services/crypto-key.service";
+import {StorageEncryptionService} from "../services/storage-encryption.service";
+import {SecureStorageService} from "../services/secure-storage.service";
 @Component({
   selector: 'app-app-settings',
   templateUrl: './app-settings.page.html',
@@ -49,7 +51,9 @@ export class AppSettingsPage implements AfterViewInit {
     private appProtectorService: AppProtectorService,
     private navController: NavController,
     private crypto: CryptoKeyService,
+    private storageEncryption: StorageEncryptionService,
     private modalCtrl: ModalController,
+    private secureStorageService: SecureStorageService,
     private translatorService: TranslatorService) { }
 
   ionViewWillEnter(): void {
@@ -105,46 +109,96 @@ export class AppSettingsPage implements AfterViewInit {
       });
 
       await toast.present();
-
       return;
     }
-    // @ts-ignore
-    let bundle = localStorage.getItem("bundle");
-    // @ts-ignore
-    const wrapped = await wrapBundleWithPassword_WebCrypto(this.notesAppPassword, bundle);
-    await saveWrappedBundle(wrapped);
+
+
+    try {
+        const user = await this.secureStorageService.getItem('ssUser');
+        if(user) {
+            // @ts-ignore
+            let bundle = await this.storageEncryption.getBundleJson();
+
+            this.storageEncryption.setBundlePassword(this.notesAppPassword);
+            // @ts-ignore
+            const wrapped = await wrapBundleWithPassword_WebCrypto(this.notesAppPassword, bundle);
+            await saveWrappedBundle(wrapped);
+        }
+    } catch (err) {
+        // only gets here if your service rethrows
+        console.error('Failed to read ssUser', err);
+    }
+
+    // can be in encrypted state or decrypted - depends on if the app_password_challenge is set.
+    let notes = this.noteService.getNotes();
+
+    if (notes === null) {
+      notes = JSON.stringify([]);
+    }
 
     // first, we have to decrypt the notes:
+    let encryptedNotes = this.cryptoService.encrypt(notes, this.notesAppPassword);
+    this.noteService.setNotes(encryptedNotes);
+    await this.modal.dismiss();
+    this.noteService.setNotesAppPassword(this.notesAppPassword);
     this.notesAppPassword = "";
     this.confirmPassword = "";
-    this.noteService.setNotesAppPassword("");
     localStorage.setItem("app_password_challenge", "1");
     window.location.href = "/app-settings";
     this.password_enabled = false;
 
   }
 
+    public async removePassword() {
+        const modal = await this.modalCtrl.create({
+            component: ConfirmationModalComponent,
+            cssClass: 'confirmation-popup'
+        });
 
-  public async removePassword() {
-    const modal = await this.modalCtrl.create({
-      component: ConfirmationModalComponent,
-      cssClass: 'confirmation-popup'
-    });
+        modal.onDidDismiss().then(async (data) => {
+            if (data && data.data) {
+                const { confirm, inputValue } = data.data;
+                if (confirm) {
+                    if (this.noteService.appHasPasswordChallenge() && inputValue) {
+                        let notes = this.noteService.getNotes();
+                        // first, we have to decrypt the notes:
+                        let decryptedNotes = null;
+                        try {
+                            decryptedNotes = this.cryptoService.decrypt(notes, inputValue);
+                        } catch (e) {
+                            const toast = await this.toastController.create({
+                                message: 'The entered password was not correct.',
+                                duration: 3000,
+                                position: 'bottom',
+                            });
 
-    modal.onDidDismiss().then(async (data) => {
-      if (data && data.data) {
-        const { confirm, inputValue } = data.data;
-        if (confirm) {
-            await this.modal.dismiss();
-            this.noteService.setNotesAppPassword("");
-            localStorage.removeItem("app_password_challenge");
-            window.location.href = "/app-settings";
-          }
-      }
-    });
+                            await toast.present();
+                            return;
+                        }
+                        this.noteService.setNotes(decryptedNotes);
+                        this.noteService.setDecryptedNotes(decryptedNotes);
+                        await this.modal.dismiss();
+                        this.notesAppPassword = "";
+                        this.confirmPassword = "";
+                        this.noteService.setNotesAppPassword("");
+                        localStorage.removeItem("app_password_challenge");
+                        window.location.href = "/app-settings";
+                    } else {
+                        const toast = await this.toastController.create({
+                            message: this.allTranslations.enterYourCurrentPassword,
+                            duration: 3000,
+                            position: 'bottom',
+                        });
+                        await toast.present();
+                    }
+                } else {
 
-    return await modal.present();
-  }
+                }
+            }
+        });
+
+        return await modal.present();
+    }
 
   public notesAppPasswordChange() {
 
@@ -205,29 +259,6 @@ export class AppSettingsPage implements AfterViewInit {
 
   public async appPasswordChallengeDialog() {
     await this.modal.present();
-  }
-
-  public async deleteWholeAppStorage() {
-
-    const modal = await this.modalCtrl.create({
-      component: DeleteNoteModalComponent,
-      cssClass: 'confirmation-popup'
-    });
-
-    modal.onDidDismiss().then(async (data) => {
-      if (data && data.data) {
-        const { confirm } = data.data;
-        if (confirm) {
-          localStorage.clear();
-          window.location.href = "/";
-        } else {
-          // Handle case when user cancels password input
-        }
-      }
-    });
-
-    return await modal.present();
-
   }
 
 }
