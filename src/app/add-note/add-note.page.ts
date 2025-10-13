@@ -679,7 +679,7 @@ export class AddNotePage {
 
         this.notes = newNotes;
 
-        await this.storeNoteInStorage(true, true);
+        await this.storeNoteInStorage(true);
 
         // @ts-ignore
         this.currentNote.text = decryptedText;
