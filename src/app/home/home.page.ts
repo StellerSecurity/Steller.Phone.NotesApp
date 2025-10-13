@@ -452,10 +452,6 @@ export class HomePage {
    * Being called, when the confirmation has been done.
    * @private
    */
-  /**
-   * Being called, when the confirmation has been done.
-   * @private
-   */
   private async deleteNotesConfirm() {
     // Nothing selected? Nothing to do.
     if (!this.listOfCheckedCheckboxes?.length) {
