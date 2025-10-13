@@ -59,7 +59,6 @@ export class LoginComponent implements OnInit {
         password: this.loginForm.get("password")?.value,
       };
 
-
         this.authService.loginHandling(loginObj).subscribe({
         next: (response:any) => {
 
@@ -88,6 +87,12 @@ export class LoginComponent implements OnInit {
                   });
 
                   let notes = this.notesService.getNotes();
+
+                  // user has app-locker enabled.
+                  if(this.notesService.getDecryptedNotes() !== null) {
+                      notes = this.notesService.getDecryptedNotes();
+                  }
+
                   this.dataService.setForceDownloadOnHome(true);
 
                   if(notes.length == 0) {
@@ -96,7 +101,7 @@ export class LoginComponent implements OnInit {
                   } else {
                       console.log("what?");
                       this.notesApiV1Service
-                          .upload(0, JSON.parse(this.notesService.getNotes()))
+                          .upload(0, JSON.parse(notes))
                           .then(() => {
                               console.log('Notes sent.');
                               this.router.navigate(['/']);
