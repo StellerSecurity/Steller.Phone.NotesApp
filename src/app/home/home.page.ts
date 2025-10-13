@@ -59,7 +59,6 @@ export class HomePage {
   public should_display = true;
   public checkboxOpened = false;
   public listOfCheckedCheckboxes: string[] = [];
-  public app_requires_password = false;
   public showPassword = false;
   public input_password_app_unlock = "";
   public timezone = "UTC";
@@ -519,11 +518,8 @@ export class HomePage {
       if (data && data.data) {
         const {confirm} = data.data;
         if (confirm) {
-          localStorage.clear();
-          this.app_requires_password = false;
+          this.dataService.clearAppData();
           window.location.href = '/'; // keep original behavior
-        } else {
-          // user cancelled; no-op
         }
       }
     });
