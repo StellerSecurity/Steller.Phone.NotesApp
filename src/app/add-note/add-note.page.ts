@@ -729,7 +729,7 @@ export class AddNotePage {
                         this.stopSyncing = false;
 
                         // update.
-                        this.storeNoteInStorage(true, true);
+                        this.storeNoteInStorage(true);
                         this.modal.dismiss();
 
                     },
