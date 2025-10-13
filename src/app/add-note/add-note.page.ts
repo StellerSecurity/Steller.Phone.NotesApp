@@ -302,8 +302,6 @@ export class AddNotePage {
                     // @ts-ignore
                     if (this.currentNote.last_modified >  note.last_modified)  { console.log('Higher'); return; }
 
-                    console.log('Note from server {encrypted, we have to decrypt it}.', note);
-
                     const blobText = unpackCipherBlob(note.text);
                     // @ts-ignore
                     note.text = await this.crypto.decryptText({ ...blobText, v: 1, aad_b64: btoa(this.notes_id) });
