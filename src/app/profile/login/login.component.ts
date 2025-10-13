@@ -59,9 +59,10 @@ export class LoginComponent implements OnInit {
         password: this.loginForm.get("password")?.value,
       };
 
-      this.authService.loginHandling(loginObj).subscribe({
+
+        this.authService.loginHandling(loginObj).subscribe({
         next: (response:any) => {
-          this.isSaving = false;
+
           if (response.response_code == 200) {
             this.secureStorageService.setItem("ssToken", response.token);
             this.secureStorageService.setItem("ssUser", JSON.stringify(response.user));
@@ -76,30 +77,47 @@ export class LoginComponent implements OnInit {
             };
 
             extractPlainEAK(loginObj.password, bundle).then(({ eakB64 }) => {
-              this.secureStorageService.setItem("ssEakB64", eakB64).then(() => {});
-            }).catch(err => console.error('Failed:', err));
+              this.secureStorageService.setItem("ssEakB64", eakB64).then(() => {
+                  // default we wrap the bundle with 'password'
+                  wrapBundleWithPassword_WebCrypto("password", JSON.stringify(bundle)).then(wrapped =>
+                      saveWrappedBundle(wrapped))
+                      .then(() => {
+                          // success (optional)
+                      }).catch(err => {
+                      console.error("wrap/save failed:", err);
+                  });
 
-            // default we wrap the bundle with 'password'
-            wrapBundleWithPassword_WebCrypto("password", JSON.stringify(bundle)).then(wrapped =>
-                saveWrappedBundle(wrapped))
-            .then(() => {
-              // success (optional)
+                  let notes = this.notesService.getNotes();
+                  this.dataService.setForceDownloadOnHome(true);
+
+                  if(notes.length == 0) {
+                      this.dataService.setForceDownloadOnHome(true);
+                      this.router.navigate(['/']);
+                  } else {
+                      console.log("what?");
+                      this.notesApiV1Service
+                          .upload(0, JSON.parse(this.notesService.getNotes()))
+                          .then(() => {
+                              console.log('Notes sent.');
+                              this.router.navigate(['/']);
+                          })
+                          .catch(err => {
+                              console.log("notes error.", err);
+                              this.router.navigate(['/']);
+                          }).finally(() => {
+                          this.isSaving = false;
+                      });
+                  }
+
+              });
             }).catch(err => {
-              console.error("wrap/save failed:", err);
+                this.isSaving = false;
+                this.toastMessageService.showError(err);
             });
 
-            this.notesApiV1Service
-              .upload(0, this.notesService.getDecryptedNotes())
-              .then(() => {
-                  this.dataService.setForceDownloadOnHome(true);
-                  return this.router.navigate(['/']);
-              })
-              .catch(err => {
-                  this.dataService.setForceDownloadOnHome(true);
-                  return this.router.navigate(['/']);
-              });
 
           } else {
+            this.isSaving = false;
             this.toastMessageService.showError(response.response_message);
           }
         },

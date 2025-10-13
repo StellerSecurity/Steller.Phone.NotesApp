@@ -5,9 +5,15 @@ import { AuthService } from 'src/app/services/auth.service';
 import { ToastMessageService } from 'src/app/services/toast-message.service';
 import {NotesService} from "../../services/notes.service";
 import {NotesApiV1Service} from "../../services/notes-api-v1.service";
-import {CryptoKeyService, extractPlainEAK} from "../../services/crypto-key.service";
+import {
+    CryptoKeyService,
+    extractPlainEAK,
+    saveWrappedBundle,
+    wrapBundleWithPassword_WebCrypto
+} from "../../services/crypto-key.service";
 import {firstValueFrom} from "rxjs";
 import { SecureStorageService } from 'src/app/services/secure-storage.service';
+import {DataService} from "../../services/data.service";
 
 @Component({
   selector: 'app-create-account',
@@ -33,6 +39,7 @@ export class CreateAccountComponent implements OnInit {
 
   constructor(private router: Router, private fb: FormBuilder,
     private notesService: NotesService,
+    private dataService: DataService,
     private notesApiV1Service: NotesApiV1Service, private crypto: CryptoKeyService,
     private authService: AuthService, private toastMessageService: ToastMessageService,
     private secureStorageService: SecureStorageService) {}
@@ -96,7 +103,6 @@ export class CreateAccountComponent implements OnInit {
 
       this.authService.createAccount(payload).subscribe({
         next: (response) => {
-          this.isSaving = false;
           if (response.response_code == 200) {
             // this.showVerificationSection = true;
             this.secureStorageService.setItem("ssToken", response.token);
@@ -111,11 +117,44 @@ export class CreateAccountComponent implements OnInit {
               eak: user.eak_b64,                // base64(IV||CT)
             };
 
-            extractPlainEAK(createUserObj.password, bundle).then(({ eakB64 }) => {
-              this.secureStorageService.setItem("ssEakB64", eakB64).then(() => {});
-            }).catch(err => console.error('Failed:', err));
+              extractPlainEAK(createUserObj.password, bundle).then(({ eakB64 }) => {
+                  this.secureStorageService.setItem("ssEakB64", eakB64).then(() => {
+                      // default we wrap the bundle with 'password'
+                      wrapBundleWithPassword_WebCrypto("password", JSON.stringify(bundle)).then(wrapped =>
+                          saveWrappedBundle(wrapped))
+                          .then(() => {
+                              // success (optional)
+                          }).catch(err => {
+                          console.error("wrap/save failed:", err);
+                      });
 
-            this.router.navigate(["/"]);
+                      let notes = this.notesService.getNotes();
+                      this.dataService.setForceDownloadOnHome(true);
+
+                      if(notes.length == 0) {
+                          this.dataService.setForceDownloadOnHome(true);
+                          this.router.navigate(['/']);
+                      } else {
+                          console.log("what?");
+                          this.notesApiV1Service
+                              .upload(0, JSON.parse(this.notesService.getNotes()))
+                              .then(() => {
+                                  console.log('Notes sent.');
+                                  this.router.navigate(['/']);
+                              })
+                              .catch(err => {
+                                  console.log("notes error.", err);
+                                  this.router.navigate(['/']);
+                              }).finally(() => {
+                                this.isSaving = false;
+                                });
+                      }
+                  });
+              }).catch(err => {
+                  this.isSaving = false;
+                  this.toastMessageService.showError(err);
+              });
+
           } else {
             this.toastMessageService.showError(response.response_message);
           }

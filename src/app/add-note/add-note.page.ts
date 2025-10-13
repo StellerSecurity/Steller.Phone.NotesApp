@@ -423,10 +423,6 @@ export class AddNotePage {
                 this.currentNote = note;
             }
 
-            console.log('Note from save');
-            console.log(note);
-            console.log('End of note from save');
-
             this.note_text = decryptedText;
             this.note_title = decryptedTitle;
         }
