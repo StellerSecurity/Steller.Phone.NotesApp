@@ -456,33 +456,57 @@ export class HomePage {
    * Being called, when the confirmation has been done.
    * @private
    */
+  /**
+   * Being called, when the confirmation has been done.
+   * @private
+   */
   private async deleteNotesConfirm() {
-    // delete the selected notes.
-    for (let i = 0; this.listOfCheckedCheckboxes.length > i; i++) {
-      for (let j = this.notes.length - 1; j >= 0; j--) {
-        if (this.listOfCheckedCheckboxes[i] == this.notes[j].id) {
-          this.notes.splice(j, 1);
+    // Nothing selected? Nothing to do.
+    if (!this.listOfCheckedCheckboxes?.length) {
+      this.toggleCheckbox();
+      return;
+    }
+
+    const idsToDelete = new Set(this.listOfCheckedCheckboxes);
+
+    for (let j = this.notes.length - 1; j >= 0; j--) {
+      if (idsToDelete.has(this.notes[j].id)) {
+        this.notes.splice(j, 1);
+      }
+    }
+
+    if (this.filteredResults !== this.notes) {
+      for (let k = this.filteredResults.length - 1; k >= 0; k--) {
+        const n = this.filteredResults[k];
+        if (n && idsToDelete.has(n.id)) {
+          this.filteredResults.splice(k, 1);
         }
       }
     }
 
     if (this.noteService.appHasPasswordChallenge()) {
-      const encryptedNotesSave = this.cryptoService.encrypt(JSON.stringify(this.notes), this.noteService.getNotesAppPassword());
-      localStorage.setItem("app_password_challenge", "1");
+      const encryptedNotesSave = this.cryptoService.encrypt(
+        JSON.stringify(this.notes),
+        this.noteService.getNotesAppPassword()
+      );
+      localStorage.setItem('app_password_challenge', '1');
       this.noteService.setNotes(encryptedNotesSave);
     } else {
       this.noteService.setNotes(JSON.stringify(this.notes));
     }
 
     this.noteService.setDecryptedNotes(this.noteService.getNotes());
+
+    // 5) Server-side delete (if signed in)
     const user = await this.secureStorageService.getItem('ssUser');
     if (user) {
-      this.notesApiServiceV1.deleteNotes(this.listOfCheckedCheckboxes).then((data) => {})
+        await this.notesApiServiceV1.deleteNotes(this.listOfCheckedCheckboxes).then((data) => {});
     }
 
     this.listOfCheckedCheckboxes = [];
     this.toggleCheckbox();
   }
+
 
   public async resetPassword() {
     // @ts-ignore
@@ -493,18 +517,19 @@ export class HomePage {
 
     modal.onDidDismiss().then(async (data) => {
       if (data && data.data) {
-        const { confirm } = data.data;
+        const {confirm} = data.data;
         if (confirm) {
           localStorage.clear();
           this.app_requires_password = false;
-          window.location.href = '/';
+          window.location.href = '/'; // keep original behavior
         } else {
-          // user cancelled
+          // user cancelled; no-op
         }
       }
     });
 
     return await modal.present();
+
   }
 
   /**
