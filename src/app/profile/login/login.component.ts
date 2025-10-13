@@ -95,7 +95,8 @@ export class LoginComponent implements OnInit {
                   return this.router.navigate(['/']);
               })
               .catch(err => {
-                  console.error('Upload failed', err);
+                  this.dataService.setForceDownloadOnHome(true);
+                  return this.router.navigate(['/']);
               });
 
           } else {
