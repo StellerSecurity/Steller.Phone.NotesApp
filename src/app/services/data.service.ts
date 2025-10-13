@@ -21,5 +21,14 @@ export interface Note {
 })
 export class DataService {
 
+    private forceDownloadOnHome = false;
+
+    public setForceDownloadOnHome(forceDownloadOnHome: boolean) {
+        this.forceDownloadOnHome = forceDownloadOnHome;
+    }
+
+    public getForceDownloadOnHome() {
+        return this.forceDownloadOnHome;
+    }
 
 }

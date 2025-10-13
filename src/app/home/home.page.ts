@@ -26,6 +26,7 @@ import {firstValueFrom} from "rxjs";
 import {StorageEncryptionService} from "../services/storage-encryption.service";
 import {SecureStorageService} from "../services/secure-storage.service";
 import {ActivatedRoute, Router} from "@angular/router";
+import {DataService} from "../services/data.service";
 
 @Component({
     selector: 'app-home',
@@ -79,6 +80,7 @@ export class HomePage {
                 private appProtectorService: AppProtectorService,
                 private modalCtrl: ModalController,
                 private route: ActivatedRoute,
+                private dataService: DataService,
                 private storageEncryptionService: StorageEncryptionService,
                 private notesApiServiceV1: NotesApiV1Service,
                 private translatorService: TranslatorService,
@@ -96,18 +98,8 @@ export class HomePage {
 
         this.hiddenId = this.route.snapshot.queryParamMap.get('hide_ids');
 
-        let force_download = this.route.snapshot.queryParamMap.get('force_download');
-
-        if(force_download === '1') {
+        if(this.dataService.getForceDownloadOnHome()) {
             this.waitForSync = true;
-            await this.router.navigate(
-                [],
-                {
-                    relativeTo: this.route,
-                    queryParams: {force_download: '0'},
-                    queryParamsHandling: 'merge'
-                }
-            );
         }
 
         this.allTranslations = this.translatorService.allTranslations;
@@ -399,6 +391,7 @@ export class HomePage {
 
                 this.setData(this.noteService.getNotesAppPassword());
                 this.waitForSync = false;
+                this.dataService.setForceDownloadOnHome(false);
                 console.log(this.waitForSync);
 
                 //this.setData(this.noteService.getNotesAppPassword());

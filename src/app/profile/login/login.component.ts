@@ -14,6 +14,7 @@ import {
 } from "../../services/crypto-key.service";
 import {firstValueFrom} from "rxjs";
 import { SecureStorageService } from 'src/app/services/secure-storage.service';
+import {DataService} from "../../services/data.service";
 
 @Component({
   selector: 'app-login',
@@ -31,6 +32,7 @@ export class LoginComponent implements OnInit {
      private crypto: CryptoKeyService,
      private authService: AuthService,
      private toastMessageService: ToastMessageService,
+     private dataService: DataService,
      private secureStorageService: SecureStorageService) {}
 
 
@@ -87,7 +89,8 @@ export class LoginComponent implements OnInit {
             });
 
             this.notesApiV1Service.upload(0, this.notesService.getDecryptedNotes());
-            this.router.navigate(["/?force_download=1"]);
+            this.dataService.setForceDownloadOnHome(true);
+            this.router.navigate(["/"]);
           } else {
             this.toastMessageService.showError(response.response_message);
           }

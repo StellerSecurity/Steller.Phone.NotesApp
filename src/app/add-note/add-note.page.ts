@@ -16,6 +16,7 @@ import {NotesApiV1Service} from "../services/notes-api-v1.service";
 import {CryptoKeyService, packCipherBlob, unpackCipherBlob} from "../services/crypto-key.service";
 import {firstValueFrom} from "rxjs";
 import {SecureStorageService} from "../services/secure-storage.service";
+import {DataService} from "../services/data.service";
 const { v4: uuidv4 } = require('uuid');
 
 declare var require: any;
@@ -90,6 +91,7 @@ export class AddNotePage {
                 private secureStorageService: SecureStorageService,
                 private toastController: ToastController,
                 private modalCtrl: ModalController,
+                private dataService: DataService,
                 private alertCtrl: AlertController,
                 private notesApiV1Service: NotesApiV1Service,
                 private translatorService: TranslatorService) {
@@ -422,10 +424,10 @@ export class AddNotePage {
             this.note_title = decryptedTitle;
         }
 
-        this.storeNoteInStorage().then(r => {});
+        this.storeNoteInStorage(true).then(r => {});
     }
 
-    async storeNoteInStorage(serverSync = true) {
+    async storeNoteInStorage(serverSync = true, forceDownloadOnHome = false) {
 
         if(this.notesService.appHasPasswordChallenge()) {
             // newly notes to save into storage.
@@ -434,6 +436,10 @@ export class AddNotePage {
             this.notesService.setNotes(encryptedNotesSave);
         } else {
             this.notesService.setNotes(JSON.stringify(this.notes));
+        }
+
+        if(forceDownloadOnHome) {
+            this.dataService.setForceDownloadOnHome(true)
         }
 
         this.saveTimeout = window.setTimeout(() => {
@@ -668,7 +674,7 @@ export class AddNotePage {
 
         this.notes = newNotes;
 
-        await this.storeNoteInStorage();
+        await this.storeNoteInStorage(true, true);
 
         // @ts-ignore
         this.currentNote.text = decryptedText;
@@ -718,7 +724,7 @@ export class AddNotePage {
                         this.stopSyncing = false;
 
                         // update.
-                        this.storeNoteInStorage();
+                        this.storeNoteInStorage(true, true);
                         this.modal.dismiss();
 
                     },
@@ -773,15 +779,10 @@ export class AddNotePage {
 
                     // updated list will not have the current note.
                     console.log('deleting..');
-                    await this.storeNoteInStorage(true);
+                    await this.storeNoteInStorage(true, this.newlyCreatedNote);
                     this.currentNote = null;
 
-                    let force_download = 0;
-                    if(this.newlyCreatedNote) {
-                        force_download = 1;
-                    }
-
-                    await this.navController.navigateForward('/?hide_ids=' + this.notes_id + '&force_download=' + force_download);
+                    await this.navController.navigateForward('/?hide_ids=' + this.notes_id);
                 } else {
                     // Handle case when user cancels password input
                 }
