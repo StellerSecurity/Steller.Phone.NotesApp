@@ -1,9 +1,9 @@
 export interface NoteV1 {
-    id: string;                 // uuid or local-temp id
-    title: string;
-    text: string;
-    protected: boolean;
-    auto_wipe: boolean;
-    deleted: boolean;
-    last_modified: number;      // ms epoch
+  id: string;
+  title?: string;
+  text: string;
+  protected?: boolean;
+  last_modified?: number;
+  auto_wipe?: boolean;
+  deleted?: boolean;
 }

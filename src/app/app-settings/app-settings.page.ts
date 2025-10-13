@@ -13,7 +13,6 @@ import {
     wrapBundleWithPassword,
     wrapBundleWithPassword_WebCrypto
 } from "../services/crypto-key.service";
-import {StorageEncryptionService} from "../services/storage-encryption.service";
 import {SecureStorageService} from "../services/secure-storage.service";
 @Component({
   selector: 'app-app-settings',
@@ -51,7 +50,6 @@ export class AppSettingsPage implements AfterViewInit {
     private appProtectorService: AppProtectorService,
     private navController: NavController,
     private crypto: CryptoKeyService,
-    private storageEncryption: StorageEncryptionService,
     private modalCtrl: ModalController,
     private secureStorageService: SecureStorageService,
     private translatorService: TranslatorService) { }
@@ -112,28 +110,23 @@ export class AppSettingsPage implements AfterViewInit {
       return;
     }
 
-
-    try {
-        const user = await this.secureStorageService.getItem('ssUser');
-        if(user) {
-            // @ts-ignore
-            let bundle = await this.storageEncryption.getBundleJson();
-
-            this.storageEncryption.setBundlePassword(this.notesAppPassword);
-            // @ts-ignore
-            const wrapped = await wrapBundleWithPassword_WebCrypto(this.notesAppPassword, bundle);
-            await saveWrappedBundle(wrapped);
-        }
-    } catch (err) {
-        // only gets here if your service rethrows
-        console.error('Failed to read ssUser', err);
-    }
-
     // can be in encrypted state or decrypted - depends on if the app_password_challenge is set.
     let notes = this.noteService.getNotes();
 
+    // in case user creates app-password, and there is no notes.
     if (notes === null) {
       notes = JSON.stringify([]);
+    }
+
+    let eakB64 = await this.secureStorageService.getItem('ssEakB64');
+    if (eakB64) {
+      eakB64 = this.cryptoService.encrypt(eakB64, this.notesAppPassword);
+      // @ts-ignore
+      await this.secureStorageService.setItem("ssEakB64_Encrypted", eakB64);
+      // remove the unencrypted one.
+      await this.secureStorageService.removeItem("ssEakB64");
+
+      console.log("Removed unencrypted eak, and made a encrypted one." + eakB64);
     }
 
     // first, we have to decrypt the notes:
@@ -175,6 +168,18 @@ export class AppSettingsPage implements AfterViewInit {
                             await toast.present();
                             return;
                         }
+
+                        let eakB64 = await this.secureStorageService.getItem('ssEakB64_Encrypted');
+                        if (eakB64) {
+                            console.log("Decrypting...");
+                            eakB64 = this.cryptoService.decrypt(eakB64, inputValue);
+                            console.log("Decrypted OK");
+                            // @ts-ignore
+                            await this.secureStorageService.setItem("ssEakB64", eakB64);
+                            // remove the encrypted one.
+                            await this.secureStorageService.removeItem("ssEakB64_Encrypted");
+                        }
+
                         this.noteService.setNotes(decryptedNotes);
                         this.noteService.setDecryptedNotes(decryptedNotes);
                         await this.modal.dismiss();

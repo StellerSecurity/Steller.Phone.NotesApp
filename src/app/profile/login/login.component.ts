@@ -7,14 +7,12 @@ import { ToastMessageService } from 'src/app/services/toast-message.service';
 import {NotesService} from "../../services/notes.service";
 import {NotesApiV1Service} from "../../services/notes-api-v1.service";
 import {
-    CryptoKeyService, extractPlainEAK,
-    packCipherBlob,
-    saveWrappedBundle,
-    wrapBundleWithPassword_WebCrypto
+  CryptoKeyService, extractPlainEAK,
 } from "../../services/crypto-key.service";
 import {firstValueFrom} from "rxjs";
 import { SecureStorageService } from 'src/app/services/secure-storage.service';
 import {DataService} from "../../services/data.service";
+import {CryptoService} from "../../services/crypto.service";
 
 @Component({
   selector: 'app-login',
@@ -27,14 +25,14 @@ export class LoginComponent implements OnInit {
   isSaving = false;
 
   constructor(private router: Router, private fb: FormBuilder,
-     private notesService: NotesService,
-     private notesApiV1Service: NotesApiV1Service,
-     private crypto: CryptoKeyService,
-     private authService: AuthService,
-     private toastMessageService: ToastMessageService,
-     private dataService: DataService,
-     private secureStorageService: SecureStorageService) {}
-
+              private notesService: NotesService,
+              private notesApiV1Service: NotesApiV1Service,
+              private crypto: CryptoKeyService,
+              private authService: AuthService,
+              private toastMessageService: ToastMessageService,
+              private dataService: DataService,
+              private cryptoService: CryptoService,
+              private secureStorageService: SecureStorageService) {}
 
   ngOnInit(): void {
     this.initLoginForm();
@@ -59,78 +57,61 @@ export class LoginComponent implements OnInit {
         password: this.loginForm.get("password")?.value,
       };
 
-        this.authService.loginHandling(loginObj).subscribe({
-        next: (response:any) => {
+      try {
+        const response: any = await firstValueFrom(this.authService.loginHandling(loginObj));
 
-          if (response.response_code == 200) {
-            this.secureStorageService.setItem("ssToken", response.token);
-            this.secureStorageService.setItem("ssUser", JSON.stringify(response.user));
+        if (response.response_code == 200) {
+          await this.secureStorageService.setItem("ssToken", response.token);
+          await this.secureStorageService.setItem("ssUser", JSON.stringify(response.user));
 
-            let user = response.user;
+          let user = response.user;
 
-            const bundle = {
-              crypto_version: user.crypto_version,
-              kdf_params: user.kdf_params,      // { algo:'PBKDF2', hash:'SHA-256', iters: 210000 }
-              kdf_salt: user.kdf_salt_b64,      // base64
-              eak: user.eak_b64,                // base64(IV||CT)
-            };
+          const bundle = {
+            crypto_version: user.crypto_version,
+            kdf_params: user.kdf_params,      // { algo:'PBKDF2', hash:'SHA-256', iters: 210000 }
+            kdf_salt: user.kdf_salt_b64,      // base64
+            eak: user.eak_b64,                // base64(IV||CT)
+          };
 
-            extractPlainEAK(loginObj.password, bundle).then(({ eakB64 }) => {
-              this.secureStorageService.setItem("ssEakB64", eakB64).then(() => {
-                  // default we wrap the bundle with 'password'
-                  wrapBundleWithPassword_WebCrypto("password", JSON.stringify(bundle)).then(wrapped =>
-                      saveWrappedBundle(wrapped))
-                      .then(() => {
-                          // success (optional)
-                      }).catch(err => {
-                      console.error("wrap/save failed:", err);
-                  });
+          const { eakB64: derivedEakB64 } = await extractPlainEAK(loginObj.password, bundle);
+          let eakB64 = derivedEakB64;
 
-                  let notes = this.notesService.getNotes();
-
-                  // user has app-locker enabled.
-                  if(this.notesService.getDecryptedNotes() !== null) {
-                      notes = this.notesService.getDecryptedNotes();
-                  }
-
-                  this.dataService.setForceDownloadOnHome(true);
-
-                  if(notes.length == 0) {
-                      this.dataService.setForceDownloadOnHome(true);
-                      this.router.navigate(['/']);
-                  } else {
-                      console.log("what?");
-                      this.notesApiV1Service
-                          .upload(0, JSON.parse(notes))
-                          .then(() => {
-                              console.log('Notes sent.');
-                              this.router.navigate(['/']);
-                          })
-                          .catch(err => {
-                              console.log("notes error.", err);
-                              this.router.navigate(['/']);
-                          }).finally(() => {
-                          this.isSaving = false;
-                      });
-                  }
-
-              });
-            }).catch(err => {
-                this.isSaving = false;
-                this.toastMessageService.showError(err);
-            });
-
-
+          if (this.notesService.appHasPasswordChallenge()) {
+            this.cryptoService.encrypt(eakB64, this.notesService.getNotesAppPassword());
+            await this.secureStorageService.setItem("ssEakB64_Encrypted", eakB64);
           } else {
-            this.isSaving = false;
-            this.toastMessageService.showError(response.response_message);
+            await this.secureStorageService.setItem("ssEakB64", eakB64);
           }
-        },
-        error: (error) => {
-          this.isSaving = false;
-          this.toastMessageService.showError(error?.error?.message);
-        },
-      });
+
+          let notes = this.notesService.getNotes();
+
+          // user has app-locker enabled.
+          if (this.notesService.getDecryptedNotes() !== null) {
+            notes = this.notesService.getDecryptedNotes();
+          }
+
+          this.dataService.setForceDownloadOnHome(true);
+
+          if (notes.length == 0) {
+            await this.router.navigate(['/']);
+          } else {
+            try {
+              await this.notesApiV1Service.upload(0, JSON.parse(notes));
+              console.log('Notes sent.');
+            } catch (err) {
+              console.log("notes error.", err);
+            } finally {
+              await this.router.navigate(['/']);
+            }
+          }
+        } else {
+          await this.toastMessageService.showError(response.response_message);
+        }
+      } catch (error: any) {
+        await this.toastMessageService.showError(error?.error?.message || error?.message);
+      } finally {
+        this.isSaving = false;
+      }
     }
   }
 

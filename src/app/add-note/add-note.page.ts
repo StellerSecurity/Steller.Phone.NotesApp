@@ -1,823 +1,721 @@
-import {Component, ElementRef, OnInit, ViewChild} from '@angular/core';
-import {at} from "ionicons/icons";
-import {CryptoService} from "../services/crypto.service";
-import {ActivatedRoute, ParamMap, Router} from "@angular/router";
-import {AlertController, IonModal, LoadingController, NavController, ToastController, ModalController, IonInput} from "@ionic/angular";
-import {NotesService} from "../services/notes.service";
-import { NoteLockedModalComponent } from '../note-locked-modal/note-locked-modal.component';
-import { DeleteNoteModalComponent } from '../delete-note-modal/delete-note-modal.component';
+import { Component, ViewChild, OnDestroy } from '@angular/core';
+import { ActivatedRoute, ParamMap } from '@angular/router';
+import {
+  AlertController,
+  IonInput,
+  IonModal,
+  ModalController,
+  NavController,
+  ToastController,
+} from '@ionic/angular';
+
+import { Subscription } from 'rxjs';
+import { CryptoService } from '../services/crypto.service';
+import { NotesService } from '../services/notes.service';
 import { TranslatorService } from '../services/translator.service';
-import {SecretapiService} from "../services/secretapi.service";
-import {Secret} from "../models/Secret";
-import {sha512} from "js-sha512";
+import { Secret } from '../models/Secret';
+import { sha512 } from 'js-sha512';
 import { ShareSecretModalComponent } from '../share-secret-modal/share-secret-modal.component';
 import { RichTextEditorComponent } from './rich-text-editor/rich-text-editor.component';
-import {NotesApiV1Service} from "../services/notes-api-v1.service";
-import {CryptoKeyService, packCipherBlob, unpackCipherBlob} from "../services/crypto-key.service";
-import {firstValueFrom} from "rxjs";
-import {SecureStorageService} from "../services/secure-storage.service";
-import {DataService} from "../services/data.service";
-const { v4: uuidv4 } = require('uuid');
+import { NotesApiV1Service } from '../services/notes-api-v1.service';
+import { CryptoKeyService, unpackCipherBlob } from '../services/crypto-key.service';
+import { SecureStorageService } from '../services/secure-storage.service';
+import { DataService } from '../services/data.service';
+import { NoteLockedModalComponent } from '../note-locked-modal/note-locked-modal.component';
+import { DeleteNoteModalComponent } from '../delete-note-modal/delete-note-modal.component';
+import {NoteV1} from "../models/NoteV1";
 
+// ✅ keep CommonJS requires (no ES imports)
 declare var require: any;
-var CryptoJS = require('crypto-js');
+const { v4: uuidv4 } = require('uuid');
+const CryptoJS = require('crypto-js');
 
 @Component({
-    selector: 'app-add-note',
-    templateUrl: './add-note.page.html',
-    styleUrls: ['./add-note.page.scss'],
+  selector: 'app-add-note',
+  templateUrl: './add-note.page.html',
+  styleUrls: ['./add-note.page.scss'],
 })
-export class AddNotePage {
+export class AddNotePage implements OnDestroy {
+  @ViewChild(IonModal) modal!: IonModal;
+  @ViewChild('titleInput', { static: false }) titleInputRef!: IonInput;
+  @ViewChild('richTextEditorComponentRef') richTextEditorComponent!: RichTextEditorComponent;
 
-    @ViewChild(IonModal) modal: IonModal;
+  public notes_password_input = '';
+  public note_locked = false;
+  public notes_password_stored = '';
+  public notes_password_confirm = '';
+  public passwordStrengthHelperText = '';
+  public showPassword = false;
+  public confirmShowPassword = false;
+  public strongPass = false;
+  public upperLower = false;
+  public specialChar = false;
+  public passwordStrength = 0;
+  public note_text = '';
+  public note_title = '';
+  public allTranslations: any;
+  public isEditingTitle = false;
 
-    public notes_password_input = "";
+  private notes_id: string | null = null;
+  private notes: NoteV1[] = [];
+  private currentNote: NoteV1| null = null;
 
-    private notes_id = null;
+  private saveTimeout: any = null;
+  private liveNoteTimer?: number;
+  private typing = false;
+  private typingTimeout: any;
+  private isPaused = false;
+  private stopSyncing = false;
+  private newlyCreatedNote = false;
 
-    private notes:any[] = [];
+  private fetchLiveNoteBound = () => {};
+  private routeSub?: Subscription;
 
-    private currentNote = null;
+  constructor(
+    private cryptoService: CryptoService,
+    public activatedRoute: ActivatedRoute,
+    private navController: NavController,
+    private notesService: NotesService,
+    private crypto: CryptoKeyService,
+    private secureStorageService: SecureStorageService,
+    private toastController: ToastController,
+    private modalCtrl: ModalController,
+    private dataService: DataService,
+    private alertCtrl: AlertController,
+    private notesApiV1Service: NotesApiV1Service,
+    private translatorService: TranslatorService
+  ) {
+    this.routeSub = this.activatedRoute.paramMap.subscribe((params: ParamMap) => {
+      const decrypted = this.notesService.getDecryptedNotes();
+      this.notes = decrypted ? (JSON.parse(decrypted) as NoteV1[]) : [];
 
-    public note_locked = false;
+      this.notes_id = params.get('id');
+      if (this.notes_id === null) {
+        // New note
+        this.newlyCreatedNote = true;
+        this.notes_id = uuidv4();
+        return;
+      }
 
-    public notes_password_stored = "";
+      this.currentNote = this.notesService.findNoteById(this.notes_id, this.notes) as NoteV1 | null;
 
-    public notes_password_confirm = "";
+      if (!this.currentNote) {
+        // defensive: if note not found, treat as new
+        this.newlyCreatedNote = true;
+        this.notes_id = uuidv4();
+        return;
+      }
 
-    public passwordStrengthHelperText = "";
+      if (this.currentNote.protected) {
+        this.note_locked = true;
+        this.askforNotePassword().then(() => {});
+      }
 
-    public showPassword = false;
-    public confirmShowPassword = false;
-    public strongPass = false;
-    public upperLower = false;
-    public specialChar = false;
+      this.note_text = this.currentNote.text ?? '';
 
-    public passwordStrength = 0;
+      this.note_title = this.currentNote.title !== undefined ? this.currentNote.title : 'Untitled';
 
-    public note_text = "";
+      this.startLiveNotePolling();
+    });
+  }
 
-    public note_title = "";
+  ngOnDestroy(): void {
+    // Clean up the route subscription if this page is destroyed
+    this.routeSub?.unsubscribe();
+    this.stopLiveNotePolling();
+  }
 
-    private saveTimeout: any = null;
+  ionViewDidEnter() {
+    this.passwordStrengthHelperText = this.allTranslations?.passwordAtLeastLength ?? '';
+    if (this.note_text.length === 0) {
+      setTimeout(() => this.placeCursorAtEnd(), 100);
+    }
+  }
 
-    allTranslations:any;
-    isEditingTitle: boolean = false;
+  ionViewWillEnter(): void {
+    this.allTranslations = this.translatorService.allTranslations;
+  }
 
-    private liveNoteTimer?: number;
-    private fetchLiveNoteBound = () => {}
-    private typing = false;
-    private typingTimeout: any;
-    private isPaused = false;
+  ionViewWillLeave() {
+    this.stopLiveNotePolling();
+    if (this.richTextEditorComponent?.onLeave) {
+      this.richTextEditorComponent.onLeave();
+    }
+  }
 
-    private stopSyncing = false;
+  private placeCursorAtEnd() {
+    const editorElem = this.richTextEditorComponent?.editorComponent?.textArea?.nativeElement;
+    if (!editorElem) return;
 
-    private livePoolingTimer: any = null;
+    editorElem.focus();
+    const selection = window.getSelection();
+    const range = document.createRange();
+    const lastChild = editorElem.lastChild;
 
-    // class field
-    private hiddenId: string | null = null;
+    if (selection && range && lastChild) {
+      range.selectNodeContents(editorElem);
+      range.collapse(false);
+      selection.removeAllRanges();
+      selection.addRange(range);
+    }
+  }
 
-    private newlyCreatedNote = false;
+  public async shareStellarSecret() {
+    if (this.richTextEditorComponent?.onLeave) {
+      this.richTextEditorComponent.onLeave();
+    }
 
-    @ViewChild('titleInput', { static: false }) titleInputRef!: IonInput;
-    @ViewChild('richTextEditorComponentRef') richTextEditorComponent!: RichTextEditorComponent;
+    const addSecretModal = new Secret();
+    const secret_id = uuidv4();
 
+    addSecretModal.expires_at = '0'; // "0" -> never expires
+    addSecretModal.id = sha512(secret_id);
 
-    constructor(private cryptoService: CryptoService,
-                public activatedRoute: ActivatedRoute,
-                private navController: NavController,
-                private notesService: NotesService,
-                private crypto: CryptoKeyService,
-                private secureStorageService: SecureStorageService,
-                private toastController: ToastController,
-                private modalCtrl: ModalController,
-                private dataService: DataService,
-                private alertCtrl: AlertController,
-                private notesApiV1Service: NotesApiV1Service,
-                private translatorService: TranslatorService) {
+    let secretMessage = this.note_text.replace(/<br ?\/?>/g, '\n');
+    const doc = new DOMParser().parseFromString(secretMessage, 'text/html');
+    secretMessage = doc.body?.textContent?.trim() || '';
 
-        this.activatedRoute.paramMap.subscribe((params: ParamMap) => {
+    addSecretModal.message = CryptoJS.AES.encrypt(secretMessage, secret_id).toString();
 
-            this.notes = JSON.parse(this.notesService.getDecryptedNotes());
+    const modal = await this.modalCtrl.create({
+      component: ShareSecretModalComponent,
+      componentProps: { addSecretModal, secret_id },
+      cssClass: 'secret-modal',
+      breakpoints: [0, 0.7],
+      initialBreakpoint: 0.7,
+    });
 
-            // @ts-ignore
-            this.notes_id = params.get('id');
-            if(this.notes_id === null) {
-                console.log('new note created');
-                this.newlyCreatedNote = true;
-                this.notes_id = uuidv4();
-                return;
+    await modal.present();
+  }
+
+  enableEditingTitle() {
+    this.isEditingTitle = true;
+    setTimeout(() => this.titleInputRef?.setFocus(), 100);
+  }
+
+  public noteTitleChange(event: any) {
+    const newTitle = (event?.detail?.value ?? '').trim();
+    this.note_title = newTitle;
+
+    for (let i = 0; i < this.notes.length; i++) {
+      if (this.notes[i].id === this.notes_id) {
+        this.notes[i].title = this.note_title;
+        break;
+      }
+    }
+
+    this.onSave(newTitle, 'note_title');
+  }
+
+  togglePasswordVisibility() {
+    this.showPassword = !this.showPassword;
+  }
+  toggleConfirmPasswordVisibility() {
+    this.confirmShowPassword = !this.confirmShowPassword;
+  }
+
+  startLiveNotePolling() {
+    this.liveNoteTimer = window.setInterval(() => {
+      if (this.isPaused || document.hidden || !navigator.onLine) return;
+      this.fetchLiveNote();
+    }, 10_000);
+  }
+
+  pauseLiveSync() {
+    this.isPaused = true;
+  }
+
+  resumeLiveSync() {
+    this.isPaused = false;
+    this.fetchLiveNote().then(() => {});
+  }
+
+  private stopLiveNotePolling() {
+    this.stopSyncing = true;
+    if (this.liveNoteTimer) clearInterval(this.liveNoteTimer);
+    window.removeEventListener('focus', this.fetchLiveNoteBound);
+    window.removeEventListener('online', this.fetchLiveNoteBound);
+  }
+
+  private async fetchLiveNote() {
+    if (this.stopSyncing) return;
+    if (this.note_locked) return;
+
+    if (this.typing) {
+      console.log('Do not fetch live note');
+      return;
+    }
+    if (!this.notes_id) return;
+
+    // Narrow to a definite string for downstream calls
+    const noteId = this.notes_id as string;
+
+    try {
+      const user = await this.secureStorageService.getItem('ssUser');
+      if (!user) return;
+
+      this.notesApiV1Service
+        .find(noteId)
+        .then(async (note: any) => {
+          console.log('Fetched Live Note');
+          if (this.currentNote == null) return;
+
+          if (note.deleted) {
+            this.dataService.setForceDownloadOnHome(true);
+            await this.navController.navigateForward('/');
+            return;
+          }
+
+          // Protection mismatch => redirect home
+          if (note.protected !== this.currentNote.protected) {
+            this.dataService.setForceDownloadOnHome(true);
+            console.log('Notes protection mismatch, redirect back' + note.protected);
+            await this.navController.navigateForward('/');
+            return;
+          }
+
+          if (!note.protected) this.notes_password_stored = '';
+
+          // Skip if server is equal/older than local
+          if (this.currentNote.last_modified == note.last_modified) {
+            console.log('Equal');
+            return;
+          }
+          if ((this.currentNote.last_modified ?? 0) > (note.last_modified ?? 0)) {
+            console.log('Higher');
+            return;
+          }
+
+          // Decrypt text (always expected to exist)
+          const blobText = unpackCipherBlob(note.text);
+          note.text = await this.crypto.decryptText({
+            ...blobText,
+            v: 1,
+            aad_b64: btoa(noteId),
+          });
+
+          // Decrypt title ONLY if present; otherwise set to empty string
+          if (typeof note.title === 'string' && note.title.length > 0) {
+            const blobTitle = unpackCipherBlob(note.title);
+            note.title = await this.crypto.decryptText({
+              ...blobTitle,
+              v: 1,
+              aad_b64: btoa(noteId + '#title'),
+            });
+          } else {
+            note.title = '';
+          }
+
+          // Update current note + bindings
+          this.currentNote.text = note.text;
+          this.note_title = note.title;
+          this.note_text = note.text;
+          this.currentNote.title = this.note_title;
+
+          if (note.protected) {
+            console.log('Note is protected, lets decrypt it.');
+            const ok = this.decryptNote(this.notes_password_stored, note);
+            console.log('Note decrypted...');
+            if (!ok) {
+              this.dismissModal().then(() => {});
+              this.navController.navigateForward('/');
             }
+          }
+        })
+        .catch(() => {
+          /* ignore; try again on next tick */
+        });
+    } catch (err) {
+      // only gets here if your service rethrows
+      console.error('Find notes not done.', err);
+    }
+  }
 
-            // @ts-ignore
-            this.currentNote = this.notesService.findNoteById(this.notes_id, this.notes);
 
-            console.log("Current notes");
-            console.log(this.notes);
 
-            // @ts-ignore
-            if(this.currentNote.protected) {
-                this.note_locked = true;
-                this.askforNotePassword().then(r => {});
-            }
 
-            // @ts-ignore
-            this.note_text = this.currentNote.text;
+  // should be called on key enter.
+  save(ev: any) {
+    if (this.notes_id === null) return;
+    if (this.note_locked) return;
 
-            // @ts-ignore
-            if(this.currentNote.title !== undefined) {
-                // @ts-ignore
-                this.note_title = this.currentNote.title;
-            } else {
-                this.note_title = "Untitled";
-            }
+    let value = this.note_text.length > 0 ? this.note_text : ' ';
 
+    let encryptedText = value;
+    let decryptedText = value;
+
+    let encryptedTitle = this.note_title;
+    let decryptedTitle = this.note_title;
+
+    if (this.notes_password_stored.length > 1) {
+      encryptedText = this.cryptoService.encrypt(value, this.notes_password_stored);
+      encryptedTitle = this.cryptoService.encrypt(this.note_title, this.notes_password_stored);
+    }
+
+    let protectedNote = false;
+    if (this.currentNote !== null) {
+      protectedNote = !!this.currentNote.protected;
+    }
+
+    const now = new Date();
+    const datePart = now.toLocaleDateString(undefined, {
+      weekday: 'long',
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    });
+    const timePart = now.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit', hour12: true });
+    const formattedDate = `${datePart} at ${timePart}`;
+
+    const note: NoteV1 = {
+      id: this.notes_id,
+      title: encryptedTitle ? encryptedTitle : formattedDate,
+      last_modified: Date.now(),
+      text: encryptedText,
+      protected: protectedNote,
+      auto_wipe: true,
+    };
+
+    if (this.notes === null) {
+      this.notes = [note];
+    } else {
+      let found = false;
+
+      for (let i = 0; i < this.notes.length; i++) {
+        if (this.notes[i].id === this.notes_id) {
+          found = true;
+          this.notes[i] = note;
+          this.currentNote = note;
+          break;
+        }
+      }
+
+      if (!found) {
+        this.notes.push(note);
+        this.currentNote = note;
+      }
+
+      this.note_text = decryptedText;
+      this.note_title = decryptedTitle;
+    }
+
+    this.storeNoteInStorage(true).then(() => {});
+  }
+
+  async storeNoteInStorage(serverSync = true, forceDownloadOnHome = false) {
+    if (this.notesService.appHasPasswordChallenge()) {
+      const encryptedNotesSave = this.cryptoService.encrypt(JSON.stringify(this.notes), this.notesService.getNotesAppPassword());
+      this.notesService.setNotes(encryptedNotesSave);
+    } else {
+      this.notesService.setNotes(JSON.stringify(this.notes));
+    }
+
+    if (forceDownloadOnHome) {
+      this.dataService.setForceDownloadOnHome(true);
+    }
+
+    const notesToSend = this.notes;
+
+    this.saveTimeout = window.setTimeout(() => {
+      (async () => {
+        const user = await this.secureStorageService.getItem('ssUser');
+        if (serverSync && user) {
+          this.notesApiV1Service.upload(0, notesToSend).then(() => {});
+          if (this.liveNoteTimer == null) {
             this.startLiveNotePolling();
-
-        });
-
-    }
-
-    ionViewDidEnter() {
-        this.passwordStrengthHelperText = this.allTranslations.passwordAtLeastLength;
-        if(this.note_text.length === 0) {
-            setTimeout(() => {
-                this.placeCursorAtEnd();
-            }, 100);
+          }
         }
+      })();
+    }, 500);
+  }
 
-    }
+  public back() {
+    this.navController.back();
+  }
 
-    private placeCursorAtEnd() {
-        const editorElem = this.richTextEditorComponent?.editorComponent?.textArea?.nativeElement;
+  private async wrongPasswordEntered() {
+    const toast = await this.toastController.create({
+      message: this.allTranslations.passwordIsNotCorrectTryAgain,
+      duration: 3000,
+      position: 'bottom',
+    });
+    await toast.present();
+    await this.askforNotePassword();
+  }
 
-        if (editorElem) {
-            editorElem.focus();
+  public async askforNotePassword() {
+    const modal = await this.modalCtrl.create({
+      component: NoteLockedModalComponent,
+      cssClass: 'confirmation-popup',
+    });
 
-            const selection = window.getSelection();
-            const range = document.createRange();
-            const lastChild = editorElem.lastChild;
+    modal.onDidDismiss().then(async (data) => {
+      if (data && data.data) {
+        const { confirm, inputValue } = data.data || {};
+        if (confirm) {
+          this.notes_password_stored = inputValue ?? '';
 
-            if (selection && range && lastChild) {
-                range.selectNodeContents(editorElem);
-                range.collapse(false);
-                selection.removeAllRanges();
-                selection.addRange(range);
-            }
+          const ok = this.decryptNote(this.notes_password_stored, this.currentNote);
+          if (!ok) {
+            await this.wrongPasswordEntered();
+          } else {
+            await modal.dismiss();
+          }
+        } else {
+          this.back();
         }
+      }
+      if (data.role === 'backdrop') {
+        this.back();
+      }
+    });
+
+    return await modal.present();
+  }
+
+  private decryptNote(notePassword: string, noteToDecrypt: NoteV1 | any): boolean {
+    if (!notePassword?.length) return false;
+
+    let decryptedText: string | null = null;
+
+    try {
+      decryptedText = this.cryptoService.decrypt(noteToDecrypt.text, notePassword);
+    } catch (e) {
+      console.error(e);
+      return false;
     }
 
-    public async shareStellarSecret() {
-        if (this.richTextEditorComponent?.onLeave) {
-            this.richTextEditorComponent.onLeave();
-        }
+    if (!decryptedText?.length) return false;
 
-        // 1. Create a new secret
-        const addSecretModal = new Secret();
-        const secret_id = uuidv4();
-
-        addSecretModal.expires_at = "0"; // Assuming '0' means never expires
-        addSecretModal.id = sha512(secret_id);
-
-        let secretMessage = this.note_text;
-        secretMessage = secretMessage.replace(/<br ?\/?>/g, "\n")
-        const doc = new DOMParser().parseFromString(secretMessage, 'text/html');
-        secretMessage = doc.body?.textContent?.trim() || '';
-
-        // 3. Encrypt the secret using AES
-        addSecretModal.message = CryptoJS.AES.encrypt(secretMessage, secret_id).toString();
-
-        // 4. Open to Modal
-        const modal = await this.modalCtrl.create({
-            component: ShareSecretModalComponent,
-            componentProps: {
-                addSecretModal: addSecretModal,
-                secret_id: secret_id,
-            },
-            cssClass: 'secret-modal',
-            breakpoints: [0, 0.7],
-            initialBreakpoint: 0.7,
-        });
-
-        await modal.present();
+    let decryptedTitle = '';
+    try {
+      decryptedTitle = this.cryptoService.decrypt(noteToDecrypt.title, notePassword);
+    } catch (e) {
+      // title may be empty or fail silently
     }
 
-    enableEditingTitle() {
-        this.isEditingTitle = true;
+    if (this.currentNote) {
+      this.currentNote.text = decryptedText;
+      this.currentNote.title = decryptedTitle;
+    }
+    this.note_text = decryptedText;
+    this.note_title = decryptedTitle;
+    this.note_locked = false;
 
-        setTimeout(() => {
-            this.titleInputRef?.setFocus();
-        }, 100); // Slight delay ensures DOM updates
+    return true;
+  }
+
+  public async dismissModal() {
+    await this.modal.dismiss();
+  }
+
+  public notesPasswordChange() {
+    this.passwordStrength = 0;
+
+    if (this.notes_password_input.length == 0) {
+      this.passwordStrengthHelperText = this.allTranslations.passwordAtLeastLength;
+      return;
     }
 
+    // length > 4
+    if (this.notes_password_input.length > 4) this.passwordStrength += 1;
 
-    public noteTitleChange(event: any) {
-        const newTitle = event.detail?.value || '';
-        this.note_title = newTitle.trim();
-
-
-        for(let i = 0; i < this.notes?.length; i++) {
-            // @ts-ignore
-            if(this.notes[i].id === this.notes_id) {
-                // @ts-ignore
-                this.notes[i].title = this.note_title;
-                break;
-            }
-        }
-
-        this.onSave(newTitle, 'note_title');
-
+    // mixed case
+    if (/[a-z]/.test(this.notes_password_input) && /[A-Z]/.test(this.notes_password_input)) {
+      this.passwordStrength += 1;
+      this.upperLower = true;
+    } else {
+      this.upperLower = false;
     }
 
-    ionViewWillEnter(): void {
-        this.allTranslations = this.translatorService.allTranslations;
+    // numbers
+    if (/\d/.test(this.notes_password_input)) this.passwordStrength += 1;
+
+    // special chars
+    if (/[^a-zA-Z\d]/.test(this.notes_password_input)) {
+      this.passwordStrength += 1;
+      this.specialChar = true;
+    } else {
+      this.specialChar = false;
     }
 
-    togglePasswordVisibility() {
-        this.showPassword = !this.showPassword;
-    }
-    toggleConfirmPasswordVisibility() {
-        this.confirmShowPassword = !this.confirmShowPassword;
-    }
-
-    startLiveNotePolling() {
-        this.liveNoteTimer = window.setInterval(() => {
-            if (this.isPaused || document.hidden || !navigator.onLine) return;
-            this.fetchLiveNote();
-        }, 10000);
+    // length >= 6
+    if (this.notes_password_input.length >= 6) {
+      this.passwordStrength += 1;
+      this.strongPass = true;
+    } else {
+      this.strongPass = false;
     }
 
-    pauseLiveSync() {
-        this.isPaused = true;
+    if (this.passwordStrength < 2) {
+      this.passwordStrengthHelperText = this.allTranslations.weakPassword;
+    } else if (this.passwordStrength === 2) {
+      this.passwordStrengthHelperText = this.allTranslations.averagePassword;
+    } else if (this.passwordStrength === 3) {
+      this.passwordStrengthHelperText = this.allTranslations.goodPassword;
+    } else {
+      this.passwordStrengthHelperText = this.allTranslations.greatPassword;
+    }
+  }
+
+  public async lockNote() {
+    if (this.notes_password_input !== this.notes_password_confirm) {
+      const toast = await this.toastController.create({
+        message: this.allTranslations.theTwoPasswordsDoesNotMatch,
+        duration: 2500,
+        position: 'bottom',
+      });
+      await toast.present();
+      return;
     }
 
-    resumeLiveSync() {
-        this.isPaused = false;
-        this.fetchLiveNote().then(r => {}); // grab latest once user stops editing
+    if (this.notes_password_input.length < 2) {
+      const toast = await this.toastController.create({
+        message: this.allTranslations.thePasswordIsTooWeakPleaseMakeItStronger,
+        duration: 3000,
+        position: 'bottom',
+      });
+      await toast.present();
+      return;
     }
 
-    private stopLiveNotePolling() {
-        this.stopSyncing = true;
-        if (this.liveNoteTimer) clearInterval(this.liveNoteTimer);
-        window.removeEventListener('focus', this.fetchLiveNoteBound);
-        window.removeEventListener('online', this.fetchLiveNoteBound);
+    this.notes_password_stored = this.notes_password_input;
+
+    const decryptedText = this.note_text;
+    const decryptedTitle = this.note_title;
+
+    const encryptedText = this.cryptoService.encrypt(this.note_text, this.notes_password_stored);
+    const encryptedTitle = this.cryptoService.encrypt(this.note_title, this.notes_password_stored);
+
+    if (this.currentNote) {
+      this.currentNote.protected = true;
+      this.currentNote.text = encryptedText;
+      this.currentNote.title = encryptedTitle;
     }
 
-// your existing method (kept simple)
-    private async fetchLiveNote() {
-
-        if(this.stopSyncing) return;
-
-        if(this.note_locked) return;
-
-        if (this.typing) {
-            console.log('Do not fetch live note');
-            return;
-        }
-        if (this.notes_id == null) return;
-
-        try {
-            const user = await this.secureStorageService.getItem('ssUser');
-            if(user) {
-                this.notesApiV1Service.find(this.notes_id).then(async (note) => {
-                    console.log('Fetched Live Note');
-                    if(this.currentNote == null) return;
-                    if (note.deleted) {
-                        this.dataService.setForceDownloadOnHome(true);
-                        await this.navController.navigateForward('/');
-                        return;
-                    }
-
-                    // @ts-ignore
-                    if (note.protected !== this.currentNote.protected) {
-                        this.dataService.setForceDownloadOnHome(true);
-                        console.log('Notes protection mismatch, redirect back' + note.protected);
-                        await this.navController.navigateForward('/'); return;
-                    }
-
-                    if (!note.protected) this.notes_password_stored = "";
-
-                    // @ts-ignore
-                    if (this.currentNote.last_modified == note.last_modified) { console.log('Equal'); return; }
-                    // @ts-ignore
-                    if (this.currentNote.last_modified >  note.last_modified)  { console.log('Higher'); return; }
-
-                    const blobText = unpackCipherBlob(note.text);
-                    // @ts-ignore
-                    note.text = await this.crypto.decryptText({ ...blobText, v: 1, aad_b64: btoa(this.notes_id) });
-
-                    const blobTitle = unpackCipherBlob(note.title);
-                    // @ts-ignore
-                    note.title = await this.crypto.decryptText({ ...blobTitle, v: 1, aad_b64: btoa(this.notes_id+ '#title') });
-
-                    // @ts-ignore
-                    this.currentNote.text = note.text;
-
-                    this.note_title = note.title;
-                    this.note_text  = note.text;
-                    // @ts-ignore
-                    this.currentNote.text  = this.note_text;
-                    // @ts-ignore
-                    this.currentNote.title = this.note_title;
-
-                    if (note.protected) {
-                        console.log('Note is protected, lets decrypt it.')
-                        const ok = this.decryptNote(this.notes_password_stored, note);
-                        console.log('Note decrypted...');
-                        if (!ok) { this.dismissModal().then(r => {}); this.navController.navigateForward('/'); }
-                    }
-
-                })
-                .catch(() => { /* ignore; try again on next tick */ });
-            }
-        } catch (err) {
-            // only gets here if your service rethrows
-            console.error('Find notes not done.', err);
-        }
-
-
-    }
-
-    // should be called on key enter.
-    save(ev: any) {
-        if(this.notes_id === null) return;
-        if(this.note_locked) return;
-
-        let value = " ";
-        if(this.note_text.length > 0) {
-            value = this.note_text;
-        }
-
-        // @ts-ignore
-        let encryptedText = value;
-        let decryptedText = value;
-
-        let encryptedTitle = this.note_title;
-        let decryptedTitle = this.note_title;
-
-        // encrypt the text.
-        if(this.notes_password_stored.length > 1) {
-            encryptedText = this.cryptoService.encrypt(value, this.notes_password_stored);
-            encryptedTitle = this.cryptoService.encrypt(this.note_title, this.notes_password_stored);
-        }
-
-        let protectedNote = false;
-
-        if(this.currentNote !== null) {
-            // @ts-ignore
-            protectedNote = this.currentNote.protected;
-        }
-
-        const now = new Date();
-
-        const datePart = now.toLocaleDateString(undefined, {
-            weekday: 'long',
-            month: 'short',
-            day: 'numeric',
-            year: 'numeric'
-        });
-
-        const timePart = now.toLocaleTimeString(undefined, {
-            hour: 'numeric',
-            minute: '2-digit',
-            hour12: true
-        });
-
-        const formattedDate = `${datePart} at ${timePart}`;
-
-        // newly created note.
-        const note = {
-            "id": this.notes_id,
-            "title": encryptedTitle ? encryptedTitle : formattedDate,
-            "last_modified": Date.now(),
-            "text": encryptedText,
-            "protected": protectedNote,
-            "auto_wipe": true,
+    const newNotes: NoteV1[] = [];
+    for (let i = 0; i < this.notes.length; i++) {
+      const note = this.notes[i];
+      if (note.id === this.notes_id) {
+        const updated: NoteV1 = {
+          ...note,
+          ...(this.currentNote as NoteV1),
+          last_modified: Date.now(),
         };
+        newNotes.push(updated);
+      } else {
+        newNotes.push(note);
+      }
+    }
+    this.notes = newNotes;
 
-        // first time the user creates a note in history.
-        if(this.notes === null) {
-            // @ts-ignore
-            this.notes = [note];
-        } else {
-            let found = false;
+    await this.storeNoteInStorage(true);
 
-            // @ts-ignore
-            for(let i = 0; i < this.notes.length; i++) {
-                // @ts-ignore
-                if(this.notes[i].id === this.notes_id) {
-                    found = true;
-                    // @ts-ignore
-                    this.notes[i] = note;
-                    // @ts-ignore
-                    this.currentNote = note;
-                    break;
-                }
+    if (this.currentNote) {
+      this.currentNote.text = decryptedText;
+      this.currentNote.title = decryptedTitle;
+    }
+
+    this.notes_password_confirm = '';
+    this.notes_password_input = '';
+
+    await this.dismissModal();
+  }
+
+  public async removeLock() {
+    const alert = await this.alertCtrl.create({
+      header: this.allTranslations.warningCap,
+      subHeader: this.allTranslations.areYouSureYouWantToRemoveThePasswordForTheNote,
+      buttons: [
+        {
+          text: this.allTranslations.cancel,
+          role: 'cancel',
+        },
+        {
+          text: this.allTranslations.removeLock,
+          role: 'confirm',
+          handler: () => {
+            for (let i = 0; i < this.notes.length; i++) {
+              if (this.notes[i].id === this.notes_id) {
+                this.notes[i].text = this.note_text;
+                this.notes[i].title = this.note_title;
+                this.notes[i].last_modified = Date.now();
+                this.notes[i].protected = false;
+                this.currentNote = this.notes[i];
+                this.notes_password_stored = '';
+                break;
+              }
             }
 
-            // no existing note found, meaning we´re creating a new one.
-            if(!found) {
-                // @ts-ignore
-                this.notes.push(note);
-                // @ts-ignore
-                this.currentNote = note;
+            this.stopSyncing = true;
+            this.notesApiV1Service.upload(0, this.notes);
+            this.stopSyncing = false;
+
+            this.storeNoteInStorage(true);
+            this.modal.dismiss();
+          },
+        },
+      ],
+    });
+
+    await alert.present();
+  }
+
+  public async openLockModal() {
+    this.save(null);
+    await this.modal.present();
+  }
+
+  public getProtected() {
+    return this.currentNote?.protected;
+  }
+
+  public async deleteNote() {
+    const modal = await this.modalCtrl.create({
+      component: DeleteNoteModalComponent,
+      cssClass: 'confirmation-popup',
+      componentProps: { isSingleDelete: true },
+    });
+
+    modal.onDidDismiss().then(async (data) => {
+      if (data && data.data) {
+        const { confirm } = data.data;
+        if (confirm) {
+          for (let i = 0; i < this.notes.length; i++) {
+            if (this.notes[i].id === this.notes_id) {
+              this.notes[i].deleted = true;
+
+              const user = await this.secureStorageService.getItem('ssUser');
+              if (user) {
+                this.notesApiV1Service.deleteNotes([this.notes[i].id]).then(() => {});
+              }
+
+              this.notes.splice(i, 1);
+              break;
             }
+          }
 
-            this.note_text = decryptedText;
-            this.note_title = decryptedTitle;
+          await this.storeNoteInStorage(true, this.newlyCreatedNote);
+          this.currentNote = null;
+          await this.navController.navigateForward('/?hide_ids=' + this.notes_id);
         }
+      }
+    });
 
-        this.storeNoteInStorage(true).then(r => {});
+    return await modal.present();
+  }
+
+  onSave(event: any, type: string = 'note_text'): void {
+    if (type === 'note_text') {
+      this.note_text = event;
+    } else {
+      this.note_title = event;
     }
 
-    async storeNoteInStorage(serverSync = true, forceDownloadOnHome = false) {
-
-        if(this.notesService.appHasPasswordChallenge()) {
-            // newly notes to save into storage.
-            let encryptedNotesSave = this.cryptoService.encrypt(JSON.stringify(this.notes), this.notesService.getNotesAppPassword());
-            // notes in the app is stored.
-            this.notesService.setNotes(encryptedNotesSave);
-        } else {
-            this.notesService.setNotes(JSON.stringify(this.notes));
-        }
-
-        if(forceDownloadOnHome) {
-           this.dataService.setForceDownloadOnHome(true)
-        }
-
-        let notesToSend = this.notes;
-
-        this.saveTimeout = window.setTimeout(() => {
-            (async () => {
-                try {
-                    const user = await this.secureStorageService.getItem('ssUser');
-
-                    if (serverSync && user) {
-                        // If upload() returns Observable<...>
-                        this.notesApiV1Service.upload(0, notesToSend).then((res) => {  });
-                        if (this.liveNoteTimer == null) {
-                            this.startLiveNotePolling();
-                        }
-                    }
-                } catch (err) {
-                    console.error('Upload notes not done.', err);
-                }
-            })();
-        }, 500);
-
-    }
-
-    public back() {
-        this.navController.back();
-    }
-
-
-    private async wrongPasswordEntered() {
-        const toast = await this.toastController.create({
-            message: this.allTranslations.passwordIsNotCorrectTryAgain,
-            duration: 3000,
-            position: 'bottom',
-        });
-
-        await toast.present();
-        await this.askforNotePassword();
-    }
-
-    public async askforNotePassword() {
-        // @ts-ignore
-        const modal = await this.modalCtrl.create({
-            component: NoteLockedModalComponent,
-            cssClass: 'confirmation-popup'
-        });
-
-        modal.onDidDismiss().then(async (data) => {
-            if (data && data.data) {
-                const { confirm, inputValue } = data.data;
-                if (confirm) {
-                    this.notes_password_stored = inputValue;
-
-                    console.log('Lets try to decrypt it..');
-                    let decryptNote = this.decryptNote(this.notes_password_stored, this.currentNote);
-                    if(!decryptNote) {
-                        await this.wrongPasswordEntered();
-                    } else {
-                        await modal.dismiss();
-                    }
-
-                } else {
-                    // Handle case when user cancels password input
-                    this.back();
-                }
-            }
-            if(data.role == "backdrop") {
-                this.back();
-            }
-        });
-
-        return await modal.present();
-
-    }
-
-    private decryptNote(notePassword: string, noteToDecrypt: any) {
-
-        if(notePassword.length == 0) return false;
-
-        let decryptedText = null;
-
-        try {
-            // @ts-ignore
-            decryptedText = this.cryptoService.decrypt(noteToDecrypt.text, notePassword);
-        } catch (e) {
-            console.error(e);
-            return false;
-        }
-
-        if(decryptedText == null) return false;
-        if(decryptedText.length == 0) return false;
-
-        let decryptedTitle = "";
-
-        try {
-            // @ts-ignore
-            decryptedTitle = this.cryptoService.decrypt(noteToDecrypt.title, notePassword);
-        } catch (e) {}
-
-        // @ts-ignore
-        this.currentNote.text = decryptedText;
-        this.note_text = decryptedText;
-
-        this.note_title = decryptedTitle;
-
-        this.note_locked = false;
-
-        return true;
-    }
-
-    public async dismissModal() {
-        await this.modal.dismiss();
-    }
-
-    public notesPasswordChange() {
-
-        this.passwordStrength = 0;
-
-        if(this.notes_password_input.length == 0) {
-            this.passwordStrengthHelperText = this.allTranslations.passwordAtLeastLength;
-            return;
-        }
-
-        // Check password length
-        if (this.notes_password_input.length <= 4) {
-        } else {
-            this.passwordStrength += 1;
-        }
-
-        // Check for mixed case
-        if (this.notes_password_input.match(/[a-z]/) && this.notes_password_input.match(/[A-Z]/)) {
-            this.passwordStrength += 1;
-            this.upperLower = true;
-        } else {
-            this.upperLower = false;
-        }
-
-        // Check for numbers
-        if (this.notes_password_input.match(/\d/)) {
-            this.passwordStrength += 1;
-        }
-
-        // Check for special characters
-        if (this.notes_password_input.match(/[^a-zA-Z\d]/)) {
-            this.passwordStrength += 1;
-            this.specialChar = true;
-        } else {
-            this.specialChar = false;
-        }
-
-
-        // Check password length
-        if (this.notes_password_input.length >= 6) {
-            this.passwordStrength += 1;
-            this.strongPass = true;
-        } else {
-            this.strongPass = false;
-        }
-
-
-        // Return results
-        if (this.passwordStrength < 2) {
-            this.passwordStrengthHelperText = this.allTranslations.weakPassword;
-        } else if (this.passwordStrength === 2) {
-            this.passwordStrengthHelperText = this.allTranslations.averagePassword;
-        } else if (this.passwordStrength === 3) {
-            this.passwordStrengthHelperText = this.allTranslations.goodPassword;
-        } else {
-            this.passwordStrengthHelperText = this.allTranslations.greatPassword;
-        }
-    }
-
-
-    public async lockNote() {
-
-        if (this.notes_password_input !== this.notes_password_confirm) {
-            const toast = await this.toastController.create({
-                message: this.allTranslations.theTwoPasswordsDoesNotMatch,
-                duration: 2500,
-                position: 'bottom',
-            });
-
-            await toast.present();
-            return;
-        }
-
-        if(this.notes_password_input.length < 2) {
-            const toast = await this.toastController.create({
-                message: this.allTranslations.thePasswordIsTooWeakPleaseMakeItStronger,
-                duration: 3000,
-                position: 'bottom',
-            });
-
-            await toast.present();
-            return;
-        }
-
-        // @ts-ignore
-        this.notes_password_stored = this.notes_password_input;
-
-        // @ts-ignore
-        let decryptedText = this.note_text;
-        // @ts-ignore
-        let decryptedTitle = this.note_title;
-
-        // @ts-ignore
-        let encryptedText = this.cryptoService.encrypt(this.note_text, this.notes_password_stored);
-        // @ts-ignore
-        let encryptedTitle  = this.cryptoService.encrypt(this.note_title, this.notes_password_stored);
-        // @ts-ignore
-        this.currentNote.protected = true;
-        // @ts-ignore
-        this.currentNote.text = encryptedText;
-        // @ts-ignore
-        this.currentNote.title = encryptedTitle;
-
-        const newNotes = [];
-
-        for (let i = 0; i < this.notes.length; i++) {
-            const note = this.notes[i];
-            if (note.id === this.notes_id) {
-                const updated = {
-                    ...note,                 // start from existing note
-                    // @ts-ignore - currentNote is object-like at runtime
-                    ...this.currentNote,     // merge fields from currentNote
-                    last_modified: Date.now(),
-                };
-                newNotes.push(updated);    // push UPDATED clone
-            } else {
-                newNotes.push(note);       // push original
-            }
-        }
-
-        this.notes = newNotes;
-
-        await this.storeNoteInStorage(true);
-
-        // @ts-ignore
-        this.currentNote.text = decryptedText;
-        // @ts-ignore
-        this.currentNote.title = decryptedTitle;
-
-        this.notes_password_confirm = "";
-        this.notes_password_input = "";
-
-        await this.dismissModal();
-    }
-
-    public async removeLock() {
-        const alert = await this.alertCtrl.create({
-            header: this.allTranslations.warningCap,
-            subHeader: this.allTranslations.areYouSureYouWantToRemoveThePasswordForTheNote,
-            buttons: [
-                {
-                    text: this.allTranslations.cancel,
-                    role: 'cancel',
-                    handler: () => {
-                        // this.handlerMessage = 'Alert canceled';
-                    },
-                },         {
-                    text: this.allTranslations.removeLock,
-                    role: 'confirm',
-                    handler: () => {
-                        // @ts-ignore
-                        for (let i = 0; this.notes.length > i; i++) {
-                            // @ts-ignore
-                            if (this.notes[i].id === this.notes_id) {
-                                // @ts-ignore
-                                this.notes[i].text = this.note_text; // ensure it is not encrypted text.
-                                this.notes[i].title = this.note_title; // ensure it is not encrypted text.
-                                this.notes[i].last_modified = Date.now();
-                                // @ts-ignore
-                                this.notes[i].protected = false;
-                                // @ts-ignore
-                                this.currentNote = this.notes[i];
-                                this.notes_password_stored = "";
-                                break;
-                            }
-                        }
-
-                        this.stopSyncing = true;
-                        this.notesApiV1Service.upload(0, this.notes);
-                        this.stopSyncing = false;
-
-                        // update.
-                        this.storeNoteInStorage(true);
-                        this.modal.dismiss();
-
-                    },
-                }],
-        });
-
-        await alert.present();
-    }
-    public async openLockModal() {
-        this.save(null);
-        await this.modal.present();
-    }
-
-    public getProtected() {
-        // @ts-ignore
-        return this.currentNote.protected;
-    }
-    public async deleteNote() {
-        const modal = await this.modalCtrl.create({
-            component: DeleteNoteModalComponent,
-            cssClass: 'confirmation-popup',
-            componentProps: {
-                isSingleDelete: true,
-            }
-        });
-
-        modal.onDidDismiss().then(async (data) => {
-            if (data && data.data) {
-                const { confirm } = data.data;
-                if (confirm) {
-                    // @ts-ignore
-                    for (let i = 0; this.notes.length > i; i++) {
-                        // @ts-ignore
-                        if (this.notes[i].id === this.notes_id) {
-                            this.notes[i].deleted = true;
-
-                            try {
-                                const user = await this.secureStorageService.getItem('ssUser');
-                                if(user) {
-                                    console.log("calling delete");
-                                    this.notesApiV1Service.deleteNotes([this.notes[i].id]).then(() => {});
-                                }
-                                } catch (err) {
-                                // only gets here if your service rethrows
-                                console.error('Failed to read ssUser', err);
-                            }
-
-                            // @ts-ignore
-                            this.notes.splice(i, 1);
-                            break;
-                        }
-                    }
-
-                    // updated list will not have the current note.
-                    console.log('deleting..');
-                    await this.storeNoteInStorage(true, this.newlyCreatedNote);
-                    this.currentNote = null;
-
-                    await this.navController.navigateForward('/?hide_ids=' + this.notes_id);
-                } else {
-                    // Handle case when user cancels password input
-                }
-            }
-        });
-
-        return await modal.present();
-    }
-
-    onSave(event: any, type: string = "note_text"): void {
-        if(type == "note_text") {
-            this.note_text = event;
-        } else {
-            this.note_title = event;
-        }
-        this.typing = true;
-        this.typingTimeout = setTimeout(() => this.typing = false, 10000); // idle 1s
-
-        // Clear any previous timeout
-        clearTimeout(this.saveTimeout);
-
-        // Set a new one — only trigger save if no new input for 1 second
-        this.save(null);
-    }
-
-    ionViewWillLeave() {
-        this.stopLiveNotePolling();
-        if (this.richTextEditorComponent?.onLeave) {
-            this.richTextEditorComponent.onLeave();
-        }
-    }
-
+    this.typing = true;
+    this.typingTimeout = setTimeout(() => (this.typing = false), 10_000);
+
+    clearTimeout(this.saveTimeout);
+    this.save(null);
+  }
 }

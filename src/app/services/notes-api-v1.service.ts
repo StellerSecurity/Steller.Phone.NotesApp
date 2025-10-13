@@ -5,7 +5,6 @@ import {firstValueFrom, Observable} from 'rxjs';
 import {NoteV1} from "../models/NoteV1";
 import {CryptoKeyService, extractPlainEAK, packCipherBlob} from "./crypto-key.service";
 import {CryptoService} from "./crypto.service";
-import {StorageEncryptionService} from "./storage-encryption.service";
 import {SecureStorageService} from "./secure-storage.service";
 
 @Injectable({ providedIn: 'root' })
@@ -14,7 +13,7 @@ export class NotesApiV1Service {
 
     constructor(private http: HttpClient,
                 private secureStorageService: SecureStorageService,
-                private crypto: CryptoKeyService, private storageEncryption: StorageEncryptionService) { }
+                private crypto: CryptoKeyService) { }
 
     // Upload a batch changed since 'sinceMs'
     async upload(sinceMs: number, notes: ReadonlyArray<NoteV1>, opId?: string): Promise<object> {
