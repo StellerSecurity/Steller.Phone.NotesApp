@@ -255,6 +255,7 @@ export class AddNotePage {
     }
 
     private stopLiveNotePolling() {
+        this.stopSyncing = true;
         if (this.liveNoteTimer) clearInterval(this.liveNoteTimer);
         window.removeEventListener('focus', this.fetchLiveNoteBound);
         window.removeEventListener('online', this.fetchLiveNoteBound);
@@ -303,8 +304,6 @@ export class AddNotePage {
                     const blobTitle = unpackCipherBlob(note.title);
                     // @ts-ignore
                     note.title = await this.crypto.decryptText({ ...blobTitle, v: 1, aad_b64: btoa(this.notes_id+ '#title') });
-
-                    console.log(note.title + " " + note.text);
 
                     // @ts-ignore
                     this.currentNote.text = note.text;
@@ -434,7 +433,6 @@ export class AddNotePage {
             // notes in the app is stored.
             this.notesService.setNotes(encryptedNotesSave);
         } else {
-            console.log(this.notes);
             this.notesService.setNotes(JSON.stringify(this.notes));
         }
 
