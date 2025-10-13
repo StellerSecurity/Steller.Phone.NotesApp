@@ -282,10 +282,15 @@ export class AddNotePage {
                 this.notesApiV1Service.find(this.notes_id).then(async (note) => {
                     console.log('Fetched Live Note');
                     if(this.currentNote == null) return;
-                    if (note.deleted) { await this.navController.navigateForward('/'); return; }
+                    if (note.deleted) {
+                        this.dataService.setForceDownloadOnHome(true);
+                        await this.navController.navigateForward('/');
+                        return;
+                    }
 
                     // @ts-ignore
                     if (note.protected !== this.currentNote.protected) {
+                        this.dataService.setForceDownloadOnHome(true);
                         console.log('Notes protection mismatch, redirect back' + note.protected);
                         await this.navController.navigateForward('/'); return;
                     }
