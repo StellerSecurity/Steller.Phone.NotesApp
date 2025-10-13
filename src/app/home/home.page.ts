@@ -123,8 +123,6 @@ export class HomePage {
       await this.syncFromServer();
     }
 
-    this.checkboxOpened = false;
-    this.initializePressGesture();
   }
 
   ionViewDidEnter() {
@@ -134,7 +132,6 @@ export class HomePage {
   ionViewWillLeave() {
     this.exitSearchMode();
     this.pauseSync = true;
-    // cleanup if needed
   }
 
   // --------------------------------------------------
