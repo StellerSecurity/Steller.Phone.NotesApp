@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { SecureStorageService } from '../services/secure-storage.service';
+import {DataService} from "../services/data.service";
 
 @Component({
   selector: 'app-profile',
@@ -12,7 +13,7 @@ export class ProfileComponent implements OnInit {
   isLoggedIn = false;
 
   constructor(private router: Router,
-    private secureStorageService: SecureStorageService) {}
+    private secureStorageService: SecureStorageService, private dataService: DataService) { }
 
   ngOnInit() {
     // runs only once when component is initialized
@@ -38,8 +39,7 @@ export class ProfileComponent implements OnInit {
   }
 
   logout() {
-    this.secureStorageService.removeItem('ssToken');
-    this.secureStorageService.removeItem('ssUser');
+    this.dataService.clearAppData();
     this.isLoggedIn = false;
     this.user = {};
     // this.router.navigate(['/profile/login']); // redirect after logout

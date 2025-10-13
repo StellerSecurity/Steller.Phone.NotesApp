@@ -1,4 +1,7 @@
 import { Injectable } from '@angular/core';
+import {Router} from "@angular/router";
+import {SecureStorageService} from "./secure-storage.service";
+import { Preferences } from '@capacitor/preferences';
 
 export interface Message {
   fromName: string;
@@ -21,6 +24,8 @@ export interface Note {
 })
 export class DataService {
 
+    constructor(private secureStorageService: SecureStorageService) { }
+
     private forceDownloadOnHome = false;
 
     public setForceDownloadOnHome(forceDownloadOnHome: boolean) {
@@ -33,6 +38,8 @@ export class DataService {
 
     public clearAppData() {
         localStorage.clear();
+        Preferences.clear().then((value) => {});
+        this.secureStorageService.clear().then((value) => {});
     }
 
 }
