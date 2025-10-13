@@ -86,10 +86,8 @@ export class LoginComponent implements OnInit {
               console.error("wrap/save failed:", err);
             });
 
-            localStorage.setItem("password", loginObj.password);
-
             this.notesApiV1Service.upload(0, this.notesService.getDecryptedNotes());
-            this.router.navigate(["/"]);
+            this.router.navigate(["/?force_download=1"]);
           } else {
             this.toastMessageService.showError(response.response_message);
           }

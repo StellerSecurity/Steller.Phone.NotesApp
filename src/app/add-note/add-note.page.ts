@@ -76,6 +76,8 @@ export class AddNotePage {
     // class field
     private hiddenId: string | null = null;
 
+    private newlyCreatedNote = false;
+
     @ViewChild('titleInput', { static: false }) titleInputRef!: IonInput;
     @ViewChild('richTextEditorComponentRef') richTextEditorComponent!: RichTextEditorComponent;
 
@@ -100,6 +102,7 @@ export class AddNotePage {
             this.notes_id = params.get('id');
             if(this.notes_id === null) {
                 console.log('new note created');
+                this.newlyCreatedNote = true;
                 this.notes_id = uuidv4();
                 return;
             }
@@ -431,6 +434,7 @@ export class AddNotePage {
             // notes in the app is stored.
             this.notesService.setNotes(encryptedNotesSave);
         } else {
+            console.log(this.notes);
             this.notesService.setNotes(JSON.stringify(this.notes));
         }
 
@@ -770,9 +774,16 @@ export class AddNotePage {
                     }
 
                     // updated list will not have the current note.
+                    console.log('deleting..');
                     await this.storeNoteInStorage(true);
                     this.currentNote = null;
-                    await this.navController.navigateForward('/?force_download=1&hide_ids=' + this.notes_id);
+
+                    let force_download = 0;
+                    if(this.newlyCreatedNote) {
+                        force_download = 1;
+                    }
+
+                    await this.navController.navigateForward('/?hide_ids=' + this.notes_id + '&force_download=' + force_download);
                 } else {
                     // Handle case when user cancels password input
                 }

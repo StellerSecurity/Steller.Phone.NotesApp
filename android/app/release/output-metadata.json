@@ -4,7 +4,7 @@
     "type": "APK",
     "kind": "Directory"
   },
-  "applicationId": "steller.phone.notesapp",
+  "applicationId": "steller.phone.notesapptest",
   "variantName": "release",
   "elements": [
     {
@@ -33,5 +33,5 @@
       ]
     }
   ],
-  "minSdkVersionForDexing": 22
+  "minSdkVersionForDexing": 23
 }

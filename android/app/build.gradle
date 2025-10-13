@@ -4,7 +4,7 @@ android {
     namespace "Steller.Phone.NotesApp"
     compileSdkVersion 35
     defaultConfig {
-        applicationId "steller.phone.notesapp"
+        applicationId "steller.phone.notesapptest"
         minSdkVersion 23
         targetSdkVersion 35
         versionCode 20

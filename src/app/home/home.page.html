@@ -38,8 +38,14 @@
     </ng-container>
 
     </ion-buttons>
-
   </ion-toolbar>
+
+    <ion-progress-bar
+            *ngIf="waitForSync"
+            type="indeterminate"
+            color="primary"
+            class="header-progress">
+    </ion-progress-bar>
 </ion-header>
 
 <!-- modal ask for password -->
@@ -97,13 +103,15 @@ align-self: stretch; background: #2761FC; color: #fff; border-radius: 250px" (cl
   </ng-template>
 </ion-modal>
 
-<ion-fab slot="bottom" vertical="bottom" horizontal="end" *ngIf="!checkboxOpened && should_display">
+<ion-fab slot="bottom" vertical="bottom" horizontal="end" *ngIf="!checkboxOpened && should_display && !waitForSync">
   <ion-fab-button routerLink="/note">
     <ion-icon name="add"></ion-icon>
   </ion-fab-button>
 </ion-fab>
 
-<ion-content [fullscreen]="true" class="ion-padding" *ngIf="should_display">
+
+
+<ion-content [fullscreen]="true" class="ion-padding" *ngIf="should_display && !waitForSync">
   <ion-grid *ngIf="filteredResults !== null && filteredResults.length == 0 && !isSearching" style="height: -webkit-calc(100vh - 170px);
   height: calc(100vh - 170px);">
     <ion-row class="ion-align-items-center ion-justify-content-center" style="min-height: 100%;">

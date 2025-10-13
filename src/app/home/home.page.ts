@@ -25,7 +25,7 @@ import {
 import {firstValueFrom} from "rxjs";
 import {StorageEncryptionService} from "../services/storage-encryption.service";
 import {SecureStorageService} from "../services/secure-storage.service";
-import {ActivatedRoute} from "@angular/router";
+import {ActivatedRoute, Router} from "@angular/router";
 
 @Component({
     selector: 'app-home',
@@ -62,6 +62,7 @@ export class HomePage {
 
     private hiddenId: string | null = null;
 
+    public waitForSync = false;
 
     @ViewChild(IonModal) modal: IonModal;
     @ViewChildren('longPressElements', { read: ElementRef }) longPressElements: QueryList<ElementRef>;
@@ -83,6 +84,7 @@ export class HomePage {
                 private translatorService: TranslatorService,
                 private gestureCtrl: GestureController,
                 private crypto: CryptoKeyService,
+                private router: Router,
                 private secureStorageService: SecureStorageService,
                 private cdr: ChangeDetectorRef) {}
 
@@ -94,13 +96,27 @@ export class HomePage {
 
         this.hiddenId = this.route.snapshot.queryParamMap.get('hide_ids');
 
+        let force_download = this.route.snapshot.queryParamMap.get('force_download');
+
+        if(force_download === '1') {
+            this.waitForSync = true;
+            await this.router.navigate(
+                [],
+                {
+                    relativeTo: this.route,
+                    queryParams: {force_download: '0'},
+                    queryParamsHandling: 'merge'
+                }
+            );
+        }
+
         this.allTranslations = this.translatorService.allTranslations;
         this.timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
         if(this.noteService.shouldAskForPassword()) {
             console.log("Asking for password");
             this.should_display = false;
         } else {
-            console.log(11);
+            console.log("Asking for password or no password needed.");
             this.setData(this.noteService.getNotesAppPassword());
             await this.syncFromServer();
         }
@@ -319,7 +335,6 @@ export class HomePage {
 
         this.filteredResults = this.notes;
 
-
         return true;
 
     }
@@ -336,6 +351,7 @@ export class HomePage {
 
             this.isSyncing = true;
             try {
+
                 const res = await this.notesApiServiceV1.download(0);
 
                 const eakB64 = await this.secureStorageService.getItem('ssEakB64');
@@ -382,6 +398,8 @@ export class HomePage {
                 }
 
                 this.setData(this.noteService.getNotesAppPassword());
+                this.waitForSync = false;
+                console.log(this.waitForSync);
 
                 //this.setData(this.noteService.getNotesAppPassword());
                 console.log('Synching in 30 seconds...');
