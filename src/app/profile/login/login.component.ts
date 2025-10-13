@@ -88,9 +88,16 @@ export class LoginComponent implements OnInit {
               console.error("wrap/save failed:", err);
             });
 
-            this.notesApiV1Service.upload(0, this.notesService.getDecryptedNotes());
-            this.dataService.setForceDownloadOnHome(true);
-            this.router.navigate(["/"]);
+            this.notesApiV1Service
+              .upload(0, this.notesService.getDecryptedNotes())
+              .then(() => {
+                  this.dataService.setForceDownloadOnHome(true);
+                  return this.router.navigate(['/']);
+              })
+              .catch(err => {
+                  console.error('Upload failed', err);
+              });
+
           } else {
             this.toastMessageService.showError(response.response_message);
           }

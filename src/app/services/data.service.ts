@@ -31,4 +31,8 @@ export class DataService {
         return this.forceDownloadOnHome;
     }
 
+    public clearAppData() {
+        localStorage.clear();
+    }
+
 }
