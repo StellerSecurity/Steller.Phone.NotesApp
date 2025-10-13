@@ -83,6 +83,9 @@ export class CreateAccountComponent implements OnInit {
     };
 
 
+    await this.crypto.createVault(createUserObj.password);
+    const header = this.crypto.exportRecoveryHeader();
+
     // DB-compatible payload (packs IV into eak):
     const bundle = this.crypto.exportServerBundleFromHeader();
 

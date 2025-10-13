@@ -205,6 +205,7 @@ export async function unwrapBundleWithPassword_WebCrypto(password: string, blob:
 }
 
 
+
 function b64encode(buf: ArrayBuffer | Uint8Array): string {
     const bytes = buf instanceof Uint8Array ? buf : new Uint8Array(buf);
     let s = '';
@@ -485,6 +486,48 @@ export class CryptoKeyService {
             kdf_salt: h.kdf.salt_b64,
             eak: b64encode(packed),
         };
+    }
+
+    async createVault(password: string, iters = 210_000): Promise<void> {
+        if (!password || password.length < 6) {
+            throw new Error('Weak password');
+        }
+
+        // 1) Derive Password-Key (PK) via PBKDF2(SHA-256)
+        const salt = crypto.getRandomValues(new Uint8Array(16));
+        const baseKey = await crypto.subtle.importKey('raw', TEXT.encode(password), { name: 'PBKDF2' }, false, ['deriveKey']);
+        const passKey = await crypto.subtle.deriveKey(
+            { name: 'PBKDF2', salt, iterations: iters, hash: 'SHA-256' },
+            baseKey,
+            { name: 'AES-GCM', length: 256 },
+            false,
+            ['encrypt','decrypt']
+        );
+
+        // 2) Generate random 32-byte Master Key (MK)
+        const mkRaw = crypto.getRandomValues(new Uint8Array(32)).buffer;
+        const mkKey = await crypto.subtle.importKey('raw', mkRaw, 'AES-GCM', true, ['encrypt','decrypt']);
+
+        // 3) Wrap MK with PK using AES-GCM
+        const iv = crypto.getRandomValues(new Uint8Array(12));
+        const wrapped = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, passKey, mkRaw);
+
+        // 4) Persist local header (no plaintext secrets)
+        const header = {
+            v: 1 as const,
+            kdf: { algo: 'PBKDF2' as const, hash: 'SHA-256' as const, iters, salt_b64: b64encode(salt) },
+            mk_wrapped_b64: b64encode(wrapped),
+            mk_iv_b64: b64encode(iv),
+            created_at: Date.now(),
+            rotated_at: null as number | null,
+        };
+        localStorage.setItem(VAULT_KEY, JSON.stringify(header));
+
+        // 5) Keep MK in memory (service-wide) so encrypt/decrypt work immediately
+        this.mkKey = mkKey;
+        this.unlockedAt = Date.now();
+        // @ts-ignore
+        if (this['unlockedSubject']?.next) this['unlockedSubject'].next(true);
     }
 
     /**
