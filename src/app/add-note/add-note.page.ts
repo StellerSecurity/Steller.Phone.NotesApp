@@ -420,6 +420,10 @@ export class AddNotePage {
                 this.currentNote = note;
             }
 
+            console.log('Note from save');
+            console.log(note);
+            console.log('End of note from save');
+
             this.note_text = decryptedText;
             this.note_title = decryptedTitle;
         }
@@ -439,8 +443,10 @@ export class AddNotePage {
         }
 
         if(forceDownloadOnHome) {
-            this.dataService.setForceDownloadOnHome(true)
+           this.dataService.setForceDownloadOnHome(true)
         }
+
+        let notesToSend = this.notes;
 
         this.saveTimeout = window.setTimeout(() => {
             (async () => {
@@ -449,8 +455,7 @@ export class AddNotePage {
 
                     if (serverSync && user) {
                         // If upload() returns Observable<...>
-                        await this.notesApiV1Service.upload(0, this.notes)
-
+                        this.notesApiV1Service.upload(0, notesToSend).then((res) => {  });
                         if (this.liveNoteTimer == null) {
                             this.startLiveNotePolling();
                         }
@@ -764,7 +769,8 @@ export class AddNotePage {
                             try {
                                 const user = await this.secureStorageService.getItem('ssUser');
                                 if(user) {
-                                    this.notesApiV1Service.deleteNotes(this.notes[i].id).then(() => {});
+                                    console.log("calling delete");
+                                    this.notesApiV1Service.deleteNotes([this.notes[i].id]).then(() => {});
                                 }
                                 } catch (err) {
                                 // only gets here if your service rethrows

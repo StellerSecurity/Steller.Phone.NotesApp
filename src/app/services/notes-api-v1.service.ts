@@ -17,35 +17,32 @@ export class NotesApiV1Service {
                 private crypto: CryptoKeyService, private storageEncryption: StorageEncryptionService) { }
 
     // Upload a batch changed since 'sinceMs'
-    async upload(sinceMs: number, notes: NoteV1[], opId?: string, source = "lol"): Promise<Object> {
-
+    async upload(sinceMs: number, notes: ReadonlyArray<NoteV1>, opId?: string): Promise<object> {
         console.log('Sending notes to server..');
-        let eakB64 = await this.secureStorageService.getItem("ssEakB64");
-        if(eakB64 !== null) {
-            await this.crypto.importEAK(eakB64);
-        }
 
-        // BRUGEREN LOGGER PÅ --> VI BRUGER, BRUGERENS PASSWORD TIL
+        const eakB64 = await this.secureStorageService.getItem("ssEakB64");
+        if (eakB64) await this.crypto.importEAK(eakB64);
 
-        let encryptedNotes = [];
-        for(let i = 0; i < notes.length; i++) {
-            const enc = await this.crypto.encryptText(notes[i].text ?? '', notes[i].id);
-            const encTitle = await this.crypto.encryptText(notes[i].title ?? '', notes[i].id + '#title');
-            let copiedNote = notes[i];
-            copiedNote.text = packCipherBlob(enc);
-            copiedNote.title = packCipherBlob(encTitle);
-            encryptedNotes.push(copiedNote);
+        const encryptedNotes: NoteV1[] = [];
+        for (const n of notes) {
+            const encText  = await this.crypto.encryptText(n.text  ?? '', n.id);
+            const encTitle = await this.crypto.encryptText(n.title ?? '', n.id + '#title');
+
+            // make a NEW object; do not mutate `n`
+            encryptedNotes.push({
+                ...n,
+                text:  packCipherBlob(encText),
+                title: packCipherBlob(encTitle),
+            });
         }
 
         const TOKEN = await this.secureStorageService.getItem("ssToken");
         const headers = new HttpHeaders().set('Authorization', `Bearer ${TOKEN}`);
 
-        notes = encryptedNotes;
-
         const body = {
             op_id: opId ?? crypto?.randomUUID?.() ?? String(Date.now()),
             since: sinceMs || 0,
-            notes,
+            notes: encryptedNotes,
         };
 
         return await firstValueFrom(this.http.post(`${this.base}/upload`, body, { headers }));
@@ -78,8 +75,6 @@ export class NotesApiV1Service {
 
 
     async deleteNotes(deletedIds: string[]) {
-
-        console.log(deletedIds);
         const TOKEN = await this.secureStorageService.getItem("ssToken");
         const headers = new HttpHeaders().set('Authorization', `Bearer ${TOKEN}`);
 
