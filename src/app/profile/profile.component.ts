@@ -1,7 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
+import { AlertController } from '@ionic/angular';
 import { SecureStorageService } from '../services/secure-storage.service';
-import {DataService} from "../services/data.service";
+import { DataService } from "../services/data.service";
 
 @Component({
   selector: 'app-profile',
@@ -12,22 +13,24 @@ export class ProfileComponent implements OnInit {
   user: any = {};
   isLoggedIn = false;
 
-  constructor(private router: Router,
-    private secureStorageService: SecureStorageService, private dataService: DataService) { }
+  constructor(
+    private router: Router,
+    private alertController: AlertController,
+    private secureStorageService: SecureStorageService,
+    private dataService: DataService
+  ) {}
 
   ngOnInit() {
-    // runs only once when component is initialized
     this.loadUserData();
   }
 
   ionViewWillEnter() {
-    // runs every time user navigates to this page
     this.loadUserData();
   }
 
-  private async  loadUserData() {
+  private async loadUserData() {
     const user = await this.secureStorageService.getItem('ssUser');
-    if(user) {
+    if (user) {
       this.user = JSON.parse(user);
     }
     const token = await this.secureStorageService.getItem('ssToken');
@@ -38,7 +41,29 @@ export class ProfileComponent implements OnInit {
     this.router.navigate(['/app-settings']);
   }
 
-  logout() {
+  async confirmLogout() {
+    const alert = await this.alertController.create({
+      header: 'Confirm Logout',
+      message: 'Are you sure you want to logout?',
+      buttons: [
+        {
+          text: 'Cancel',
+          role: 'cancel',
+          cssClass: 'secondary',
+        },
+        {
+          text: 'Logout',
+          handler: () => {
+            this.logout();
+          },
+        },
+      ],
+    });
+
+    await alert.present();
+  }
+
+  private logout() {
     this.dataService.clearAppData();
     this.isLoggedIn = false;
     this.user = {};
