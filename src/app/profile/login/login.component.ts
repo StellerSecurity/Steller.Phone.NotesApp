@@ -111,6 +111,7 @@ export class LoginComponent implements OnInit {
         await this.toastMessageService.showError(error?.error?.message || error?.message);
       } finally {
         this.isSaving = false;
+        this.authService.initializeAuthState();
       }
     }
   }

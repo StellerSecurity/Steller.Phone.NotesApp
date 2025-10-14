@@ -3,6 +3,7 @@ import { Router } from '@angular/router';
 import { AlertController } from '@ionic/angular';
 import { SecureStorageService } from '../services/secure-storage.service';
 import { DataService } from "../services/data.service";
+import { AuthService } from '../services/auth.service';
 
 @Component({
   selector: 'app-profile',
@@ -17,7 +18,8 @@ export class ProfileComponent implements OnInit {
     private router: Router,
     private alertController: AlertController,
     private secureStorageService: SecureStorageService,
-    private dataService: DataService
+    private dataService: DataService,
+    public authService: AuthService
   ) {}
 
   ngOnInit() {
@@ -67,6 +69,7 @@ export class ProfileComponent implements OnInit {
     this.dataService.clearAppData();
     this.isLoggedIn = false;
     this.user = {};
+    this.authService.initializeAuthState();
     // this.router.navigate(['/profile/login']); // redirect after logout
   }
 
