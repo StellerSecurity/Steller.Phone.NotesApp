@@ -1,17 +1,22 @@
-<ion-header [translucent]="true" style="display: flex; box-shadow: none;">
-  <ion-buttons slot="start">
-    <ion-back-button  class="custom-back-button"  text="">
-      <ion-icon slot="icon-only" style="display: none;"></ion-icon>
-    </ion-back-button>
-  </ion-buttons>
-  <ion-toolbar slot="start">
-    <ion-title style="padding: 0 10px; text-align: left; color: #0B0C19; font-size: 18px; font-weight: 400;">Profile</ion-title>
+<ion-header [translucent]="true" style="box-shadow:none;">
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button
+        defaultHref="/"
+        text=""
+        icon="chevron-back-outline"
+        class="custom-back-button">
+      </ion-back-button>
+    </ion-buttons>
+    <ion-title style="padding:0 10px;color:#0B0C19;font-size:18px;font-weight:400;">
+      Profile
+    </ion-title>
   </ion-toolbar>
 </ion-header>
 
 <ion-content [fullscreen]="true" class="ion-padding">
   <div  class="account-menu-content">
-    
+
 
      <!-- Account Name Card -->
     <div *ngIf="isLoggedIn; else loginBlock">
@@ -34,13 +39,13 @@
       </div>
     </ng-template>
 
-  
+
       <!-- Settings -->
       <div (click)="goToSettings()" class="action-item">
         <ion-icon name="options-outline" slot="start"></ion-icon>
         <ion-label>Settings</ion-label>
       </div>
-      
+
 
       <!-- Logout -->
       <div  *ngIf="isLoggedIn" (click)="logout()" class="action-item-logout">
@@ -48,6 +53,6 @@
         <ion-label>Logout</ion-label>
       </div>
 
-    
+
   </div>
 </ion-content>
