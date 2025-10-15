@@ -24,6 +24,7 @@ import { DataService } from '../services/data.service';
 import { NoteLockedModalComponent } from '../note-locked-modal/note-locked-modal.component';
 import { DeleteNoteModalComponent } from '../delete-note-modal/delete-note-modal.component';
 import {NoteV1} from "../models/NoteV1";
+import {AuthService} from "../services/auth.service";
 
 // ✅ keep CommonJS requires (no ES imports)
 declare var require: any;
@@ -83,7 +84,8 @@ export class AddNotePage implements OnDestroy {
     private dataService: DataService,
     private alertCtrl: AlertController,
     private notesApiV1Service: NotesApiV1Service,
-    private translatorService: TranslatorService
+    private translatorService: TranslatorService,
+    private authService: AuthService
   ) {
     this.routeSub = this.activatedRoute.paramMap.subscribe((params: ParamMap) => {
       const decrypted = this.notesService.getDecryptedNotes();
@@ -251,8 +253,7 @@ export class AddNotePage implements OnDestroy {
     const noteId = this.notes_id as string;
 
     try {
-      const user = await this.secureStorageService.getItem('ssUser');
-      if (!user) return;
+      if (!this.authService.isLoggedIn) return;
 
       this.notesApiV1Service
         .find(noteId)
@@ -418,8 +419,7 @@ export class AddNotePage implements OnDestroy {
 
     this.saveTimeout = window.setTimeout(() => {
       (async () => {
-        const user = await this.secureStorageService.getItem('ssUser');
-        if (serverSync && user) {
+        if (serverSync && this.authService.isLoggedIn) {
           this.notesApiV1Service.upload(0, notesToSend).then(() => {});
           if (this.liveNoteTimer == null) {
             this.startLiveNotePolling();
@@ -647,9 +647,11 @@ export class AddNotePage implements OnDestroy {
               }
             }
 
-            this.stopSyncing = true;
-            this.notesApiV1Service.upload(0, this.notes);
-            this.stopSyncing = false;
+            if(this.authService.isLoggedIn) {
+              this.stopSyncing = true;
+              this.notesApiV1Service.upload(0, this.notes);
+              this.stopSyncing = false;
+            }
 
             this.storeNoteInStorage(true);
             this.modal.dismiss();
@@ -685,8 +687,7 @@ export class AddNotePage implements OnDestroy {
             if (this.notes[i].id === this.notes_id) {
               this.notes[i].deleted = true;
 
-              const user = await this.secureStorageService.getItem('ssUser');
-              if (user) {
+              if (this.authService.isLoggedIn) {
                 this.notesApiV1Service.deleteNotes([this.notes[i].id]).then(() => {});
               }
 

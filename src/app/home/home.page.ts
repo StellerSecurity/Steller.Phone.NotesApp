@@ -23,6 +23,7 @@ import { DataService } from "../services/data.service";
 import {normalize} from "../utils/home-normalize.util";
 import {initializePressGestures, LongPressConfig} from "../utils/home-gesture.util";
 import {setDecryptedNotesAndParse} from "../utils/home-notes.util";
+import {AuthService} from "../services/auth.service";
 
 // NEW helpers
 
@@ -89,6 +90,7 @@ export class HomePage {
     private crypto: CryptoKeyService,
     private router: Router,
     private secureStorageService: SecureStorageService,
+    private authService: AuthService,
     private cdr: ChangeDetectorRef
   ) {}
 
@@ -100,7 +102,7 @@ export class HomePage {
 
     this.hiddenId = this.route.snapshot.queryParamMap.get('hide_ids');
 
-    if (this.dataService.getForceDownloadOnHome()) {
+    if (this.dataService.getForceDownloadOnHome() && this.authService.isLoggedIn) {
       this.waitForSync = true;
     }
 
@@ -264,8 +266,8 @@ export class HomePage {
   }
 
   async syncFromServer() {
-    const user = await this.secureStorageService.getItem('ssUser');
-    if (user == null) return;
+
+    if (!this.authService.isLoggedIn) return;
 
     if (this.pauseSync) {
       console.log('Sync has paused.');
@@ -490,8 +492,7 @@ export class HomePage {
     this.noteService.setDecryptedNotes(this.noteService.getNotes());
 
     // 5) Server-side delete (if signed in)
-    const user = await this.secureStorageService.getItem('ssUser');
-    if (user) {
+    if (this.authService.isLoggedIn) {
         await this.notesApiServiceV1.deleteNotes(this.listOfCheckedCheckboxes).then((data) => {});
     }
 
