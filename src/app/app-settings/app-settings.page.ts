@@ -23,8 +23,6 @@ export class AppSettingsPage implements AfterViewInit {
 
   public appPasswordChallenge: boolean;
 
-  public wipeNotesOnFailedPasswords: boolean = true;
-
   public notesAppPassword: string;
 
   public confirmPassword: string;
@@ -171,9 +169,7 @@ export class AppSettingsPage implements AfterViewInit {
 
                         let eakB64 = await this.secureStorageService.getItem('ssEakB64_Encrypted');
                         if (eakB64) {
-                            console.log("Decrypting...");
                             eakB64 = this.cryptoService.decrypt(eakB64, inputValue);
-                            console.log("Decrypted OK");
                             // @ts-ignore
                             await this.secureStorageService.setItem("ssEakB64", eakB64);
                             // remove the encrypted one.
