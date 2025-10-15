@@ -315,7 +315,6 @@ export class HomePage {
       const merged = Array.from(map.values()).filter((n: any) => !n.deleted);
       this.notes = merged;
       this.filteredResults = merged;
-      this.isSyncing = false;
 
       if (this.noteService.appHasPasswordChallenge()) {
         const encryptedNotesSave = this.cryptoService.encrypt(JSON.stringify(merged), this.noteService.getNotesAppPassword());
@@ -325,13 +324,14 @@ export class HomePage {
       }
 
       this.setData(this.noteService.getNotesAppPassword());
-      this.waitForSync = false;
-      this.dataService.setForceDownloadOnHome(false);
 
       console.log('Synching in 30 seconds...');
     } catch (err) {
       console.error('Sync failed:', err);
+    } finally {
       this.isSyncing = false;
+      this.waitForSync = false;
+      this.dataService.setForceDownloadOnHome(false);
     }
   }
 
