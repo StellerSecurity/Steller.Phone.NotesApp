@@ -69,7 +69,8 @@ export class ProfileComponent implements OnInit {
     this.dataService.clearAppData();
     this.isLoggedIn = false;
     this.user = {};
-    this.authService.initializeAuthState();
+    this.authService.initializeAuthState().then(r => {});
+    console.log(1234);
     // this.router.navigate(['/profile/login']); // redirect after logout
   }
 

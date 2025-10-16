@@ -2,29 +2,17 @@ import { Injectable } from '@angular/core';
 import {Router} from "@angular/router";
 import {SecureStorageService} from "./secure-storage.service";
 import { Preferences } from '@capacitor/preferences';
+import {wipeApp} from "./wipe-app.util";
+import { Storage } from '@ionic/storage-angular';
+import {ResetService} from "./reset.service";
 
-export interface Message {
-  fromName: string;
-  subject: string;
-  date: string;
-  id: number;
-  read: boolean;
-}
-
-export interface Note {
-  id: number,
-  last_modified: number,
-  text: string,
-  protected: boolean,
-  auto_wipe: boolean
-}
 
 @Injectable({
   providedIn: 'root'
 })
 export class DataService {
 
-    constructor(private secureStorageService: SecureStorageService) { }
+    constructor(private secureStorageService: SecureStorageService, private storage: Storage, private resetService: ResetService) { }
 
     private forceDownloadOnHome = false;
 
@@ -36,10 +24,14 @@ export class DataService {
         return this.forceDownloadOnHome;
     }
 
-    public clearAppData() {
-        localStorage.clear();
-        Preferences.clear().then((value) => {});
-        this.secureStorageService.clear().then((value) => {});
+    public async clearAppData() {
+      console.log('Wiping data..');
+      await this.resetService.factoryReset({
+        extraIndexedDbNames: ['__stellar_notes'], // your DB name from IonicStorageModule
+        // sqliteDbNames: ['appdb'],              // if you use SQLite
+        // clearSecureStorage: true,              // if you use a secure store
+        alsoUnregisterSW: false,                  // set true for PWA full reset
+      });
     }
 
 }

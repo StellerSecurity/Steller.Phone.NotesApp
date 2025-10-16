@@ -526,7 +526,7 @@ export class HomePage {
       if (data && data.data) {
         const {confirm} = data.data;
         if (confirm) {
-          this.dataService.clearAppData();
+          await this.dataService.clearAppData();
           window.location.href = '/'; // keep original behavior
         }
       }

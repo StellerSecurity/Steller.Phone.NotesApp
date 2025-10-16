@@ -61,6 +61,7 @@ export class LoginComponent implements OnInit {
         const response: any = await firstValueFrom(this.authService.loginHandling(loginObj));
 
         if (response.response_code == 200) {
+          console.log(response.token);
           await this.secureStorageService.setItem("ssToken", response.token);
           await this.secureStorageService.setItem("ssUser", JSON.stringify(response.user));
 
