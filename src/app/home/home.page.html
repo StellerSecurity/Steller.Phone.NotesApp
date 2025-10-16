@@ -9,7 +9,7 @@
       <div class="logo-container" *ngIf="!checkboxOpened">
           <img class="logo-img" src="./assets/note-logo.png" alt="">
         <div class="logo-text">Stellar Private Notes</div>
-      </div> 
+      </div>
     </ion-title>
 
     <ion-searchbar *ngIf="searchMode" #searchbar [(ngModel)]="search_query" (ionInput)="search()" placeholder="{{'searchNotesInput' | translate}}" show-clear-button="focus" clear-icon="trash-bin"
@@ -57,7 +57,7 @@
         <div class="logo-container app-ask-password-logo-container">
           <img class="logo-img" src="./assets/note-logo.png" alt="">
         <div class="logo-text">Stellar Private Notes</div>
-      </div> 
+      </div>
       </div><br><br><br>
 
       <div align="center"><img src="assets/icon-lock.svg"></div><br><br>
@@ -112,6 +112,10 @@ align-self: stretch; background: #2761FC; color: #fff; border-radius: 250px" (cl
 
 
 <ion-content [fullscreen]="true" class="ion-padding" *ngIf="should_display && !waitForSync">
+  <ion-refresher slot="fixed"  (ionRefresh)="handleRefresh($event)" *ngIf="isLoggedIn()" >
+    <ion-refresher-content></ion-refresher-content>
+  </ion-refresher>
+
   <ion-grid *ngIf="filteredResults !== null && filteredResults.length == 0 && !isSearching" style="height: -webkit-calc(100vh - 170px);
   height: calc(100vh - 170px);">
     <ion-row class="ion-align-items-center ion-justify-content-center" style="min-height: 100%;">
@@ -210,7 +214,7 @@ align-self: stretch; background: #2761FC; color: #fff; border-radius: 250px" (cl
 </ion-content>
 
 <ion-toolbar slot="fixed" class="toolbar-bottom" *ngIf="checkboxOpened && getNotes().length > 0">
-  <ion-button color="danger" shape="round" fill="outline" class="delete-btn" 
+  <ion-button color="danger" shape="round" fill="outline" class="delete-btn"
   [disabled]="listOfCheckedCheckboxes.length == 0" (click)="deleteSelectedNotes()"><img
       src="assets/tabler-icon-trash.svg" style="margin-right: 15px"> {{'delete' | translate}} ({{listOfCheckedCheckboxes.length}}) </ion-button><br>
   <!--<ion-button color="primary" fill="outline" expand="full" (click)="toggleCheckbox()">Cancel</ion-button>-->

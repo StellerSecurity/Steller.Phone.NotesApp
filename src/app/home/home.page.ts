@@ -24,6 +24,7 @@ import {normalize} from "../utils/home-normalize.util";
 import {initializePressGestures, LongPressConfig} from "../utils/home-gesture.util";
 import {setDecryptedNotesAndParse} from "../utils/home-notes.util";
 import {AuthService} from "../services/auth.service";
+import type { RefresherCustomEvent } from '@ionic/angular'; // 👈 important
 
 // NEW helpers
 
@@ -263,6 +264,19 @@ export class HomePage {
     this.notes = parsed ?? [];
     this.filteredResults = this.notes;
     return true;
+  }
+
+  public isLoggedIn() {
+    return this.authService.isLoggedIn;
+  }
+
+  handleRefresh(event: Event) {
+    // Cast the target to the ion-refresher element
+    (event.target as HTMLIonRefresherElement).complete();
+
+    this.waitForSync = true;
+    this.dataService.setForceDownloadOnHome(true);
+    this.syncFromServer();
   }
 
   async syncFromServer() {

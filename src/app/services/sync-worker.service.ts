@@ -52,27 +52,21 @@ export class SyncWorkerService {
   }
 
   async trySync() {
-    console.log('Trying to sync... {sync-worker}');
-    /*if (this.syncing) {
+
+    if (this.syncing) {
       console.log('Already syncing...');
       return;
-    }*/
+    }
     if (!(await this.isOnline())) {
       console.log('Skip sync: offline');
       return;
     }
-
-    console.log('Trying to sync now..');
-
     this.syncing = true;
     try {
-      console.log('Trying to sync now.. 1');
       const now = Date.now();
       const batch = await this.outbox.peekBatch(50, now);
 
-      console.log('batch length before');
       if (batch.length === 0) {
-        console.log('batch length 0');
         return;
       }
 
@@ -85,8 +79,6 @@ export class SyncWorkerService {
       };
 
       const headers = await this.authHeaders();
-
-      console.log(body);
 
       const res = await this.http.post(`${this.base}/sync-plan`, body, { headers }).toPromise();
 
