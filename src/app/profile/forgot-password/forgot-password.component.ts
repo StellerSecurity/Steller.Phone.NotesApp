@@ -13,7 +13,7 @@ export class ForgotPasswordComponent implements OnInit {
   showVerification = false;
   otpValue = '';
   otpConfig = {
-    length: 4,
+    length: 6,
     inputClass: 'bottom-border-otp', // must match your CSS class
     allowNumbersOnly: false,
     isPasswordInput: false,
@@ -46,7 +46,7 @@ export class ForgotPasswordComponent implements OnInit {
         next: (response) => {
           this.isProcessing = false;
           if (response.response_code == 200) {
-            this.showVerification = true;        
+            this.showVerification = true;
           } else {
             this.toastMessageService.showError(response.response_message);
           }
@@ -70,7 +70,7 @@ export class ForgotPasswordComponent implements OnInit {
   onOtpChange(value: string) {
     this.otpValue = value;
 
-    if(this.otpValue?.length == 4 ) {
+    if(this.otpValue?.length == 6 ) {
       this.router.navigate(['/profile/create-new-password'], {
         queryParams: {
           confirmationCode: this.otpValue,
