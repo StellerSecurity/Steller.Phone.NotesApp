@@ -106,15 +106,12 @@ export class CreateAccountComponent implements OnInit {
           eak: user.eak_b64,                // base64(IV||CT)
         };
 
+        console.log('bundle', bundle);
+
         const { eakB64: derivedEakB64 } = await extractPlainEAK(createUserObj.password, bundle);
         let eakB64 = derivedEakB64;
 
-        if (this.notesService.appHasPasswordChallenge()) {
-          this.cryptoService.encrypt(eakB64, this.notesService.getNotesAppPassword());
-          await this.secureStorageService.setItem("ssEakB64_Encrypted", eakB64);
-        } else {
-          await this.secureStorageService.setItem("ssEakB64", eakB64);
-        }
+
 
         let notes = this.notesService.getNotes();
 
@@ -139,6 +136,7 @@ export class CreateAccountComponent implements OnInit {
         this.toastMessageService.showError(response.response_message);
       }
     } catch (error: any) {
+      console.log("some error");
       await this.toastMessageService.showError(error?.error?.message ?? error?.message ?? error);
     } finally {
       this.isSaving = false;

@@ -14,6 +14,7 @@ import { ShareSecretModalComponent } from './share-secret-modal/share-secret-mod
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { ToastrModule } from 'ngx-toastr';
 import * as sodium from 'libsodium-wrappers';
+import {IonicStorageModule, Storage as IonicStorage} from '@ionic/storage-angular';
 
 export function HttpLoaderFactory(http: HttpClient) {
   return new TranslateHttpLoader(http);
@@ -31,6 +32,12 @@ export function initSodium() {
   declarations: [AppComponent, ShareSecretModalComponent,],
   imports: [HttpClientModule, BrowserModule,
     BrowserAnimationsModule,
+    // Prefer SQLite on device, then IndexedDB, then LocalStorage as last resort
+    IonicStorageModule.forRoot({
+      name: '__stellar_notes',
+      // Keep this simple unless you’ve wired @capacitor-community/sqlite on device
+      driverOrder: ['indexeddb', 'localstorage'],
+    }),
     ToastrModule.forRoot({
       timeOut: 3000,
       positionClass: 'toast-bottom-center', // or 'toast-top-right'
@@ -44,7 +51,10 @@ export function initSodium() {
           deps: [HttpClient],
       },
   }),],
-  providers: [{ provide: RouteReuseStrategy, useClass: IonicRouteStrategy }],
+  providers: [
+
+    { provide: IonicStorage}, // 👈 override
+    { provide: RouteReuseStrategy, useClass: IonicRouteStrategy }],
   bootstrap: [AppComponent],
 })
 export class AppModule {}
