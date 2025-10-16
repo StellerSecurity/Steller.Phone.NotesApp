@@ -340,24 +340,27 @@ export class AddNotePage implements OnDestroy {
     if (this.notes_id === null) return;
     if (this.note_locked) return;
 
-    let value = this.note_text.length > 0 ? this.note_text : ' ';
+    // Use the current UI values, but DON'T write back to them here.
+    const plainText = this.note_text ?? '';
+    const plainTitle = this.note_title ?? '';
 
-    let encryptedText = value;
-    let decryptedText = value;
+    // If your crypto requires non-empty, use a placeholder ONLY for storage.
+    const textForEncrypt = plainText.length > 0 ? plainText : ' ';
+    const titleForEncrypt = plainTitle;
 
-    let encryptedTitle = this.note_title;
-    let decryptedTitle = this.note_title;
+    let encryptedText = textForEncrypt;
+    let encryptedTitle = titleForEncrypt;
 
-    if (this.notes_password_stored.length > 1) {
-      encryptedText = this.cryptoService.encrypt(value, this.notes_password_stored);
-      encryptedTitle = this.cryptoService.encrypt(this.note_title, this.notes_password_stored);
+    if ((this.notes_password_stored ?? '').length > 1) {
+      encryptedText = this.cryptoService.encrypt(textForEncrypt, this.notes_password_stored);
+      encryptedTitle = this.cryptoService.encrypt(titleForEncrypt, this.notes_password_stored);
     }
 
+    // Preserve current protected flag
     let protectedNote = false;
-    if (this.currentNote !== null) {
-      protectedNote = !!this.currentNote.protected;
-    }
+    if (this.currentNote !== null) protectedNote = !!this.currentNote.protected;
 
+    // Fallback title for storage ONLY (do not push to UI)
     const now = new Date();
     const datePart = now.toLocaleDateString(undefined, {
       weekday: 'long',
@@ -370,7 +373,7 @@ export class AddNotePage implements OnDestroy {
 
     const note: NoteV1 = {
       id: this.notes_id,
-      title: encryptedTitle ? encryptedTitle : formattedDate,
+      title: encryptedTitle && encryptedTitle.length ? encryptedTitle : formattedDate,
       last_modified: Date.now(),
       text: encryptedText,
       protected: protectedNote,
@@ -381,27 +384,23 @@ export class AddNotePage implements OnDestroy {
       this.notes = [note];
     } else {
       let found = false;
-
       for (let i = 0; i < this.notes.length; i++) {
         if (this.notes[i].id === this.notes_id) {
-          found = true;
           this.notes[i] = note;
-          this.currentNote = note;
+          found = true;
           break;
         }
       }
-
-      if (!found) {
-        this.notes.push(note);
-        this.currentNote = note;
-      }
-
-      this.note_text = decryptedText;
-      this.note_title = decryptedTitle;
+      if (!found) this.notes.push(note);
     }
 
+    // ✅ Do NOT assign back to this.note_text / this.note_title here.
+    // Leave the editor's current value alone to avoid clobbering typing/focus.
+
+    this.currentNote = note;
     this.storeNoteInStorage(true).then(() => {});
   }
+
 
   async storeNoteInStorage(serverSync = true, forceDownloadOnHome = false) {
     if (this.notesService.appHasPasswordChallenge()) {
@@ -707,6 +706,7 @@ export class AddNotePage implements OnDestroy {
   }
 
   onSave(event: any, type: string = 'note_text'): void {
+
     if (type === 'note_text') {
       this.note_text = event;
     } else {

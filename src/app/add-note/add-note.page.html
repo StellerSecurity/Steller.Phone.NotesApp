@@ -6,7 +6,7 @@
           {{ note_title || 'Untitled Note' }}
         </ion-title>
       </ng-container>
-    
+
       <ng-template #editing>
         <ion-title class="editable-title-input-wrapper">
           <ion-input
@@ -21,13 +21,13 @@
         </ion-title>
       </ng-template>
     </div>
-    
+
     <!--<ion-title *ngIf="!note_locked">
       {{ note_title }}
     </ion-title>-->
 
-     
-    
+
+
     <ion-buttons slot="start">
       <ion-back-button defaultHref="/"
       class="custom-back-button"  text="">
@@ -36,7 +36,7 @@
 
     <ion-buttons slot="end" *ngIf="!note_locked">
       <ion-button (click)="openLockModal()">
-        
+
         <img *ngIf="!note_locked" src="./assets/lock-open.png" width="24" height="24">
         <img *ngIf="note_locked" src="./assets/lock-close.png" width="24" height="24">
         <!-- <ion-icon class="lock-icon" name="lock-open-outline" *ngIf="!note_locked"></ion-icon>
@@ -112,7 +112,6 @@
     <!-- textarea -->
     <!-- <angular-editor #editorRef [config]="editorConfig" [(ngModel)]="note_text" (ngModelChange)="save($event)" *ngIf="!note_locked"></angular-editor> -->
     <div *ngIf="!note_locked">
-      <app-rich-text-editor #richTextEditorComponentRef   (focus)="pauseLiveSync()"
-                            (blur)="resumeLiveSync()" [note_text]="note_text" (noteChange)="onSave($event, 'note_text')"></app-rich-text-editor>
+      <app-rich-text-editor #richTextEditorComponentRef  [note_text]="note_text" (noteChange)="onSave($event, 'note_text')"></app-rich-text-editor>
     </div>
 </ion-content>

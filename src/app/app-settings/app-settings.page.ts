@@ -41,7 +41,7 @@ export class AppSettingsPage implements AfterViewInit {
 
   @ViewChild(IonModal) modal: IonModal;
 
-  constructor(public alertController: AlertController,
+  constructor(
     private toastController: ToastController,
     private noteService: NotesService,
     private cryptoService: CryptoService,
