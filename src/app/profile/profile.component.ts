@@ -56,6 +56,7 @@ export class ProfileComponent implements OnInit {
         {
           text: 'Logout',
           handler: () => {
+            console.log('Logout');
             this.logout();
           },
         },
@@ -65,13 +66,9 @@ export class ProfileComponent implements OnInit {
     await alert.present();
   }
 
-  private logout() {
-    this.dataService.clearAppData();
-    this.isLoggedIn = false;
-    this.user = {};
-    this.authService.initializeAuthState().then(r => {});
-    console.log(1234);
-    // this.router.navigate(['/profile/login']); // redirect after logout
+  private async logout() {
+    await this.dataService.clearAppData();
+    window.location.href = '/';
   }
 
   navigateToRegister() {

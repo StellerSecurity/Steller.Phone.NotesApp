@@ -29,32 +29,32 @@ export function initSodium() {
 
 
 @NgModule({
-  declarations: [AppComponent, ShareSecretModalComponent,],
-  imports: [HttpClientModule, BrowserModule,
+  declarations: [AppComponent, ShareSecretModalComponent],
+  imports: [
+    HttpClientModule,
+    BrowserModule,
     BrowserAnimationsModule,
-    // Prefer SQLite on device, then IndexedDB, then LocalStorage as last resort
     IonicStorageModule.forRoot({
       name: '__stellar_notes',
-      // Keep this simple unless you’ve wired @capacitor-community/sqlite on device
-      driverOrder: ['indexeddb', 'localstorage'],
+      driverOrder: ['indexeddb', 'localstorage'], // add sqlite here only if you’ve wired it
     }),
     ToastrModule.forRoot({
       timeOut: 3000,
-      positionClass: 'toast-bottom-center', // or 'toast-top-right'
+      positionClass: 'toast-bottom-center',
       preventDuplicates: true,
     }),
-     PasswordStrengthMeterModule.forRoot(), IonicModule.forRoot({innerHTMLTemplatesEnabled: true}), AppRoutingModule, CommonModule, FormsModule,
+    PasswordStrengthMeterModule.forRoot(),
+    IonicModule.forRoot({ innerHTMLTemplatesEnabled: true }),
+    AppRoutingModule,
+    CommonModule,
+    FormsModule,
     TranslateModule.forRoot({
-      loader: {
-          provide: TranslateLoader,
-          useFactory: HttpLoaderFactory,
-          deps: [HttpClient],
-      },
-  }),],
+      loader: { provide: TranslateLoader, useFactory: HttpLoaderFactory, deps: [HttpClient] },
+    }),
+  ],
   providers: [
-
-    { provide: IonicStorage}, // 👈 override
-    { provide: RouteReuseStrategy, useClass: IonicRouteStrategy }],
+    { provide: RouteReuseStrategy, useClass: IonicRouteStrategy },
+  ],
   bootstrap: [AppComponent],
 })
 export class AppModule {}
