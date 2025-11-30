@@ -58,14 +58,38 @@ export class LoginComponent implements OnInit {
       };
 
       try {
-        const response: any = await firstValueFrom(this.authService.loginHandling(loginObj));
+        let response: any = await firstValueFrom(this.authService.loginHandling(loginObj));
 
         if (response.response_code == 200) {
-          console.log(response.token);
+
           await this.secureStorageService.setItem("ssToken", response.token);
-          await this.secureStorageService.setItem("ssUser", JSON.stringify(response.user));
+
+          // the user does not have any eak.. kdf etc, can be for several reasons:
+          // user created their stellar id on stellarsecurity.com or other places, so it was not needed.
+          // let's do it now.
+          if(response.user.eak_b64 == null) {
+            await this.crypto.createVault(loginObj.password);
+            this.crypto.exportRecoveryHeader();
+
+            // DB-compatible payload (packs IV into eak):
+            const bundle = this.crypto.exportServerBundleFromHeader();
+
+            const payload = {
+              ...bundle,
+            };
+
+            // await the Observable
+            await this.authService.updateEak(payload);
+
+            response.user.crypto_version = payload.crypto_version;
+            response.user.kdf_params = payload.kdf_params;
+            response.user.kdf_salt_b64 = payload.kdf_salt;
+            response.user.eak_b64 = payload.eak;
+          }
 
           let user = response.user;
+
+          await this.secureStorageService.setItem("ssUser", JSON.stringify(user));
 
           const bundle = {
             crypto_version: user.crypto_version,
@@ -109,10 +133,11 @@ export class LoginComponent implements OnInit {
           await this.toastMessageService.showError(response.response_message);
         }
       } catch (error: any) {
-        await this.toastMessageService.showError(error?.error?.message || error?.message);
+        console.log(error);
+        await this.toastMessageService.showError("Something went wrong");
       } finally {
         this.isSaving = false;
-        this.authService.initializeAuthState();
+        await this.authService.initializeAuthState();
       }
     }
   }

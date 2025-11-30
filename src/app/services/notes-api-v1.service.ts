@@ -29,8 +29,7 @@ export class NotesApiV1Service {
     private http: HttpClient,
     private secureStorageService: SecureStorageService,
     private crypto: CryptoKeyService,
-    private outbox: OutboxStorage,
-    private cryptoService?: CryptoService, // kept for backwards compatibility if injected elsewhere
+    private outbox: OutboxStorage
   ) {}
 
   // ————————————————————————————————————————————————————————————————

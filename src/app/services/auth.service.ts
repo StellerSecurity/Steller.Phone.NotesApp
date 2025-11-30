@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
-import { BehaviorSubject, Observable } from 'rxjs';
+import {BehaviorSubject, firstValueFrom, Observable} from 'rxjs';
 import { loginDto } from '../constants/models/authDto';
-import { HttpClient } from '@angular/common/http';
+import {HttpClient, HttpHeaders} from '@angular/common/http';
 import { auth, baseUrl } from '../constants/api/product.api';
 import { SecureStorageService } from './secure-storage.service';
 
@@ -30,6 +30,24 @@ export class AuthService {
 
   loginHandling(data: loginDto): Observable<any> {
     return this.http.post<any>(baseUrl + auth.loginAcc, data);
+  }
+
+  async updateEak(payload: {
+    crypto_version: string;
+    kdf_params: {
+      algo: string;
+      hash: string;
+      iters: number;
+    };
+    kdf_salt: string;
+    eak: string;
+  }): Promise<any> {
+    const TOKEN = await this.secureStorageService.getItem('ssToken');
+    const headers = new HttpHeaders().set('Authorization', `Bearer ${TOKEN ?? ''}`);
+
+    return firstValueFrom(
+      this.http.patch<any>(baseUrl + auth.updateEak, payload, { headers })
+    );
   }
 
   forgotPassword(email: any): Observable<any> {

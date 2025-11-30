@@ -26,7 +26,7 @@ export class DataService {
       console.log('Starting nuclear reset…');
 
       await this.secureStorageService.clear();
-      await localStorage.clear();
+      localStorage.clear();
       await Preferences.clear();
 
       // IndexedDB wipe (no try/catch suppression)
