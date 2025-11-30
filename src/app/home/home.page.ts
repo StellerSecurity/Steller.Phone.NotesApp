@@ -489,7 +489,7 @@ export class HomePage {
       if (data && data.data) {
         const { confirm } = data.data;
         if (confirm) {
-          await this.deleteNotesConfirm();
+          this.deleteNotesConfirm();
         }
       }
     });
@@ -497,7 +497,7 @@ export class HomePage {
     return await modal.present();
   }
 
-  private async deleteNotesConfirm() {
+  private deleteNotesConfirm() {
     if (!this.listOfCheckedCheckboxes?.length) {
       this.toggleCheckbox();
       return;
@@ -534,7 +534,7 @@ export class HomePage {
     this.noteService.setDecryptedNotes(this.noteService.getNotes());
 
     if (this.authService.isLoggedIn) {
-      await this.notesApiServiceV1.deleteNotes(this.listOfCheckedCheckboxes).then((data) => {});
+      this.notesApiServiceV1.deleteNotes(this.listOfCheckedCheckboxes).then((data) => {});
     }
 
     this.listOfCheckedCheckboxes = [];
