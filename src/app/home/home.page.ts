@@ -42,7 +42,6 @@ export class HomePage {
   private static readonly MOVE_TOLERANCE_PX = 15;             // movement tolerance during press
   private static readonly SEARCH_FOCUS_DELAY_MS = 100;
   private static readonly DETECT_CHANGES_DELAY_MS = 200;
-  private static readonly RESYNC_INTERVAL_MS = 30_000;
 
   // --------------------------------------------------
   // View Refs

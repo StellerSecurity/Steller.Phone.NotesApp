@@ -132,15 +132,6 @@ export async function saveWrappedBundle(wrapped: {
     await Preferences.set({ key: ENABLED_KEY, value: '1' });
 }
 
-async function readCiphertextFromFile(): Promise<string | Blob> {
-    const { value: path } = await Preferences.get({ key: 'bundle_path' });
-    const file = await Filesystem.readFile({
-        path: path || BUNDLE_PATH,
-        directory: Directory.Data,
-    });
-    return file.data; // base64
-}
-
 /* --------------------- Small helpers --------------------- */
 const TEXT = new TextEncoder();
 const UNT  = new TextDecoder();
@@ -184,28 +175,6 @@ export async function wrapBundleWithPassword_WebCrypto(password: string, bundleJ
 
     return { ctB64, saltB64, ivB64, kdf: { alg: 'PBKDF2', hash: 'SHA-256', iters: 300000 } };
 }
-
-
-
-export async function unwrapBundleWithPassword_WebCrypto(password: string, blob: {
-    ctB64: string, saltB64: string, ivB64: string, kdf: { iters: number }
-}) {
-    const { ctB64, saltB64, ivB64, kdf } = blob;
-    const key = await deriveKey(password, saltB64, kdf?.iters ?? 300000);
-
-    const ct = Uint8Array.from(atob(ctB64), c => c.charCodeAt(0));
-    const iv = Uint8Array.from(atob(ivB64), c => c.charCodeAt(0));
-
-    const ptBuf = await crypto.subtle.decrypt(
-        { name: 'AES-GCM', iv },
-        key,
-        ct
-    );
-    return new TextDecoder().decode(ptBuf);
-}
-
-
-
 function b64encode(buf: ArrayBuffer | Uint8Array): string {
     const bytes = buf instanceof Uint8Array ? buf : new Uint8Array(buf);
     let s = '';
@@ -262,38 +231,6 @@ export async function wrapBundleWithPassword(password: string, bundleJson: strin
     await Preferences.set({ key: 'lock.enabled', value: '1' });
 }
 
-// Load when you UNLOCK (this is what you asked about)
-export async function loadWrappedBundle(): Promise<{
-    ctB64: string; saltB64: string; ivB64: string; kdf: any
-}> {
-    const metaStr = (await Preferences.get({ key: META_KEY })).value;
-    if (!metaStr) throw new Error('No bundle metadata found');
-    const { saltB64, ivB64, kdf } = JSON.parse(metaStr);
-
-    const file = await Filesystem.readFile({ path: BUNDLE_PATH, directory: Directory.Data });
-    const ctB64 = file.data;
-    if (!ctB64) throw new Error('No ciphertext file found');
-
-    // @ts-ignore
-    return { ctB64, saltB64, ivB64, kdf }; // ← this is the `wrapped` object
-}
-
-async function unwrapBundleWithPassword(password: string): Promise<string> {
-    await sodium.ready;
-    const saltB64   = (await Preferences.get({ key: 'kdf_salt' })).value!;
-    const paramsStr = (await Preferences.get({ key: 'kdf_params' })).value!;
-    const ctB64     = (await Preferences.get({ key: 'bundle_wrapped' })).value!;
-    const nonceB64  = (await Preferences.get({ key: 'bundle_nonce' })).value!;
-
-    const salt  = sodium.from_base64(saltB64, sodium.base64_variants.ORIGINAL);
-    const { opslimit, memlimit } = JSON.parse(paramsStr);
-    const key   = sodium.crypto_pwhash(32, password, salt, opslimit, memlimit, sodium.crypto_pwhash_ALG_ARGON2ID13);
-    const nonce = sodium.from_base64(nonceB64, sodium.base64_variants.ORIGINAL);
-    const ct    = sodium.from_base64(ctB64, sodium.base64_variants.ORIGINAL);
-
-    const plain = sodium.crypto_aead_xchacha20poly1305_ietf_decrypt(null, ct, null, nonce, key);
-    return sodium.to_string(plain); // JSON string
-}
 
 @Injectable({ providedIn: 'root' })
 export class CryptoKeyService {
@@ -436,34 +373,6 @@ export class CryptoKeyService {
         this.unlockedSubject.next(true);
     }
 
-    /** Change password: re-wrap existing MK with a *new* password-derived key */
-    async changePassword(oldPassword: string, newPassword: string, newIters?: number): Promise<void> {
-        if (!newPassword || newPassword.length < 6) throw new Error('Weak password');
-        // Unlock (validates old password)
-        await this.unlock(oldPassword);
-        if (!this.mkKey) throw new Error('Unlock failed');
-
-        const mkRaw = await crypto.subtle.exportKey('raw', this.mkKey);
-        const salt = crypto.getRandomValues(new Uint8Array(16));
-        const iters = newIters ?? 210_000;
-        const passKey = await this.derivePasswordKey(newPassword, salt, iters);
-
-        const iv = crypto.getRandomValues(new Uint8Array(12));
-        const wrapped = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, passKey, mkRaw);
-
-        const header: VaultHeaderV1 = {
-            v: 1,
-            kdf: { algo: 'PBKDF2', hash: 'SHA-256', iters, salt_b64: b64encode(salt) },
-            mk_wrapped_b64: b64encode(wrapped),
-            mk_iv_b64: b64encode(iv),
-            created_at: Date.now(),
-            rotated_at: null,
-        };
-        localStorage.setItem(VAULT_KEY, JSON.stringify(header));
-        this.unlockedAt = Date.now();
-        this.unlockedSubject.next(true);
-    }
-
     /* --------------------- Server bundle I/O --------------------- */
 
     /**
@@ -530,50 +439,7 @@ export class CryptoKeyService {
         if (this['unlockedSubject']?.next) this['unlockedSubject'].next(true);
     }
 
-    /**
-     * Import header from server after login and unlock the MK:
-     *  - derive PK from password and kdf_salt/iters
-     *  - unpack eak (IV||CT) and decrypt MK
-     *  - install a fresh *local* header (re-wrap MK with a new IV) for future unlock()
-     */
-    async importFromServerBundle(bundle: ServerBundle, password: string): Promise<void> {
-        if (!bundle?.kdf_salt || !bundle?.eak) throw new Error('Invalid bundle');
 
-        // 1) Derive Password-Key (PK)
-        const salt = new Uint8Array(b64decode(bundle.kdf_salt));
-        const passKey = await this.derivePasswordKey(password, salt, bundle.kdf_params.iters);
-
-        // 2) Unpack eak: IV || ciphertext+tag
-        const packed = new Uint8Array(b64decode(bundle.eak));
-        if (packed.byteLength < 12 + 16) throw new Error('EAK too short');
-        const iv = packed.slice(0, 12);
-        const ct = packed.slice(12);
-
-        // 3) Decrypt MK raw bytes with PK
-        const mkRaw = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, passKey, ct);
-
-        // 4) Import MK for use
-        const mkKey = await crypto.subtle.importKey('raw', mkRaw, 'AES-GCM', true, ['encrypt','decrypt']);
-
-        // 5) Create/replace the local header with a fresh IV (hygiene)
-        const newIv = crypto.getRandomValues(new Uint8Array(12));
-        const wrapped = await crypto.subtle.encrypt({ name: 'AES-GCM', iv: newIv }, passKey, mkRaw);
-
-        const header: VaultHeaderV1 = {
-            v: 1,
-            kdf: { algo: 'PBKDF2', hash: 'SHA-256', iters: bundle.kdf_params.iters, salt_b64: bundle.kdf_salt },
-            mk_wrapped_b64: b64encode(wrapped),
-            mk_iv_b64: b64encode(newIv),
-            created_at: Date.now(),
-            rotated_at: null,
-        };
-        localStorage.setItem(VAULT_KEY, JSON.stringify(header));
-
-        // 6) Keep MK in memory
-        this.mkKey = mkKey;
-        this.unlockedAt = Date.now();
-        this.unlockedSubject.next(true);
-    }
 
     /* --------------------- Encryption helpers --------------------- */
 
@@ -603,25 +469,6 @@ export class CryptoKeyService {
         return UNT.decode(pt);
     }
 
-    /** Encrypt arbitrary bytes with the MK */
-    async encryptBytes(bytes: ArrayBuffer, aad?: string): Promise<CipherBlobV1> {
-        if (!this.mkKey) throw new Error('Locked');
-        const iv = crypto.getRandomValues(new Uint8Array(12));
-        const ad = aad ? TEXT.encode(aad) : undefined;
-        const ct = await crypto.subtle.encrypt({ name: 'AES-GCM', iv, additionalData: ad }, this.mkKey, bytes);
-        return { v: 1, iv_b64: b64encode(iv), ct_b64: b64encode(ct), aad_b64: ad ? b64encode(ad) : undefined };
-    }
-
-    /** Decrypt arbitrary bytes with the MK */
-    async decryptBytes(blob: CipherBlobV1): Promise<ArrayBuffer> {
-        if (!this.mkKey) throw new Error('Locked');
-        if (blob.v !== 1) throw new Error('Unsupported blob version');
-        const iv = new Uint8Array(b64decode(blob.iv_b64));
-        const ad = blob.aad_b64 ? new Uint8Array(b64decode(blob.aad_b64)) : undefined;
-        return crypto.subtle.decrypt({ name: 'AES-GCM', iv, additionalData: ad }, this.mkKey, b64decode(blob.ct_b64));
-    }
-
-
 
     /* --------------------- Internals --------------------- */
 
@@ -637,7 +484,6 @@ export class CryptoKeyService {
     }
 
     /* Optional convenience getters */
-    hasVault(): boolean { return !!localStorage.getItem(VAULT_KEY); }
     exportRecoveryHeader(): VaultHeaderV1 {
         const raw = localStorage.getItem(VAULT_KEY);
         if (!raw) throw new Error('No vault');
