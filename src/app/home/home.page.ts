@@ -1,4 +1,11 @@
-import { ChangeDetectorRef, Component, ElementRef, QueryList, ViewChild, ViewChildren } from '@angular/core';
+import {
+  ChangeDetectorRef,
+  Component,
+  ElementRef,
+  QueryList,
+  ViewChild,
+  ViewChildren
+} from '@angular/core';
 import {
   GestureController,
   IonModal,
@@ -16,17 +23,26 @@ import { ResetPassModalComponent } from '../restpass-modal/resetpass-modal.compo
 import { TranslatorService } from '../services/translator.service';
 import { Haptics } from "@capacitor/haptics";
 import { NotesApiV1Service } from "../services/notes-api-v1.service";
-import { CryptoKeyService, unpackCipherBlob } from "../services/crypto-key.service";
 import { SecureStorageService } from "../services/secure-storage.service";
 import { ActivatedRoute, Router } from "@angular/router";
 import { DataService } from "../services/data.service";
-import {normalize} from "../utils/home-normalize.util";
-import {initializePressGestures, LongPressConfig} from "../utils/home-gesture.util";
-import {setDecryptedNotesAndParse} from "../utils/home-notes.util";
-import {AuthService} from "../services/auth.service";
+import { normalize } from "../utils/home-normalize.util";
+import { initializePressGestures, LongPressConfig } from "../utils/home-gesture.util";
+import { setDecryptedNotesAndParse } from "../utils/home-notes.util";
+import { AuthService } from "../services/auth.service";
 import type { RefresherCustomEvent } from '@ionic/angular'; // 👈 important
 
-// NEW helpers
+// ✅ New: use SDK instead of CryptoKeyService
+import {
+  createVault,
+  exportServerBundleFromHeader,
+  extractPlainEAK,
+  encryptTextWithMK,
+  decryptTextWithMK,
+  packCipherBlob,
+  unpackCipherBlob,
+} from '@stellarsecurity/stellar-crypto';
+
 
 @Component({
   selector: 'app-home',
@@ -37,9 +53,9 @@ export class HomePage {
   // --------------------------------------------------
   // Constants
   // --------------------------------------------------
-  private static readonly LONG_PRESS_DELAY_MS = 200;          // long-press trigger time
-  private static readonly LONG_PRESS_START_DELAY_MS = 100;    // initial delay before opening checkbox mode
-  private static readonly MOVE_TOLERANCE_PX = 15;             // movement tolerance during press
+  private static readonly LONG_PRESS_DELAY_MS = 200;
+  private static readonly LONG_PRESS_START_DELAY_MS = 100;
+  private static readonly MOVE_TOLERANCE_PX = 15;
   private static readonly SEARCH_FOCUS_DELAY_MS = 100;
   private static readonly DETECT_CHANGES_DELAY_MS = 200;
 
@@ -72,8 +88,10 @@ export class HomePage {
 
   timeout: any;
   isClicked: boolean = false;
-
   allTranslations: any;
+
+  // 🔐 MK kept in RAM (EAK already resolved to plaintext MK elsewhere)
+  private mkRaw: Uint8Array | null = null;
 
   constructor(
     private cryptoService: CryptoService,
@@ -87,12 +105,19 @@ export class HomePage {
     private notesApiServiceV1: NotesApiV1Service,
     private translatorService: TranslatorService,
     private gestureCtrl: GestureController,
-    private crypto: CryptoKeyService,
     private router: Router,
     private secureStorageService: SecureStorageService,
     private authService: AuthService,
     private cdr: ChangeDetectorRef
   ) {}
+
+  // Small helper: base64 -> Uint8Array
+  private b64ToBytes(b64: string): Uint8Array {
+    const bin = atob(b64);
+    const out = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+    return out;
+  }
 
   // --------------------------------------------------
   // Lifecycle
@@ -106,10 +131,11 @@ export class HomePage {
       this.waitForSync = true;
     }
 
+    // If app does NOT have password challenge, load MK directly from secure storage
     if (!this.noteService.appHasPasswordChallenge()) {
       const eakB64 = await this.secureStorageService.getItem('ssEakB64');
       if (eakB64) {
-        await this.crypto.importEAK(eakB64);
+        this.mkRaw = this.b64ToBytes(eakB64);
       }
     }
 
@@ -124,7 +150,6 @@ export class HomePage {
       this.setData(this.noteService.getNotesAppPassword());
       await this.syncFromServer();
     }
-
   }
 
   ionViewDidEnter() {
@@ -209,7 +234,7 @@ export class HomePage {
   }
 
   // --------------------------------------------------
-  // Long-press selection (delegates to util)
+  // Long-press selection
   // --------------------------------------------------
   initializePressGesture(): void {
     const cfg: LongPressConfig = {
@@ -234,7 +259,6 @@ export class HomePage {
         this.cdr.detectChanges();
         const noteId = element.id;
 
-        // ✅ If not already selected, check it
         if (!this.listOfCheckedCheckboxes.includes(noteId)) {
           const checkboxEle = element.children[0].children[0];
           checkboxEle.checked = true;
@@ -270,7 +294,6 @@ export class HomePage {
   }
 
   handleRefresh(event: Event) {
-    // Cast the target to the ion-refresher element
     (event.target as HTMLIonRefresherElement).complete();
 
     this.waitForSync = true;
@@ -279,13 +302,12 @@ export class HomePage {
   }
 
   async syncFromServer() {
-
     if (!this.authService.isLoggedIn) return;
-
     if (this.pauseSync) {
       console.log('Sync has paused.');
       return;
     }
+
     console.log('Sync has started');
     setTimeout(() => { this.syncFromServer(); }, 30_000);
 
@@ -309,14 +331,22 @@ export class HomePage {
           continue;
         }
 
+        if (!this.mkRaw) {
+          console.warn('MK not loaded; skipping decrypt of note', s.id);
+          continue;
+        }
+
         // Decrypt text (required)
         const blobText = unpackCipherBlob(s.text);
-        s.text = await this.crypto.decryptText({ ...blobText, v: 1, aad_b64: btoa(s.id) });
+        s.text = await decryptTextWithMK(this.mkRaw, { ...blobText, v: 1, aad_b64: btoa(s.id) });
 
         // Decrypt title ONLY if present; otherwise set to empty string
         if (typeof s.title === 'string' && s.title.length > 0) {
           const blobTitle = unpackCipherBlob(s.title);
-          s.title = await this.crypto.decryptText({ ...blobTitle, v: 1, aad_b64: btoa(s.id + '#title') });
+          s.title = await decryptTextWithMK(
+            this.mkRaw,
+            { ...blobTitle, v: 1, aad_b64: btoa(s.id + '#title') }
+          );
         } else {
           s.title = '';
         }
@@ -330,7 +360,10 @@ export class HomePage {
       this.filteredResults = merged;
 
       if (this.noteService.appHasPasswordChallenge()) {
-        const encryptedNotesSave = this.cryptoService.encrypt(JSON.stringify(merged), this.noteService.getNotesAppPassword());
+        const encryptedNotesSave = this.cryptoService.encrypt(
+          JSON.stringify(merged),
+          this.noteService.getNotesAppPassword()
+        );
         this.noteService.setNotes(encryptedNotesSave);
       } else {
         this.noteService.setNotes(JSON.stringify(merged));
@@ -348,7 +381,6 @@ export class HomePage {
     }
   }
 
-
   // --------------------------------------------------
   // Auth / Protection
   // --------------------------------------------------
@@ -356,7 +388,6 @@ export class HomePage {
     this.showPassword = !this.showPassword;
   }
 
-  // @ts-ignore
   public async unlockNotesApp() {
     if (this.input_password_app_unlock.length == 0) {
       const toast = await this.toastController.create({
@@ -376,10 +407,9 @@ export class HomePage {
 
       let eakB64 = await this.secureStorageService.getItem('ssEakB64_Encrypted');
       if (eakB64) {
-        // @ts-ignore
-        eakB64 = this.cryptoService.decrypt(eakB64, this.input_password_app_unlock);
-        // @ts-ignore
-        await this.crypto.importEAK(eakB64);
+        // decrypt stored MK using app-lock password
+        eakB64 = this.cryptoService.decrypt(eakB64, this.input_password_app_unlock) as string;
+        this.mkRaw = this.b64ToBytes(eakB64);
       }
 
       // init protection
@@ -395,7 +425,6 @@ export class HomePage {
       }, HomePage.DETECT_CHANGES_DELAY_MS);
 
       return;
-
     } catch (e: any) {
       console.error(e);
       const toast = await this.toastController.create({
@@ -415,9 +444,6 @@ export class HomePage {
   // --------------------------------------------------
   // Notes helpers
   // --------------------------------------------------
-  /**
-   * Will get the decrypted notes (if there is any), and sort them by last modified.
-   */
   getNotes() {
     if (this.filteredResults === undefined || this.filteredResults === null) {
       return [];
@@ -442,7 +468,6 @@ export class HomePage {
   }
 
   public async deleteSelectedNotes() {
-    // @ts-ignore
     const modal = await this.modalCtrl.create({
       component: DeleteNoteModalComponent,
       cssClass: 'confirmation-popup',
@@ -463,12 +488,7 @@ export class HomePage {
     return await modal.present();
   }
 
-  /**
-   * Being called, when the confirmation has been done.
-   * @private
-   */
   private async deleteNotesConfirm() {
-    // Nothing selected? Nothing to do.
     if (!this.listOfCheckedCheckboxes?.length) {
       this.toggleCheckbox();
       return;
@@ -504,18 +524,15 @@ export class HomePage {
 
     this.noteService.setDecryptedNotes(this.noteService.getNotes());
 
-    // 5) Server-side delete (if signed in)
     if (this.authService.isLoggedIn) {
-        await this.notesApiServiceV1.deleteNotes(this.listOfCheckedCheckboxes).then((data) => {});
+      await this.notesApiServiceV1.deleteNotes(this.listOfCheckedCheckboxes).then((data) => {});
     }
 
     this.listOfCheckedCheckboxes = [];
     this.toggleCheckbox();
   }
 
-
   public async resetPassword() {
-    // @ts-ignore
     const modal = await this.modalCtrl.create({
       component: ResetPassModalComponent,
       cssClass: 'confirmation-popup'
@@ -526,20 +543,14 @@ export class HomePage {
         const {confirm} = data.data;
         if (confirm) {
           await this.dataService.clearAppData();
-          window.location.href = '/'; // keep original behavior
+          window.location.href = '/';
         }
       }
     });
 
     return await modal.present();
-
   }
 
-  /**
-   * Selecting notes that the user has chosen in UI.
-   * @param event
-   * @param note_id
-   */
   public selectNote(event: any, note_id: string) {
     event?.stopImmediatePropagation();
     event?.preventDefault();
@@ -564,10 +575,6 @@ export class HomePage {
     });
   }
 
-  /**
-   * Will detect if the user presses enter on unlock notes-app.
-   * @param ev
-   */
   public ionInputAppUnlockInput(ev: any) {
     if (ev.key == "Enter") {
       this.unlockNotesApp().then(r => {});

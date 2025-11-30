@@ -18,13 +18,18 @@ import { sha512 } from 'js-sha512';
 import { ShareSecretModalComponent } from '../share-secret-modal/share-secret-modal.component';
 import { RichTextEditorComponent } from './rich-text-editor/rich-text-editor.component';
 import { NotesApiV1Service } from '../services/notes-api-v1.service';
-import { CryptoKeyService, unpackCipherBlob } from '../services/crypto-key.service';
 import { SecureStorageService } from '../services/secure-storage.service';
 import { DataService } from '../services/data.service';
 import { NoteLockedModalComponent } from '../note-locked-modal/note-locked-modal.component';
 import { DeleteNoteModalComponent } from '../delete-note-modal/delete-note-modal.component';
-import {NoteV1} from "../models/NoteV1";
-import {AuthService} from "../services/auth.service";
+import { NoteV1 } from "../models/NoteV1";
+import { AuthService } from "../services/auth.service";
+
+// ✅ New: use Stellar Crypto SDK
+import {
+  unpackCipherBlob,
+  decryptTextWithMK,
+} from '@stellarsecurity/stellar-crypto';
 
 // ✅ keep CommonJS requires (no ES imports)
 declare var require: any;
@@ -59,7 +64,7 @@ export class AddNotePage implements OnDestroy {
 
   private notes_id: string | null = null;
   private notes: NoteV1[] = [];
-  private currentNote: NoteV1| null = null;
+  private currentNote: NoteV1 | null = null;
 
   private saveTimeout: any = null;
   private liveNoteTimer?: number;
@@ -72,12 +77,14 @@ export class AddNotePage implements OnDestroy {
   private fetchLiveNoteBound = () => {};
   private routeSub?: Subscription;
 
+  // 🔐 Master key held in RAM (derived from EAK)
+  private mkRaw: Uint8Array | null = null;
+
   constructor(
     private cryptoService: CryptoService,
     public activatedRoute: ActivatedRoute,
     private navController: NavController,
     private notesService: NotesService,
-    private crypto: CryptoKeyService,
     private secureStorageService: SecureStorageService,
     private toastController: ToastController,
     private modalCtrl: ModalController,
@@ -114,7 +121,6 @@ export class AddNotePage implements OnDestroy {
       }
 
       this.note_text = this.currentNote.text ?? '';
-
       this.note_title = this.currentNote.title !== undefined ? this.currentNote.title : 'Untitled';
 
       this.startLiveNotePolling();
@@ -122,7 +128,6 @@ export class AddNotePage implements OnDestroy {
   }
 
   ngOnDestroy(): void {
-    // Clean up the route subscription if this page is destroyed
     this.routeSub?.unsubscribe();
     this.stopLiveNotePolling();
   }
@@ -134,8 +139,35 @@ export class AddNotePage implements OnDestroy {
     }
   }
 
-  ionViewWillEnter(): void {
+  // Small helper: base64 -> Uint8Array
+  private b64ToBytes(b64: string): Uint8Array {
+    const bin = atob(b64);
+    const out = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+    return out;
+  }
+
+  async ionViewWillEnter(): Promise<void> {
     this.allTranslations = this.translatorService.allTranslations;
+
+    // 🔐 Load MK from secure storage (same logic som HomePage)
+    try {
+      if (!this.notesService.appHasPasswordChallenge()) {
+        const eakB64 = await this.secureStorageService.getItem('ssEakB64');
+        if (eakB64) {
+          this.mkRaw = this.b64ToBytes(eakB64);
+        }
+      } else {
+        const enc = await this.secureStorageService.getItem('ssEakB64_Encrypted');
+        const appPass = this.notesService.getNotesAppPassword();
+        if (enc && appPass) {
+          const decrypted = this.cryptoService.decrypt(enc, appPass) as string;
+          this.mkRaw = this.b64ToBytes(decrypted);
+        }
+      }
+    } catch (e) {
+      console.error('Failed to load MK from storage in AddNotePage:', e);
+    }
   }
 
   ionViewWillLeave() {
@@ -170,7 +202,7 @@ export class AddNotePage implements OnDestroy {
     const addSecretModal = new Secret();
     const secret_id = uuidv4();
 
-    addSecretModal.expires_at = '0'; // "0" -> never expires
+    addSecretModal.expires_at = '0';
     addSecretModal.id = sha512(secret_id);
 
     let secretMessage = this.note_text.replace(/<br ?\/?>/g, '\n');
@@ -249,7 +281,6 @@ export class AddNotePage implements OnDestroy {
     }
     if (!this.notes_id) return;
 
-    // Narrow to a definite string for downstream calls
     const noteId = this.notes_id as string;
 
     try {
@@ -267,7 +298,6 @@ export class AddNotePage implements OnDestroy {
             return;
           }
 
-          // Protection mismatch => redirect home
           if (note.protected !== this.currentNote.protected) {
             this.dataService.setForceDownloadOnHome(true);
             console.log('Notes protection mismatch, redirect back' + note.protected);
@@ -277,7 +307,6 @@ export class AddNotePage implements OnDestroy {
 
           if (!note.protected) this.notes_password_stored = '';
 
-          // Skip if server is equal/older than local
           if (this.currentNote.last_modified == note.last_modified) {
             console.log('Equal');
             return;
@@ -287,18 +316,23 @@ export class AddNotePage implements OnDestroy {
             return;
           }
 
-          // Decrypt text (always expected to exist)
+          if (!this.mkRaw) {
+            console.warn('MK not loaded in AddNotePage; skipping decrypt for live note');
+            return;
+          }
+
+          // 🔐 Decrypt text (required)
           const blobText = unpackCipherBlob(note.text);
-          note.text = await this.crypto.decryptText({
+          note.text = await decryptTextWithMK(this.mkRaw, {
             ...blobText,
             v: 1,
             aad_b64: btoa(noteId),
           });
 
-          // Decrypt title ONLY if present; otherwise set to empty string
+          // 🔐 Decrypt title if present
           if (typeof note.title === 'string' && note.title.length > 0) {
             const blobTitle = unpackCipherBlob(note.title);
-            note.title = await this.crypto.decryptText({
+            note.title = await decryptTextWithMK(this.mkRaw, {
               ...blobTitle,
               v: 1,
               aad_b64: btoa(noteId + '#title'),
@@ -307,7 +341,6 @@ export class AddNotePage implements OnDestroy {
             note.title = '';
           }
 
-          // Update current note + bindings
           this.currentNote.text = note.text;
           this.note_title = note.title;
           this.note_text = note.text;
@@ -327,13 +360,9 @@ export class AddNotePage implements OnDestroy {
           /* ignore; try again on next tick */
         });
     } catch (err) {
-      // only gets here if your service rethrows
       console.error('Find notes not done.', err);
     }
   }
-
-
-
 
   // should be called on key enter.
   save(ev: any) {
@@ -341,11 +370,9 @@ export class AddNotePage implements OnDestroy {
     if (this.notes_id === null) return;
     if (this.note_locked) return;
 
-    // Use the current UI values, but DON'T write back to them here.
     const plainText = this.note_text ?? '';
     const plainTitle = this.note_title ?? '';
 
-    // If your crypto requires non-empty, use a placeholder ONLY for storage.
     const textForEncrypt = plainText.length > 0 ? plainText : ' ';
     const titleForEncrypt = plainTitle;
 
@@ -357,11 +384,9 @@ export class AddNotePage implements OnDestroy {
       encryptedTitle = this.cryptoService.encrypt(titleForEncrypt, this.notes_password_stored);
     }
 
-    // Preserve current protected flag
     let protectedNote = false;
     if (this.currentNote !== null) protectedNote = !!this.currentNote.protected;
 
-    // Fallback title for storage ONLY (do not push to UI)
     const now = new Date();
     const datePart = now.toLocaleDateString(undefined, {
       weekday: 'long',
@@ -395,17 +420,16 @@ export class AddNotePage implements OnDestroy {
       if (!found) this.notes.push(note);
     }
 
-    // ✅ Do NOT assign back to this.note_text / this.note_title here.
-    // Leave the editor's current value alone to avoid clobbering typing/focus.
-
     this.currentNote = note;
     this.storeNoteInStorage(true).then(() => {});
   }
 
-
   async storeNoteInStorage(serverSync = true, forceDownloadOnHome = false) {
     if (this.notesService.appHasPasswordChallenge()) {
-      const encryptedNotesSave = this.cryptoService.encrypt(JSON.stringify(this.notes), this.notesService.getNotesAppPassword());
+      const encryptedNotesSave = this.cryptoService.encrypt(
+        JSON.stringify(this.notes),
+        this.notesService.getNotesAppPassword()
+      );
       this.notesService.setNotes(encryptedNotesSave);
     } else {
       this.notesService.setNotes(JSON.stringify(this.notes));
@@ -517,10 +541,8 @@ export class AddNotePage implements OnDestroy {
       return;
     }
 
-    // length > 4
     if (this.notes_password_input.length > 4) this.passwordStrength += 1;
 
-    // mixed case
     if (/[a-z]/.test(this.notes_password_input) && /[A-Z]/.test(this.notes_password_input)) {
       this.passwordStrength += 1;
       this.upperLower = true;
@@ -528,10 +550,8 @@ export class AddNotePage implements OnDestroy {
       this.upperLower = false;
     }
 
-    // numbers
     if (/\d/.test(this.notes_password_input)) this.passwordStrength += 1;
 
-    // special chars
     if (/[^a-zA-Z\d]/.test(this.notes_password_input)) {
       this.passwordStrength += 1;
       this.specialChar = true;
@@ -539,7 +559,6 @@ export class AddNotePage implements OnDestroy {
       this.specialChar = false;
     }
 
-    // length >= 6
     if (this.notes_password_input.length >= 6) {
       this.passwordStrength += 1;
       this.strongPass = true;
@@ -647,7 +666,7 @@ export class AddNotePage implements OnDestroy {
               }
             }
 
-            if(this.authService.isLoggedIn) {
+            if (this.authService.isLoggedIn) {
               this.stopSyncing = true;
               this.notesApiV1Service.upload(0, this.notes);
               this.stopSyncing = false;
@@ -707,7 +726,6 @@ export class AddNotePage implements OnDestroy {
   }
 
   onSave(event: any, type: string = 'note_text'): void {
-
     if (type === 'note_text') {
       this.note_text = event;
     } else {

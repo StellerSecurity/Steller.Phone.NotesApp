@@ -5,12 +5,18 @@ import { AuthService } from 'src/app/services/auth.service';
 import { ToastMessageService } from 'src/app/services/toast-message.service';
 import {NotesService} from "../../services/notes.service";
 import {NotesApiV1Service} from "../../services/notes-api-v1.service";
+
 import {
-  CryptoKeyService,
+  createVault,
+  exportServerBundleFromHeader,
   extractPlainEAK,
-  saveWrappedBundle,
-  wrapBundleWithPassword_WebCrypto
-} from "../../services/crypto-key.service";
+  encryptTextWithMK,
+  decryptTextWithMK,
+  ServerBundle,
+  VaultHeaderV1,
+} from '@stellarsecurity/stellar-crypto';
+
+
 import {firstValueFrom} from "rxjs";
 import { SecureStorageService } from 'src/app/services/secure-storage.service';
 import {DataService} from "../../services/data.service";
@@ -43,7 +49,7 @@ export class CreateAccountComponent implements OnInit {
               private dataService: DataService,
               private notesApi: NotesApiV1Service,
               private cryptoService: CryptoService,
-              private notesApiV1Service: NotesApiV1Service, private crypto: CryptoKeyService,
+              private notesApiV1Service: NotesApiV1Service,
               private authService: AuthService, private toastMessageService: ToastMessageService,
               private secureStorageService: SecureStorageService) {}
 
@@ -66,31 +72,25 @@ export class CreateAccountComponent implements OnInit {
   }
 
   async createAccount() {
-    // Simulate API call and show verification
     if (!this.createUserForm.valid) return;
 
     this.isSaving = true;
 
     try {
-      // inside your submit handler
       const createUserObj = {
-        // your form fields
-        username: this.createUserForm.get('email')?.value, // prefer 'email'
+        username: this.createUserForm.get('email')?.value,
         password: this.createUserForm.get('password')?.value,
       };
 
-      await this.crypto.createVault(createUserObj.password);
-      this.crypto.exportRecoveryHeader();
-
-      // DB-compatible payload (packs IV into eak):
-      const bundle = this.crypto.exportServerBundleFromHeader();
+      // 🔐 Use stellar-crypto SDK
+      const { header, mkRaw } = await createVault(createUserObj.password);
+      const bundle = exportServerBundleFromHeader(header);
 
       const payload = {
         ...createUserObj,
         ...bundle,
       };
 
-      // await the Observable
       const response = await firstValueFrom(this.authService.createAccount(payload));
 
       if (response.response_code == 200) {
@@ -99,23 +99,20 @@ export class CreateAccountComponent implements OnInit {
 
         const user = response.user;
 
-        const bundle = {
+        const serverBundle = {
           crypto_version: user.crypto_version,
-          kdf_params: user.kdf_params,      // { algo:'PBKDF2', hash:'SHA-256', iters: 210000 }
-          kdf_salt: user.kdf_salt_b64,      // base64
-          eak: user.eak_b64,                // base64(IV||CT)
-        };
+          kdf_params: user.kdf_params,
+          kdf_salt: user.kdf_salt_b64,
+          eak: user.eak_b64,
+        } as ServerBundle;
 
-        console.log('bundle', bundle);
+        console.log('bundle', serverBundle);
 
-        const { eakB64: derivedEakB64 } = await extractPlainEAK(createUserObj.password, bundle);
+        const { eakB64: derivedEakB64 } = await extractPlainEAK(createUserObj.password, serverBundle);
         let eakB64 = derivedEakB64;
-
-
 
         let notes = this.notesService.getNotes();
 
-        // user has app-locker enabled.
         if (this.notesService.getDecryptedNotes() !== null) {
           notes = this.notesService.getDecryptedNotes();
         }
@@ -126,9 +123,7 @@ export class CreateAccountComponent implements OnInit {
           this.dataService.setForceDownloadOnHome(true);
           await this.router.navigate(['/']);
         } else {
-          console.log("what?");
-          await this.notesApiV1Service
-            .upload(0, JSON.parse(notes));
+          await this.notesApiV1Service.upload(0, JSON.parse(notes));
           console.log('Notes sent.');
           await this.router.navigate(['/']);
         }

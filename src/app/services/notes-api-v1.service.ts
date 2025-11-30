@@ -1,66 +1,70 @@
-// services/notes-api-v1.service.ts — OFFLINE‑FIRST REWRITE (keeps your public methods only)
+// services/notes-api-v1.service.ts — OFFLINE-FIRST (keeps your public methods)
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { NoteV1 } from "../models/NoteV1";
-import { CryptoKeyService, packCipherBlob } from "./crypto-key.service";
-import { CryptoService } from "./crypto.service";
-import { SecureStorageService } from "./secure-storage.service";
-import {OutboxOp} from "../models/Sync";
-import {OutboxStorage} from "./outbox-storage.service";
 
-/**
- * What changed:
- * - True offline queue for uploads & deletions (stored encrypted in SecureStorage)
- * - No new PUBLIC methods added. We keep exactly: constructor, upload, download, find, deleteNotes
- * - On network failure or offline, payload is queued and drained automatically on the next successful call
- * - Download returns an empty page while offline so UI logic can continue without errors
- */
+import { CryptoKeyService } from "./crypto-key.service";
+import { SecureStorageService } from "./secure-storage.service";
+import { OutboxOp } from "../models/Sync";
+import { OutboxStorage } from "./outbox-storage.service";
+
+// ✅ Shared crypto helpers from NPM (wire format)
+import { packCipherBlob } from '@stellarsecurity/stellar-crypto';
 
 @Injectable({ providedIn: 'root' })
 export class NotesApiV1Service {
-  // Keep your existing endpoint (redacted string preserved)
-  private base = 'https://stellarprivatenotesuiappapiprod-dmefgreabahpcsbm.swedencentral-01.azurewebsites.net/api/v1/notescontroller/';
+  private base =
+    'https://stellarprivatenotesuiappapiprod-dmefgreabahpcsbm.swedencentral-01.azurewebsites.net/api/v1/notescontroller/';
 
-  // Storage keys for the outbox queue
+  // legacy key (bruges kun af private helpers, hvis du stadig vil have dem)
   private OUTBOX_KEY = 'notes.sync.outbox.v1';
 
   constructor(
     private http: HttpClient,
     private secureStorageService: SecureStorageService,
-    private crypto: CryptoKeyService,
-    private outbox: OutboxStorage
+    private crypto: CryptoKeyService,    // ← her bor importEAK + encryptText/decryptText
+    private outbox: OutboxStorage,
   ) {}
 
-  // ————————————————————————————————————————————————————————————————
-  // PUBLIC: upload (sinceMs, notes, opId?)
-  // If offline or request fails: queue the encrypted payload and resolve with a soft ack
-  // On next successful call to upload(), queued payloads are drained first (FIFO)
-  // ————————————————————————————————————————————————————————————————
-  async upload(sinceMs: number, notes: ReadonlyArray<NoteV1>, opId?: string): Promise<object> {
+  // --------------------------------------------------
+  // PUBLIC: upload
+  // --------------------------------------------------
+  async upload(
+    sinceMs: number,
+    notes: ReadonlyArray<NoteV1>,
+    opId?: string
+  ): Promise<object> {
     const TOKEN = await this.secureStorageService.getItem("ssToken");
     const headers = new HttpHeaders().set('Authorization', `Bearer ${TOKEN ?? ''}`);
 
-    // Ensure EAK is loaded before any encryption
+    // 1) Load EAK → MK into CryptoKeyService (RAM) if we have it
     const eakB64 = await this.secureStorageService.getItem("ssEakB64");
-    if (eakB64) await this.crypto.importEAK(eakB64);
+    if (eakB64) {
+      await this.crypto.importEAK(eakB64);   // 🔐 her bruger du din egen importEAK
+    }
 
-    // Encrypt notes
+    // 2) Encrypt each note body + title via CryptoKeyService (MK in RAM)
     const encryptedNotes: NoteV1[] = [];
     for (const n of notes) {
       const encText  = await this.crypto.encryptText(n.text  ?? '', n.id);
       const encTitle = await this.crypto.encryptText(n.title ?? '', n.id + '#title');
-      encryptedNotes.push({ ...n, text: packCipherBlob(encText), title: packCipherBlob(encTitle) });
+
+      // 3) Pack IV||CT med NPM helper (wire format til backend)
+      encryptedNotes.push({
+        ...n,
+        text: packCipherBlob(encText),
+        title: packCipherBlob(encTitle),
+      });
     }
 
-    // Compose payload (same shape you already used)
     const payload = {
       op_id: opId ?? crypto?.randomUUID?.() ?? String(Date.now()),
       since: sinceMs || 0,
       notes: encryptedNotes,
     } as any;
 
-    // If offline → enqueue for SyncWorker
+    // Offline → queue i Outbox
     if (!navigator.onLine) {
       await this.outbox.enqueue(<OutboxOp><unknown>{
         opId: payload.op_id,
@@ -72,9 +76,10 @@ export class NotesApiV1Service {
       return { queued: true, reason: 'offline' };
     }
 
-    // Try to POST; if it fails, enqueue
     try {
-      const res = await firstValueFrom(this.http.post<object>(`${this.base}upload`, payload, { headers }));
+      const res = await firstValueFrom(
+        this.http.post<object>(`${this.base}upload`, payload, { headers })
+      );
       return res;
     } catch (e) {
       await this.outbox.enqueue(<OutboxOp>{
@@ -88,11 +93,9 @@ export class NotesApiV1Service {
     }
   }
 
-
-  // ————————————————————————————————————————————————————————————————
-  // PUBLIC: download (sinceMs, limit?)
-  // If offline, return an empty page; watermark echoes sinceMs so callers can proceed
-  // ————————————————————————————————————————————————————————————————
+  // --------------------------------------------------
+  // PUBLIC: download
+  // --------------------------------------------------
   async download(
     sinceMs: number,
     limit = 1000
@@ -113,14 +116,13 @@ export class NotesApiV1Service {
     );
   }
 
-  // ————————————————————————————————————————————————————————————————
-  // PUBLIC: find (id)
-  // ————————————————————————————————————————————————————————————————
+  // --------------------------------------------------
+  // PUBLIC: find
+  // --------------------------------------------------
   async find(id: string): Promise<NoteV1> {
     const TOKEN = await this.secureStorageService.getItem("ssToken");
     const headers = new HttpHeaders().set('Authorization', `Bearer ${TOKEN ?? ''}`);
 
-    // If offline, we cannot query the server; throw to let caller pick local cache
     if (!navigator.onLine) {
       throw new Error('offline');
     }
@@ -130,10 +132,9 @@ export class NotesApiV1Service {
     );
   }
 
-  // ————————————————————————————————————————————————————————————————
-  // PUBLIC: deleteNotes (deletedIds)
-  // If offline or network error: push a deleted‑only payload into the outbox
-  // ————————————————————————————————————————————————————————————————
+  // --------------------------------------------------
+  // PUBLIC: deleteNotes
+  // --------------------------------------------------
   async deleteNotes(deletedIds: string[]) {
     const TOKEN = await this.secureStorageService.getItem("ssToken");
     const headers = new HttpHeaders().set('Authorization', `Bearer ${TOKEN ?? ''}`);
@@ -157,11 +158,13 @@ export class NotesApiV1Service {
     }
 
     try {
-      return await firstValueFrom(this.http.post(
-        `${this.base}sync-plan`,
-        { deleted_ids: deletedIds, notes: [] },
-        { headers }
-      ));
+      return await firstValueFrom(
+        this.http.post(
+          `${this.base}sync-plan`,
+          { deleted_ids: deletedIds, notes: [] },
+          { headers }
+        )
+      );
     } catch (e) {
       await this.outbox.enqueue(<OutboxOp>{
         opId: payload.op_id,
@@ -174,9 +177,9 @@ export class NotesApiV1Service {
     }
   }
 
-
-  // ====================== PRIVATE HELPERS ======================
-
+  // --------------------------------------------------
+  // PRIVATE legacy helpers (kan fjernes hvis du kun bruger OutboxStorage)
+  // --------------------------------------------------
   private async enqueuePayload(p: any): Promise<void> {
     console.log(p);
     const raw = (await this.secureStorageService.getItem(this.OUTBOX_KEY)) ?? '[]';
@@ -196,17 +199,24 @@ export class NotesApiV1Service {
     const remain: any[] = [];
     for (const payload of queue) {
       try {
-        // Decide endpoint based on shape: delete‑only uses sync‑plan, others use upload
-        const isDeleteOnly = Array.isArray(payload.deleted_ids) && (payload.notes?.length ?? 0) === 0;
+        const isDeleteOnly =
+          Array.isArray(payload.deleted_ids) && (payload.notes?.length ?? 0) === 0;
+
         if (isDeleteOnly) {
-          await firstValueFrom(this.http.post(`${this.base}/sync-plan`, { deleted_ids: payload.deleted_ids, notes: [] }, { headers }));
+          await firstValueFrom(
+            this.http.post(
+              `${this.base}/sync-plan`,
+              { deleted_ids: payload.deleted_ids, notes: [] },
+              { headers }
+            )
+          );
         } else {
-          await firstValueFrom(this.http.post(`${this.base}/upload`, payload, { headers }));
+          await firstValueFrom(
+            this.http.post(`${this.base}/upload`, payload, { headers })
+          );
         }
       } catch {
-        // Keep unsent payloads
         remain.push(payload);
-        // If something failed, don’t burn the API — stop early
         break;
       }
     }
