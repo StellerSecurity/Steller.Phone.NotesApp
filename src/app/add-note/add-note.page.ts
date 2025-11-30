@@ -351,7 +351,7 @@ export class AddNotePage implements OnDestroy {
             console.log('Note decrypted...');
             if (!ok) {
               this.dismissModal().then(() => {});
-              this.navController.navigateForward('/');
+              await this.navController.navigateForward('/');
             }
           }
         })
