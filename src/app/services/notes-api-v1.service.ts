@@ -181,7 +181,6 @@ export class NotesApiV1Service {
   // PRIVATE legacy helpers (kan fjernes hvis du kun bruger OutboxStorage)
   // --------------------------------------------------
   private async enqueuePayload(p: any): Promise<void> {
-    console.log(p);
     const raw = (await this.secureStorageService.getItem(this.OUTBOX_KEY)) ?? '[]';
     let queue: any[] = [];
     try { queue = JSON.parse(raw); } catch { queue = []; }
