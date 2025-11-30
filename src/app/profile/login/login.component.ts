@@ -17,6 +17,7 @@ import {
   extractPlainEAK,
   ServerBundle,
 } from '@stellarsecurity/stellar-crypto';
+import { CryptoKeyService } from '../../services/crypto-key.service';
 
 @Component({
   selector: 'app-login',
@@ -38,6 +39,7 @@ export class LoginComponent implements OnInit {
     private dataService: DataService,
     private cryptoService: CryptoService,
     private secureStorageService: SecureStorageService,
+    private cryptoKeyService: CryptoKeyService
   ) {}
 
   ngOnInit(): void {
@@ -111,6 +113,9 @@ export class LoginComponent implements OnInit {
           bundle,
         );
         let eakB64 = derivedEakB64;
+
+        // Import EAK into runtime crypto (MK in RAM for immediate use)
+        await this.cryptoKeyService.importEAK(eakB64);
 
         // optional app-locker layer
         if (this.notesService.appHasPasswordChallenge()) {

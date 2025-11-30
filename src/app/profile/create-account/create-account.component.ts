@@ -21,6 +21,7 @@ import {firstValueFrom} from "rxjs";
 import { SecureStorageService } from 'src/app/services/secure-storage.service';
 import {DataService} from "../../services/data.service";
 import {CryptoService} from "../../services/crypto.service";
+import { CryptoKeyService } from '../../services/crypto-key.service';
 
 @Component({
   selector: 'app-create-account',
@@ -50,6 +51,7 @@ export class CreateAccountComponent implements OnInit {
               private notesApi: NotesApiV1Service,
               private cryptoService: CryptoService,
               private notesApiV1Service: NotesApiV1Service,
+              private cryptoKeyService: CryptoKeyService,
               private authService: AuthService, private toastMessageService: ToastMessageService,
               private secureStorageService: SecureStorageService) {}
 
@@ -106,8 +108,25 @@ export class CreateAccountComponent implements OnInit {
           eak: user.eak_b64,
         } as ServerBundle;
 
-        const { eakB64: derivedEakB64 } = await extractPlainEAK(createUserObj.password, serverBundle);
-        let eakB64 = derivedEakB64;
+        // 5) Derive plaintext EAK from server bundle (so we’re 100% in sync)
+        const { eakB64 } = await extractPlainEAK(createUserObj.password, serverBundle);
+
+        // 6) Import EAK into runtime crypto (MK in RAM for immediate use)
+        await this.cryptoKeyService.importEAK(eakB64);
+
+        // optional app-locker layer
+        if (this.notesService.appHasPasswordChallenge()) {
+          this.cryptoService.encrypt(
+            eakB64,
+            this.notesService.getNotesAppPassword(),
+          );
+          await this.secureStorageService.setItem(
+            'ssEakB64_Encrypted',
+            eakB64,
+          );
+        } else {
+          await this.secureStorageService.setItem('ssEakB64', eakB64);
+        }
 
         let notes = this.notesService.getNotes();
 
@@ -126,10 +145,10 @@ export class CreateAccountComponent implements OnInit {
           await this.router.navigate(['/']);
         }
       } else {
-        this.toastMessageService.showError(response.response_message);
+        await this.toastMessageService.showError(response.response_message);
       }
     } catch (error: any) {
-      console.log("some error");
+      console.log("some error", error);
       await this.toastMessageService.showError(error?.error?.message ?? error?.message ?? error);
     } finally {
       this.isSaving = false;

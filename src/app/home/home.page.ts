@@ -131,6 +131,7 @@ export class HomePage {
     if (!this.noteService.appHasPasswordChallenge()) {
       const eakB64 = await this.secureStorageService.getItem('ssEakB64');
       if (eakB64) {
+        console.log(eakB64 + " lol");
         this.mkRaw = this.b64ToBytes(eakB64);
       }
     }
