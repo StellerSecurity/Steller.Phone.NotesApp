@@ -36,6 +36,7 @@ import {
   decryptTextWithMK,
   unpackCipherBlob,
 } from '@stellarsecurity/stellar-crypto';
+import { CryptoKeyService } from '../services/crypto-key.service';
 
 
 @Component({
@@ -104,7 +105,8 @@ export class HomePage {
     private router: Router,
     private secureStorageService: SecureStorageService,
     private authService: AuthService,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private crypto: CryptoKeyService
   ) {}
 
   // Small helper: base64 -> Uint8Array
@@ -131,7 +133,6 @@ export class HomePage {
     if (!this.noteService.appHasPasswordChallenge()) {
       const eakB64 = await this.secureStorageService.getItem('ssEakB64');
       if (eakB64) {
-        console.log(eakB64 + " lol");
         this.mkRaw = this.b64ToBytes(eakB64);
       }
     }
@@ -420,6 +421,9 @@ export class HomePage {
         // decrypt stored MK using app-lock password
         eakB64 = this.cryptoService.decrypt(eakB64, this.input_password_app_unlock) as string;
         this.mkRaw = this.b64ToBytes(eakB64);
+
+        // Import into crypto vault (keeps MK in RAM, used for AES-GCM note encryption)
+        await this.crypto.importEAK(eakB64);
       }
 
       // init protection

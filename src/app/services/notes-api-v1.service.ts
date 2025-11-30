@@ -41,7 +41,7 @@ export class NotesApiV1Service {
     // 1) Load EAK → MK into CryptoKeyService (RAM) if we have it
     const eakB64 = await this.secureStorageService.getItem("ssEakB64");
     if (eakB64) {
-      await this.crypto.importEAK(eakB64);   // 🔐 her bruger du din egen importEAK
+      await this.crypto.importEAK(eakB64);
     }
 
     // 2) Encrypt each note body + title via CryptoKeyService (MK in RAM)
