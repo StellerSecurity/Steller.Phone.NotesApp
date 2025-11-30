@@ -106,8 +106,6 @@ export class CreateAccountComponent implements OnInit {
           eak: user.eak_b64,
         } as ServerBundle;
 
-        console.log('bundle', serverBundle);
-
         const { eakB64: derivedEakB64 } = await extractPlainEAK(createUserObj.password, serverBundle);
         let eakB64 = derivedEakB64;
 

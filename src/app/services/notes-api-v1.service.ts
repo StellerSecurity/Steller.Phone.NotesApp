@@ -23,7 +23,7 @@ export class NotesApiV1Service {
   constructor(
     private http: HttpClient,
     private secureStorageService: SecureStorageService,
-    private crypto: CryptoKeyService,    // ← her bor importEAK + encryptText/decryptText
+    private crypto: CryptoKeyService,
     private outbox: OutboxStorage,
   ) {}
 

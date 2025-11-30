@@ -43,7 +43,6 @@ export class AppSettingsPage implements AfterViewInit {
     private cryptoService: CryptoService,
     private appProtectorService: AppProtectorService,
     private navController: NavController,
-    private crypto: CryptoKeyService,
     private modalCtrl: ModalController,
     private secureStorageService: SecureStorageService,
     private translatorService: TranslatorService
@@ -120,8 +119,6 @@ export class AppSettingsPage implements AfterViewInit {
 
       await this.secureStorageService.setItem("ssEakB64_Encrypted", wrappedEak);
       await this.secureStorageService.removeItem("ssEakB64");
-
-      console.log("Removed unencrypted EAK and stored encrypted EAK: " + wrappedEak);
     }
 
     // first, we have to decrypt the notes (if they were encrypted before),

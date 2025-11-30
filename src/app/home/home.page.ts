@@ -30,16 +30,10 @@ import { normalize } from "../utils/home-normalize.util";
 import { initializePressGestures, LongPressConfig } from "../utils/home-gesture.util";
 import { setDecryptedNotesAndParse } from "../utils/home-notes.util";
 import { AuthService } from "../services/auth.service";
-import type { RefresherCustomEvent } from '@ionic/angular'; // 👈 important
+import type { RefresherCustomEvent } from '@ionic/angular';
 
-// ✅ New: use SDK instead of CryptoKeyService
 import {
-  createVault,
-  exportServerBundleFromHeader,
-  extractPlainEAK,
-  encryptTextWithMK,
   decryptTextWithMK,
-  packCipherBlob,
   unpackCipherBlob,
 } from '@stellarsecurity/stellar-crypto';
 
@@ -92,6 +86,8 @@ export class HomePage {
 
   // 🔐 MK kept in RAM (EAK already resolved to plaintext MK elsewhere)
   private mkRaw: Uint8Array | null = null;
+
+  private syncTimer: any = null;
 
   constructor(
     private cryptoService: CryptoService,
@@ -159,6 +155,12 @@ export class HomePage {
   ionViewWillLeave() {
     this.exitSearchMode();
     this.pauseSync = true;
+
+    if (this.syncTimer) {
+      clearInterval(this.syncTimer);
+      this.syncTimer = null;
+    }
+
   }
 
   // --------------------------------------------------
@@ -302,6 +304,7 @@ export class HomePage {
   }
 
   async syncFromServer() {
+
     if (!this.authService.isLoggedIn) return;
     if (this.pauseSync) {
       console.log('Sync has paused.');
@@ -309,7 +312,13 @@ export class HomePage {
     }
 
     console.log('Sync has started');
-    setTimeout(() => { this.syncFromServer(); }, 30_000);
+    if (this.syncTimer == null) {
+      this.syncTimer = setInterval(() => {
+        if (!this.pauseSync && this.authService.isLoggedIn) {
+          this.syncFromServer();
+        }
+      }, 30_000);
+    }
 
     this.isSyncing = true;
     try {

@@ -300,7 +300,6 @@ export class AddNotePage implements OnDestroy {
 
           if (note.protected !== this.currentNote.protected) {
             this.dataService.setForceDownloadOnHome(true);
-            console.log('Notes protection mismatch, redirect back' + note.protected);
             await this.navController.navigateForward('/');
             return;
           }
