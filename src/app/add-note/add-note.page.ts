@@ -337,6 +337,7 @@ export class AddNotePage implements OnDestroy {
 
   // should be called on key enter.
   save(ev: any) {
+    console.log('save');
     if (this.notes_id === null) return;
     if (this.note_locked) return;
 
@@ -608,7 +609,7 @@ export class AddNotePage implements OnDestroy {
     }
     this.notes = newNotes;
 
-    await this.storeNoteInStorage(true);
+    this.storeNoteInStorage(true);
 
     if (this.currentNote) {
       this.currentNote.text = decryptedText;

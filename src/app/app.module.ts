@@ -15,6 +15,7 @@ import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { ToastrModule } from 'ngx-toastr';
 import * as sodium from 'libsodium-wrappers';
 import {IonicStorageModule, Storage as IonicStorage} from '@ionic/storage-angular';
+import { Drivers } from '@ionic/storage'; // <-- driver enums
 
 export function HttpLoaderFactory(http: HttpClient) {
   return new TranslateHttpLoader(http);
@@ -36,7 +37,10 @@ export function initSodium() {
     BrowserAnimationsModule,
     IonicStorageModule.forRoot({
       name: '__stellar_notes',
-      driverOrder: ['indexeddb', 'localstorage'], // add sqlite here only if you’ve wired it
+      driverOrder: [
+        Drivers.IndexedDB,
+        Drivers.LocalStorage // fallback for Safari Private Mode / restrictive envs
+      ],
     }),
     ToastrModule.forRoot({
       timeOut: 3000,

@@ -10,7 +10,6 @@ const MAX_ATTEMPT = 8;
 
 @Injectable({ providedIn: 'root' })
 export class SyncWorkerService {
-  private intervalId: any = null;
   private syncing = false;
 
   private base = 'https://stellarprivatenotesuiappapiprod-dmefgreabahpcsbm.swedencentral-01.azurewebsites.net/api/v1/notescontroller/';
@@ -25,7 +24,7 @@ export class SyncWorkerService {
   init() {
     console.log('SyncWorkerService initialized');
     // Run every 10s (tweak as needed)
-    this.intervalId = setInterval(() => this.trySync(), 10_000);
+    setInterval(() => this.trySync(), 10_000);
 
     Network.addListener('networkStatusChange', () => this.trySync());
     App.addListener('appStateChange', (s) => { if (s.isActive) this.trySync(); });
@@ -61,6 +60,7 @@ export class SyncWorkerService {
       console.log('Skip sync: offline');
       return;
     }
+
     this.syncing = true;
     try {
       const now = Date.now();
@@ -127,6 +127,7 @@ export class SyncWorkerService {
       }
       await this.outbox.replace(Array.from(remainingById.values()));
     } catch (e) {
+      console.log('Error..?');
       console.error(e);
       console.log(e);
       // Network/API error: push back whole batch
