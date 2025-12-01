@@ -7,7 +7,7 @@ android {
         applicationId "steller.phone.notesapp"
         minSdkVersion 23
         targetSdkVersion 35
-        versionCode 22
+        versionCode 30
         versionName "2.70"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
