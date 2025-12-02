@@ -2,7 +2,7 @@
   <div class="user-info">
     <ng-container *ngIf="isUserIsLoggedIn">
       <div class="label">Account Name</div>
-      <div class="name">Kelly Sikkema</div>
+      <div class="name">{{user?.email}}</div>
     </ng-container>
     <ng-container *ngIf="!isUserIsLoggedIn">
       <div class="login-label">Log In to your Profile</div>
@@ -26,7 +26,7 @@
       <span>Settings</span>
     </div>
 
-    <div *ngIf="isUserIsLoggedIn" class="menu-item" (click)="logout()" style="border-top: 1px solid #EAEAF0;">
+    <div *ngIf="isUserIsLoggedIn" class="menu-item" (click)="confirmLogout()" style="border-top: 1px solid #EAEAF0;">
       <!-- <ion-icon name="log-out-outline"></ion-icon> -->
       <img src="assets/tabler-icon-logout.svg" />
       <span>Logout</span>
