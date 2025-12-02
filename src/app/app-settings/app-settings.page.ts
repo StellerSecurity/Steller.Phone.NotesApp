@@ -13,6 +13,7 @@ import { AppProtectorService } from "../services/app-protector.service";
 import { ConfirmationModalComponent } from "../confirmation-modal/confirmation-modal.component";
 import { DeleteNoteModalComponent } from "../delete-note-modal/delete-note-modal.component";
 import { TranslatorService } from "../services/translator.service";
+import { SecureStorageService } from "../services/secure-storage.service";
 @Component({
   selector: "app-app-settings",
   templateUrl: "./app-settings.page.html",
@@ -51,7 +52,8 @@ export class AppSettingsPage implements AfterViewInit {
     private appProtectorService: AppProtectorService,
     private navController: NavController,
     public modalCtrl: ModalController,
-    private translatorService: TranslatorService
+    private translatorService: TranslatorService,
+    private secureStorageService: SecureStorageService,
   ) {}
 
   ionViewWillEnter(): void {
@@ -86,7 +88,7 @@ export class AppSettingsPage implements AfterViewInit {
     this.confirmShowPassword = !this.confirmShowPassword;
   }
 
-  public async save() {
+  public async saveOld() {
     if (this.notesAppPassword.length < 3) {
       const toast = await this.toastController.create({
         message:
@@ -156,7 +158,62 @@ export class AppSettingsPage implements AfterViewInit {
     }
   }
 
-  public async removePassword() {
+  public async save() {
+
+    if (this.notesAppPassword.length < 3) {
+      const toast = await this.toastController.create({
+        message: this.allTranslations.thePasswordIsWeakPleaseMakeYourPasswordStronger,
+        duration: 3000,
+        position: 'bottom',
+      });
+
+      await toast.present();
+      return;
+    }
+
+    if (this.notesAppPassword !== this.confirmPassword) {
+      const toast = await this.toastController.create({
+        message: this.allTranslations.theTwoPasswordsDoesNotMatch,
+        duration: 3000,
+        position: 'bottom',
+      });
+
+      await toast.present();
+      return;
+    }
+
+    // can be in encrypted state or decrypted - depends on if the app_password_challenge is set.
+    let notes = this.noteService.getNotes();
+
+    // in case user creates app-password, and there is no notes.
+    if (notes === null) {
+      notes = JSON.stringify([]);
+    }
+
+    // Wrap EAK with notes app password (store encrypted EAK, remove plaintext)
+    const existingEak = await this.secureStorageService.getItem('ssEakB64');
+    if (existingEak != null) {
+      const wrappedEak = this.cryptoService.encrypt(existingEak, this.notesAppPassword);
+
+      await this.secureStorageService.setItem("ssEakB64_Encrypted", wrappedEak);
+      await this.secureStorageService.removeItem("ssEakB64");
+    }
+
+    // first, we have to decrypt the notes (if they were encrypted before),
+    // and then encrypt them with the new app password.
+    const encryptedNotes = this.cryptoService.encrypt(notes, this.notesAppPassword);
+    this.noteService.setNotes(encryptedNotes);
+
+    await this.modal.dismiss();
+    this.noteService.setNotesAppPassword(this.notesAppPassword);
+    this.notesAppPassword = "";
+    this.confirmPassword = "";
+    localStorage.setItem("app_password_challenge", "1");
+    window.location.href = "/app-settings";
+    this.password_enabled = false;
+  }
+
+  public async removePasswordOld() {
     const modal = await this.modalCtrl.create({
       component: ConfirmationModalComponent,
       cssClass: "confirmation-popup",
@@ -184,6 +241,69 @@ export class AppSettingsPage implements AfterViewInit {
             }
             this.noteService.setNotes(decryptedNotes);
             this.noteService.setDecryptedNotes(decryptedNotes);
+            await this.modal?.dismiss();
+            this.notesAppPassword = "";
+            this.confirmPassword = "";
+            this.noteService.setNotesAppPassword("");
+            localStorage.removeItem("app_password_challenge");
+            // window.location.href = "/app-settings";
+            window.location.reload();
+          } else {
+            const toast = await this.toastController.create({
+              message: this.allTranslations.enterYourCurrentPassword,
+              duration: 3000,
+              position: "bottom",
+            });
+            await toast.present();
+          }
+        } else {
+        }
+      }
+    });
+
+    return await modal.present();
+  }
+
+  public async removePassword() {
+    const modal = await this.modalCtrl.create({
+      component: ConfirmationModalComponent,
+      cssClass: 'confirmation-popup'
+    });
+
+    modal.onDidDismiss().then(async (data) => {
+      if (data && data.data) {
+        const { confirm, inputValue } = data.data;
+        if (confirm) {
+          if (this.noteService.appHasPasswordChallenge() && inputValue) {
+
+            let notes = this.noteService.getNotes();
+            let decryptedNotes: string | null = null;
+
+            try {
+              decryptedNotes = this.cryptoService.decrypt(notes, inputValue);
+            } catch (e) {
+              const toast = await this.toastController.create({
+                message: 'The entered password was not correct.',
+                duration: 3000,
+                position: 'bottom',
+              });
+
+              await toast.present();
+              return;
+            }
+
+            // Decrypt wrapped EAK back to plain EAK
+            const encEak = await this.secureStorageService.getItem('ssEakB64_Encrypted');
+            if (encEak != null) {
+              const plainEak = this.cryptoService.decrypt(encEak, inputValue);
+
+              await this.secureStorageService.setItem("ssEakB64", plainEak);
+              await this.secureStorageService.removeItem("ssEakB64_Encrypted");
+            }
+
+            this.noteService.setNotes(decryptedNotes);
+            this.noteService.setDecryptedNotes(decryptedNotes);
+
             await this.modal.dismiss();
             this.notesAppPassword = "";
             this.confirmPassword = "";
@@ -194,11 +314,12 @@ export class AppSettingsPage implements AfterViewInit {
             const toast = await this.toastController.create({
               message: this.allTranslations.enterYourCurrentPassword,
               duration: 3000,
-              position: "bottom",
+              position: 'bottom',
             });
             await toast.present();
           }
         } else {
+          // cancelled
         }
       }
     });
@@ -280,7 +401,8 @@ export class AppSettingsPage implements AfterViewInit {
         const { confirm } = data.data;
         if (confirm) {
           localStorage.clear();
-          window.location.href = "/";
+          // window.location.href = "/";
+          window.location.reload();
         } else {
           // Handle case when user cancels password input
         }
