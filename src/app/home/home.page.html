@@ -48,7 +48,17 @@
           </ion-buttons>
 
         </ion-toolbar>
+        <ion-progress-bar
+            *ngIf="waitForSync"
+            type="indeterminate"
+            color="primary"
+            class="header-progress">
+        </ion-progress-bar>
       </ion-header>
+
+      <ion-refresher slot="fixed"  (ionRefresh)="handleRefresh($event)" *ngIf="isLoggedIn()" >
+        <ion-refresher-content></ion-refresher-content>
+      </ion-refresher>
 
       <!-- modal ask for password -->
       <ng-container *ngIf="!should_display">
