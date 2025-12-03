@@ -879,33 +879,54 @@ export class HomePage {
   // Reset password
   // --------------------------------------------------
   public async resetPassword() {
-    // @ts-ignore
+    // Create the modal
     const modal = await this.modalCtrl.create({
       component: ResetPassModalComponent,
-      cssClass: "confirmation-popup",
+      cssClass: 'confirmation-popup',
+      backdropDismiss: false, // optional: prevent closing by clicking backdrop
     });
 
-    modal.onDidDismiss().then(async (data) => {
-      if (data && data.data) {
-        const { confirm } = data.data;
-        if (confirm) {
-          // 🔐 clear app data via service (from main branch)
-          await this.dataService.clearAppData();
+    // Present the modal
+    await modal.present();
 
-          localStorage.clear();
-          this.app_requires_password = false;
-          setTimeout(() => {
-            window.location.href = "/home";
-            window.location.reload();
-          });
-        } else {
-          // Handle case when user cancels password input
-        }
+    // Wait for it to close and get returned data
+    const { data } = await modal.onDidDismiss();
+
+    // If user confirmed reset
+    if (data?.confirm) {
+      const loading = await this.loadingController.create({
+        message: 'Resetting app…',
+        spinner: 'crescent',
+      });
+      await loading.present();
+
+      try {
+        // Clear app data as you already do
+        await this.dataService.clearAppData();
+        localStorage.clear();
+        this.app_requires_password = false;
+
+        // Optional: also reset any in-memory state if needed
+        this.notes = [];
+        this.filteredResults = [];
+        this.listOfCheckedCheckboxes = [];
+        this.checkboxOpened = false;
+        this.pauseSync = false;
+        this.mkRaw = null;
+
+        // Navigate cleanly using Ionic, no hard window reload
+        this.modalCtrl.dismiss();
+        this.navController.navigateRoot('/profile');
+        setTimeout(async () => {
+          await this.navController.navigateRoot('/home');
+        })
+
+      } finally {
+        await loading.dismiss();
       }
-    });
-
-    return await modal.present();
+    }
   }
+
 
   /**
    * Selecting notes that the user has chosen in UI.
