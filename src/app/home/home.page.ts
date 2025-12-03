@@ -41,6 +41,9 @@ import {
   decryptTextWithMK,
   unpackCipherBlob,
 } from "@stellarsecurity/stellar-crypto";
+import { LongPressConfig, initializePressGestures } from "../utils/home-gesture.util";
+import { normalize } from "../utils/home-normalize.util";
+import { setDecryptedNotesAndParse } from "../utils/home-notes.util";
 
 @Component({
   selector: "app-home",
@@ -48,6 +51,14 @@ import {
   styleUrls: ["home.page.scss"],
 })
 export class HomePage {
+  // --------------------------------------------------
+  // Constants
+  // --------------------------------------------------
+  private static readonly LONG_PRESS_DELAY_MS = 200;
+  private static readonly LONG_PRESS_START_DELAY_MS = 100;
+  private static readonly MOVE_TOLERANCE_PX = 15;
+  private static readonly SEARCH_FOCUS_DELAY_MS = 100;
+  private static readonly DETECT_CHANGES_DELAY_MS = 200;
   // --------------------------------------------------
   // State
   // --------------------------------------------------
@@ -253,7 +264,7 @@ export class HomePage {
     }, 500);
   }
 
-  search() {
+  searchOld() {
     if (this.search_query.length == 0) {
       this.isSearching = false;
       this.filteredResults = this.notes;
@@ -337,16 +348,68 @@ export class HomePage {
     }, 200);
   }
 
+  search() {
+    if (this.search_query.length == 0) {
+      this.isSearching = false;
+      this.filteredResults = this.notes;
+      return;
+    }
+
+    const normalizedQuery = normalize(this.search_query);
+    const filteredNewResults: any[] = [];
+
+    for (let i = 0; this.notes.length > i; i++) {
+      const normalizedText = normalize(this.notes[i]?.text);
+      const result = normalizedText.includes(normalizedQuery);
+
+      let titleExists = false;
+      if (this.notes[i].title !== undefined) {
+        const normalizedTitle = normalize(this.notes[i]?.title);
+        titleExists = normalizedTitle.includes(normalizedQuery);
+      }
+
+      // dont search in locked notes.
+      if (result && !this.notes[i].protected) {
+        filteredNewResults.push(this.notes[i]);
+      } else if (titleExists) {
+        filteredNewResults.push(this.notes[i]);
+      }
+    }
+
+    this.isSearching = true;
+    this.pauseSync = true;
+    this.filteredResults = filteredNewResults;
+
+    this.initializePressGesture();
+    setTimeout(() => this.cdr.detectChanges(), HomePage.DETECT_CHANGES_DELAY_MS);
+  }
+
   // --------------------------------------------------
   // Long-press selection
   // --------------------------------------------------
-  initializePressGesture(): void {
+  initializePressGestureOld(): void {
     // if (this.platform.is('mobile') || this.platform.is('android') || this.platform.is('ios')) {
     if (!this.longPressElements) return;
     this.longPressElements.forEach((elementRef: ElementRef) => {
       this.createLongPressGesture(elementRef);
     });
     // }
+  }
+
+  initializePressGesture(): void {
+    const cfg: LongPressConfig = {
+      delayMs: HomePage.LONG_PRESS_DELAY_MS,
+      moveTolerancePx: HomePage.MOVE_TOLERANCE_PX,
+      startDelayMs: HomePage.LONG_PRESS_START_DELAY_MS,
+    };
+
+    initializePressGestures(
+      this.longPressElements,
+      this.gestureCtrl,
+      (nativeEl) => this.handlePressStart(nativeEl),
+      () => this.handlePressEnd(),
+      cfg
+    );
   }
 
   createLongPressGesture(element: ElementRef) {
@@ -429,7 +492,7 @@ export class HomePage {
     return this.noteService.appHasPasswordChallenge();
   }
 
-  private setData(password: string = ""): boolean {
+  private setDataOld(password: string = ""): boolean {
     let decryptedNotes = null;
     if (this.noteService.appHasPasswordChallenge()) {
       let notes = this.noteService.getNotes();
@@ -453,6 +516,17 @@ export class HomePage {
 
     this.filteredResults = this.notes;
 
+    return true;
+  }
+
+  private setData(password: string = ""): boolean {
+    const { parsed } = setDecryptedNotesAndParse(this.noteService, this.cryptoService, password);
+    if (!parsed && this.noteService.appHasPasswordChallenge()) {
+      return false;
+    }
+    // @ts-ignore
+    this.notes = parsed ?? [];
+    this.filteredResults = this.notes;
     return true;
   }
 
