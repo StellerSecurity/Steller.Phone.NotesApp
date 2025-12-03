@@ -11,6 +11,6 @@ export class ResetPassModalComponent {
 
   // Dismiss the modal with the confirmation result
   public dismiss(confirm: boolean): void {
-    this.modalCtrl.dismiss({ confirm });
+    this.modalCtrl?.dismiss({ confirm });
   }
 }

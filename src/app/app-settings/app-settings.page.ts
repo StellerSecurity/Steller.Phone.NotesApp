@@ -159,14 +159,13 @@ export class AppSettingsPage implements AfterViewInit {
   }
 
   public async save() {
-
-    if (this.notesAppPassword.length < 3) {
+    // 1) Basic validation
+    if (!this.notesAppPassword || this.notesAppPassword.length < 3) {
       const toast = await this.toastController.create({
         message: this.allTranslations.thePasswordIsWeakPleaseMakeYourPasswordStronger,
         duration: 3000,
-        position: 'bottom',
+        position: "bottom",
       });
-
       await toast.present();
       return;
     }
@@ -175,43 +174,72 @@ export class AppSettingsPage implements AfterViewInit {
       const toast = await this.toastController.create({
         message: this.allTranslations.theTwoPasswordsDoesNotMatch,
         duration: 3000,
-        position: 'bottom',
+        position: "bottom",
       });
-
       await toast.present();
       return;
     }
 
-    // can be in encrypted state or decrypted - depends on if the app_password_challenge is set.
-    let notes = this.noteService.getNotes();
+    try {
+      // 2) Get notes (can be encrypted/decrypted depending on previous state)
+      let notes = this.noteService.getNotes();
 
-    // in case user creates app-password, and there is no notes.
-    if (notes === null) {
-      notes = JSON.stringify([]);
+      // In case user creates app-password and there are no notes yet
+      if (!notes) {
+        notes = JSON.stringify([]);
+      }
+
+      // 3) Wrap EAK with notes app password (store encrypted EAK, remove plaintext)
+      const existingEak = await this.secureStorageService.getItem("ssEakB64");
+      if (existingEak != null) {
+        const wrappedEak = this.cryptoService.encrypt(
+          existingEak,
+          this.notesAppPassword
+        );
+
+        await this.secureStorageService.setItem(
+          "ssEakB64_Encrypted",
+          wrappedEak
+        );
+        await this.secureStorageService.removeItem("ssEakB64");
+      }
+
+      // 4) Encrypt notes with new app password
+      const encryptedNotes = this.cryptoService.encrypt(
+        notes,
+        this.notesAppPassword
+      );
+      this.noteService.setNotes(encryptedNotes);
+      this.noteService.setNotesAppPassword(this.notesAppPassword);
+
+      // 5) Reset local state
+      this.notesAppPassword = "";
+      this.confirmPassword = "";
+      this.password_enabled = true;
+      localStorage.setItem("app_password_challenge", "1");
+
+      // 6) Close the settings modal if it exists
+      if (this.modal) {
+        await this.modal.dismiss(null, "confirm");
+      }
+
+      // 7) Navigate to your main screen (change '/home' if needed)
+      this.navController.navigateRoot("/home");
+      // If you *really* want a full reload instead:
+      // window.location.reload();
+
+    } catch (err) {
+      console.error("Error while saving app password", err);
+
+      const toast = await this.toastController.create({
+        message: "Something went wrong while saving the password.",
+        duration: 3000,
+        position: "bottom",
+      });
+      await toast.present();
     }
-
-    // Wrap EAK with notes app password (store encrypted EAK, remove plaintext)
-    const existingEak = await this.secureStorageService.getItem('ssEakB64');
-    if (existingEak != null) {
-      const wrappedEak = this.cryptoService.encrypt(existingEak, this.notesAppPassword);
-
-      await this.secureStorageService.setItem("ssEakB64_Encrypted", wrappedEak);
-      await this.secureStorageService.removeItem("ssEakB64");
-    }
-
-    // first, we have to decrypt the notes (if they were encrypted before),
-    // and then encrypt them with the new app password.
-    const encryptedNotes = this.cryptoService.encrypt(notes, this.notesAppPassword);
-    this.noteService.setNotes(encryptedNotes);
-
-    await this.modal.dismiss();
-    this.noteService.setNotesAppPassword(this.notesAppPassword);
-    this.notesAppPassword = "";
-    this.confirmPassword = "";
-    localStorage.setItem("app_password_challenge", "1");
-    window.location.href = "/app-settings";
-    this.password_enabled = false;
   }
+
 
   public async removePasswordOld() {
     const modal = await this.modalCtrl.create({
@@ -267,65 +295,97 @@ export class AppSettingsPage implements AfterViewInit {
   public async removePassword() {
     const modal = await this.modalCtrl.create({
       component: ConfirmationModalComponent,
-      cssClass: 'confirmation-popup'
+      cssClass: "confirmation-popup",
     });
 
     modal.onDidDismiss().then(async (data) => {
-      if (data && data.data) {
-        const { confirm, inputValue } = data.data;
-        if (confirm) {
-          if (this.noteService.appHasPasswordChallenge() && inputValue) {
+      if (!data || !data.data) {
+        return;
+      }
 
-            let notes = this.noteService.getNotes();
-            let decryptedNotes: string | null = null;
+      const { confirm, inputValue } = data.data;
 
-            try {
-              decryptedNotes = this.cryptoService.decrypt(notes, inputValue);
-            } catch (e) {
-              const toast = await this.toastController.create({
-                message: 'The entered password was not correct.',
-                duration: 3000,
-                position: 'bottom',
-              });
+      if (!confirm) {
+        // user cancelled
+        return;
+      }
 
-              await toast.present();
-              return;
-            }
+      if (!this.noteService.appHasPasswordChallenge() || !inputValue) {
+        const toast = await this.toastController.create({
+          message: this.allTranslations.enterYourCurrentPassword,
+          duration: 3000,
+          position: "bottom",
+        });
+        await toast.present();
+        return;
+      }
 
-            // Decrypt wrapped EAK back to plain EAK
-            const encEak = await this.secureStorageService.getItem('ssEakB64_Encrypted');
-            if (encEak != null) {
-              const plainEak = this.cryptoService.decrypt(encEak, inputValue);
+      try {
+        let notes = this.noteService.getNotes();
 
-              await this.secureStorageService.setItem("ssEakB64", plainEak);
-              await this.secureStorageService.removeItem("ssEakB64_Encrypted");
-            }
-
-            this.noteService.setNotes(decryptedNotes);
-            this.noteService.setDecryptedNotes(decryptedNotes);
-
-            await this.modal.dismiss();
-            this.notesAppPassword = "";
-            this.confirmPassword = "";
-            this.noteService.setNotesAppPassword("");
-            localStorage.removeItem("app_password_challenge");
-            window.location.href = "/app-settings";
-          } else {
-            const toast = await this.toastController.create({
-              message: this.allTranslations.enterYourCurrentPassword,
-              duration: 3000,
-              position: 'bottom',
-            });
-            await toast.present();
-          }
-        } else {
-          // cancelled
+        // 1) Try to decrypt notes with the entered password
+        let decryptedNotes: string;
+        try {
+          decryptedNotes = this.cryptoService.decrypt(notes, inputValue);
+        } catch (e) {
+          const toast = await this.toastController.create({
+            message: "The entered password was not correct.",
+            duration: 3000,
+            position: "bottom",
+          });
+          await toast.present();
+          return;
         }
+
+        // 2) Decrypt wrapped EAK back to plain EAK
+        const encEak = await this.secureStorageService.getItem(
+          "ssEakB64_Encrypted"
+        );
+        if (encEak != null) {
+          const plainEak = this.cryptoService.decrypt(encEak, inputValue);
+
+          await this.secureStorageService.setItem("ssEakB64", plainEak);
+          await this.secureStorageService.removeItem("ssEakB64_Encrypted");
+        }
+
+        // 3) Store decrypted notes in service
+        this.noteService.setNotes(decryptedNotes);
+        this.noteService.setDecryptedNotes(decryptedNotes);
+
+        // 4) Reset password-related state
+        this.notesAppPassword = "";
+        this.confirmPassword = "";
+        this.noteService.setNotesAppPassword("");
+        this.password_enabled = false;
+        localStorage.removeItem("app_password_challenge");
+
+        // Optionally reset failed attempts if you track them
+        this.noteService.setFailedPasswordAppAttempts(0);
+
+        // 5) Close the settings modal if it exists
+        if (this.modal) {
+          await this.modal.dismiss(null, "confirm");
+        }
+
+        // 6) Navigate back to main screen (adjust route if needed)
+        this.navController.navigateRoot("/home");
+        // or: window.location.reload();
+
+      } catch (err) {
+        console.error("Error while removing password", err);
+
+        const toast = await this.toastController.create({
+          message: "Something went wrong while removing the password.",
+          duration: 3000,
+          position: "bottom",
+        });
+        await toast.present();
       }
     });
 
     return await modal.present();
   }
+
 
   public notesAppPasswordChange() {
     this.passwordStrength = 0;
@@ -397,15 +457,37 @@ export class AppSettingsPage implements AfterViewInit {
     });
 
     modal.onDidDismiss().then(async (data) => {
-      if (data && data.data) {
-        const { confirm } = data.data;
-        if (confirm) {
-          localStorage.clear();
-          // window.location.href = "/";
-          window.location.reload();
-        } else {
-          // Handle case when user cancels password input
-        }
+      if (!data || !data.data) {
+        return;
+      }
+
+      const { confirm } = data.data;
+
+      if (!confirm) {
+        // user cancelled
+        return;
+      }
+
+      try {
+        // Clear browser storage
+        localStorage.clear();
+
+        // If you also want to clear secure storage and you have such a method:
+        // await this.secureStorageService.clear();
+
+        // Hard reset / go back to root
+        this.navController.navigateRoot("/home");
+        // If you truly need a full reload instead:
+        // window.location.reload();
+      } catch (err) {
+        console.error("Error clearing app storage", err);
+
+        const toast = await this.toastController.create({
+          message: "Something went wrong while clearing the app data.",
+          duration: 3000,
+          position: "bottom",
+        });
+        await toast.present();
       }
     });
 
