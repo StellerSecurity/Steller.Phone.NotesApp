@@ -866,7 +866,13 @@ export class HomePage implements AfterViewInit {
     if (this.authService.isLoggedIn) {
       this.notesApiServiceV1
         .deleteNotes(this.listOfCheckedCheckboxes)
-        .then(() => {});
+        .then(() => {
+          this.listOfCheckedCheckboxes = [];
+          this.cdr.detectChanges();
+          setTimeout(() => {
+            this.initializePressGesture()
+          }, 300)
+        });
     }
 
     const toast = await this.toastController.create({
@@ -879,7 +885,7 @@ export class HomePage implements AfterViewInit {
     await loading.dismiss();
 
     // current branch behaviour: reload home
-    window.location.href = "/";
+    // window.location.href = "/";
   }
 
   // --------------------------------------------------
