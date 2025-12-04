@@ -46,6 +46,12 @@ export class ShareSecretModalComponent {
     this.allTranslations = this.translatorService.allTranslations;
   }
 
+  ngAfterViewInit(): void {
+    setTimeout(() => {
+      this.allTranslations = this.translatorService.allTranslations;
+    }, 300)
+  }
+
   closeModal() {
     this.modalCtrl.dismiss();
   }

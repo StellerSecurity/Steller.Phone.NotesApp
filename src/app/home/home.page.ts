@@ -1,4 +1,5 @@
 import {
+  AfterViewInit,
   ChangeDetectorRef,
   Component,
   ElementRef,
@@ -50,7 +51,7 @@ import { setDecryptedNotesAndParse } from "../utils/home-notes.util";
   templateUrl: "home.page.html",
   styleUrls: ["home.page.scss"],
 })
-export class HomePage {
+export class HomePage implements AfterViewInit {
   // --------------------------------------------------
   // Constants
   // --------------------------------------------------
@@ -176,6 +177,12 @@ export class HomePage {
     this.checkboxOpened = false;
     this.initializePressGesture();
     this.subscribeNoteUpdated();
+  }
+
+  ngAfterViewInit(): void {
+    setTimeout(() => {
+      this.allTranslations = this.translatorService.allTranslations;
+    }, 300)
   }
 
   ionViewDidEnter() {

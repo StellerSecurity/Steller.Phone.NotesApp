@@ -1,4 +1,4 @@
-import { Component, ViewChild, OnDestroy } from '@angular/core';
+import { Component, ViewChild, OnDestroy, AfterViewInit } from '@angular/core';
 import { ActivatedRoute, ParamMap } from '@angular/router';
 import {
   AlertController,
@@ -42,7 +42,7 @@ const CryptoJS = require('crypto-js');
   templateUrl: './add-note.page.html',
   styleUrls: ['./add-note.page.scss'],
 })
-export class AddNotePage implements OnDestroy {
+export class AddNotePage implements AfterViewInit, OnDestroy {
   @ViewChild(IonModal) modal!: IonModal;
   @ViewChild('titleInput', { static: false }) titleInputRef!: IonInput;
   @ViewChild('richTextEditorComponentRef') richTextEditorComponent!: RichTextEditorComponent;
@@ -131,6 +131,12 @@ export class AddNotePage implements OnDestroy {
   ngOnDestroy(): void {
     this.routeSub?.unsubscribe();
     this.stopLiveNotePolling();
+  }
+
+  ngAfterViewInit(): void {
+    setTimeout(() => {
+      this.allTranslations = this.translatorService.allTranslations;
+    }, 300)
   }
 
   ionViewDidEnter() {
@@ -476,6 +482,7 @@ export class AddNotePage implements OnDestroy {
     modal.onDidDismiss().then(async (data) => {
       if (data && data.data) {
         const { confirm, inputValue } = data.data || {};
+        console.log('confirm', confirm)
         if (confirm) {
           this.notes_password_stored = inputValue ?? '';
 
@@ -486,7 +493,8 @@ export class AddNotePage implements OnDestroy {
             await modal.dismiss();
           }
         } else {
-          this.back();
+          // this.back();
+          await modal?.dismiss(); // added additionally
         }
       }
       if (data.role === 'backdrop') {

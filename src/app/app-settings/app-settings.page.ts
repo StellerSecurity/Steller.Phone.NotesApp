@@ -70,6 +70,10 @@ export class AppSettingsPage implements AfterViewInit {
       this.password_enabled = true;
     }
     this.appPasswordChallenge = this.noteService.appHasPasswordChallenge();
+
+    setTimeout(() => {
+      this.allTranslations = this.translatorService.allTranslations;
+    }, 300)
   }
 
   cancel() {
