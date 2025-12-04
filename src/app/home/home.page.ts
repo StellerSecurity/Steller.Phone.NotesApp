@@ -181,6 +181,7 @@ export class HomePage implements AfterViewInit {
 
   ngAfterViewInit(): void {
     setTimeout(() => {
+      this.initializePressGesture();
       this.allTranslations = this.translatorService.allTranslations;
     }, 300)
   }
@@ -868,6 +869,7 @@ export class HomePage implements AfterViewInit {
         .deleteNotes(this.listOfCheckedCheckboxes)
         .then(() => {
           this.listOfCheckedCheckboxes = [];
+          this.checkboxOpened = false;
           this.cdr.detectChanges();
           setTimeout(() => {
             this.initializePressGesture()
@@ -1007,8 +1009,9 @@ export class HomePage implements AfterViewInit {
 
   navigateToHome(): void {
     localStorage.removeItem("recentOpenedNoteId");
-    setTimeout(() => {
-      window.location.href = "/home";
+    setTimeout(async () => {
+      // window.location.href = "/home";
+      await this.navController.navigateRoot('/home');
     });
   }
 }
