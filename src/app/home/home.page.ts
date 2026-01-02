@@ -30,13 +30,14 @@ import { normalize } from "../utils/home-normalize.util";
 import { initializePressGestures, LongPressConfig } from "../utils/home-gesture.util";
 import { setDecryptedNotesAndParse } from "../utils/home-notes.util";
 import { AuthService } from "../services/auth.service";
-import type { RefresherCustomEvent } from '@ionic/angular';
+import { IonContent, RefresherCustomEvent } from '@ionic/angular';
 
 import {
   decryptTextWithMK,
   unpackCipherBlob,
 } from '@stellarsecurity/stellar-crypto';
 import { CryptoKeyService } from '../services/crypto-key.service';
+import { ScrollService } from '../services/scroll.service';
 
 
 @Component({
@@ -89,6 +90,10 @@ export class HomePage {
   private mkRaw: Uint8Array | null = null;
 
   private syncTimer: any = null;
+  @ViewChild(IonContent, { static: false }) content!: IonContent;
+
+  private scrollRestored = false;
+  private url = this.router.url;
 
   constructor(
     private cryptoService: CryptoService,
@@ -106,7 +111,8 @@ export class HomePage {
     private secureStorageService: SecureStorageService,
     private authService: AuthService,
     private cdr: ChangeDetectorRef,
-    private crypto: CryptoKeyService
+    private crypto: CryptoKeyService,
+    private scrollService: ScrollService
   ) {}
 
   // Small helper: base64 -> Uint8Array
@@ -121,6 +127,8 @@ export class HomePage {
   // Lifecycle
   // --------------------------------------------------
   async ionViewWillEnter() {
+    this.scrollRestored = false;
+
     if (this.pauseSync) this.pauseSync = false;
 
     this.hiddenId = this.route.snapshot.queryParamMap.get('hide_ids');
@@ -147,22 +155,40 @@ export class HomePage {
       console.log("Asking for password or no password needed.");
       this.setData(this.noteService.getNotesAppPassword());
       await this.syncFromServer();
+      this.restoreScrollOnce();
     }
   }
+
+  private async restoreScrollOnce() {
+    if (this.scrollRestored) return;
+    this.scrollRestored = true;
+
+    const y = this.scrollService.get(this.url);
+
+    requestAnimationFrame(() => {
+      requestAnimationFrame(async () => {
+        await this.content?.scrollToPoint(0, y, 0);
+      });
+    });
+  }
+
 
   ionViewDidEnter() {
     this.initializePressGesture();
   }
 
-  ionViewWillLeave() {
+  async ionViewWillLeave() {
     this.exitSearchMode();
     this.pauseSync = true;
+    this.scrollRestored = false;
 
     if (this.syncTimer) {
       clearInterval(this.syncTimer);
       this.syncTimer = null;
     }
 
+    const el = await this.content.getScrollElement();
+    this.scrollService.save(this.url, el.scrollTop);
   }
 
   // --------------------------------------------------
