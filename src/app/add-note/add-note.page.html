@@ -56,7 +56,11 @@
 
 
 
-<ion-content [fullscreen]="true">
+<ion-content [fullscreen]="true"
+  (ionScrollStart)="pauseLiveSync()"
+  (ionScrollEnd)="resumeLiveSync()"
+  scrollEvents="true"
+  [scrollY]="false">
 
   <ion-modal #modal trigger="open-modal">
     <ng-template>
