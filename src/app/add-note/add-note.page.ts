@@ -79,6 +79,7 @@ export class AddNotePage implements OnDestroy {
 
   // 🔐 Master key held in RAM (derived from EAK)
   private mkRaw: Uint8Array | null = null;
+  private saveDebounceTimer: any = null;
 
   constructor(
     private cryptoService: CryptoService,
@@ -724,7 +725,7 @@ export class AddNotePage implements OnDestroy {
     return await modal.present();
   }
 
-  onSave(event: any, type: string = 'note_text'): void {
+  onSaveOld(event: any, type: string = 'note_text'): void {
     if (type === 'note_text') {
       this.note_text = event;
     } else {
@@ -736,5 +737,26 @@ export class AddNotePage implements OnDestroy {
 
     clearTimeout(this.saveTimeout);
     this.save(null);
+  }
+
+  onSave(event: any, type: string = 'note_text'): void {
+    if (type === 'note_text') {
+      this.note_text = event;
+    } else {
+      this.note_title = event;
+    }
+
+    this.typing = true;
+
+    // cancel previous save
+    if (this.saveDebounceTimer) {
+      clearTimeout(this.saveDebounceTimer);
+    }
+
+    // save only after pause
+    this.saveDebounceTimer = setTimeout(() => {
+      this.typing = false;
+      this.save(null);
+    }, 800); // ← sweet spot (500–1000ms)
   }
 }
