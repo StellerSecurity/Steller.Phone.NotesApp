@@ -103,12 +103,17 @@ align-self: stretch; background: #2761FC; color: #fff; border-radius: 250px" (cl
   </ng-template>
 </ion-modal>
 
-<ion-fab slot="bottom" vertical="bottom" horizontal="end" *ngIf="!checkboxOpened && should_display && !waitForSync">
+<ion-fab
+  class="fab-lift"
+  slot="bottom"
+  vertical="bottom"
+  horizontal="end"
+  *ngIf="!checkboxOpened && should_display && !waitForSync"
+>
   <ion-fab-button routerLink="/note">
     <ion-icon name="add"></ion-icon>
   </ion-fab-button>
 </ion-fab>
-
 
 
 <ion-content [fullscreen]="true" class="ion-padding" *ngIf="should_display && !waitForSync">

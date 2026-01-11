@@ -4,7 +4,7 @@
     <div class="logo-container">
         <img class="login-app-logo-img" src="./assets/note-logo-white-bg.png" alt="">
         <div class="app-name">{{'stellarPrivateNotes' | translate}}</div>
-    </div> 
+    </div>
   </div>
 
   <!-- White Card Login Form -->
@@ -32,11 +32,11 @@
       <ion-text color="danger" *ngIf="loginForm.get('email')?.hasError('email') && loginForm.get('email')?.touched">
         <small>{{'invalidEmailFormat' | translate}}</small>
       </ion-text>
-    
+
       <!-- Password -->
-      <ion-item 
-        class="input-field" 
-        lines="none" 
+      <ion-item
+        class="input-field"
+        lines="none"
         style="margin-top: 16px"
         [ngClass]="{
           'mb-0': loginForm.get('password')?.invalid && loginForm.get('password')?.touched
@@ -50,7 +50,7 @@
             'border-danger': loginForm.get('password')?.invalid && loginForm.get('password')?.touched
           }"
         ></ion-input>
-      
+
         <ion-icon
           name="{{ showPassword ? 'eye-off-outline' : 'eye-outline' }}"
           slot="end"
@@ -62,7 +62,13 @@
       <div class="forgot-password" (click)="forgotPassword()">{{'forgotPassword' | translate}}</div>
 
       <ion-button class="login-button" (click)="login()" [disabled]="isSaving">
-        {{!isSaving ? ('login' | translate): ('loggingInto' | translate)}}
+        <ng-container *ngIf="!isSaving; else loading">
+          {{ 'login' | translate }}
+        </ng-container>
+
+        <ng-template #loading>
+          <ion-spinner name="crescent"></ion-spinner>
+        </ng-template>
       </ion-button>
     </form>
 
@@ -71,5 +77,5 @@
       <a (click)="navigateToRegister()">{{'createStellarID' | translate}}</a>
     </div>
   </div>
-  
+
 </ion-content>
