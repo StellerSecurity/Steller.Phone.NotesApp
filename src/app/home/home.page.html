@@ -1,52 +1,85 @@
-<ion-header [translucent]="true">
+<ion-header [translucent]="true" mode="md">
   <ion-toolbar>
+
+    <!-- TITLE AREA -->
     <ion-title *ngIf="!searchMode">
-      <span *ngIf="checkboxOpened && filteredResults !== null &&  filteredResults.length > 0" (click)="toggleCheckbox()">
-        <img src="assets/tabler-icon-x.svg" valign="left" style="position: relative; top: 5px;"
-          class="margin-right-top"> {{listOfCheckedCheckboxes.length}} {{'notesSelected' | translate}}
+      <span *ngIf="checkboxOpened && filteredResults !== null &&  filteredResults.length > 0"
+            (click)="toggleCheckbox()"
+            style="display:flex; align-items:center;">
+
+        <img src="assets/tabler-icon-x.svg"
+             style="position: relative; top: 5px;"
+             class="margin-right-top">
+
+        {{listOfCheckedCheckboxes.length}} {{'notesSelected' | translate}}
       </span>
-      <!-- <img src="assets/Logo.svg" style="margin-top: 20px" *ngIf="!checkboxOpened"> -->
+
       <div class="logo-container" *ngIf="!checkboxOpened">
-          <img class="logo-img" src="./assets/note-logo.png" alt="">
+        <img class="logo-img" src="./assets/note-logo.png" alt="">
         <div class="logo-text">Stellar Private Notes</div>
       </div>
     </ion-title>
 
-    <ion-searchbar *ngIf="searchMode" #searchbar [(ngModel)]="search_query" (ionInput)="search()" placeholder="{{'searchNotesInput' | translate}}" show-clear-button="focus" clear-icon="trash-bin"
-    ></ion-searchbar>
-    <!-- (appClickOutside)="exitSearchMode()" appClickOutside -->
+    <!-- SEARCHBAR (Proper Ionic Placement) -->
+    <ion-searchbar
+      *ngIf="searchMode"
+      #searchbar
+      [(ngModel)]="search_query"
+      (ionInput)="search()"
+      placeholder="{{'searchNotesInput' | translate}}"
+      show-clear-button="focus"
+      clear-icon="trash-bin"
+      animated="true">
+    </ion-searchbar>
 
+    <!-- RIGHT BUTTONS -->
     <ion-buttons slot="end" style="position: relative; top: 5px;">
-     <!--<ion-spinner color="primary" *ngIf="isSyncing"></ion-spinner>-->
+
       <ng-container *ngIf="!searchMode">
-        <ion-button *ngIf="filteredResults !== null && filteredResults.length > 0" slot="icon-only" (click)="enterSearchMode()">
+
+        <ion-button
+          *ngIf="filteredResults !== null && filteredResults.length > 0"
+          fill="clear"
+          (click)="enterSearchMode()">
           <ion-icon name="search-outline" style="font-size: 24px;"></ion-icon>
         </ion-button>
-        <ion-button *ngIf="filteredResults !== null && filteredResults.length > 0" slot="icon-only" (click)="toggleCheckbox()">
+
+        <ion-button
+          *ngIf="filteredResults !== null && filteredResults.length > 0"
+          fill="clear"
+          (click)="toggleCheckbox()">
           <img src="assets/tabler-icon-square-check.svg">
         </ion-button>
-        <!-- <ion-button slot="icon-only" style="padding-right: 15px" (click)="settings()"><img src="assets/tabler-icon-settings.svg"></ion-button> -->
-        <ion-button slot="icon-only" style="padding-right: 15px" (click)="goToProfile()">
+
+        <ion-button
+          fill="clear"
+          style="padding-right: 15px"
+          (click)="goToProfile()">
           <img src="assets/user-circle.png" width="24px" height="24px">
         </ion-button>
+
       </ng-container>
 
       <ng-container *ngIf="searchMode">
-      <ion-button (click)="exitSearchMode()">
+        <ion-button fill="clear" (click)="exitSearchMode()">
           <ion-icon name="close-outline" style="font-size: 30px;"></ion-icon>
-      </ion-button>
-    </ng-container>
+        </ion-button>
+      </ng-container>
 
     </ion-buttons>
+
   </ion-toolbar>
 
-    <ion-progress-bar
-            *ngIf="waitForSync"
-            type="indeterminate"
-            color="primary"
-            class="header-progress">
-    </ion-progress-bar>
+  <!-- PROGRESS BAR -->
+  <ion-progress-bar
+    *ngIf="waitForSync"
+    type="indeterminate"
+    color="primary"
+    class="header-progress">
+  </ion-progress-bar>
+
 </ion-header>
+
 
 <!-- modal ask for password -->
 <ion-modal trigger="app-ask-password" [isOpen]="!should_display">
