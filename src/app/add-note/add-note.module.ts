@@ -13,6 +13,7 @@ import { DeleteNoteModalModule } from '../delete-note-modal/delete-note-modal.mo
 import {AngularEditorModule} from "@wfpena/angular-wysiwyg";
 import { TranslateModule } from '@ngx-translate/core';
 import { RichTextEditorComponent } from './rich-text-editor/rich-text-editor.component';
+import { QuillModule } from 'ngx-quill';
 @NgModule({
     imports: [
         CommonModule,
@@ -23,7 +24,8 @@ import { RichTextEditorComponent } from './rich-text-editor/rich-text-editor.com
         NoteLockedModalModule,
         DeleteNoteModalModule,
         AngularEditorModule,
-        TranslateModule
+        TranslateModule,
+        QuillModule
     ],
   declarations: [AddNotePage, RichTextEditorComponent]
 })

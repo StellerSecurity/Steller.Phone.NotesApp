@@ -173,32 +173,29 @@ export class AddNotePage implements OnDestroy {
 
   ionViewWillLeave() {
     this.stopLiveNotePolling();
-    if (this.richTextEditorComponent?.onLeave) {
-      this.richTextEditorComponent.onLeave();
-    }
+    // if (this.richTextEditorComponent?.onLeave) {
+    //   this.richTextEditorComponent.onLeave();
+    // }
   }
 
   private placeCursorAtEnd() {
-    const editorElem = this.richTextEditorComponent?.editorComponent?.textArea?.nativeElement;
-    if (!editorElem) return;
+    // const editorElem = this.richTextEditorComponent?.editorComponent?.textArea?.nativeElement;
+    // if (!editorElem) return;
 
-    editorElem.focus();
-    const selection = window.getSelection();
-    const range = document.createRange();
-    const lastChild = editorElem.lastChild;
+    // editorElem.focus();
+    // const selection = window.getSelection();
+    // const range = document.createRange();
+    // const lastChild = editorElem.lastChild;
 
-    if (selection && range && lastChild) {
-      range.selectNodeContents(editorElem);
-      range.collapse(false);
-      selection.removeAllRanges();
-      selection.addRange(range);
-    }
+    // if (selection && range && lastChild) {
+    //   range.selectNodeContents(editorElem);
+    //   range.collapse(false);
+    //   selection.removeAllRanges();
+    //   selection.addRange(range);
+    // }
   }
 
   public async shareStellarSecret() {
-    if (this.richTextEditorComponent?.onLeave) {
-      this.richTextEditorComponent.onLeave();
-    }
 
     const addSecretModal = new Secret();
     const secret_id = uuidv4();

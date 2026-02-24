@@ -1,9 +1,16 @@
-<div class="editor-container" #editorWrapper>
-  <angular-editor #editorRef 
-    [config]="editorConfig" 
-    [(ngModel)]="note_text" 
+<!-- <div class="editor-container" #editorWrapper>
+  <angular-editor #editorRef
+    [config]="editorConfig"
+    [(ngModel)]="note_text"
     (ngModelChange)="onContentChange($event)"
     (click)="onClickEditor()"
     (keydown)="onClickEditor()">
   </angular-editor>
-</div>
+</div> -->
+
+<quill-editor
+    [(ngModel)]="note_text"
+    [modules]="quillModules"
+    placeholder="Write your note here..."
+    style="height: 250px;">
+  </quill-editor>
