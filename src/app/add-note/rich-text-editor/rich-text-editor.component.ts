@@ -1,3 +1,4 @@
+import { OnInit } from '@angular/core';
 import {
   Component,
   EventEmitter,
@@ -16,20 +17,15 @@ import {
   templateUrl: './rich-text-editor.component.html',
   styleUrls: ['./rich-text-editor.component.scss']
 })
-export class RichTextEditorComponent implements AfterViewInit {
+export class RichTextEditorComponent implements OnInit, AfterViewInit {
   @ViewChild('editorWrapper') editorWrapper!: ElementRef;
   @Input() note_text: string = '';
   @Output() noteChange = new EventEmitter<string>();
   updateNote:any = '';
 
-  quillModules = {
-    toolbar: [
-      ['bold', 'italic', 'underline'],
-      [{ list: 'ordered' }, { list: 'bullet' }],
-      ['link'],
-      ['clean']
-    ]
-  };
+  quillModules: any;
+
+  quill: any;
 
   constructor(
     private renderer: Renderer2,
@@ -38,8 +34,45 @@ export class RichTextEditorComponent implements AfterViewInit {
     this.updateNote = JSON.parse(JSON.stringify(this.note_text))
   }
 
+
+  ngOnInit() {
+    this.quillModules = {
+      toolbar: {
+        container: '#custom-toolbar',
+        handlers: {
+          undo: () => {
+            this.quill?.history.undo();
+          },
+          redo: () => {
+            this.quill?.history.redo();
+          }
+        }
+      },
+      history: {
+        delay: 1000,
+        maxStack: 500,
+        userOnly: true
+      }
+    };
+  }
+
   ngAfterViewInit() {
 
+  }
+
+  onEditorCreated(quillInstance: any) {
+    this.quill = quillInstance;
+
+    // Custom Undo
+    const toolbar = quillInstance.getModule('toolbar');
+
+    toolbar.addHandler('undo', () => {
+      quillInstance.history.undo();
+    });
+
+    toolbar.addHandler('redo', () => {
+      quillInstance.history.redo();
+    });
   }
 
   onContentChange(content: string): void {
