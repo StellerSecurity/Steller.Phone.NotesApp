@@ -750,3 +750,7 @@ ion-input {
 .header-pill ion-icon:last-of-type {
   bottom: 6px;
 }
+
+#custom-toolbar.clip-overflow {
+  overflow-x: clip !important;
+}
