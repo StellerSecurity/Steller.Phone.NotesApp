@@ -595,27 +595,50 @@ ion-input {
 }
 
 // quill editor custom styles
-.ql-undo::before {
-  background-image: url('./assets/editor-icon/undo-icon.png');
-  background-size : 24px 24px;
-  display: inline-block;
-  width: 24px;
-  height: 24px;
-  content:"" !important;
+%common-btn {
+  font-size: 0 !important;
+  min-width: 44px!important;
+  min-height: 44px!important;
+  width: 44px!important;
+  height: 44px!important;
+  max-width: 44px!important;
+  max-height: 44px!important;
+  border-radius: 50%;
+  border: 1px solid transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.ql-redo::before {
-  background-image: url('./assets/editor-icon/undo-icon.png');
-  background-size : 24px 24px;
-  display: inline-block;
-  width: 24px;
-  height: 24px;
-  content:""  !important;
-  transform: scaleX(-1);
+.ql-undo {
+  @extend %common-btn;
+
+  &::before {
+    background-image: url('./assets/editor-icon/undo-icon.png');
+    background-size : 24px 24px;
+    display: inline-block;
+    width: 24px;
+    height: 24px;
+    content:"" !important;
+  }
+}
+
+.ql-redo {
+  @extend %common-btn;
+
+  &::before {
+    background-image: url('./assets/editor-icon/undo-icon.png');
+    background-size : 24px 24px;
+    display: inline-block;
+    width: 24px;
+    height: 24px;
+    content:""  !important;
+    transform: scaleX(-1);
+  }
 }
 
 .ql-bold {
-  font-size: 0!important;
+  @extend %common-btn;
 
   svg {
     display: none!important;
@@ -633,7 +656,7 @@ ion-input {
 }
 
 .ql-strike {
-  font-size: 0!important;
+  @extend %common-btn;
 
   svg {
     display: none!important;
@@ -649,7 +672,8 @@ ion-input {
   }
 }
 
-.ql-list[value="bullet"]::before {
+.ql-list[value="bullet"] {
+  @extend %common-btn;
   font-size: 0!important;
 
   svg {
@@ -666,8 +690,8 @@ ion-input {
   }
 }
 
-.ql-list[value="ordered"]::before {
-  font-size: 0!important;
+.ql-list[value="ordered"] {
+  @extend %common-btn;
 
   svg {
     display: none!important;
@@ -684,7 +708,7 @@ ion-input {
 }
 
 .ql-link {
-  font-size: 0!important;
+  @extend %common-btn;
 
   svg {
     display: none!important;
@@ -701,6 +725,7 @@ ion-input {
 }
 
 .ql-image {
+  @extend %common-btn;
   font-size: 0!important;
 
   svg {
@@ -722,9 +747,10 @@ ion-input {
   display: inline-flex;
   align-items: center;
   background: #FFFFFF;
-  border-radius: 24px;
-  border: 1px solid #F6F6FD;
-  padding: 6px 16px;
+  border-radius: 46px;
+  border: 1px solid #EAEAF0!important;
+  // padding: 6px 16px;
+  height: 44px;
 }
 
 .header-pill select {
@@ -734,6 +760,10 @@ ion-input {
   font-size: 16px;
   font-weight: 500;
   padding-right: 20px;
+}
+
+.ql-toolbar.ql-snow .ql-picker.ql-expanded .ql-picker-label {
+  border-color: transparent!important;
 }
 
 .header-pill ion-icon {
@@ -753,4 +783,9 @@ ion-input {
 
 #custom-toolbar.clip-overflow {
   overflow-x: clip !important;
+}
+
+.ql-container.ql-snow {
+  border: 0!important;
+  height: calc(100vh - 114px)!important;
 }
