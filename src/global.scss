@@ -789,3 +789,17 @@ ion-input {
   border: 0!important;
   height: calc(100vh - 114px)!important;
 }
+
+.ql-picker-options {
+  border: 0!important;
+  border-radius: 16px!important;
+  background-color: #F6F6FD!important;
+  box-shadow: 1px 4px 16px 0 rgba(0, 0, 0, 0.12)!important;
+}
+
+.ql-snow .ql-picker-options .ql-picker-item {
+  border-bottom: 1px solid #EAEAF0;
+  padding-top: 8px!important;
+  padding-bottom: 8px!important;
+  padding-left: 4px!important;
+}
