@@ -1,33 +1,26 @@
 <div class="editor-wrapper">
 
-  <!-- Custom Toolbar -->
   <div id="custom-toolbar" class="toolbar">
 
     <button type="button" class="ql-undo">
-      <!-- <img src="./../../../assets/editor-icon/undo-icon.png"> -->
     </button>
 
     <button type="button" class="ql-redo">
-      <!-- <img src="./../../../assets/editor-icon/undo-icon.png" style="transform: scaleX(-1)"> -->
     </button>
 
     <div class="divider"></div>
 
     <button type="button" class="ql-bold">
-      <!-- <img src="./../../../assets/editor-icon/bold-icon.png"> -->
     </button>
 
     <button class="ql-strike">
-      <!-- <img src="./../../../assets/editor-icon/strikethrough-icon.png"> -->
     </button>
 
     <div class="list-group">
       <button class="ql-list" value="bullet">
-        <!-- <ion-icon name="list-outline"></ion-icon> -->
       </button>
 
       <button class="ql-list" value="ordered">
-        <!-- <ion-icon name="list-number-outline"></ion-icon> -->
       </button>
     </div>
 
@@ -36,25 +29,29 @@
         <option value="false">Standard</option>
         <option value="1">Heading 1</option>
         <option value="2">Heading 2</option>
+        <option value="3">Heading 3</option>
+        <option value="4">Heading 4</option>
+        <option value="5">Heading 5</option>
+        <option value="6">Heading 6</option>
       </select>
     </div>
 
     <button class="ql-link">
-      <!-- <ion-icon name="link-outline"></ion-icon> -->
     </button>
 
     <button class="ql-image">
-      <!-- <ion-icon name="image-outline"></ion-icon> -->
     </button>
 
   </div>
 
   <!-- Editor -->
   <quill-editor
-    [(ngModel)]="note_text"
-    [modules]="quillModules"
-    (onEditorCreated)="onEditorCreated($event)"
-    placeholder="Enter your note here..">
-  </quill-editor>
+  [ngModel]="note_text"
+  (ngModelChange)="onContentChange($event)"
+  [modules]="quillModules"
+  (onEditorCreated)="onEditorCreated($event)"
+  placeholder="Enter your note here..">
+</quill-editor>
 
 </div>
+
