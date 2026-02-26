@@ -232,13 +232,6 @@ export class RichTextEditorComponent implements OnInit, OnDestroy {
     this.renderer.setStyle(this.dropdownElement, 'bottom', bottomPosition !== 'auto' ? bottomPosition : 'auto');
     this.renderer.setStyle(this.dropdownElement, 'left', leftPosition + 'px');
     this.renderer.setStyle(this.dropdownElement, 'min-width', dropdownWidth + 'px');
-    this.renderer.setStyle(this.dropdownElement, 'z-index', '2147483647');
-    this.renderer.setStyle(this.dropdownElement, 'background', 'white');
-    this.renderer.setStyle(this.dropdownElement, 'border', '1px solid #EAEAF0');
-    this.renderer.setStyle(this.dropdownElement, 'border-radius', '12px');
-    this.renderer.setStyle(this.dropdownElement, 'box-shadow', '0 4px 20px rgba(0,0,0,0.15)');
-    this.renderer.setStyle(this.dropdownElement, 'max-height', '250px');
-    this.renderer.setStyle(this.dropdownElement, 'overflow-y', 'auto');
   }
 
   private selectOption(value: string) {
