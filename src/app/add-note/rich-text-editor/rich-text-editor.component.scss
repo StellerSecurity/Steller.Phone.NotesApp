@@ -1,41 +1,66 @@
 .editor-wrapper {
-
+  position: relative;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: white;
+  border-radius: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
 .toolbar {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 10px;
+  gap: 8px;
+  padding: 8px 12px;
   background: white;
   overflow-x: auto;
   overflow-y: visible;
-  border: 0!important;
-  height: 60px;
+  border: 0 !important;
+  min-height: 60px;
   border-radius: 24px 24px 0 0;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
   -ms-overflow-style: none;
+  position: relative;
+  z-index: 10;
+  border-bottom: 1px solid #EAEAF0 !important;
 
   &::-webkit-scrollbar {
     display: none;
   }
-}
 
-.toolbar.clip-overflow {
-  overflow-x: clip !important;
-}
+  button {
+    &:active {
+      transform: scale(0.96);
+      background: #F6F6FD;
+      border: 1px solid #EAEAF0;
+      border-radius: 46px;
+    }
 
-.toolbar button.ql-active {
-  color: var(--ion-color-primary);
-  background: #F6F6FD;
-  border: 1px solid #EAEAF0;
+    &.ql-active {
+      color: var(--ion-color-primary);
+      background: #F6F6FD;
+      border: 1px solid #EAEAF0;
+    }
+  }
 }
 
 .list-group {
   display: flex;
   border: 1px solid #EAEAF0;
   border-radius: 46px;
+  // overflow: hidden;
+
+  button {
+    border: none;
+    border-radius: 46px;
+    min-width: 40px;
+
+    &:first-child {
+      // border-right: 1px solid #EAEAF0;
+    }
+  }
 }
 
 .divider {
@@ -44,11 +69,141 @@
   min-width: 2px;
   min-height: 24px;
   background: #EAEAF0;
-  background-color: #EAEAF0;
+}
+
+.header-pill {
+  position: relative;
+
+  .hidden-select {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+    pointer-events: none;
+  }
+
+  .header-trigger {
+    min-width: 120px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    background: white!important;
+    // border: 1px solid #EAEAF0;
+    border-radius: 40px;
+    padding: 0 12px 0 16px;
+    font-size: 14px;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    width: 100%;
+    font-weight: 400;
+
+    .selected-value {
+      flex: 1;
+      text-align: left;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .dropdown-arrow {
+      font-size: 10px;
+      color: #666;
+      transition: transform 0.2s ease;
+    }
+
+    &:hover {
+      background: transparent;
+      border-color: transparent;
+    }
+
+    &:active {
+      // background: #EAEAF0;
+      // transform: scale(0.98);
+    }
+  }
 }
 
 quill-editor {
   background: white;
   width: 100%;
   border: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+
+  ::ng-deep .ql-container {
+    border-radius: 0 0 24px 24px;
+    border: none !important;
+    font-size: 16px;
+    font-family: inherit;
+  }
+
+  ::ng-deep .ql-editor {
+    min-height: 200px;
+    padding: 16px;
+    line-height: 1.6;
+    // color: #333;
+
+    &:focus {
+      outline: none;
+    }
+
+    &.ql-blank::before {
+      font-style: normal;
+      left: 16px;
+      right: 16px;
+    }
+  }
+}
+
+// Custom dropdown styles
+.custom-header-dropdown {
+  position: fixed;
+  max-height: 250px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  z-index: 2147483647;
+  padding: 4px 0;
+  border: 0!important;
+  border-radius: 16px!important;
+  background-color: #F6F6FD!important;
+  box-shadow: 1px 4px 16px 0 rgba(0, 0, 0, 0.12)!important;
+
+  .dropdown-item {
+    padding: 10px 12px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+    -webkit-tap-highlight-color: transparent;
+    color: #333;
+
+    &:hover,
+    &.hover {
+      background-color: #F6F6FD;
+    }
+
+    &:active {
+      background-color: #EAEAF0;
+    }
+
+    &.selected {
+      color: var(--ion-color-primary);
+      background-color: #F6F6FD;
+      font-weight: 500;
+    }
+
+    &:not(:last-child) {
+      border-bottom: 1px solid #F0F0F3!important;
+    }
+  }
+}
+
+// Prevent body scrolling when dropdown is open
+:host-context(body.dropdown-open) {
+  ion-content {
+    --overflow: hidden;
+    touch-action: none;
+  }
 }

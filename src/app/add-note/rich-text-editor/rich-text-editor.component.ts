@@ -1,5 +1,13 @@
-import { Component, EventEmitter, Input, Output, Renderer2, Inject, PLATFORM_ID, OnInit, OnDestroy } from '@angular/core';
+import {
+  Component, EventEmitter, Input, Output, Renderer2,
+  Inject, PLATFORM_ID, OnInit, OnDestroy, ViewChild, ElementRef
+} from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
+
+interface HeaderOption {
+  value: string;
+  label: string;
+}
 
 @Component({
   selector: 'app-rich-text-editor',
@@ -7,18 +15,29 @@ import { isPlatformBrowser } from '@angular/common';
   styleUrls: ['./rich-text-editor.component.scss']
 })
 export class RichTextEditorComponent implements OnInit, OnDestroy {
+  @ViewChild('headerSelect') headerSelectRef!: ElementRef<HTMLSelectElement>;
+  @ViewChild('headerPill') headerPillRef!: ElementRef;
+  @ViewChild('toolbar') toolbarRef!: ElementRef;
 
   @Input() note_text: string = '';
   @Output() noteChange = new EventEmitter<string>();
 
   quill: any;
-  private mutationObserver: MutationObserver | null = null;
-  private isIOS = false;
-  private isAndroid = false;
   private isDropdownOpen = false;
-  private currentScrollPosition = 0;
+  private dropdownElement: HTMLElement | null = null;
+  private resizeListener: (() => void) | null = null;
+  private clickOutsideListener: (() => void) | null = null;
 
-  // Production-safe configuration
+  readonly headerOptions: HeaderOption[] = [
+    { value: 'false', label: 'Standard' },
+    { value: '1', label: 'Heading 1' },
+    { value: '2', label: 'Heading 2' },
+    { value: '3', label: 'Heading 3' },
+    { value: '4', label: 'Heading 4' },
+    { value: '5', label: 'Heading 5' },
+    { value: '6', label: 'Heading 6' }
+  ];
+
   quillModules = {
     toolbar: {
       container: '#custom-toolbar',
@@ -37,47 +56,27 @@ export class RichTextEditorComponent implements OnInit, OnDestroy {
   constructor(
     private renderer: Renderer2,
     @Inject(PLATFORM_ID) private platformId: Object
-  ) {
-    if (isPlatformBrowser(this.platformId)) {
-      const userAgent = navigator.userAgent;
-      this.isIOS = /iPad|iPhone|iPod/.test(userAgent);
-      this.isAndroid = /Android/.test(userAgent);
-    }
-  }
+  ) {}
 
   ngOnInit() {
     if (isPlatformBrowser(this.platformId)) {
-      // Use capture phase to ensure we get events first
-      document.addEventListener('click', this.onDocumentClick.bind(this), true);
-      document.addEventListener('touchstart', this.onDocumentClick.bind(this), true);
-
-      // Handle orientation change
-      window.addEventListener('orientationchange', this.onOrientationChange.bind(this));
-      window.addEventListener('resize', this.onOrientationChange.bind(this));
+      this.resizeListener = this.renderer.listen('window', 'resize', () => {
+        if (this.isDropdownOpen) {
+          this.positionDropdown();
+        }
+      });
     }
   }
 
   ngOnDestroy() {
-    if (isPlatformBrowser(this.platformId)) {
-      document.removeEventListener('click', this.onDocumentClick.bind(this), true);
-      document.removeEventListener('touchstart', this.onDocumentClick.bind(this), true);
-      window.removeEventListener('orientationchange', this.onOrientationChange.bind(this));
-      window.removeEventListener('resize', this.onOrientationChange.bind(this));
-
-      if (this.mutationObserver) {
-        this.mutationObserver.disconnect();
-      }
+    this.closeDropdown();
+    if (this.resizeListener) {
+      this.resizeListener();
     }
   }
 
   onEditorCreated(quillInstance: any) {
     this.quill = quillInstance;
-
-    // Wait for Quill to fully initialize
-    setTimeout(() => {
-      this.setupDropdownObserver();
-      this.fixToolbarScrolling();
-    }, 500);
   }
 
   onContentChange(content: string) {
@@ -85,182 +84,213 @@ export class RichTextEditorComponent implements OnInit, OnDestroy {
     this.noteChange.emit(content);
   }
 
-  private fixToolbarScrolling() {
-    const toolbar = document.getElementById('custom-toolbar');
-    if (toolbar) {
-      // Ensure smooth scrolling on all devices
-      this.renderer.setStyle(toolbar, '-webkit-overflow-scrolling', 'touch');
+  onHeaderChange(event: Event) {
+    const select = event.target as HTMLSelectElement;
+    const value = select.value;
 
-      if (this.isAndroid) {
-        // Android specific fixes
-        this.renderer.setStyle(toolbar, 'scrollbar-width', 'thin');
-      }
+    if (this.quill) {
+      const headerValue = value === 'false' ? false : parseInt(value);
+      this.quill.format('header', headerValue);
     }
   }
 
-  private setupDropdownObserver() {
-    const headerPill = document.querySelector('#custom-toolbar .header-pill');
-    if (!headerPill) return;
+  getSelectedHeaderText(): string {
+    if (!this.headerSelectRef?.nativeElement) return 'Standard';
+    const selectedValue = this.headerSelectRef.nativeElement.value;
+    const selectedOption = this.headerOptions.find(opt => opt.value === selectedValue);
+    return selectedOption ? selectedOption.label : 'Standard';
+  }
 
-    // Observe class changes on the picker
-    this.mutationObserver = new MutationObserver((mutations) => {
-      mutations.forEach((mutation) => {
-        if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
-          const target = mutation.target as HTMLElement;
+  toggleDropdown(event: Event) {
+    event.preventDefault();
+    event.stopPropagation();
 
-          if (target.classList.contains('ql-expanded') && !this.isDropdownOpen) {
-            this.isDropdownOpen = true;
-            this.handleDropdownOpen();
-          } else if (!target.classList.contains('ql-expanded') && this.isDropdownOpen) {
-            this.isDropdownOpen = false;
-            this.restoreToolbar();
-          }
-        }
+    if (this.isDropdownOpen) {
+      this.closeDropdown();
+    } else {
+      this.openDropdown();
+    }
+  }
+
+  private openDropdown() {
+    if (!this.headerPillRef?.nativeElement) return;
+
+    // Close any existing dropdown first
+    if (this.isDropdownOpen) {
+      this.closeDropdown();
+    }
+
+    this.isDropdownOpen = true;
+
+    // Create dropdown
+    this.dropdownElement = this.renderer.createElement('div');
+    this.renderer.addClass(this.dropdownElement, 'custom-header-dropdown');
+
+    // Add options
+    this.headerOptions.forEach(option => {
+      const optionElement = this.renderer.createElement('div');
+      this.renderer.addClass(optionElement, 'dropdown-item');
+      this.renderer.setProperty(optionElement, 'textContent', option.label);
+      this.renderer.setAttribute(optionElement, 'data-value', option.value);
+
+      // Highlight selected option
+      if (this.headerSelectRef?.nativeElement?.value === option.value) {
+        this.renderer.addClass(optionElement, 'selected');
+      }
+
+      // Add click handler with immediate stopPropagation
+      this.renderer.listen(optionElement, 'click', (e: Event) => {
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+
+        this.selectOption(option.value);
       });
+
+      // Add hover effect for desktop
+      this.renderer.listen(optionElement, 'mouseenter', () => {
+        this.renderer.addClass(optionElement, 'hover');
+      });
+
+      this.renderer.listen(optionElement, 'mouseleave', () => {
+        this.renderer.removeClass(optionElement, 'hover');
+      });
+
+      this.renderer.appendChild(this.dropdownElement, optionElement);
     });
 
-    // Observe the picker element
-    const picker = headerPill.querySelector('.ql-picker');
-    if (picker) {
-      this.mutationObserver.observe(picker, { attributes: true });
-    }
-  }
+    // Position the dropdown
+    this.positionDropdown();
 
-  private onOrientationChange() {
-    if (this.isDropdownOpen) {
-      // Reposition dropdown on orientation change
-      setTimeout(() => {
-        const headerPill = document.querySelector('#custom-toolbar .header-pill') as HTMLElement;
-        if (headerPill) {
-          this.positionDropdown(headerPill);
-        }
-      }, 100);
-    }
-  }
+    // Add to body
+    this.renderer.appendChild(document.body, this.dropdownElement);
 
-  private onDocumentClick(event: MouseEvent | TouchEvent) {
-    const target = event.target as HTMLElement;
-    const headerPill = document.querySelector('#custom-toolbar .header-pill');
-    const toolbar = document.getElementById('custom-toolbar');
+    // Add class to body
+    this.renderer.addClass(document.body, 'dropdown-open');
 
-    if (!headerPill || !toolbar) return;
-
-    // Store scroll position
-    this.currentScrollPosition = toolbar.scrollLeft;
-
-    // If clicking on header pill or its children
-    if (headerPill.contains(target)) {
-      // Allow Quill to handle the click first
-      setTimeout(() => {
-        const picker = headerPill.querySelector('.ql-picker');
-        if (picker?.classList.contains('ql-expanded')) {
-          this.handleDropdownOpen();
-        }
-      }, this.isIOS ? 50 : 100);
-    }
-    // If clicking outside and dropdown is open
-    else if (this.isDropdownOpen) {
-      const options = document.querySelector('.ql-picker-options');
-      if (options && !options.contains(target)) {
-        // Let Quill handle closing
-        setTimeout(() => {
-          this.restoreToolbar();
-        }, 100);
-      }
-    }
-  }
-
-  private handleDropdownOpen() {
-    const toolbar = document.getElementById('custom-toolbar');
-    const headerPill = document.querySelector('#custom-toolbar .header-pill') as HTMLElement;
-
-    if (toolbar && headerPill) {
-      // Store current scroll position
-      this.currentScrollPosition = toolbar.scrollLeft;
-
-      // Disable scrolling with platform-specific handling
-      this.renderer.setStyle(toolbar, 'overflow-x', 'hidden');
-
-      // Add platform-specific classes
-      if (this.isIOS) {
-        this.renderer.addClass(document.body, 'ios-dropdown-open');
-      } else if (this.isAndroid) {
-        this.renderer.addClass(document.body, 'android-dropdown-open');
+    // Setup click outside listener
+    setTimeout(() => {
+      // Remove any existing listener first
+      if (this.clickOutsideListener) {
+        this.clickOutsideListener();
+        this.clickOutsideListener = null;
       }
 
-      // Position dropdown with slight delay for DOM update
-      setTimeout(() => {
-        this.positionDropdown(headerPill);
-      }, this.isIOS ? 10 : 50);
-    }
+      const unlisten = this.renderer.listen('document', 'click', (event: MouseEvent) => {
+        // Don't close if dropdown is not open
+        if (!this.isDropdownOpen) return;
+
+        const target = event.target as HTMLElement;
+        const trigger = this.headerPillRef?.nativeElement?.querySelector('.header-trigger');
+        const dropdown = this.dropdownElement;
+
+        // Check if click is outside both trigger and dropdown
+        if (dropdown &&
+            !dropdown.contains(target) &&
+            trigger &&
+            !trigger.contains(target)) {
+          this.closeDropdown();
+        }
+      });
+
+      this.clickOutsideListener = unlisten;
+    }, 100);
   }
 
-  private positionDropdown(headerPill: HTMLElement) {
-    const options = document.querySelector('.ql-picker-options') as HTMLElement;
-    if (!options) return;
+  private positionDropdown() {
+    if (!this.dropdownElement || !this.headerPillRef?.nativeElement) return;
 
-    // Get positions
-    const headerRect = headerPill.getBoundingClientRect();
-    const viewportWidth = window.innerWidth;
+    const trigger = this.headerPillRef.nativeElement.querySelector('.header-trigger');
+    if (!trigger) return;
+
+    const triggerRect = trigger.getBoundingClientRect();
     const viewportHeight = window.innerHeight;
+    const viewportWidth = window.innerWidth;
+    const dropdownHeight = 250;
+    const dropdownWidth = 140;
 
-    // Calculate dropdown dimensions
-    const dropdownWidth = Math.max(160, options.offsetWidth);
-    const dropdownHeight = Math.min(200, options.scrollHeight);
+    // Calculate position
+    let topPosition = triggerRect.bottom + 4;
+    let leftPosition = triggerRect.left;
 
-    // Calculate left position
-    let leftPosition = headerRect.left;
+    // Check if dropdown would go off screen horizontally
     if (leftPosition + dropdownWidth > viewportWidth - 16) {
       leftPosition = viewportWidth - dropdownWidth - 16;
     }
     leftPosition = Math.max(16, leftPosition);
 
-    // Calculate if should show above or below
-    const spaceBelow = viewportHeight - headerRect.bottom;
-    let topPosition = headerRect.bottom;
-    let marginTop = 4;
-    let marginBottom = 0;
-
-    if (spaceBelow < dropdownHeight && headerRect.top > dropdownHeight) {
-      topPosition = headerRect.top - dropdownHeight;
-      marginTop = 0;
-      marginBottom = 4;
+    // Check if dropdown would go off screen vertically
+    let bottomPosition = 'auto';
+    if (topPosition + dropdownHeight > viewportHeight) {
+      topPosition = 'auto';
+      bottomPosition = viewportHeight - triggerRect.top + 4 + 'px';
     }
 
-    // Apply platform-specific styles
-    this.renderer.setStyle(options, 'position', 'fixed');
-    this.renderer.setStyle(options, 'top', `${topPosition}px`);
-    this.renderer.setStyle(options, 'left', `${leftPosition}px`);
-    this.renderer.setStyle(options, 'min-width', `${dropdownWidth}px`);
-    this.renderer.setStyle(options, 'z-index', '10000');
-    this.renderer.setStyle(options, 'margin-top', marginTop ? '4px' : '0');
-    this.renderer.setStyle(options, 'margin-bottom', marginBottom ? '4px' : '0');
-    this.renderer.setStyle(options, 'max-height', '200px');
-    this.renderer.setStyle(options, 'overflow-y', 'auto');
+    // Apply styles
+    this.renderer.setStyle(this.dropdownElement, 'position', 'fixed');
+    this.renderer.setStyle(this.dropdownElement, 'top', topPosition !== 'auto' ? topPosition + 'px' : 'auto');
+    this.renderer.setStyle(this.dropdownElement, 'bottom', bottomPosition !== 'auto' ? bottomPosition : 'auto');
+    this.renderer.setStyle(this.dropdownElement, 'left', leftPosition + 'px');
+    this.renderer.setStyle(this.dropdownElement, 'min-width', dropdownWidth + 'px');
+    this.renderer.setStyle(this.dropdownElement, 'z-index', '2147483647');
+    this.renderer.setStyle(this.dropdownElement, 'background', 'white');
+    this.renderer.setStyle(this.dropdownElement, 'border', '1px solid #EAEAF0');
+    this.renderer.setStyle(this.dropdownElement, 'border-radius', '12px');
+    this.renderer.setStyle(this.dropdownElement, 'box-shadow', '0 4px 20px rgba(0,0,0,0.15)');
+    this.renderer.setStyle(this.dropdownElement, 'max-height', '250px');
+    this.renderer.setStyle(this.dropdownElement, 'overflow-y', 'auto');
+  }
 
-    // Platform-specific optimizations
-    if (this.isIOS) {
-      this.renderer.setStyle(options, '-webkit-overflow-scrolling', 'touch');
-      this.renderer.setStyle(options, 'transform', 'translateZ(0)'); // Force GPU acceleration
-    } else if (this.isAndroid) {
-      this.renderer.setStyle(options, 'webkit-overflow-scrolling', 'auto'); // Better for Android
+  private selectOption(value: string) {
+    // Immediately close dropdown first (before any other operations)
+    this.closeDropdown();
+
+    // Then update select element
+    if (this.headerSelectRef?.nativeElement) {
+      this.headerSelectRef.nativeElement.value = value;
+
+      // Trigger Quill format
+      if (this.quill) {
+        const headerValue = value === 'false' ? false : parseInt(value);
+        this.quill.format('header', headerValue);
+
+        // Keep focus on editor
+        setTimeout(() => {
+          this.quill.focus();
+        }, 50);
+      }
+
+      // Trigger change event
+      this.onHeaderChange(new Event('change'));
     }
   }
 
-  private restoreToolbar() {
-    const toolbar = document.getElementById('custom-toolbar');
-    if (toolbar) {
-      // Restore scrolling
-      this.renderer.removeStyle(toolbar, 'overflow-x');
+  private closeDropdown() {
+    if (!this.isDropdownOpen) return;
 
-      // Restore scroll position
-      setTimeout(() => {
-        toolbar.scrollLeft = this.currentScrollPosition;
-      }, 10);
+    this.isDropdownOpen = false;
 
-      // Remove platform-specific classes
-      this.renderer.removeClass(document.body, 'ios-dropdown-open');
-      this.renderer.removeClass(document.body, 'android-dropdown-open');
+    // Remove dropdown element immediately
+    if (this.dropdownElement) {
+      // Remove all children first to prevent memory leaks
+      while (this.dropdownElement.firstChild) {
+        this.dropdownElement.removeChild(this.dropdownElement.firstChild);
+      }
+
+      // Remove from DOM
+      if (this.dropdownElement.parentNode) {
+        this.dropdownElement.parentNode.removeChild(this.dropdownElement);
+      }
+      this.dropdownElement = null;
+    }
+
+    // Remove body class
+    this.renderer.removeClass(document.body, 'dropdown-open');
+
+    // Remove click outside listener
+    if (this.clickOutsideListener) {
+      this.clickOutsideListener();
+      this.clickOutsideListener = null;
     }
   }
 }
