@@ -77,6 +77,13 @@ export class RichTextEditorComponent implements OnInit, OnDestroy {
 
   onEditorCreated(quillInstance: any) {
     this.quill = quillInstance;
+
+      // Wait for DOM + Ionic rendering
+      requestAnimationFrame(() => {
+        setTimeout(() => {
+          this.quill?.focus();
+        }, 150);
+      });
   }
 
   onContentChange(content: string) {
