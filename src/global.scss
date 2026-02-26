@@ -565,6 +565,15 @@ ion-input {
     }
   }
 
+  @media (max-width: 475px) {
+    .code-input-wrapper {
+      input {
+        width: 46px;
+        height: 46px;
+      }
+    }
+  }
+
   .resend-section {
     text-align: center;
     font-size: 14px;

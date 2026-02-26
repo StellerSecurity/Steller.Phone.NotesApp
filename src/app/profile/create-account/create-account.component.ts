@@ -35,9 +35,9 @@ export class CreateAccountComponent implements OnInit {
   showVerificationSection = false;
   otpValue = '';
   otpConfig = {
-    length: 4,
+    length: 6,
     inputClass: 'bottom-border-otp', // must match your CSS class
-    allowNumbersOnly: false,
+    allowNumbersOnly: true,
     isPasswordInput: false,
     disableAutoFocus: false,
     placeholder: ' ',
