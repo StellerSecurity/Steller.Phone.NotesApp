@@ -7,8 +7,8 @@ const config: CapacitorConfig = {
   webDir: 'www',
   plugins: {
     Keyboard: {
-      resize: KeyboardResize.Body,
-      resizeOnFullScreen: true
+      resize: KeyboardResize.None,
+      // resizeOnFullScreen: true
     }
   },
   server: {
