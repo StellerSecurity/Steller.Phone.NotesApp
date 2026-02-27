@@ -1,6 +1,6 @@
 .editor-wrapper {
-  position: relative;
-  height: 100%;
+  // position: relative;
+  min-height: 100%;
   display: flex;
   flex-direction: column;
   background: white;
@@ -22,7 +22,8 @@
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
   -ms-overflow-style: none;
-  position: relative;
+  position: sticky;
+  top: 0;
   z-index: 10;
   border-bottom: 1px solid #EAEAF0 !important;
 

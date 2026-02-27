@@ -10,9 +10,10 @@ import { AuthService } from '../services/auth.service';
   templateUrl: './profile.component.html',
   styleUrls: ['./profile.component.scss'],
 })
-export class ProfileComponent implements OnInit {
+export class ProfileComponent  {
   user: any = {};
   isLoggedIn = false;
+  isLoading= true;
 
   constructor(
     private router: Router,
@@ -21,10 +22,6 @@ export class ProfileComponent implements OnInit {
     private dataService: DataService,
     public authService: AuthService
   ) {}
-
-  ngOnInit() {
-    this.loadUserData();
-  }
 
   ionViewWillEnter() {
     this.loadUserData();
@@ -37,6 +34,7 @@ export class ProfileComponent implements OnInit {
     }
     const token = await this.secureStorageService.getItem('ssToken');
     this.isLoggedIn = !!token;
+    this.isLoading = false;
   }
 
   goToSettings() {
