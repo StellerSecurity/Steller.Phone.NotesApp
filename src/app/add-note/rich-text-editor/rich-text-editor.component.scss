@@ -130,22 +130,29 @@ quill-editor {
   background: white;
   width: 100%;
   border: 0;
-  flex: 1;
-  display: flex;
-  flex-direction: column;
+
+  /* ❌ REMOVE flex layout */
+  /* flex: 1; */
+  /* display: flex; */
+  /* flex-direction: column; */
 
   ::ng-deep .ql-container {
     border-radius: 0 0 24px 24px;
     border: none !important;
     font-size: 16px;
     font-family: inherit;
+
+    height: auto !important;        // ✅ important
+    overflow: visible !important;   // ✅ important
   }
 
   ::ng-deep .ql-editor {
     min-height: 200px;
     padding: 16px;
     line-height: 1.6;
-    // color: #333;
+
+    height: calc(100vh - 150px)!important;        // ✅ important
+    overflow: visible !important;   // ✅ important
 
     &:focus {
       outline: none;
