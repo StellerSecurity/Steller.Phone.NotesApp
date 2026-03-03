@@ -142,8 +142,8 @@ quill-editor {
     font-size: 16px;
     font-family: inherit;
 
-    height: auto !important;        // ✅ important
-    overflow: visible !important;   // ✅ important
+    height: auto !important;
+    overflow: visible !important;
   }
 
   ::ng-deep .ql-editor {
@@ -151,8 +151,8 @@ quill-editor {
     padding: 16px;
     line-height: 1.6;
 
-    height: calc(100vh - 150px)!important;        // ✅ important
-    overflow: visible !important;   // ✅ important
+    height: 100%!important;
+    overflow: visible !important;
 
     &:focus {
       outline: none;
