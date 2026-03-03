@@ -10,12 +10,12 @@ import { ToastMessageService } from 'src/app/services/toast-message.service';
   styleUrls: ['./forgot-password.component.scss'],
 })
 export class ForgotPasswordComponent implements OnInit {
-  showVerification = false;
+  showVerification = true;
   otpValue = '';
   otpConfig = {
     length: 6,
     inputClass: 'bottom-border-otp', // must match your CSS class
-    allowNumbersOnly: false,
+    allowNumbersOnly: true,
     isPasswordInput: false,
     disableAutoFocus: false,
     placeholder: ' ',

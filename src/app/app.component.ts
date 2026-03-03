@@ -3,6 +3,8 @@ import { TranslatorService } from './services/translator.service';
 import { StatusBar, Style } from '@capacitor/status-bar';
 import { Storage as IonicStorage } from '@ionic/storage-angular';
 import {SyncWorkerService} from "./services/sync-worker.service";
+import { Keyboard, KeyboardResize } from '@capacitor/keyboard';
+import { Capacitor } from '@capacitor/core';
 
 @Component({
   selector: 'app-root',
@@ -23,5 +25,11 @@ export class AppComponent {
     }
   }
 
-
+  ngOnInit() {
+    if (Capacitor.getPlatform() === 'ios') {
+      Keyboard.setResizeMode({
+        mode: KeyboardResize.None   // ✅ correct type
+      });
+    }
+  }
 }

@@ -58,9 +58,7 @@
 
 <ion-content [fullscreen]="true"
   (ionScrollStart)="pauseLiveSync()"
-  (ionScrollEnd)="resumeLiveSync()"
-  scrollEvents="true"
-  [scrollY]="false">
+  (ionScrollEnd)="resumeLiveSync()">
 
   <ion-modal #modal trigger="open-modal">
     <ng-template>
@@ -115,7 +113,7 @@
 
     <!-- textarea -->
     <!-- <angular-editor #editorRef [config]="editorConfig" [(ngModel)]="note_text" (ngModelChange)="save($event)" *ngIf="!note_locked"></angular-editor> -->
-    <div *ngIf="!note_locked">
+    <div *ngIf="!note_locked" style="height: 100%;">
       <app-rich-text-editor #richTextEditorComponentRef  [note_text]="note_text" (noteChange)="onSave($event, 'note_text')"></app-rich-text-editor>
     </div>
 </ion-content>

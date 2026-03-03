@@ -1,9 +1,65 @@
-<div class="editor-container" #editorWrapper>
-  <angular-editor #editorRef 
-    [config]="editorConfig" 
-    [(ngModel)]="note_text" 
+<div class="editor-wrapper">
+  <div id="custom-toolbar" class="toolbar" #toolbar>
+    <button type="button" class="ql-undo">
+    </button>
+
+    <button type="button" class="ql-redo">
+    </button>
+
+    <div class="divider"></div>
+
+    <button type="button" class="ql-bold">
+    </button>
+
+    <button class="ql-strike">
+    </button>
+
+    <div class="list-group">
+      <button type="button" class="ql-list" value="bullet">
+      </button>
+
+      <button type="button" class="ql-list" value="ordered">
+      </button>
+    </div>
+
+    <div class="header-pill" #headerPill>
+      <!-- Hidden select for Quill (always present but invisible) -->
+      <select
+        class="ql-header hidden-select"
+        #headerSelect
+        (change)="onHeaderChange($event)">
+        <option value="false">Standard</option>
+        <option value="1">Heading 1</option>
+        <option value="2">Heading 2</option>
+        <option value="3">Heading 3</option>
+        <option value="4">Heading 4</option>
+        <option value="5">Heading 5</option>
+        <option value="6">Heading 6</option>
+      </select>
+
+      <!-- Visible trigger for all platforms -->
+      <button
+        type="button"
+        class="header-trigger"
+        (click)="toggleDropdown($event)">
+        <span class="selected-value">{{ getSelectedHeaderText() }}</span>
+        <span class="dropdown-arrow">▼</span>
+      </button>
+    </div>
+
+    <button class="ql-link">
+    </button>
+
+    <button class="ql-image">
+    </button>
+  </div>
+
+  <!-- Editor -->
+  <quill-editor
+    [(ngModel)]="note_text"
     (ngModelChange)="onContentChange($event)"
-    (click)="onClickEditor()"
-    (keydown)="onClickEditor()">
-  </angular-editor>
+    [modules]="quillModules"
+    (onEditorCreated)="onEditorCreated($event)"
+    placeholder="Enter your note here..">
+  </quill-editor>
 </div>

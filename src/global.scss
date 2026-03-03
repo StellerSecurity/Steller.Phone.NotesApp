@@ -178,7 +178,7 @@
   overflow-x: auto;
   white-space: nowrap;
   -ms-overflow-style: none;  /* IE and Edge */
-  scrollbar-width: none;     
+  scrollbar-width: none;
   padding: 15px;
   width: 100%;
   height: 60px;
@@ -220,7 +220,7 @@
 }
 
 .angular-editor-toolbar-set button[title="Redo"] {
-  border-right: 1px solid #EAEAF0!important; 
+  border-right: 1px solid #EAEAF0!important;
   border-radius: 0!important;
   padding-right: 10px!important;
   margin-right: 0px!important;
@@ -316,7 +316,7 @@ ion-fab-button,
 ion-item {
   --box-shadow: none!important;
   box-shadow: none !important;
-  border: 0 !important; 
+  border: 0 !important;
 }
 
 .logo-container {
@@ -362,11 +362,11 @@ ion-input {
 .secret-modal {
   --border-radius: 24px;
   --width: 100%;
-  
+
   &::part(content) {
     border-radius: var(--border-radius) var(--border-radius) 0 0;
   }
-  
+
   .modal-box {
     border-radius: var(--border-radius);
     overflow: hidden;
@@ -380,12 +380,12 @@ ion-input {
   background-position: center;
   background-size: contain;
   background-size: 40px 40px;
-  
+
   /* Hide default icon */
   ion-icon {
     display: none;
   }
-  
+
   /* Adjust padding if needed */
   padding-inline-start: 40px;
 }
@@ -394,13 +394,14 @@ ion-input {
   display: none;
 }
 
-// user login/register/etc pages 
+// user login/register/etc pages
 .user-account-section {
   --background: #2761FC;
   position: relative;
 
   .top-section {
-    height: 100vh;
+    // height: 100vh;
+    min-height: 100%;
     background: url('./assets/login-pages-bg.png') no-repeat center;
     background-size: cover;
     display: flex;
@@ -412,12 +413,12 @@ ion-input {
       align-items: center;
       position: absolute;
       top: 20%;
-      
+
       .login-app-logo-img {
         width: 40px;
         height: 40px;
       }
-      
+
       .app-name {
         color: white;
         font-weight: 600;
@@ -530,7 +531,7 @@ ion-input {
   .verify-icon {
     text-align: center;
     margin-top: 12px;
-  
+
     .mail-icon {
       font-size: 28px;
       color: #00aa44;
@@ -539,13 +540,13 @@ ion-input {
       border: 2px solid #00aa44;
     }
   }
-  
+
   .code-input-wrapper {
     display: flex;
     justify-content: center;
     gap: 12px;
     margin: 40px 0;
-  
+
     input {
       width: 74px;
       height: 54px;
@@ -556,20 +557,29 @@ ion-input {
       background: #f1f1f7;
       outline: none!important;
       box-shadow: 0 0 0 1.5px #ccc;
-  
+
       &:focus {
         box-shadow: 0 0 0 2px #2761FC;
         background: #fff;
       }
     }
   }
-  
+
+  @media (max-width: 475px) {
+    .code-input-wrapper {
+      input {
+        width: 46px;
+        height: 46px;
+      }
+    }
+  }
+
   .resend-section {
     text-align: center;
     font-size: 14px;
     margin-bottom: 16px;
     color: #0B0C19;
-  
+
     a {
       color: #2761FC;
       font-weight: 600;
@@ -583,7 +593,7 @@ ion-input {
   .change-email {
     text-align: center;
     font-size: 14px;
-  
+
     a {
       color: #2761FC;
       font-weight: 600;
@@ -591,5 +601,215 @@ ion-input {
       cursor: pointer;
       text-decoration: none;
     }
-  }  
+  }
+}
+
+// quill editor custom styles
+%common-btn {
+  font-size: 0 !important;
+  min-width: 44px!important;
+  min-height: 44px!important;
+  width: 44px!important;
+  height: 44px!important;
+  max-width: 44px!important;
+  max-height: 44px!important;
+  border-radius: 50%;
+  border: 1px solid transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ql-undo {
+  @extend %common-btn;
+
+  &::before {
+    background-image: url('./assets/editor-icon/undo-icon.png');
+    background-size : 24px 24px;
+    display: inline-block;
+    width: 24px;
+    height: 24px;
+    content:"" !important;
+  }
+}
+
+.ql-redo {
+  @extend %common-btn;
+
+  &::before {
+    background-image: url('./assets/editor-icon/undo-icon.png');
+    background-size : 24px 24px;
+    display: inline-block;
+    width: 24px;
+    height: 24px;
+    content:""  !important;
+    transform: scaleX(-1);
+  }
+}
+
+.ql-bold {
+  @extend %common-btn;
+
+  svg {
+    display: none!important;
+  }
+
+  &::before {
+    content: "";
+    display: inline-block;
+    width: 24px;
+    height: 24px;
+    background-image: url('./assets/editor-icon/bold-icon.png');
+    background-size: 24px 24px;
+    background-repeat: no-repeat;
+  }
+}
+
+.ql-strike {
+  @extend %common-btn;
+
+  svg {
+    display: none!important;
+  }
+
+  &::before {
+    background-image: url('./assets/editor-icon/strikethrough-icon.png');
+    background-size : 24px 24px;
+    display: inline-block;
+    width: 24px;
+    height: 24px;
+    content:""!important;
+  }
+}
+
+.ql-list[value="bullet"] {
+  @extend %common-btn;
+  font-size: 0!important;
+
+  svg {
+    display: none!important;
+  }
+
+  &::before {
+    background-image: url('./assets/editor-icon/tabler-list-icon.png');
+    background-size : 24px 24px;
+    display: inline-block;
+    width: 24px;
+    height: 24px;
+    content:""!important;
+  }
+}
+
+.ql-list[value="ordered"] {
+  @extend %common-btn;
+
+  svg {
+    display: none!important;
+  }
+
+  &::before {
+    background-image: url('./assets/editor-icon/numbers-icon.png');
+    background-size : 24px 24px;
+    display: inline-block;
+    width: 24px;
+    height: 24px;
+    content:""!important;
+  }
+}
+
+.ql-link {
+  @extend %common-btn;
+
+  svg {
+    display: none!important;
+  }
+
+  &::before {
+    background-image: url('./assets/editor-icon/tabler-icon-link.png');
+    background-size : 24px 24px;
+    display: inline-block;
+    width: 24px;
+    height: 24px;
+    content:""!important;
+  }
+}
+
+.ql-image {
+  @extend %common-btn;
+  font-size: 0!important;
+
+  svg {
+    display: none!important;
+  }
+
+  &::before {
+    background-image: url('./assets/editor-icon/photo-plus.png');
+    background-size : 24px 24px;
+    display: inline-block;
+    width: 24px;
+    height: 24px;
+    content:""!important;
+  }
+}
+
+.header-pill {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  background: #FFFFFF;
+  border-radius: 46px;
+  border: 1px solid #EAEAF0!important;
+  // padding: 6px 16px;
+  // height: 44px;
+}
+
+.header-pill select {
+  appearance: none;
+  border: none;
+  background: transparent;
+  font-size: 16px;
+  font-weight: 500;
+  padding-right: 20px;
+}
+
+.ql-toolbar.ql-snow .ql-picker.ql-expanded .ql-picker-label {
+  border-color: transparent!important;
+}
+
+.header-pill ion-icon {
+  position: absolute;
+  right: 12px;
+  font-size: 12px;
+  pointer-events: none;
+}
+
+.header-pill ion-icon:first-of-type {
+  top: 6px;
+}
+
+.header-pill ion-icon:last-of-type {
+  bottom: 6px;
+}
+
+#custom-toolbar.clip-overflow {
+  overflow-x: clip !important;
+}
+
+.ql-container.ql-snow {
+  border: 0!important;
+  height: calc(100vh - 114px)!important;
+}
+
+.ql-picker-options {
+  border: 0!important;
+  border-radius: 16px!important;
+  background-color: #F6F6FD!important;
+  box-shadow: 1px 4px 16px 0 rgba(0, 0, 0, 0.12)!important;
+}
+
+.ql-snow .ql-picker-options .ql-picker-item {
+  border-bottom: 1px solid #EAEAF0;
+  padding-top: 8px!important;
+  padding-bottom: 8px!important;
+  padding-left: 4px!important;
 }
