@@ -7,8 +7,8 @@ android {
         applicationId "steller.phone.notesapp"
         minSdkVersion 23
         targetSdkVersion 35
-        versionCode 31
-        versionName "2.71"
+        versionCode 32
+        versionName "2.72"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
