@@ -3,7 +3,7 @@ import { KeyboardResize } from '@capacitor/keyboard';
 
 const config: CapacitorConfig = {
   appId: 'steller.phone.notesapp',
-  appName: 'Stellar Notes',
+  appName: 'Stellar Private Notes',
   webDir: 'www',
   plugins: {
     Keyboard: {
