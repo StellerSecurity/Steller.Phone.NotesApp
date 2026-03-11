@@ -1,9 +1,9 @@
 PODS:
-  - Capacitor (5.2.3):
+  - Capacitor (5.7.8):
     - CapacitorCordova
-  - CapacitorApp (5.0.6):
+  - CapacitorApp (5.0.8):
     - Capacitor
-  - CapacitorCordova (5.2.3)
+  - CapacitorCordova (5.7.8)
   - CapacitorFilesystem (5.2.2):
     - Capacitor
   - CapacitorHaptics (5.0.8):
@@ -17,7 +17,7 @@ PODS:
   - CapacitorSecureStoragePlugin (0.9.0):
     - Capacitor
     - SwiftKeychainWrapper
-  - CapacitorShare (7.0.4):
+  - CapacitorShare (5.0.8):
     - Capacitor
   - CapacitorStatusBar (5.0.8):
     - Capacitor
@@ -65,19 +65,19 @@ EXTERNAL SOURCES:
     :path: "../../node_modules/@capacitor/status-bar"
 
 SPEC CHECKSUMS:
-  Capacitor: f507818f2d2070c86fedc4101cc4aff7e347f359
-  CapacitorApp: 3bef09d0bbb9698fd1766398499f306647156bbf
-  CapacitorCordova: 35def3ebfdef491f0a7b652816eb873ff4b20bbf
+  Capacitor: 9686e5711b48a1aa84671ede795d0175848abcba
+  CapacitorApp: 8026f7ce1ac72780258d05a90c07deb5c724c0fa
+  CapacitorCordova: 31ab98dca2ddcee051027a1afe7e8c85c82f7297
   CapacitorFilesystem: afe2c055f1e379385c80eafdece32751926b2910
   CapacitorHaptics: acd823c6ed0ec2cd968a09316768144b0495a1e7
   CapacitorKeyboard: 38db46e3e9a8024814994b5a909f102f3d27c207
   CapacitorNetwork: b76949446d62b4832ecd5b652ef95b5294c25f00
   CapacitorPreferences: 5331d7a33044d252dcb2f7fee712f0322c04bae7
   CapacitorSecureStoragePlugin: 5d4d084aa652ee6f094dd8b757357a99a6b1b624
-  CapacitorShare: 25f7fc5dd0e4edbde5d6801c6de5d14a8b450a41
+  CapacitorShare: 0a43832a9e09fca9ada569ee1856de75d54c61bf
   CapacitorStatusBar: 8e0a8f213504695505dc8c4f808dffbe03aa0e0f
   SwiftKeychainWrapper: 807ba1d63c33a7d0613288512399cd1eda1e470c
 
-PODFILE CHECKSUM: 6c80ac545e496190b98c67cbbf615560b7fe5afb
+PODFILE CHECKSUM: 564f33cdee9f2555b44fe2aee2bdaee23743d6b6
 
 COCOAPODS: 1.16.2
