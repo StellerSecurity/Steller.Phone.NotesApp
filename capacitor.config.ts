@@ -8,7 +8,7 @@ const config: CapacitorConfig = {
   plugins: {
     Keyboard: {
       resize: KeyboardResize.None,
-      // resizeOnFullScreen: true
+      resizeOnFullScreen: true
     }
   },
   server: {

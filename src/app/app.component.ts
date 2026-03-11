@@ -28,7 +28,7 @@ export class AppComponent {
   ngOnInit() {
     if (Capacitor.getPlatform() === 'ios') {
       Keyboard.setResizeMode({
-        mode: KeyboardResize.None   // ✅ correct type
+        mode: KeyboardResize.Body   // ✅ correct type
       });
     }
   }
