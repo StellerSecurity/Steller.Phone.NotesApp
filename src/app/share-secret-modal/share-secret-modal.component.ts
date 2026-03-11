@@ -73,11 +73,11 @@ export class ShareSecretModalComponent {
           duration: 2500,
           position: 'bottom',
         });
-    
+
         await toast.present();
       },
       error: async (error) => {
-       
+
       },
       complete: async () => {
         this.isDeletingSecret = false;
@@ -104,19 +104,19 @@ export class ShareSecretModalComponent {
       title: 'Stellar Secret',
       text: 'Here is your secret link',
       url: this.secretUrl,
-      dialogTitle: 'Stellar Private Note',
+      dialogTitle: 'Stellar Note',
     });
   }
 
   private formatDate(dateString: string): string {
     const date = new Date(dateString);
-  
+
     const hours = String(date.getHours()).padStart(2, '0');     // 14
     const minutes = String(date.getMinutes()).padStart(2, '0'); // 33
     const day = String(date.getDate()).padStart(2, '0');        // 14
     const month = String(date.getMonth() + 1).padStart(2, '0'); // 02 (zero-indexed)
     const year = date.getFullYear();                            // 2023
-  
+
     return `${hours}:${minutes}, ${day}.${month}.${year}`;
   }
 }
