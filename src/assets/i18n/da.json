@@ -97,7 +97,7 @@
   "burningSecret": "Burning Secret...",
   "createSecret": "Create Secret",
   "passwordAtLeastLength": "Password must have at least 6 characters",
-  "stellarPrivateNotes": "Stellar Notes",
+  "stellarPrivateNotes": "Stellar Private Notes",
   "createStellarID": "Create Stellar ID",
   "pleaseEnterEmailAndPasswordToCreateYourFreeStellarID": "Please enter email and password to create your free Stellar ID.",
   "emailIsRequired": "Email is required",
