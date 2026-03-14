@@ -119,16 +119,18 @@ export class LoginComponent implements OnInit {
 
         // optional app-locker layer
         if (this.notesService.appHasPasswordChallenge()) {
-          this.cryptoService.encrypt(
+          const encryptedEakB64 = this.cryptoService.encrypt(
             eakB64,
             this.notesService.getNotesAppPassword(),
           );
           await this.secureStorageService.setItem(
             'ssEakB64_Encrypted',
-            eakB64,
+            encryptedEakB64,
           );
+          await this.secureStorageService.removeItem('ssEakB64');
         } else {
           await this.secureStorageService.setItem('ssEakB64', eakB64);
+          await this.secureStorageService.removeItem('ssEakB64_Encrypted');
         }
 
         let notes = this.notesService.getNotes();

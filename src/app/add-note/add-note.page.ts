@@ -22,14 +22,11 @@ import { SecureStorageService } from '../services/secure-storage.service';
 import { DataService } from '../services/data.service';
 import { NoteLockedModalComponent } from '../note-locked-modal/note-locked-modal.component';
 import { DeleteNoteModalComponent } from '../delete-note-modal/delete-note-modal.component';
-import { NoteV1 } from "../models/NoteV1";
-import { AuthService } from "../services/auth.service";
+import { NoteV1 } from '../models/NoteV1';
+import { AuthService } from '../services/auth.service';
 
 // ✅ New: use Stellar Crypto SDK
-import {
-  unpackCipherBlob,
-  decryptTextWithMK,
-} from '@stellarsecurity/stellar-crypto';
+import { unpackCipherBlob, decryptTextWithMK } from '@stellarsecurity/stellar-crypto';
 
 // ✅ keep CommonJS requires (no ES imports)
 declare var require: any;
@@ -81,6 +78,9 @@ export class AddNotePage implements OnDestroy {
   private mkRaw: Uint8Array | null = null;
   private saveDebounceTimer: any = null;
 
+  // ✅ Prevent “save on leave” from re-creating a note right after delete (or similar flows)
+  private suppressAutoSave = false;
+
   constructor(
     private cryptoService: CryptoService,
     public activatedRoute: ActivatedRoute,
@@ -97,7 +97,12 @@ export class AddNotePage implements OnDestroy {
   ) {
     this.routeSub = this.activatedRoute.paramMap.subscribe((params: ParamMap) => {
       const decrypted = this.notesService.getDecryptedNotes();
-      this.notes = decrypted ? (JSON.parse(decrypted) as NoteV1[]) : [];
+      try {
+        this.notes = decrypted ? (JSON.parse(decrypted) as NoteV1[]) : [];
+      } catch (error) {
+        console.error('Failed to parse decrypted notes cache:', error);
+        this.notes = [];
+      }
 
       this.notes_id = params.get('id');
       if (this.notes_id === null) {
@@ -171,8 +176,11 @@ export class AddNotePage implements OnDestroy {
     }
   }
 
+  // ✅ Save when leaving the page (covers header back, swipe-back, router navigation, hardware back, etc.)
   ionViewWillLeave() {
+    this.forceSaveNow();
     this.stopLiveNotePolling();
+
     // if (this.richTextEditorComponent?.onLeave) {
     //   this.richTextEditorComponent.onLeave();
     // }
@@ -195,8 +203,52 @@ export class AddNotePage implements OnDestroy {
     // }
   }
 
-  public async shareStellarSecret() {
+  // --- Fix #1: prevent empty “new note” auto-save on leave ---
 
+  private htmlToPlainText(html: string): string {
+    if (!html) return '';
+    try {
+      const doc = new DOMParser().parseFromString(html, 'text/html');
+      return (doc.body?.textContent ?? '').replace(/\u00A0/g, ' ').trim();
+    } catch {
+      return html
+        .replace(/<br\s*\/?>/gi, '\n')
+        .replace(/<[^>]+>/g, '')
+        .replace(/\u00A0/g, ' ')
+        .trim();
+    }
+  }
+
+  private isEffectivelyEmptyNewNote(): boolean {
+    if (!this.newlyCreatedNote) return false;
+
+    const title = (this.note_title ?? '').trim();
+    const titleEmpty = title.length === 0 || title === 'Untitled';
+
+    const plainText = this.htmlToPlainText(this.note_text ?? '');
+    const textEmpty = plainText.length === 0;
+
+    return titleEmpty && textEmpty;
+  }
+
+  // ✅ Flush debounce and save immediately
+  private forceSaveNow(): void {
+    // Do not save if we are intentionally leaving after deleting (or other flows)
+    if (this.suppressAutoSave) return;
+
+    // Fix #1: do not auto-create empty notes when user immediately goes back
+    if (this.isEffectivelyEmptyNewNote()) return;
+
+    if (this.saveDebounceTimer) {
+      clearTimeout(this.saveDebounceTimer);
+      this.saveDebounceTimer = null;
+    }
+
+    this.typing = false;
+    this.save(null);
+  }
+
+  public async shareStellarSecret() {
     const addSecretModal = new Secret();
     const secret_id = uuidv4();
 
@@ -422,6 +474,12 @@ export class AddNotePage implements OnDestroy {
   }
 
   async storeNoteInStorage(serverSync = true, forceDownloadOnHome = false) {
+    // --- Fix #3: clear previous queued upload timeout to avoid multiple uploads stacking ---
+    if (this.saveTimeout) {
+      clearTimeout(this.saveTimeout);
+      this.saveTimeout = null;
+    }
+
     if (this.notesService.appHasPasswordChallenge()) {
       const encryptedNotesSave = this.cryptoService.encrypt(
         JSON.stringify(this.notes),
@@ -451,6 +509,8 @@ export class AddNotePage implements OnDestroy {
   }
 
   public back() {
+    // Ensure save is executed before leaving via custom back button
+    this.forceSaveNow();
     this.navController.back();
   }
 
@@ -699,6 +759,11 @@ export class AddNotePage implements OnDestroy {
       if (data && data.data) {
         const { confirm } = data.data;
         if (confirm) {
+          // ✅ prevent ionViewWillLeave() from saving the deleted note back
+          this.suppressAutoSave = true;
+
+          const deletedId = this.notes_id;
+
           for (let i = 0; i < this.notes.length; i++) {
             if (this.notes[i].id === this.notes_id) {
               this.notes[i].deleted = true;
@@ -713,8 +778,12 @@ export class AddNotePage implements OnDestroy {
           }
 
           await this.storeNoteInStorage(true, this.newlyCreatedNote);
+
+          // Extra safety: make sure save() can’t re-add this note
           this.currentNote = null;
-          await this.navController.navigateForward('/?hide_ids=' + this.notes_id);
+          this.notes_id = null;
+
+          await this.navController.navigateForward('/?hide_ids=' + (deletedId ?? ''));
         }
       }
     });
@@ -754,6 +823,6 @@ export class AddNotePage implements OnDestroy {
     this.saveDebounceTimer = setTimeout(() => {
       this.typing = false;
       this.save(null);
-    }, 800); // ← sweet spot (500–1000ms)
+    }, 800); // sweet spot (500–1000ms)
   }
 }

@@ -562,7 +562,7 @@ export class HomePage {
       this.noteService.setNotes(JSON.stringify(this.notes));
     }
 
-    this.noteService.setDecryptedNotes(this.noteService.getNotes());
+    this.noteService.setDecryptedNotes(JSON.stringify(this.notes));
 
     if (this.authService.isLoggedIn) {
       this.notesApiServiceV1.deleteNotes(this.listOfCheckedCheckboxes).then((data) => {});
