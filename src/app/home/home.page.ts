@@ -77,6 +77,7 @@ export class HomePage {
   public timezone = "UTC";
   public search_query = "";
   public filteredResults: any = [];
+  public visibleNotes: any[] = [];
   public isSearching = false;
   public isSyncing = false;
   public waitForSync = false;
@@ -231,6 +232,7 @@ export class HomePage {
     if (this.search_query.length == 0) {
       this.isSearching = false;
       this.filteredResults = this.notes;
+      this.refreshVisibleNotes();
       return;
     }
 
@@ -258,6 +260,7 @@ export class HomePage {
     this.isSearching = true;
     this.pauseSync = true;
     this.filteredResults = filteredNewResults;
+    this.refreshVisibleNotes();
 
     this.initializePressGesture();
     setTimeout(() => this.cdr.detectChanges(), HomePage.DETECT_CHANGES_DELAY_MS);
@@ -316,6 +319,7 @@ export class HomePage {
     // @ts-ignore
     this.notes = parsed ?? [];
     this.filteredResults = this.notes;
+    this.refreshVisibleNotes();
     return true;
   }
 
@@ -395,6 +399,7 @@ export class HomePage {
       const merged = Array.from(map.values()).filter((n: any) => !n.deleted);
       this.notes = merged;
       this.filteredResults = merged;
+      this.refreshVisibleNotes();
 
       if (this.noteService.appHasPasswordChallenge()) {
         const encryptedNotesSave = this.cryptoService.encrypt(
@@ -484,13 +489,19 @@ export class HomePage {
   // --------------------------------------------------
   // Notes helpers
   // --------------------------------------------------
+  private refreshVisibleNotes() {
+    const source = Array.isArray(this.filteredResults) ? this.filteredResults : [];
+    this.visibleNotes = [...source].sort((a: any, b: any) =>
+      (b?.last_modified ?? 0) - (a?.last_modified ?? 0)
+    );
+  }
+
+  trackByNoteId(index: number, note: any): string {
+    return note?.id ?? String(index);
+  }
+
   getNotes() {
-    if (this.filteredResults === undefined || this.filteredResults === null) {
-      return [];
-    }
-    // @ts-ignore
-    this.filteredResults = this.filteredResults.sort((a, b) => b.last_modified - a.last_modified);
-    return this.filteredResults;
+    return this.visibleNotes;
   }
 
   public settings() {
@@ -550,6 +561,8 @@ export class HomePage {
         }
       }
     }
+
+    this.refreshVisibleNotes();
 
     if (this.noteService.appHasPasswordChallenge()) {
       const encryptedNotesSave = this.cryptoService.encrypt(
