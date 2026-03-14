@@ -216,3 +216,39 @@ ion-back-button {
   font-size: 20px;
   padding: 10px;
 }
+.auto-lock-item {
+  align-items: center;
+
+  ion-select {
+    min-width: 120px;
+    justify-content: flex-end;
+  }
+}
+
+.auto-lock-label {
+  display: flex;
+  flex-direction: column;
+
+  strong {
+    color: #0B0C19;
+    font-family: 'Poppins';
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  span {
+    color: #62626A;
+    font-family: 'Poppins';
+    font-size: 12px;
+    font-weight: 400;
+    margin-top: 2px;
+  }
+}
+
+.auto-lock-help {
+  color: #62626A;
+  font-family: 'Poppins';
+  font-size: 12px;
+  line-height: 1.5;
+  margin: -4px 4px 16px;
+}

@@ -1,5 +1,4 @@
 import { Injectable } from '@angular/core';
-import { Router } from '@angular/router';
 import { App } from '@capacitor/app';
 import { NotesService } from './notes.service';
 
@@ -8,16 +7,42 @@ import { NotesService } from './notes.service';
 })
 export class AppProtectorService {
   private inactivityTimerId: number | null = null;
+  private started = false;
+  private backgroundedAt = 0;
+  private readonly activityEvents = ['click', 'keydown', 'touchstart', 'mousedown'];
+  private readonly boundRecordActivity = () => this.recordActivity();
 
-  constructor(
-    private noteService: NotesService,
-    private router: Router,
-  ) {}
+  constructor(private noteService: NotesService) {}
 
   public init() {
-    if (this.inactivityTimerId !== null) {
+    if (this.started) {
       return;
     }
+
+    this.started = true;
+    this.backgroundedAt = 0;
+    this.recordActivity();
+    this.installActivityListeners();
+
+    App.addListener('appStateChange', ({ isActive }) => {
+      if (!this.noteService.appHasPasswordChallenge()) {
+        return;
+      }
+
+      if (isActive) {
+        const timeoutMs = this.getTimeoutMs();
+        if (this.backgroundedAt !== 0 && Date.now() - this.backgroundedAt >= timeoutMs) {
+          this.lockNow();
+          return;
+        }
+
+        this.backgroundedAt = 0;
+        this.recordActivity();
+        return;
+      }
+
+      this.backgroundedAt = Date.now();
+    });
 
     this.checkForInActivity();
   }
@@ -27,6 +52,46 @@ export class AppProtectorService {
       window.clearTimeout(this.inactivityTimerId);
       this.inactivityTimerId = null;
     }
+
+    this.removeActivityListeners();
+    this.started = false;
+    this.backgroundedAt = 0;
+  }
+
+  private getTimeoutMs(): number {
+    return this.noteService.getAppLockTimeoutMinutes() * 60_000;
+  }
+
+  private installActivityListeners() {
+    this.activityEvents.forEach((eventName) => {
+      document.addEventListener(eventName, this.boundRecordActivity, true);
+    });
+  }
+
+  private removeActivityListeners() {
+    this.activityEvents.forEach((eventName) => {
+      document.removeEventListener(eventName, this.boundRecordActivity, true);
+    });
+  }
+
+  private recordActivity() {
+    if (!this.noteService.appHasPasswordChallenge()) {
+      return;
+    }
+
+    if (this.noteService.getNotesAppPassword() === '') {
+      return;
+    }
+
+    this.noteService.setLastActivityTimestamp(Date.now());
+  }
+
+  private lockNow() {
+    this.noteService.setNotesAppPassword('');
+    this.noteService.setDecryptedNotes(null);
+    this.noteService.setLastActivityTimestamp(0);
+    this.stop();
+    window.location.href = '/';
   }
 
   private checkForInActivity() {
@@ -34,21 +99,11 @@ export class AppProtectorService {
 
     if (lastActivityTime !== 0) {
       const currentTimestamp = Date.now();
-      // inactive for 60 minutes, close the app. (clearing services for data).
-      // 600000 = 1 minute in MS.
-      if (lastActivityTime <= currentTimestamp - (60 * 60000)) {
-        this.noteService.setNotesAppPassword('');
-        this.stop();
-        this.router.navigateByUrl('/');
+      if (currentTimestamp - lastActivityTime >= this.getTimeoutMs()) {
+        this.lockNow();
         return;
       }
     }
-
-    App.getState().then((data) => {
-      if (data.isActive) {
-        this.noteService.setLastActivityTimestamp(Date.now());
-      }
-    });
 
     this.inactivityTimerId = window.setTimeout(() => {
       this.checkForInActivity();

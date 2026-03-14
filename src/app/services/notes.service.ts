@@ -18,6 +18,7 @@ export class NotesService {
    * @private
    */
   private LAST_ACTIVITY_TIMESTAMP = 0;
+  private readonly APP_LOCK_TIMEOUT_MINUTES_KEY = 'app_lock_timeout_minutes';
 
   /**
    * If the user has chosen to add a password to the notes-app,
@@ -108,6 +109,23 @@ export class NotesService {
 
   public setDecryptedNotes(data: any) {
     this.decryptedNotes = data;
+  }
+
+
+  public setAppLockTimeoutMinutes(minutes: number) {
+    localStorage.setItem(this.APP_LOCK_TIMEOUT_MINUTES_KEY, String(minutes));
+  }
+
+  public getAppLockTimeoutMinutes(): number {
+    const raw = localStorage.getItem(this.APP_LOCK_TIMEOUT_MINUTES_KEY);
+    const parsed = Number(raw);
+    const allowed = [1, 5, 15, 30, 60];
+
+    if (!Number.isFinite(parsed) || !allowed.includes(parsed)) {
+      return 60;
+    }
+
+    return parsed;
   }
 
   public setLastActivityTimestamp(timestamp: number) {

@@ -35,6 +35,8 @@ export class AppSettingsPage implements AfterViewInit {
   public specialChar = false;
   public strongPass = false;
   public allTranslations: any;
+  public appLockTimeoutMinutes = 60;
+  public readonly appLockTimeoutOptions = [1, 5, 15, 30, 60];
 
   @ViewChild(IonModal) modal: IonModal;
 
@@ -51,6 +53,7 @@ export class AppSettingsPage implements AfterViewInit {
 
   ionViewWillEnter(): void {
     this.allTranslations = this.translatorService.allTranslations;
+    this.appLockTimeoutMinutes = this.noteService.getAppLockTimeoutMinutes();
   }
 
   ionViewDidEnter() {
@@ -62,6 +65,7 @@ export class AppSettingsPage implements AfterViewInit {
       this.password_enabled = true;
     }
     this.appPasswordChallenge = this.noteService.appHasPasswordChallenge();
+    this.appLockTimeoutMinutes = this.noteService.getAppLockTimeoutMinutes();
   }
 
   cancel() {
@@ -128,6 +132,7 @@ export class AppSettingsPage implements AfterViewInit {
     this.noteService.setNotes(encryptedNotes);
 
     await this.modal.dismiss();
+    this.noteService.setAppLockTimeoutMinutes(this.appLockTimeoutMinutes);
     this.noteService.setNotesAppPassword(this.notesAppPassword);
     this.notesAppPassword = "";
     this.confirmPassword = "";
@@ -208,6 +213,19 @@ export class AppSettingsPage implements AfterViewInit {
     this.strongPass = strength.strongPass;
     this.passwordStrengthHelperText =
       this.allTranslations?.[strength.helperKey] ?? '';
+  }
+
+
+  public saveAppLockTimeout() {
+    this.noteService.setAppLockTimeoutMinutes(this.appLockTimeoutMinutes);
+  }
+
+  public getAppLockTimeoutLabel(minutes: number): string {
+    if (minutes === 1) {
+      return 'After 1 minute';
+    }
+
+    return `After ${minutes} minutes`;
   }
 
   public async appPasswordChallengeDialog() {

@@ -83,6 +83,24 @@
     </div>
   </ion-item>
 
+  <ion-item *ngIf="password_enabled" class="auto-lock-item">
+    <ion-label class="auto-lock-label">
+      <strong>Auto-lock timer</strong>
+      <span>{{ getAppLockTimeoutLabel(appLockTimeoutMinutes) }}</span>
+    </ion-label>
+    <ion-select
+      interface="action-sheet"
+      [(ngModel)]="appLockTimeoutMinutes"
+      (ionChange)="saveAppLockTimeout()">
+      <ion-select-option *ngFor="let option of appLockTimeoutOptions" [value]="option">
+        {{ getAppLockTimeoutLabel(option) }}
+      </ion-select-option>
+    </ion-select>
+  </ion-item>
+
+  <div class="auto-lock-help" *ngIf="password_enabled">
+    After this time, the app locks automatically when inactive or in the background.
+  </div>
 
   <hr>
 
