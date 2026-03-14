@@ -173,7 +173,6 @@ export class HomePage {
     });
   }
 
-
   ionViewDidEnter() {
     this.initializePressGesture();
   }
@@ -624,10 +623,15 @@ export class HomePage {
 
     modal.onDidDismiss().then(async (data) => {
       if (data && data.data) {
-        const {confirm} = data.data;
+        const { confirm } = data.data;
         if (confirm) {
+          this.noteService.clearSensitiveRuntimeState();
+          this.input_password_app_unlock = '';
+          this.should_display = true;
+
           await this.dataService.clearAppData();
-          await this.router.navigateByUrl('/', { replaceUrl: true });
+
+          window.location.reload();
         }
       }
     });
