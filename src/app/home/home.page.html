@@ -247,14 +247,11 @@ align-self: stretch; background: #2761FC; color: #fff; border-radius: 250px" (cl
           </span>
         </ion-label>
 
-        <ion-label *ngIf="note.protected">
-          <ion-note>
-            <span>{{ note.last_modified | date: "yyyy-MM-dd H:mm":(timezone || 'UTC') }}<br>
-              <span class="uuid">{{ note.id | slice:-6 }}</span>
-            </span>
-            <img src="/assets/tabler-icon-lock.svg">
-          </ion-note>
+        <ion-label class="ion-text-wrap" *ngIf="note.protected">
+          <ion-note><span>{{ 'thisNoteIsLocked' | translate }}</span></ion-note>
+          <span class="note-txt-title">{{ 'thisNoteIsLocked' | translate }}</span>
         </ion-label>
+        <img *ngIf="note.protected" src="/assets/tabler-icon-lock.svg">
       </div>
     </ion-item>
   </ion-list>

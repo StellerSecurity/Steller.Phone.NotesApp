@@ -21,6 +21,8 @@ export class NotesService {
   private readonly APP_LOCK_TIMEOUT_MINUTES_KEY = 'app_lock_timeout_minutes';
   private readonly APP_FAILED_ATTEMPTS_KEY = 'failedAttemptsApp';
   private readonly APP_LOCKOUT_UNTIL_KEY = 'app_lockout_until';
+  private readonly NOTE_FAILED_ATTEMPTS_PREFIX = 'note_failed_attempts_';
+  private readonly NOTE_LOCKOUT_UNTIL_PREFIX = 'note_lockout_until_';
 
   /**
    * If the user has chosen to add a password to the notes-app,
@@ -54,6 +56,64 @@ export class NotesService {
   public clearAppUnlockFailures() {
     localStorage.removeItem(this.APP_FAILED_ATTEMPTS_KEY);
     localStorage.removeItem(this.APP_LOCKOUT_UNTIL_KEY);
+  }
+
+  private getNoteFailedAttemptsKey(noteId: string): string {
+    return `${this.NOTE_FAILED_ATTEMPTS_PREFIX}${noteId}`;
+  }
+
+  private getNoteLockoutUntilKey(noteId: string): string {
+    return `${this.NOTE_LOCKOUT_UNTIL_PREFIX}${noteId}`;
+  }
+
+  public getFailedPasswordNoteAttempts(noteId: string): number {
+    const raw = localStorage.getItem(this.getNoteFailedAttemptsKey(noteId));
+    const parsed = Number(raw);
+
+    if (!Number.isFinite(parsed) || parsed < 0) {
+      return 0;
+    }
+
+    return Math.floor(parsed);
+  }
+
+  public setFailedPasswordNoteAttempts(noteId: string, attempts: number) {
+    localStorage.setItem(this.getNoteFailedAttemptsKey(noteId), String(Math.max(0, attempts)));
+  }
+
+  public clearNoteUnlockFailures(noteId: string) {
+    localStorage.removeItem(this.getNoteFailedAttemptsKey(noteId));
+    localStorage.removeItem(this.getNoteLockoutUntilKey(noteId));
+  }
+
+  public getNoteUnlockLockoutRemainingMs(noteId: string, now = Date.now()): number {
+    const raw = localStorage.getItem(this.getNoteLockoutUntilKey(noteId));
+    const until = Number(raw);
+
+    if (!Number.isFinite(until) || until <= 0) {
+      return 0;
+    }
+
+    if (until <= now) {
+      localStorage.removeItem(this.getNoteLockoutUntilKey(noteId));
+      return 0;
+    }
+
+    return until - now;
+  }
+
+  public registerFailedNoteUnlockAttempt(noteId: string, now = Date.now()): number {
+    const attempts = this.getFailedPasswordNoteAttempts(noteId) + 1;
+    this.setFailedPasswordNoteAttempts(noteId, attempts);
+
+    if (attempts < 5) {
+      return 0;
+    }
+
+    const lockoutMs = Math.min(15 * 60_000, 30_000 * Math.pow(2, attempts - 5));
+    localStorage.setItem(this.getNoteLockoutUntilKey(noteId), String(now + lockoutMs));
+
+    return lockoutMs;
   }
 
   public getAppUnlockLockoutRemainingMs(now = Date.now()): number {

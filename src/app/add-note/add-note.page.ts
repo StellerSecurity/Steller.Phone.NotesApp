@@ -10,6 +10,8 @@ import {
 } from '@ionic/angular';
 
 import { Subscription } from 'rxjs';
+import { App } from '@capacitor/app';
+import type { PluginListenerHandle } from '@capacitor/core';
 import { CryptoService } from '../services/crypto.service';
 import { NotesService } from '../services/notes.service';
 import { TranslatorService } from '../services/translator.service';
@@ -78,6 +80,18 @@ export class AddNotePage implements OnDestroy {
   // 🔐 Master key held in RAM (derived from EAK)
   private mkRaw: Uint8Array | null = null;
   private saveDebounceTimer: any = null;
+  private encryptedProtectedText = '';
+  private encryptedProtectedTitle = '';
+  private noteUnlockModalOpen = false;
+  private appStateListener?: PluginListenerHandle;
+  private readonly visibilityChangeHandler = () => {
+    if (document.hidden) {
+      this.relockProtectedNote();
+      return;
+    }
+
+    this.promptUnlockForProtectedNote().then(() => {});
+  };
 
   // ✅ Prevent “save on leave” from re-creating a note right after delete (or similar flows)
   private suppressAutoSave = false;
@@ -123,11 +137,13 @@ export class AddNotePage implements OnDestroy {
 
       if (this.currentNote.protected) {
         this.note_locked = true;
+        this.captureEncryptedProtectedState(this.currentNote);
+        this.clearProtectedNoteDraftFields();
         this.askforNotePassword().then(() => {});
+      } else {
+        this.note_text = this.currentNote.text ?? '';
+        this.note_title = this.currentNote.title !== undefined ? this.currentNote.title : 'Untitled';
       }
-
-      this.note_text = this.currentNote.text ?? '';
-      this.note_title = this.currentNote.title !== undefined ? this.currentNote.title : 'Untitled';
 
       this.startLiveNotePolling();
     });
@@ -136,10 +152,15 @@ export class AddNotePage implements OnDestroy {
   ngOnDestroy(): void {
     this.routeSub?.unsubscribe();
     this.stopLiveNotePolling();
+    this.removeProtectedNoteRelockListeners().then(() => {});
+    this.clearProtectedNoteRuntimeState();
+    this.mkRaw = null;
   }
 
   ionViewDidEnter() {
     this.passwordStrengthHelperText = this.allTranslations?.passwordAtLeastLength ?? '';
+    this.installProtectedNoteRelockListeners().then(() => {});
+
     if (this.note_text.length === 0) {
       setTimeout(() => this.placeCursorAtEnd(), 100);
     }
@@ -178,7 +199,9 @@ export class AddNotePage implements OnDestroy {
   // ✅ Save when leaving the page (covers header back, swipe-back, router navigation, hardware back, etc.)
   ionViewWillLeave() {
     this.forceSaveNow();
+    this.relockProtectedNote();
     this.stopLiveNotePolling();
+    this.removeProtectedNoteRelockListeners().then(() => {});
 
     // if (this.richTextEditorComponent?.onLeave) {
     //   this.richTextEditorComponent.onLeave();
@@ -200,6 +223,103 @@ export class AddNotePage implements OnDestroy {
     //   selection.removeAllRanges();
     //   selection.addRange(range);
     // }
+  }
+
+  private captureEncryptedProtectedState(note: NoteV1) {
+    this.encryptedProtectedText = typeof note.text === 'string' ? note.text : '';
+    this.encryptedProtectedTitle = typeof note.title === 'string' ? note.title : '';
+  }
+
+  private restoreEncryptedProtectedState() {
+    if (!this.currentNote?.protected) {
+      return;
+    }
+
+    if (this.encryptedProtectedText.length > 0) {
+      this.currentNote.text = this.encryptedProtectedText;
+    }
+
+    if (this.encryptedProtectedTitle.length > 0 || this.currentNote.title === undefined) {
+      this.currentNote.title = this.encryptedProtectedTitle;
+    }
+
+    for (let i = 0; i < this.notes.length; i++) {
+      if (this.notes[i].id === this.notes_id) {
+        this.notes[i].text = this.currentNote.text;
+        this.notes[i].title = this.currentNote.title;
+        break;
+      }
+    }
+  }
+
+  private clearProtectedNoteDraftFields() {
+    this.note_text = '';
+    this.note_title = '';
+    this.notes_password_input = '';
+    this.notes_password_confirm = '';
+  }
+
+  private clearProtectedNoteRuntimeState() {
+    this.restoreEncryptedProtectedState();
+    this.clearProtectedNoteDraftFields();
+    this.notes_password_stored = '';
+  }
+
+  private relockProtectedNote() {
+    if (!this.currentNote?.protected) {
+      return;
+    }
+
+    if (this.note_locked) {
+      this.clearProtectedNoteRuntimeState();
+      return;
+    }
+
+    this.note_locked = true;
+    this.clearProtectedNoteRuntimeState();
+  }
+
+  private async installProtectedNoteRelockListeners() {
+    if (!this.appStateListener) {
+      this.appStateListener = await App.addListener('appStateChange', ({ isActive }: { isActive: boolean }) => {
+        if (!isActive) {
+          this.relockProtectedNote();
+          return;
+        }
+
+        this.promptUnlockForProtectedNote().then(() => {});
+      });
+    }
+
+    if (typeof document !== 'undefined') {
+      document.removeEventListener('visibilitychange', this.visibilityChangeHandler, true);
+      document.addEventListener('visibilitychange', this.visibilityChangeHandler, true);
+    }
+  }
+
+  private async removeProtectedNoteRelockListeners() {
+    await this.appStateListener?.remove();
+    this.appStateListener = undefined;
+
+    if (typeof document !== 'undefined') {
+      document.removeEventListener('visibilitychange', this.visibilityChangeHandler, true);
+    }
+  }
+
+  private async promptUnlockForProtectedNote() {
+    if (!this.currentNote?.protected || !this.note_locked) {
+      return;
+    }
+
+    if (this.noteUnlockModalOpen || this.notesService.shouldAskForPassword()) {
+      return;
+    }
+
+    if (typeof document !== 'undefined' && document.hidden) {
+      return;
+    }
+
+    await this.askforNotePassword();
   }
 
   // --- Fix #1: prevent empty “new note” auto-save on leave ---
@@ -445,6 +565,14 @@ export class AddNotePage implements OnDestroy {
       auto_wipe: true,
     };
 
+    if (protectedNote) {
+      this.encryptedProtectedText = encryptedText;
+      this.encryptedProtectedTitle = encryptedTitle && encryptedTitle.length ? encryptedTitle : formattedDate;
+    } else {
+      this.encryptedProtectedText = '';
+      this.encryptedProtectedTitle = '';
+    }
+
     if (this.notes === null) {
       this.notes = [note];
     } else {
@@ -504,9 +632,20 @@ export class AddNotePage implements OnDestroy {
     this.navController.back();
   }
 
-  private async wrongPasswordEntered() {
+  private formatNoteLockoutMessage(remainingMs: number): string {
+    const totalSeconds = Math.max(1, Math.ceil(remainingMs / 1000));
+
+    if (totalSeconds >= 60) {
+      const minutes = Math.ceil(totalSeconds / 60);
+      return `Too many failed attempts. Try again in ${minutes} minute${minutes === 1 ? '' : 's'}.`;
+    }
+
+    return `Too many failed attempts. Try again in ${totalSeconds} second${totalSeconds === 1 ? '' : 's'}.`;
+  }
+
+  private async wrongPasswordEntered(lockoutMs = 0) {
     const toast = await this.toastController.create({
-      message: this.allTranslations.passwordIsNotCorrectTryAgain,
+      message: lockoutMs > 0 ? this.formatNoteLockoutMessage(lockoutMs) : this.allTranslations.passwordIsNotCorrectTryAgain,
       duration: 3000,
       position: 'bottom',
     });
@@ -515,28 +654,49 @@ export class AddNotePage implements OnDestroy {
   }
 
   public async askforNotePassword() {
+    if (this.noteUnlockModalOpen) {
+      return;
+    }
+
+    this.noteUnlockModalOpen = true;
+
     const modal = await this.modalCtrl.create({
       component: NoteLockedModalComponent,
       cssClass: 'confirmation-popup',
     });
 
     modal.onDidDismiss().then(async (data) => {
+      this.noteUnlockModalOpen = false;
+
       if (data && data.data) {
         const { confirm, inputValue } = data.data || {};
         if (confirm) {
+          if (!this.notes_id) {
+            return;
+          }
+
+          const lockoutRemaining = this.notesService.getNoteUnlockLockoutRemainingMs(this.notes_id);
+          if (lockoutRemaining > 0) {
+            await this.wrongPasswordEntered(lockoutRemaining);
+            return;
+          }
+
           this.notes_password_stored = inputValue ?? '';
 
           const ok = this.decryptNote(this.notes_password_stored, this.currentNote);
           if (!ok) {
-            await this.wrongPasswordEntered();
+            const lockoutMs = this.notesService.registerFailedNoteUnlockAttempt(this.notes_id);
+            this.notes_password_stored = '';
+            await this.wrongPasswordEntered(lockoutMs);
           } else {
-            await modal.dismiss();
+            this.notesService.clearNoteUnlockFailures(this.notes_id);
           }
         } else {
           this.back();
         }
       }
-      if (data.role === 'backdrop') {
+
+      if (data?.role === 'backdrop') {
         this.back();
       }
     });
@@ -568,6 +728,7 @@ export class AddNotePage implements OnDestroy {
       this.currentNote.text = decryptedText;
       this.currentNote.title = decryptedTitle;
     }
+
     this.note_text = decryptedText;
     this.note_title = decryptedTitle;
     this.note_locked = false;
@@ -612,6 +773,9 @@ export class AddNotePage implements OnDestroy {
     }
 
     this.notes_password_stored = this.notes_password_input;
+    if (this.notes_id) {
+      this.notesService.clearNoteUnlockFailures(this.notes_id);
+    }
 
     const decryptedText = this.note_text;
     const decryptedTitle = this.note_title;
@@ -675,6 +839,11 @@ export class AddNotePage implements OnDestroy {
                 this.notes[i].protected = false;
                 this.currentNote = this.notes[i];
                 this.notes_password_stored = '';
+                this.encryptedProtectedText = '';
+                this.encryptedProtectedTitle = '';
+                if (this.notes_id) {
+                  this.notesService.clearNoteUnlockFailures(this.notes_id);
+                }
                 break;
               }
             }
@@ -734,6 +903,10 @@ export class AddNotePage implements OnDestroy {
           }
 
           await this.storeNoteInStorage(true, this.newlyCreatedNote);
+
+          if (deletedId) {
+            this.notesService.clearNoteUnlockFailures(deletedId);
+          }
 
           // Extra safety: make sure save() can’t re-add this note
           this.currentNote = null;
