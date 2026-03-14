@@ -143,14 +143,12 @@ export class CreateAccountComponent implements OnInit {
           await this.router.navigate(['/']);
         } else {
           await this.notesApiV1Service.upload(0, JSON.parse(notes));
-          console.log('Notes sent.');
           await this.router.navigate(['/']);
         }
       } else {
         await this.toastMessageService.showError(response.response_message);
       }
     } catch (error: any) {
-      console.log("some error", error);
       await this.toastMessageService.showError(error?.error?.message ?? error?.message ?? error);
     } finally {
       this.isSaving = false;
@@ -162,7 +160,6 @@ export class CreateAccountComponent implements OnInit {
   }
 
   resendCode() {
-    console.log('Resend code to:', this.email);
   }
 
   changeEmail() {

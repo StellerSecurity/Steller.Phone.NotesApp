@@ -23,7 +23,6 @@ export class DataService {
     }
 
     public async clearAppData() {
-      console.log('Starting nuclear reset…');
 
       await this.secureStorageService.clear();
       localStorage.clear();
@@ -54,7 +53,6 @@ export class DataService {
       await wipeDir(Directory.Cache);
       await wipeDir(Directory.Data);
 
-      console.log('Nuke complete.');
     }
 
 }

@@ -54,7 +54,6 @@ export class ProfileComponent  {
         {
           text: 'Logout',
           handler: () => {
-            console.log('Logout');
             this.logout();
           },
         },

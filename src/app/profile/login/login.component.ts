@@ -147,9 +147,7 @@ export class LoginComponent implements OnInit {
         } else {
           try {
             await this.notesApiV1Service.upload(0, JSON.parse(notes));
-            console.log('Notes sent.');
           } catch (err) {
-            console.log('notes error.', err);
           } finally {
             await this.router.navigate(['/']);
           }
@@ -158,7 +156,6 @@ export class LoginComponent implements OnInit {
         await this.toastMessageService.showError(response.response_message);
       }
     } catch (error: any) {
-      console.log(error);
       await this.toastMessageService.showError('Something went wrong');
     } finally {
       this.isSaving = false;

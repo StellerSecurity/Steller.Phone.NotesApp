@@ -101,7 +101,6 @@ export class AddNotePage implements OnDestroy {
       try {
         this.notes = decrypted ? (JSON.parse(decrypted) as NoteV1[]) : [];
       } catch (error) {
-        console.error('Failed to parse decrypted notes cache:', error);
         this.notes = [];
       }
 
@@ -173,7 +172,6 @@ export class AddNotePage implements OnDestroy {
         }
       }
     } catch (e) {
-      console.error('Failed to load MK from storage in AddNotePage:', e);
     }
   }
 
@@ -327,7 +325,6 @@ export class AddNotePage implements OnDestroy {
     if (this.note_locked) return;
 
     if (this.typing) {
-      console.log('Do not fetch live note');
       return;
     }
     if (!this.notes_id) return;
@@ -340,7 +337,6 @@ export class AddNotePage implements OnDestroy {
       this.notesApiV1Service
         .find(noteId)
         .then(async (note: any) => {
-          console.log('Fetched Live Note');
           if (this.currentNote == null) return;
 
           if (note.deleted) {
@@ -358,16 +354,13 @@ export class AddNotePage implements OnDestroy {
           if (!note.protected) this.notes_password_stored = '';
 
           if (this.currentNote.last_modified == note.last_modified) {
-            console.log('Equal');
             return;
           }
           if ((this.currentNote.last_modified ?? 0) > (note.last_modified ?? 0)) {
-            console.log('Higher');
             return;
           }
 
           if (!this.mkRaw) {
-            console.warn('MK not loaded in AddNotePage; skipping decrypt for live note');
             return;
           }
 
@@ -397,9 +390,7 @@ export class AddNotePage implements OnDestroy {
           this.currentNote.title = this.note_title;
 
           if (note.protected) {
-            console.log('Note is protected, lets decrypt it.');
             const ok = this.decryptNote(this.notes_password_stored, note);
-            console.log('Note decrypted...');
             if (!ok) {
               this.dismissModal().then(() => {});
               await this.navController.navigateForward('/');
@@ -410,13 +401,11 @@ export class AddNotePage implements OnDestroy {
           /* ignore; try again on next tick */
         });
     } catch (err) {
-      console.error('Find notes not done.', err);
     }
   }
 
   // should be called on key enter.
   save(ev: any) {
-    console.log('save');
     if (this.notes_id === null) return;
     if (this.note_locked) return;
 
@@ -563,7 +552,6 @@ export class AddNotePage implements OnDestroy {
     try {
       decryptedText = this.cryptoService.decrypt(noteToDecrypt.text, notePassword);
     } catch (e) {
-      console.error(e);
       return false;
     }
 

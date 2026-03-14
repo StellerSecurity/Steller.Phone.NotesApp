@@ -150,10 +150,8 @@ export class HomePage {
     this.timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
     if (this.noteService.shouldAskForPassword()) {
-      console.log("Asking for password");
       this.should_display = false;
     } else {
-      console.log("Asking for password or no password needed.");
       this.setData(this.noteService.getNotesAppPassword());
       await this.syncFromServer();
       this.restoreScrollOnce();
@@ -338,11 +336,9 @@ export class HomePage {
 
     if (!this.authService.isLoggedIn) return;
     if (this.pauseSync) {
-      console.log('Sync has paused.');
       return;
     }
 
-    console.log('Sync has started');
     if (this.syncTimer == null) {
       this.syncTimer = setInterval(() => {
         if (!this.pauseSync && this.authService.isLoggedIn) {
@@ -372,7 +368,6 @@ export class HomePage {
         }
 
         if (!this.mkRaw) {
-          console.warn('MK not loaded; skipping decrypt of note', s.id);
           continue;
         }
 
@@ -412,9 +407,7 @@ export class HomePage {
 
       this.setData(this.noteService.getNotesAppPassword());
 
-      console.log('Synching in 30 seconds...');
     } catch (err) {
-      console.error('Sync failed:', err);
     } finally {
       this.isSyncing = false;
       this.waitForSync = false;
@@ -495,7 +488,6 @@ export class HomePage {
 
       return;
     } catch (e: any) {
-      console.error(e);
 
       const lockoutMs = this.noteService.registerFailedAppUnlockAttempt();
       const toast = await this.toastController.create({

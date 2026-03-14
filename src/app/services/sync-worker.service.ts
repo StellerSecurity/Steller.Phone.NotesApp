@@ -31,7 +31,6 @@ export class SyncWorkerService {
     }
     this.started = true;
 
-    console.log('SyncWorkerService initialized');
 
     setInterval(() => this.trySync(), 10_000);
     Network.addListener('networkStatusChange', () => this.trySync());
@@ -99,7 +98,6 @@ export class SyncWorkerService {
 
       const attempt = (item.attempt ?? 0) + 1;
       if (attempt > MAX_ATTEMPT) {
-        console.warn('Dropping sync op after max retries', opId);
         continue;
       }
 
@@ -115,18 +113,15 @@ export class SyncWorkerService {
 
   async trySync() {
     if (this.syncing) {
-      console.log('Already syncing...');
       return;
     }
 
     if (!(await this.isOnline())) {
-      console.log('Skip sync: offline');
       return;
     }
 
     const headers = await this.authHeaders();
     if (!headers) {
-      console.log('Skip sync: missing auth token');
       return;
     }
 
@@ -146,14 +141,12 @@ export class SyncWorkerService {
           await this.sendOp(op, headers);
           nextQueue = nextQueue.filter((item: OutboxOp) => item.opId !== op.opId);
         } catch (e) {
-          console.error('Sync send failed for', op.opId, e);
           nextQueue = this.applyFailure(nextQueue, op.opId, Date.now());
         }
       }
 
       await this.outbox.replace(nextQueue);
     } catch (e) {
-      console.error('Sync worker failed', e);
 
       const now = Date.now();
       const batch = await this.outbox.peekBatch(50, now);
