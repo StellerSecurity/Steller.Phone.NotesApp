@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { App } from '@capacitor/app';
 import { NotesService } from './notes.service';
+import { CryptoKeyService } from './crypto-key.service';
 
 @Injectable({
   providedIn: 'root'
@@ -12,7 +13,10 @@ export class AppProtectorService {
   private readonly activityEvents = ['click', 'keydown', 'touchstart', 'mousedown'];
   private readonly boundRecordActivity = () => this.recordActivity();
 
-  constructor(private noteService: NotesService) {}
+  constructor(
+    private noteService: NotesService,
+    private cryptoKeyService: CryptoKeyService
+  ) {}
 
   public init() {
     if (this.started) {
@@ -87,9 +91,8 @@ export class AppProtectorService {
   }
 
   private lockNow() {
-    this.noteService.setNotesAppPassword('');
-    this.noteService.setDecryptedNotes(null);
-    this.noteService.setLastActivityTimestamp(0);
+    this.noteService.clearSensitiveRuntimeState();
+    this.cryptoKeyService.clearRuntimeKeys();
     this.stop();
     window.location.href = '/';
   }

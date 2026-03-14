@@ -430,7 +430,30 @@ export class HomePage {
     this.showPassword = !this.showPassword;
   }
 
+  private formatLockoutMessage(remainingMs: number): string {
+    const totalSeconds = Math.max(1, Math.ceil(remainingMs / 1000));
+
+    if (totalSeconds >= 60) {
+      const minutes = Math.ceil(totalSeconds / 60);
+      return `Too many failed attempts. Try again in ${minutes} minute${minutes === 1 ? '' : 's'}.`;
+    }
+
+    return `Too many failed attempts. Try again in ${totalSeconds} second${totalSeconds === 1 ? '' : 's'}.`;
+  }
+
   public async unlockNotesApp() {
+    const lockoutRemaining = this.noteService.getAppUnlockLockoutRemainingMs();
+    if (lockoutRemaining > 0) {
+      const toast = await this.toastController.create({
+        message: this.formatLockoutMessage(lockoutRemaining),
+        duration: 3000,
+        position: 'bottom',
+      });
+      await toast.present();
+      this.should_display = false;
+      return;
+    }
+
     if (this.input_password_app_unlock.length == 0) {
       const toast = await this.toastController.create({
         message: "Please enter your password.",
@@ -457,6 +480,8 @@ export class HomePage {
         await this.crypto.importEAK(eakB64);
       }
 
+      this.noteService.clearAppUnlockFailures();
+
       // init protection
       this.appProtectorService.init();
 
@@ -472,12 +497,18 @@ export class HomePage {
       return;
     } catch (e: any) {
       console.error(e);
+
+      const lockoutMs = this.noteService.registerFailedAppUnlockAttempt();
       const toast = await this.toastController.create({
-        message: this.allTranslations.passwordIsNotCorrectTryAgain,
+        message:
+          lockoutMs > 0
+            ? this.formatLockoutMessage(lockoutMs)
+            : this.allTranslations.passwordIsNotCorrectTryAgain,
         duration: 3000,
         position: 'bottom',
       });
 
+      this.noteService.clearSensitiveRuntimeState();
       this.should_display = false;
       this.input_password_app_unlock = "";
 

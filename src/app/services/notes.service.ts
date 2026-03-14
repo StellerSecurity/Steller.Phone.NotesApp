@@ -19,6 +19,8 @@ export class NotesService {
    */
   private LAST_ACTIVITY_TIMESTAMP = 0;
   private readonly APP_LOCK_TIMEOUT_MINUTES_KEY = 'app_lock_timeout_minutes';
+  private readonly APP_FAILED_ATTEMPTS_KEY = 'failedAttemptsApp';
+  private readonly APP_LOCKOUT_UNTIL_KEY = 'app_lockout_until';
 
   /**
    * If the user has chosen to add a password to the notes-app,
@@ -35,11 +37,53 @@ export class NotesService {
   }
 
   public setFailedPasswordAppAttempts(attempts: number) {
-    localStorage.setItem("failedAttemptsApp", String(attempts));
+    localStorage.setItem(this.APP_FAILED_ATTEMPTS_KEY, String(Math.max(0, attempts)));
   }
 
-  public getFailedPasswordAppAttempts() {
-    return localStorage.getItem("failedAttemptsApp");
+  public getFailedPasswordAppAttempts(): number {
+    const raw = localStorage.getItem(this.APP_FAILED_ATTEMPTS_KEY);
+    const parsed = Number(raw);
+
+    if (!Number.isFinite(parsed) || parsed < 0) {
+      return 0;
+    }
+
+    return Math.floor(parsed);
+  }
+
+  public clearAppUnlockFailures() {
+    localStorage.removeItem(this.APP_FAILED_ATTEMPTS_KEY);
+    localStorage.removeItem(this.APP_LOCKOUT_UNTIL_KEY);
+  }
+
+  public getAppUnlockLockoutRemainingMs(now = Date.now()): number {
+    const raw = localStorage.getItem(this.APP_LOCKOUT_UNTIL_KEY);
+    const until = Number(raw);
+
+    if (!Number.isFinite(until) || until <= 0) {
+      return 0;
+    }
+
+    if (until <= now) {
+      localStorage.removeItem(this.APP_LOCKOUT_UNTIL_KEY);
+      return 0;
+    }
+
+    return until - now;
+  }
+
+  public registerFailedAppUnlockAttempt(now = Date.now()): number {
+    const attempts = this.getFailedPasswordAppAttempts() + 1;
+    this.setFailedPasswordAppAttempts(attempts);
+
+    if (attempts < 5) {
+      return 0;
+    }
+
+    const lockoutMs = Math.min(15 * 60_000, 30_000 * Math.pow(2, attempts - 5));
+    localStorage.setItem(this.APP_LOCKOUT_UNTIL_KEY, String(now + lockoutMs));
+
+    return lockoutMs;
   }
 
   /**
@@ -111,6 +155,11 @@ export class NotesService {
     this.decryptedNotes = data;
   }
 
+  public clearSensitiveRuntimeState() {
+    this.notesAppPassword = '';
+    this.decryptedNotes = null;
+    this.LAST_ACTIVITY_TIMESTAMP = 0;
+  }
 
   public setAppLockTimeoutMinutes(minutes: number) {
     localStorage.setItem(this.APP_LOCK_TIMEOUT_MINUTES_KEY, String(minutes));

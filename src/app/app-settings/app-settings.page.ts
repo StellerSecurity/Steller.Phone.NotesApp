@@ -133,6 +133,7 @@ export class AppSettingsPage implements AfterViewInit {
 
     await this.modal.dismiss();
     this.noteService.setAppLockTimeoutMinutes(this.appLockTimeoutMinutes);
+    this.noteService.clearAppUnlockFailures();
     this.noteService.setNotesAppPassword(this.notesAppPassword);
     this.notesAppPassword = "";
     this.confirmPassword = "";
@@ -184,6 +185,7 @@ export class AppSettingsPage implements AfterViewInit {
             await this.modal.dismiss();
             this.notesAppPassword = "";
             this.confirmPassword = "";
+            this.noteService.clearAppUnlockFailures();
             this.noteService.setNotesAppPassword("");
             localStorage.removeItem("app_password_challenge");
             window.location.href = "/app-settings";
