@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import {Router} from "@angular/router";
 import {SecureStorageService} from "./secure-storage.service";
 import { Preferences } from '@capacitor/preferences';
-import { Storage } from '@ionic/storage-angular';
+import { NotesStorageService } from './notes-storage.service';
 import { Filesystem, Directory } from '@capacitor/filesystem';
 
 @Injectable({
@@ -10,7 +10,10 @@ import { Filesystem, Directory } from '@capacitor/filesystem';
 })
 export class DataService {
 
-    constructor(private secureStorageService: SecureStorageService, private storage: Storage) { }
+    constructor(
+      private secureStorageService: SecureStorageService,
+      private notesStorageService: NotesStorageService
+    ) { }
 
     private forceDownloadOnHome = false;
 
@@ -22,10 +25,19 @@ export class DataService {
         return this.forceDownloadOnHome;
     }
 
+
+    private async clearLegacyNoteUnlockState() {
+      await this.notesStorageService.clearValuesByPrefixes([
+        'note_failed_attempts_',
+        'note_lockout_until_',
+      ]);
+    }
+
     public async clearAppData() {
 
       await this.secureStorageService.clear();
-      localStorage.clear();
+      await this.notesStorageService.clearManagedData();
+      await this.clearLegacyNoteUnlockState();
       await Preferences.clear();
 
       // IndexedDB wipe (no try/catch suppression)

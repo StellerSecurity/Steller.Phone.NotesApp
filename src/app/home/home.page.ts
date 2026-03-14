@@ -591,7 +591,7 @@ export class HomePage {
         JSON.stringify(this.notes),
         this.noteService.getNotesAppPassword()
       );
-      localStorage.setItem('app_password_challenge', '1');
+      this.noteService.setAppPasswordChallengeEnabled(true);
       this.noteService.setNotes(encryptedNotesSave);
     } else {
       this.noteService.setNotes(JSON.stringify(this.notes));

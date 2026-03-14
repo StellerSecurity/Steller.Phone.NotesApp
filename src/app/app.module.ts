@@ -24,6 +24,7 @@ import * as sodium from 'libsodium-wrappers-sumo';
 import { IonicStorageModule } from '@ionic/storage-angular';
 import { Drivers } from '@ionic/storage';
 import { PsmZxcvbnService } from './services/psm-zxcvbn.service';
+import { NotesStorageService } from './services/notes-storage.service';
 
 export function HttpLoaderFactory(http: HttpClient) {
   return new TranslateHttpLoader(http);
@@ -32,6 +33,12 @@ export function HttpLoaderFactory(http: HttpClient) {
 export function initSodium() {
   return async () => {
     await sodium.ready;
+  };
+}
+
+export function initNotesStorage(notesStorageService: NotesStorageService) {
+  return async () => {
+    await notesStorageService.init();
   };
 }
 
@@ -82,6 +89,12 @@ export function initSodium() {
     {
       provide: APP_INITIALIZER,
       useFactory: initSodium,
+      multi: true,
+    },
+    {
+      provide: APP_INITIALIZER,
+      useFactory: initNotesStorage,
+      deps: [NotesStorageService],
       multi: true,
     },
   ],

@@ -1,9 +1,12 @@
 import {Injectable} from '@angular/core';
+import { NotesStorageService } from './notes-storage.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class NotesService {
+
+  constructor(private notesStorageService: NotesStorageService) {}
 
   private decryptedNotes : any = null;
 
@@ -18,9 +21,6 @@ export class NotesService {
    * @private
    */
   private LAST_ACTIVITY_TIMESTAMP = 0;
-  private readonly APP_LOCK_TIMEOUT_MINUTES_KEY = 'app_lock_timeout_minutes';
-  private readonly APP_FAILED_ATTEMPTS_KEY = 'failedAttemptsApp';
-  private readonly APP_LOCKOUT_UNTIL_KEY = 'app_lockout_until';
   private readonly NOTE_FAILED_ATTEMPTS_PREFIX = 'note_failed_attempts_';
   private readonly NOTE_LOCKOUT_UNTIL_PREFIX = 'note_lockout_until_';
 
@@ -29,21 +29,15 @@ export class NotesService {
    * the methods returns an encrypted AES string.
    */
   public getNotes() {
-    let notes = localStorage.getItem("notes");
-
-    if(notes == null) {
-      return "[]";
-    }
-
-    return notes;
+    return this.notesStorageService.getNotesRaw();
   }
 
   public setFailedPasswordAppAttempts(attempts: number) {
-    localStorage.setItem(this.APP_FAILED_ATTEMPTS_KEY, String(Math.max(0, attempts)));
+    this.notesStorageService.setFailedAttempts(String(Math.max(0, attempts)));
   }
 
   public getFailedPasswordAppAttempts(): number {
-    const raw = localStorage.getItem(this.APP_FAILED_ATTEMPTS_KEY);
+    const raw = this.notesStorageService.getFailedAttempts();
     const parsed = Number(raw);
 
     if (!Number.isFinite(parsed) || parsed < 0) {
@@ -54,8 +48,8 @@ export class NotesService {
   }
 
   public clearAppUnlockFailures() {
-    localStorage.removeItem(this.APP_FAILED_ATTEMPTS_KEY);
-    localStorage.removeItem(this.APP_LOCKOUT_UNTIL_KEY);
+    this.notesStorageService.removeFailedAttempts();
+    this.notesStorageService.removeAppLockoutUntil();
   }
 
   private getNoteFailedAttemptsKey(noteId: string): string {
@@ -67,7 +61,7 @@ export class NotesService {
   }
 
   public getFailedPasswordNoteAttempts(noteId: string): number {
-    const raw = localStorage.getItem(this.getNoteFailedAttemptsKey(noteId));
+    const raw = this.notesStorageService.getValue(this.getNoteFailedAttemptsKey(noteId));
     const parsed = Number(raw);
 
     if (!Number.isFinite(parsed) || parsed < 0) {
@@ -78,16 +72,16 @@ export class NotesService {
   }
 
   public setFailedPasswordNoteAttempts(noteId: string, attempts: number) {
-    localStorage.setItem(this.getNoteFailedAttemptsKey(noteId), String(Math.max(0, attempts)));
+    this.notesStorageService.setValue(this.getNoteFailedAttemptsKey(noteId), String(Math.max(0, attempts)));
   }
 
   public clearNoteUnlockFailures(noteId: string) {
-    localStorage.removeItem(this.getNoteFailedAttemptsKey(noteId));
-    localStorage.removeItem(this.getNoteLockoutUntilKey(noteId));
+    this.notesStorageService.removeValue(this.getNoteFailedAttemptsKey(noteId));
+    this.notesStorageService.removeValue(this.getNoteLockoutUntilKey(noteId));
   }
 
   public getNoteUnlockLockoutRemainingMs(noteId: string, now = Date.now()): number {
-    const raw = localStorage.getItem(this.getNoteLockoutUntilKey(noteId));
+    const raw = this.notesStorageService.getValue(this.getNoteLockoutUntilKey(noteId));
     const until = Number(raw);
 
     if (!Number.isFinite(until) || until <= 0) {
@@ -95,7 +89,7 @@ export class NotesService {
     }
 
     if (until <= now) {
-      localStorage.removeItem(this.getNoteLockoutUntilKey(noteId));
+      this.notesStorageService.removeValue(this.getNoteLockoutUntilKey(noteId));
       return 0;
     }
 
@@ -111,13 +105,13 @@ export class NotesService {
     }
 
     const lockoutMs = Math.min(15 * 60_000, 30_000 * Math.pow(2, attempts - 5));
-    localStorage.setItem(this.getNoteLockoutUntilKey(noteId), String(now + lockoutMs));
+    this.notesStorageService.setValue(this.getNoteLockoutUntilKey(noteId), String(now + lockoutMs));
 
     return lockoutMs;
   }
 
   public getAppUnlockLockoutRemainingMs(now = Date.now()): number {
-    const raw = localStorage.getItem(this.APP_LOCKOUT_UNTIL_KEY);
+    const raw = this.notesStorageService.getAppLockoutUntil();
     const until = Number(raw);
 
     if (!Number.isFinite(until) || until <= 0) {
@@ -125,7 +119,7 @@ export class NotesService {
     }
 
     if (until <= now) {
-      localStorage.removeItem(this.APP_LOCKOUT_UNTIL_KEY);
+      this.notesStorageService.removeAppLockoutUntil();
       return 0;
     }
 
@@ -141,7 +135,7 @@ export class NotesService {
     }
 
     const lockoutMs = Math.min(15 * 60_000, 30_000 * Math.pow(2, attempts - 5));
-    localStorage.setItem(this.APP_LOCKOUT_UNTIL_KEY, String(now + lockoutMs));
+    this.notesStorageService.setAppLockoutUntil(String(now + lockoutMs));
 
     return lockoutMs;
   }
@@ -188,15 +182,14 @@ export class NotesService {
   }
 
   public setNotes(data: any) {
-    localStorage.setItem("notes", data);
+    this.notesStorageService.setNotesRaw(data);
   }
 
   /**
    *
    */
   public appHasPasswordChallenge() {
-    let has_password_challenge = localStorage.getItem("app_password_challenge");
-    return has_password_challenge !== null;
+    return this.notesStorageService.getAppPasswordChallengeFlag() !== null;
   }
 
   /**
@@ -222,11 +215,11 @@ export class NotesService {
   }
 
   public setAppLockTimeoutMinutes(minutes: number) {
-    localStorage.setItem(this.APP_LOCK_TIMEOUT_MINUTES_KEY, String(minutes));
+    this.notesStorageService.setAppLockTimeoutMinutes(String(minutes));
   }
 
   public getAppLockTimeoutMinutes(): number {
-    const raw = localStorage.getItem(this.APP_LOCK_TIMEOUT_MINUTES_KEY);
+    const raw = this.notesStorageService.getAppLockTimeoutMinutes();
     const parsed = Number(raw);
     const allowed = [1, 5, 15, 30, 60];
 
@@ -235,6 +228,16 @@ export class NotesService {
     }
 
     return parsed;
+  }
+
+
+  public setAppPasswordChallengeEnabled(enabled: boolean) {
+    if (enabled) {
+      this.notesStorageService.setAppPasswordChallengeFlag('1');
+      return;
+    }
+
+    this.notesStorageService.removeAppPasswordChallengeFlag();
   }
 
   public setLastActivityTimestamp(timestamp: number) {

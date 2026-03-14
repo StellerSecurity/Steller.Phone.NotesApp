@@ -139,13 +139,14 @@ export class AppSettingsPage implements AfterViewInit {
     this.noteService.setAppLockTimeoutMinutes(this.appLockTimeoutMinutes);
     this.noteService.clearAppUnlockFailures();
     this.noteService.setNotesAppPassword(this.notesAppPassword);
-    this.notesAppPassword = "";
-    this.confirmPassword = "";
-    localStorage.setItem("app_password_challenge", "1");
-    window.location.href = "/app-settings";
-    this.password_enabled = false;
+    this.noteService.setAppPasswordChallengeEnabled(true);
+    this.password_enabled = true;
 
     await this.screenshotProtectionService.applyCurrentSetting(true);
+
+    this.notesAppPassword = "";
+    this.confirmPassword = "";
+    window.location.reload();
   }
 
   public async removePassword() {
@@ -193,9 +194,10 @@ export class AppSettingsPage implements AfterViewInit {
             this.confirmPassword = "";
             this.noteService.clearAppUnlockFailures();
             this.noteService.setNotesAppPassword("");
-            localStorage.removeItem("app_password_challenge");
+            this.noteService.setAppPasswordChallengeEnabled(false);
+            this.password_enabled = false;
             await this.screenshotProtectionService.applyCurrentSetting(false);
-            window.location.href = "/app-settings";
+            window.location.reload();
           } else {
             const toast = await this.toastController.create({
               message: this.allTranslations.enterYourCurrentPassword,
