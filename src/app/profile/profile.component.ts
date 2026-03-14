@@ -66,7 +66,7 @@ export class ProfileComponent  {
 
   private async logout() {
     await this.dataService.clearAppData();
-    window.location.href = '/';
+    await this.router.navigateByUrl('/', { replaceUrl: true });
   }
 
   navigateToRegister() {

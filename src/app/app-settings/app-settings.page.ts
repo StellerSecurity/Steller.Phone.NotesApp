@@ -131,8 +131,8 @@ export class AppSettingsPage implements AfterViewInit {
     this.notesAppPassword = "";
     this.confirmPassword = "";
     localStorage.setItem("app_password_challenge", "1");
-    window.location.href = "/app-settings";
-    this.password_enabled = false;
+    this.appPasswordChallenge = true;
+    this.password_enabled = true;
   }
 
   public async removePassword() {
@@ -180,7 +180,8 @@ export class AppSettingsPage implements AfterViewInit {
             this.confirmPassword = "";
             this.noteService.setNotesAppPassword("");
             localStorage.removeItem("app_password_challenge");
-            window.location.href = "/app-settings";
+            this.appPasswordChallenge = false;
+            this.password_enabled = false;
           } else {
             const toast = await this.toastController.create({
               message: this.allTranslations.enterYourCurrentPassword,

@@ -583,7 +583,7 @@ export class HomePage {
         const {confirm} = data.data;
         if (confirm) {
           await this.dataService.clearAppData();
-          window.location.href = '/';
+          await this.router.navigateByUrl('/', { replaceUrl: true });
         }
       }
     });
