@@ -7,6 +7,7 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { SecureStorageService } from './secure-storage.service';
 import { firstValueFrom } from 'rxjs';
 import { OutboxOp } from '../models/Sync';
+import { buildApiUrl, notes } from '../constants/api/product.api';
 
 const MAX_ATTEMPT = 8;
 
@@ -15,8 +16,7 @@ export class SyncWorkerService {
   private syncing = false;
   private started = false;
 
-  private base =
-    'https://stellarprivatenotesuiappapiprod-dmefgreabahpcsbm.swedencentral-01.azurewebsites.net/api/v1/notescontroller/';
+  private base = buildApiUrl(notes.controller);
 
   constructor(
     private http: HttpClient,
@@ -65,7 +65,7 @@ export class SyncWorkerService {
   private async sendOp(op: OutboxOp, headers: HttpHeaders): Promise<void> {
     if (op.type === 'upload') {
       await firstValueFrom(
-        this.http.post(`${this.base}upload`, op.payload, { headers })
+        this.http.post(`${this.base}${notes.upload}`, op.payload, { headers })
       );
       return;
     }
@@ -76,7 +76,7 @@ export class SyncWorkerService {
         notes: [],
       };
       await firstValueFrom(
-        this.http.post(`${this.base}sync-plan`, body, { headers })
+        this.http.post(`${this.base}${notes.syncPlan}`, body, { headers })
       );
       return;
     }

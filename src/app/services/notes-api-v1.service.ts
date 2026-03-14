@@ -11,11 +11,11 @@ import { OutboxStorage } from "./outbox-storage.service";
 
 // ✅ Shared crypto helpers from NPM (wire format)
 import { packCipherBlob } from '@stellarsecurity/stellar-crypto';
+import { buildApiUrl, notes } from '../constants/api/product.api';
 
 @Injectable({ providedIn: 'root' })
 export class NotesApiV1Service {
-  private base =
-    'https://stellarprivatenotesuiappapiprod-dmefgreabahpcsbm.swedencentral-01.azurewebsites.net/api/v1/notescontroller/';
+  private base = buildApiUrl(notes.controller);
 
   // legacy key (bruges kun af private helpers, hvis du stadig vil have dem)
   private OUTBOX_KEY = 'notes.sync.outbox.v1';

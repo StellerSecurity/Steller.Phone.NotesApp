@@ -24,6 +24,7 @@ import { NoteLockedModalComponent } from '../note-locked-modal/note-locked-modal
 import { DeleteNoteModalComponent } from '../delete-note-modal/delete-note-modal.component';
 import { NoteV1 } from '../models/NoteV1';
 import { AuthService } from '../services/auth.service';
+import { evaluatePasswordStrength, isPasswordLongEnough } from '../utils/password-policy';
 
 // ✅ New: use Stellar Crypto SDK
 import { unpackCipherBlob, decryptTextWithMK } from '@stellarsecurity/stellar-crypto';
@@ -591,47 +592,14 @@ export class AddNotePage implements OnDestroy {
   }
 
   public notesPasswordChange() {
-    this.passwordStrength = 0;
+    const strength = evaluatePasswordStrength(this.notes_password_input);
 
-    if (this.notes_password_input.length == 0) {
-      this.passwordStrengthHelperText = this.allTranslations.passwordAtLeastLength;
-      return;
-    }
-
-    if (this.notes_password_input.length > 4) this.passwordStrength += 1;
-
-    if (/[a-z]/.test(this.notes_password_input) && /[A-Z]/.test(this.notes_password_input)) {
-      this.passwordStrength += 1;
-      this.upperLower = true;
-    } else {
-      this.upperLower = false;
-    }
-
-    if (/\d/.test(this.notes_password_input)) this.passwordStrength += 1;
-
-    if (/[^a-zA-Z\d]/.test(this.notes_password_input)) {
-      this.passwordStrength += 1;
-      this.specialChar = true;
-    } else {
-      this.specialChar = false;
-    }
-
-    if (this.notes_password_input.length >= 6) {
-      this.passwordStrength += 1;
-      this.strongPass = true;
-    } else {
-      this.strongPass = false;
-    }
-
-    if (this.passwordStrength < 2) {
-      this.passwordStrengthHelperText = this.allTranslations.weakPassword;
-    } else if (this.passwordStrength === 2) {
-      this.passwordStrengthHelperText = this.allTranslations.averagePassword;
-    } else if (this.passwordStrength === 3) {
-      this.passwordStrengthHelperText = this.allTranslations.goodPassword;
-    } else {
-      this.passwordStrengthHelperText = this.allTranslations.greatPassword;
-    }
+    this.passwordStrength = strength.score;
+    this.upperLower = strength.upperLower;
+    this.specialChar = strength.specialChar;
+    this.strongPass = strength.strongPass;
+    this.passwordStrengthHelperText =
+      this.allTranslations?.[strength.helperKey] ?? '';
   }
 
   public async lockNote() {
@@ -645,7 +613,7 @@ export class AddNotePage implements OnDestroy {
       return;
     }
 
-    if (this.notes_password_input.length < 2) {
+    if (!isPasswordLongEnough(this.notes_password_input)) {
       const toast = await this.toastController.create({
         message: this.allTranslations.thePasswordIsTooWeakPleaseMakeItStronger,
         duration: 3000,

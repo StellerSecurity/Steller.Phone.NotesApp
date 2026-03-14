@@ -12,6 +12,7 @@ import {
   CryptoKeyService,
 } from "../services/crypto-key.service";
 import { SecureStorageService } from "../services/secure-storage.service";
+import { evaluatePasswordStrength, isPasswordLongEnough } from '../utils/password-policy';
 
 @Component({
   selector: 'app-app-settings',
@@ -82,7 +83,7 @@ export class AppSettingsPage implements AfterViewInit {
 
   public async save() {
 
-    if (this.notesAppPassword.length < 3) {
+    if (!isPasswordLongEnough(this.notesAppPassword)) {
       const toast = await this.toastController.create({
         message: this.allTranslations.thePasswordIsWeakPleaseMakeYourPasswordStronger,
         duration: 3000,
@@ -199,58 +200,14 @@ export class AppSettingsPage implements AfterViewInit {
   }
 
   public notesAppPasswordChange() {
+    const strength = evaluatePasswordStrength(this.notesAppPassword);
 
-    this.passwordStrength = 0;
-
-    if (this.notesAppPassword.length == 0) {
-      this.passwordStrengthHelperText = this.allTranslations.passwordAtLeastLength;
-      return;
-    }
-
-    // Check password length
-    if (this.notesAppPassword.length > 6) {
-      this.passwordStrength += 1;
-    }
-
-    // Check for mixed case
-    if (this.notesAppPassword.match(/[a-z]/) && this.notesAppPassword.match(/[A-Z]/)) {
-      this.passwordStrength += 1;
-      this.upperLower = true;
-    } else {
-      this.upperLower = false;
-    }
-
-    // Check for numbers
-    if (this.notesAppPassword.match(/\d/)) {
-      this.passwordStrength += 1;
-    }
-
-    // Check for special characters
-    if (this.notesAppPassword.match(/[^a-zA-Z\d]/)) {
-      this.passwordStrength += 1;
-      this.specialChar = true;
-    } else {
-      this.specialChar = false;
-    }
-
-    // Check password length
-    if (this.notesAppPassword.length >= 6) {
-      this.passwordStrength += 1;
-      this.strongPass = true;
-    } else {
-      this.strongPass = false;
-    }
-
-    // Return results
-    if (this.passwordStrength < 2) {
-      this.passwordStrengthHelperText = this.allTranslations.weakPassword;
-    } else if (this.passwordStrength === 2) {
-      this.passwordStrengthHelperText = this.allTranslations.averagePassword;
-    } else if (this.passwordStrength === 3) {
-      this.passwordStrengthHelperText = this.allTranslations.goodPassword;
-    } else {
-      this.passwordStrengthHelperText = this.allTranslations.greatPassword;
-    }
+    this.passwordStrength = strength.score;
+    this.upperLower = strength.upperLower;
+    this.specialChar = strength.specialChar;
+    this.strongPass = strength.strongPass;
+    this.passwordStrengthHelperText =
+      this.allTranslations?.[strength.helperKey] ?? '';
   }
 
   public async appPasswordChallengeDialog() {
