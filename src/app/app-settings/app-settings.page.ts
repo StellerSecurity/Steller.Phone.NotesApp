@@ -13,6 +13,7 @@ import {
 } from "../services/crypto-key.service";
 import { SecureStorageService } from "../services/secure-storage.service";
 import { evaluatePasswordStrength, isPasswordLongEnough } from '../utils/password-policy';
+import { ScreenshotProtectionService } from '../services/screenshot-protection.service';
 
 @Component({
   selector: 'app-app-settings',
@@ -37,6 +38,7 @@ export class AppSettingsPage implements AfterViewInit {
   public allTranslations: any;
   public appLockTimeoutMinutes = 60;
   public readonly appLockTimeoutOptions = [1, 5, 15, 30, 60];
+  public screenshotProtectionEnabled = true;
 
   @ViewChild(IonModal) modal: IonModal;
 
@@ -48,12 +50,14 @@ export class AppSettingsPage implements AfterViewInit {
     private navController: NavController,
     private modalCtrl: ModalController,
     private secureStorageService: SecureStorageService,
-    private translatorService: TranslatorService
+    private translatorService: TranslatorService,
+    private screenshotProtectionService: ScreenshotProtectionService
   ) { }
 
-  ionViewWillEnter(): void {
+  async ionViewWillEnter(): Promise<void> {
     this.allTranslations = this.translatorService.allTranslations;
     this.appLockTimeoutMinutes = this.noteService.getAppLockTimeoutMinutes();
+    this.screenshotProtectionEnabled = await this.screenshotProtectionService.isEnabled();
   }
 
   ionViewDidEnter() {
@@ -140,6 +144,8 @@ export class AppSettingsPage implements AfterViewInit {
     localStorage.setItem("app_password_challenge", "1");
     window.location.href = "/app-settings";
     this.password_enabled = false;
+
+    await this.screenshotProtectionService.applyCurrentSetting(true);
   }
 
   public async removePassword() {
@@ -188,6 +194,7 @@ export class AppSettingsPage implements AfterViewInit {
             this.noteService.clearAppUnlockFailures();
             this.noteService.setNotesAppPassword("");
             localStorage.removeItem("app_password_challenge");
+            await this.screenshotProtectionService.applyCurrentSetting(false);
             window.location.href = "/app-settings";
           } else {
             const toast = await this.toastController.create({
@@ -220,6 +227,11 @@ export class AppSettingsPage implements AfterViewInit {
 
   public saveAppLockTimeout() {
     this.noteService.setAppLockTimeoutMinutes(this.appLockTimeoutMinutes);
+  }
+
+  public async screenshotProtectionChange() {
+    await this.screenshotProtectionService.setEnabled(this.screenshotProtectionEnabled);
+    await this.screenshotProtectionService.applyCurrentSetting(this.password_enabled);
   }
 
   public getAppLockTimeoutLabel(minutes: number): string {

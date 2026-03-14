@@ -102,6 +102,21 @@
     After this time, the app locks automatically when inactive or in the background.
   </div>
 
+  <ion-item *ngIf="password_enabled" class="auto-lock-item">
+    <ion-label class="auto-lock-label">
+      <strong>Block screenshots</strong>
+      <span>{{ screenshotProtectionEnabled ? 'Enabled' : 'Disabled' }}</span>
+    </ion-label>
+    <ion-toggle
+      [(ngModel)]="screenshotProtectionEnabled"
+      (ionChange)="screenshotProtectionChange()">
+    </ion-toggle>
+  </ion-item>
+
+  <div class="auto-lock-help" *ngIf="password_enabled">
+    Prevent screenshots and screen recordings where supported. Enabled by default to protect sensitive notes.
+  </div>
+
   <hr>
 
   <!--<p class="disable-pass-btn" expand="full" (click)="deleteWholeAppStorage()">

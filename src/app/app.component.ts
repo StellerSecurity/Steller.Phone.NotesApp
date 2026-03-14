@@ -7,6 +7,7 @@ import { NotesService } from './services/notes.service';
 import { Keyboard, KeyboardResize } from '@capacitor/keyboard';
 import { Capacitor } from '@capacitor/core';
 import { App } from '@capacitor/app';
+import { ScreenshotProtectionService } from './services/screenshot-protection.service';
 
 @Component({
   selector: 'app-root',
@@ -21,10 +22,12 @@ export class AppComponent {
     private storage: IonicStorage,
     private syncWorker: SyncWorkerService,
     private noteService: NotesService,
-    private zone: NgZone
+    private zone: NgZone,
+    private screenshotProtectionService: ScreenshotProtectionService
   ) {
     this.syncWorker.init();
     this.installPrivacyShield();
+    void this.screenshotProtectionService.applyCurrentSetting(this.noteService.appHasPasswordChallenge());
 
     StatusBar.setBackgroundColor({ color: '#F6F6FD' }).then(() => {});
     StatusBar.setStyle({ style: Style.Light }).then(() => {});
