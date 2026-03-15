@@ -13,6 +13,8 @@ export class NotesStorageService {
     'failedAttemptsApp',
     'app_lockout_until',
     'app_lock_timeout_minutes',
+    'app_wipe_after_days',
+    'app_last_unlock_at',
   ] as const;
 
   private cache = new Map<string, string | null>();
@@ -140,6 +142,33 @@ export class NotesStorageService {
 
   public removeAppLockTimeoutMinutes(): void {
     this.removeValue('app_lock_timeout_minutes');
+  }
+
+  public getAppWipeAfterDays(): string | null {
+    return this.getValue('app_wipe_after_days');
+  }
+
+
+
+
+  public setAppWipeAfterDays(value: string): void {
+    this.setValue('app_wipe_after_days', value);
+  }
+
+  public removeAppWipeAfterDays(): void {
+    this.removeValue('app_wipe_after_days');
+  }
+
+  public getAppLastUnlockAt(): string | null {
+    return this.getValue('app_last_unlock_at');
+  }
+
+  public setAppLastUnlockAt(value: string): void {
+    this.setValue('app_last_unlock_at', value);
+  }
+
+  public removeAppLastUnlockAt(): void {
+    this.removeValue('app_last_unlock_at');
   }
 
   public async clearManagedData(): Promise<void> {

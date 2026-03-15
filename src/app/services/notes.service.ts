@@ -231,6 +231,11 @@ export class NotesService {
   }
 
 
+  public clearInactiveWipeSettings() {
+    this.notesStorageService.removeAppWipeAfterDays();
+    this.notesStorageService.removeAppLastUnlockAt();
+  }
+
   public setAppPasswordChallengeEnabled(enabled: boolean) {
     if (enabled) {
       this.notesStorageService.setAppPasswordChallengeFlag('1');
@@ -238,10 +243,49 @@ export class NotesService {
     }
 
     this.notesStorageService.removeAppPasswordChallengeFlag();
+    this.clearInactiveWipeSettings();
   }
 
   public setLastActivityTimestamp(timestamp: number) {
     this.LAST_ACTIVITY_TIMESTAMP = timestamp;
+  }
+
+  public setAppWipeAfterDays(days: number) {
+    const allowed = [0, 7, 14, 30, 60, 90];
+    const normalized = allowed.includes(days) ? days : 0;
+    this.notesStorageService.setAppWipeAfterDays(String(normalized));
+  }
+
+  public getAppWipeAfterDays(): number {
+    const raw = this.notesStorageService.getAppWipeAfterDays();
+    const parsed = Number(raw);
+    const allowed = [0, 7, 14, 30, 60, 90];
+
+    if (!Number.isFinite(parsed) || !allowed.includes(parsed)) {
+      return 0;
+    }
+
+    return parsed;
+  }
+
+  public recordSuccessfulAppUnlock(now = Date.now()) {
+    this.notesStorageService.setAppLastUnlockAt(String(now));
+  }
+
+  public getLastSuccessfulAppUnlockAt(): number {
+    const raw = this.notesStorageService.getAppLastUnlockAt();
+    const parsed = Number(raw);
+
+    if (!Number.isFinite(parsed) || parsed <= 0) {
+      return 0;
+    }
+
+    return parsed;
+  }
+
+  public clearAppWipeSchedule() {
+    this.notesStorageService.removeAppWipeAfterDays();
+    this.notesStorageService.removeAppLastUnlockAt();
   }
 
   /**

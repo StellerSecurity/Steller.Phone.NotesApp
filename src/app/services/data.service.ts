@@ -32,8 +32,33 @@ export class DataService {
         'note_lockout_until_',
       ]);
     }
+  public async performInactiveWipeIfNeeded(): Promise<void> {
+    const wipeDaysRaw = this.notesStorageService.getAppWipeAfterDays();
+    const wipeDays = wipeDaysRaw ? Number(wipeDaysRaw) : 0;
 
-    public async clearAppData() {
+    if (!wipeDays || wipeDays <= 0) {
+      return;
+    }
+
+    const lastUnlockRaw = this.notesStorageService.getAppLastUnlockAt();
+    const lastUnlockTs = lastUnlockRaw ? Number(lastUnlockRaw) : 0;
+
+    if (!lastUnlockTs || lastUnlockTs <= 0) {
+      return;
+    }
+
+    const wipeAfterMs = wipeDays * 24 * 60 * 60 * 1000;
+    const now = Date.now();
+
+    if (now - lastUnlockTs < wipeAfterMs) {
+      return;
+    }
+
+    await this.clearAppData();
+  }
+
+
+  public async clearAppData() {
 
       await this.secureStorageService.clear();
       await this.notesStorageService.clearManagedData();

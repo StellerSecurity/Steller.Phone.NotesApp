@@ -25,6 +25,7 @@ import { IonicStorageModule } from '@ionic/storage-angular';
 import { Drivers } from '@ionic/storage';
 import { PsmZxcvbnService } from './services/psm-zxcvbn.service';
 import { NotesStorageService } from './services/notes-storage.service';
+import { DataService } from './services/data.service';
 
 export function HttpLoaderFactory(http: HttpClient) {
   return new TranslateHttpLoader(http);
@@ -39,6 +40,12 @@ export function initSodium() {
 export function initNotesStorage(notesStorageService: NotesStorageService) {
   return async () => {
     await notesStorageService.init();
+  };
+}
+
+export function initInactiveWipe(dataService: DataService) {
+  return async () => {
+    await dataService.performInactiveWipeIfNeeded();
   };
 }
 
@@ -95,6 +102,12 @@ export function initNotesStorage(notesStorageService: NotesStorageService) {
       provide: APP_INITIALIZER,
       useFactory: initNotesStorage,
       deps: [NotesStorageService],
+      multi: true,
+    },
+    {
+      provide: APP_INITIALIZER,
+      useFactory: initInactiveWipe,
+      deps: [DataService],
       multi: true,
     },
   ],

@@ -117,6 +117,29 @@
     Prevent screenshots and screen recordings where supported. Enabled by default to protect sensitive notes.
   </div>
 
+  <ion-item *ngIf="password_enabled" class="auto-lock-item">
+    <ion-label class="auto-lock-label">
+      <strong>Inactive device wipe</strong>
+      <span>{{ getAppWipeAfterDaysLabel(appWipeAfterDays) }}</span>
+    </ion-label>
+    <ion-select
+      interface="action-sheet"
+      [(ngModel)]="appWipeAfterDays"
+      (ionChange)="saveAppWipeAfterDays()">
+      <ion-select-option *ngFor="let option of appWipeAfterDaysOptions" [value]="option">
+        {{ getAppWipeAfterDaysLabel(option) }}
+      </ion-select-option>
+    </ion-select>
+  </ion-item>
+
+  <div class="auto-lock-help wipe-help" *ngIf="password_enabled">
+    Erase all local notes and app data from this device if the app is not unlocked for the selected number of days.
+  </div>
+
+  <div class="auto-lock-help wipe-help wipe-help--warning" *ngIf="password_enabled && appWipeAfterDays > 0">
+    Synced notes are not deleted from your account, but everything stored on this device will be reset.
+  </div>
+
   <hr>
 
   <!--<p class="disable-pass-btn" expand="full" (click)="deleteWholeAppStorage()">

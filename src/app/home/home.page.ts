@@ -473,6 +473,7 @@ export class HomePage {
       }
 
       this.noteService.clearAppUnlockFailures();
+      this.noteService.recordSuccessfulAppUnlock();
 
       // init protection
       this.appProtectorService.init();

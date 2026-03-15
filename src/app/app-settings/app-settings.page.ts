@@ -39,11 +39,14 @@ export class AppSettingsPage implements AfterViewInit {
   public appLockTimeoutMinutes = 60;
   public readonly appLockTimeoutOptions = [1, 5, 15, 30, 60];
   public screenshotProtectionEnabled = true;
+  public appWipeAfterDays = 0;
+  public readonly appWipeAfterDaysOptions = [0, 7, 14, 28, 30, 60, 90];
 
   @ViewChild(IonModal) modal: IonModal;
 
   constructor(
     private toastController: ToastController,
+    private alertController: AlertController,
     private noteService: NotesService,
     private cryptoService: CryptoService,
     private appProtectorService: AppProtectorService,
@@ -57,6 +60,7 @@ export class AppSettingsPage implements AfterViewInit {
   async ionViewWillEnter(): Promise<void> {
     this.allTranslations = this.translatorService.allTranslations;
     this.appLockTimeoutMinutes = this.noteService.getAppLockTimeoutMinutes();
+    this.appWipeAfterDays = this.noteService.getAppWipeAfterDays();
     this.screenshotProtectionEnabled = await this.screenshotProtectionService.isEnabled();
   }
 
@@ -70,6 +74,7 @@ export class AppSettingsPage implements AfterViewInit {
     }
     this.appPasswordChallenge = this.noteService.appHasPasswordChallenge();
     this.appLockTimeoutMinutes = this.noteService.getAppLockTimeoutMinutes();
+    this.appWipeAfterDays = this.noteService.getAppWipeAfterDays();
   }
 
   cancel() {
@@ -242,6 +247,58 @@ export class AppSettingsPage implements AfterViewInit {
     }
 
     return `After ${minutes} minutes`;
+  }
+
+
+  public async saveAppWipeAfterDays() {
+    const previous = this.noteService.getAppWipeAfterDays();
+
+    if (this.appWipeAfterDays > 0 && previous === 0) {
+      const alert = await this.alertController.create({
+        header: 'Enable inactive device wipe?',
+        message: 'If the app is not unlocked for the selected number of days, all local notes and app data on this device will be erased. Synced notes are not deleted from your account.',
+        buttons: [
+          {
+            text: 'Cancel',
+            role: 'cancel',
+            handler: () => {
+              this.appWipeAfterDays = previous;
+            },
+          },
+          {
+            text: 'Enable wipe',
+            role: 'confirm',
+            handler: () => {
+              this.noteService.setAppWipeAfterDays(this.appWipeAfterDays);
+              if (this.noteService.getLastSuccessfulAppUnlockAt() === 0) {
+                this.noteService.recordSuccessfulAppUnlock();
+              }
+            },
+          },
+        ],
+      });
+
+      await alert.present();
+      return;
+    }
+
+    this.noteService.setAppWipeAfterDays(this.appWipeAfterDays);
+
+    if (this.appWipeAfterDays > 0 && this.noteService.getLastSuccessfulAppUnlockAt() === 0) {
+      this.noteService.recordSuccessfulAppUnlock();
+    }
+  }
+
+  public getAppWipeAfterDaysLabel(days: number): string {
+    if (days === 0) {
+      return 'Off';
+    }
+
+    if (days === 1) {
+      return 'After 1 day';
+    }
+
+    return `After ${days} days`;
   }
 
   public async appPasswordChallengeDialog() {
