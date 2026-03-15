@@ -29,13 +29,13 @@ export class RichTextEditorComponent implements OnInit, OnDestroy {
   private clickOutsideListener: (() => void) | null = null;
 
   readonly headerOptions: HeaderOption[] = [
-    { value: 'false', label: 'Standard' },
-    { value: '1', label: 'Heading 1' },
-    { value: '2', label: 'Heading 2' },
-    { value: '3', label: 'Heading 3' },
-    { value: '4', label: 'Heading 4' },
-    { value: '5', label: 'Heading 5' },
-    { value: '6', label: 'Heading 6' }
+    { value: 'false', label: 'standard' },
+    { value: '1', label: 'heading1' },
+    { value: '2', label: 'heading2' },
+    { value: '3', label: 'heading3' },
+    { value: '4', label: 'heading4' },
+    { value: '5', label: 'heading5' },
+    { value: '6', label: 'heading6' }
   ];
 
   quillModules = {
@@ -106,10 +106,10 @@ export class RichTextEditorComponent implements OnInit, OnDestroy {
   }
 
   getSelectedHeaderText(): string {
-    if (!this.headerSelectRef?.nativeElement) return 'Standard';
+    if (!this.headerSelectRef?.nativeElement) return 'standard';
     const selectedValue = this.headerSelectRef.nativeElement.value;
     const selectedOption = this.headerOptions.find(opt => opt.value === selectedValue);
-    return selectedOption ? selectedOption.label : 'Standard';
+    return selectedOption ? selectedOption.label : 'standard';
   }
 
   toggleDropdown(event: Event) {

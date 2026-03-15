@@ -142,11 +142,15 @@ export class AddNotePage implements OnDestroy {
         this.askforNotePassword().then(() => {});
       } else {
         this.note_text = this.currentNote.text ?? '';
-        this.note_title = this.currentNote.title !== undefined ? this.currentNote.title : 'Untitled';
+        this.note_title = this.currentNote.title !== undefined ? this.currentNote.title : this.getUntitledLabel();
       }
 
       this.startLiveNotePolling();
     });
+  }
+
+  private getUntitledLabel(): string {
+    return this.allTranslations?.untitled ?? 'Untitled';
   }
 
   ngOnDestroy(): void {
@@ -342,7 +346,7 @@ export class AddNotePage implements OnDestroy {
     if (!this.newlyCreatedNote) return false;
 
     const title = (this.note_title ?? '').trim();
-    const titleEmpty = title.length === 0 || title === 'Untitled';
+    const titleEmpty = title.length === 0 || title === this.getUntitledLabel();
 
     const plainText = this.htmlToPlainText(this.note_text ?? '');
     const textEmpty = plainText.length === 0;

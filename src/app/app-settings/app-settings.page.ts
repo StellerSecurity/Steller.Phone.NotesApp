@@ -1,16 +1,10 @@
-import { AfterViewInit, Component, OnInit, ViewChild } from '@angular/core';
-import { AlertController, ModalController, ToastController, NavController } from "@ionic/angular";
-import { IonModal } from '@ionic/angular';
+import { AfterViewInit, Component, ViewChild } from '@angular/core';
+import { AlertController, IonModal, IonSelect, ModalController, ToastController } from "@ionic/angular";
 
 import { NotesService } from "../services/notes.service";
 import { CryptoService } from "../services/crypto.service";
-import { AppProtectorService } from "../services/app-protector.service";
 import { ConfirmationModalComponent } from '../confirmation-modal/confirmation-modal.component';
-import { DeleteNoteModalComponent } from '../delete-note-modal/delete-note-modal.component';
 import { TranslatorService } from '../services/translator.service';
-import {
-  CryptoKeyService,
-} from "../services/crypto-key.service";
 import { SecureStorageService } from "../services/secure-storage.service";
 import { evaluatePasswordStrength, isPasswordLongEnough } from '../utils/password-policy';
 import { ScreenshotProtectionService } from '../services/screenshot-protection.service';
@@ -21,7 +15,6 @@ import { ScreenshotProtectionService } from '../services/screenshot-protection.s
   styleUrls: ['./app-settings.page.scss'],
 })
 export class AppSettingsPage implements AfterViewInit {
-
   public appPasswordChallenge: boolean;
   public notesAppPassword: string = '';
   public confirmPassword: string = '';
@@ -36,26 +29,29 @@ export class AppSettingsPage implements AfterViewInit {
   public specialChar = false;
   public strongPass = false;
   public allTranslations: any;
+
   public appLockTimeoutMinutes = 60;
-  public readonly appLockTimeoutOptions = [1, 5, 15, 30, 60];
+  public readonly appLockTimeoutOptions = [1, 5, 15, 30, 60, 120];
+
   public screenshotProtectionEnabled = true;
+
   public appWipeAfterDays = 0;
   public readonly appWipeAfterDaysOptions = [0, 7, 14, 28, 30, 60, 90];
 
   @ViewChild(IonModal) modal: IonModal;
+  @ViewChild('autoLockSelect') autoLockSelect!: IonSelect;
+  @ViewChild('wipeSelect') wipeSelect!: IonSelect;
 
   constructor(
     private toastController: ToastController,
     private alertController: AlertController,
     private noteService: NotesService,
     private cryptoService: CryptoService,
-    private appProtectorService: AppProtectorService,
-    private navController: NavController,
     private modalCtrl: ModalController,
     private secureStorageService: SecureStorageService,
     private translatorService: TranslatorService,
     private screenshotProtectionService: ScreenshotProtectionService
-  ) { }
+  ) {}
 
   async ionViewWillEnter(): Promise<void> {
     this.allTranslations = this.translatorService.allTranslations;
@@ -72,6 +68,7 @@ export class AppSettingsPage implements AfterViewInit {
     if (this.noteService.appHasPasswordChallenge()) {
       this.password_enabled = true;
     }
+
     this.appPasswordChallenge = this.noteService.appHasPasswordChallenge();
     this.appLockTimeoutMinutes = this.noteService.getAppLockTimeoutMinutes();
     this.appWipeAfterDays = this.noteService.getAppWipeAfterDays();
@@ -95,7 +92,6 @@ export class AppSettingsPage implements AfterViewInit {
   }
 
   public async save() {
-
     if (!isPasswordLongEnough(this.notesAppPassword)) {
       const toast = await this.toastController.create({
         message: this.allTranslations.thePasswordIsWeakPleaseMakeYourPasswordStronger,
@@ -118,15 +114,12 @@ export class AppSettingsPage implements AfterViewInit {
       return;
     }
 
-    // can be in encrypted state or decrypted - depends on if the app_password_challenge is set.
     let notes = this.noteService.getNotes();
 
-    // in case user creates app-password, and there is no notes.
     if (notes === null) {
       notes = JSON.stringify([]);
     }
 
-    // Wrap EAK with notes app password (store encrypted EAK, remove plaintext)
     const existingEak = await this.secureStorageService.getItem('ssEakB64');
     if (existingEak != null) {
       const wrappedEak = this.cryptoService.encrypt(existingEak, this.notesAppPassword);
@@ -135,13 +128,12 @@ export class AppSettingsPage implements AfterViewInit {
       await this.secureStorageService.removeItem("ssEakB64");
     }
 
-    // first, we have to decrypt the notes (if they were encrypted before),
-    // and then encrypt them with the new app password.
     const encryptedNotes = this.cryptoService.encrypt(notes, this.notesAppPassword);
     this.noteService.setNotes(encryptedNotes);
 
     await this.modal.dismiss();
     this.noteService.setAppLockTimeoutMinutes(this.appLockTimeoutMinutes);
+    this.noteService.setAppWipeAfterDays(this.appWipeAfterDays);
     this.noteService.clearAppUnlockFailures();
     this.noteService.setNotesAppPassword(this.notesAppPassword);
     this.noteService.setAppPasswordChallengeEnabled(true);
@@ -165,7 +157,6 @@ export class AppSettingsPage implements AfterViewInit {
         const { confirm, inputValue } = data.data;
         if (confirm) {
           if (this.noteService.appHasPasswordChallenge() && inputValue) {
-
             let notes = this.noteService.getNotes();
             let decryptedNotes: string | null = null;
 
@@ -173,7 +164,7 @@ export class AppSettingsPage implements AfterViewInit {
               decryptedNotes = this.cryptoService.decrypt(notes, inputValue);
             } catch (e) {
               const toast = await this.toastController.create({
-                message: 'The entered password was not correct.',
+                message: this.allTranslations.enteredPasswordIncorrect,
                 duration: 3000,
                 position: 'bottom',
               });
@@ -182,7 +173,6 @@ export class AppSettingsPage implements AfterViewInit {
               return;
             }
 
-            // Decrypt wrapped EAK back to plain EAK
             const encEak = await this.secureStorageService.getItem('ssEakB64_Encrypted');
             if (encEak != null) {
               const plainEak = this.cryptoService.decrypt(encEak, inputValue);
@@ -197,6 +187,7 @@ export class AppSettingsPage implements AfterViewInit {
             await this.modal.dismiss();
             this.notesAppPassword = "";
             this.confirmPassword = "";
+            this.appWipeAfterDays = 0;
             this.noteService.clearAppUnlockFailures();
             this.noteService.setNotesAppPassword("");
             this.noteService.setAppPasswordChallengeEnabled(false);
@@ -211,8 +202,6 @@ export class AppSettingsPage implements AfterViewInit {
             });
             await toast.present();
           }
-        } else {
-          // cancelled
         }
       }
     });
@@ -231,7 +220,6 @@ export class AppSettingsPage implements AfterViewInit {
       this.allTranslations?.[strength.helperKey] ?? '';
   }
 
-
   public saveAppLockTimeout() {
     this.noteService.setAppLockTimeoutMinutes(this.appLockTimeoutMinutes);
   }
@@ -243,30 +231,29 @@ export class AppSettingsPage implements AfterViewInit {
 
   public getAppLockTimeoutLabel(minutes: number): string {
     if (minutes === 1) {
-      return 'After 1 minute';
+      return this.allTranslations.autoLockAfterOneMinute;
     }
 
-    return `After ${minutes} minutes`;
+    return `${this.allTranslations.autoLockAfter} ${minutes} ${this.allTranslations.minutes}`;
   }
-
 
   public async saveAppWipeAfterDays() {
     const previous = this.noteService.getAppWipeAfterDays();
 
     if (this.appWipeAfterDays > 0 && previous === 0) {
       const alert = await this.alertController.create({
-        header: 'Enable inactive device wipe?',
-        message: 'If the app is not unlocked for the selected number of days, all local notes and app data on this device will be erased. Synced notes are not deleted from your account.',
+        header: this.allTranslations.enableInactiveDeviceWipeTitle,
+        message: this.allTranslations.enableInactiveDeviceWipeMessage,
         buttons: [
           {
-            text: 'Cancel',
+            text: this.allTranslations.cancel,
             role: 'cancel',
             handler: () => {
               this.appWipeAfterDays = previous;
             },
           },
           {
-            text: 'Enable wipe',
+            text: this.allTranslations.enableWipe,
             role: 'confirm',
             handler: () => {
               this.noteService.setAppWipeAfterDays(this.appWipeAfterDays);
@@ -291,17 +278,30 @@ export class AppSettingsPage implements AfterViewInit {
 
   public getAppWipeAfterDaysLabel(days: number): string {
     if (days === 0) {
-      return 'Off';
+      return this.allTranslations.off;
     }
 
     if (days === 1) {
-      return 'After 1 day';
+      return this.allTranslations.afterOneDay;
     }
 
-    return `After ${days} days`;
+    return `${this.allTranslations.after} ${days} ${this.allTranslations.days}`;
   }
 
   public async appPasswordChallengeDialog() {
     await this.modal.present();
+  }
+
+  public openAutoLockSelect() {
+    this.autoLockSelect?.open();
+  }
+
+  public openWipeSelect() {
+    this.wipeSelect?.open();
+  }
+
+  public async toggleScreenshotProtectionFromRow() {
+    this.screenshotProtectionEnabled = !this.screenshotProtectionEnabled;
+    await this.screenshotProtectionChange();
   }
 }

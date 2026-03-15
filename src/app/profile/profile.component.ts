@@ -4,6 +4,7 @@ import { AlertController } from '@ionic/angular';
 import { SecureStorageService } from '../services/secure-storage.service';
 import { DataService } from "../services/data.service";
 import { AuthService } from '../services/auth.service';
+import { TranslatorService } from '../services/translator.service';
 
 @Component({
   selector: 'app-profile',
@@ -20,7 +21,8 @@ export class ProfileComponent  {
     private alertController: AlertController,
     private secureStorageService: SecureStorageService,
     private dataService: DataService,
-    public authService: AuthService
+    public authService: AuthService,
+    private translatorService: TranslatorService
   ) {}
 
   ionViewWillEnter() {
@@ -43,16 +45,16 @@ export class ProfileComponent  {
 
   async confirmLogout() {
     const alert = await this.alertController.create({
-      header: 'Confirm Logout',
-      message: 'Are you sure you want to logout?',
+      header: this.translatorService.allTranslations?.confirmLogout ?? 'Confirm Logout',
+      message: this.translatorService.allTranslations?.confirmLogoutMessage ?? 'Are you sure you want to logout?',
       buttons: [
         {
-          text: 'Cancel',
+          text: this.translatorService.allTranslations?.cancel ?? 'Cancel',
           role: 'cancel',
           cssClass: 'secondary',
         },
         {
-          text: 'Logout',
+          text: this.translatorService.allTranslations?.logout ?? 'Logout',
           handler: () => {
             this.logout();
           },

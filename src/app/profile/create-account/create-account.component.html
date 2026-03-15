@@ -20,7 +20,7 @@
       <!-- Email -->
       <ion-item class="input-field" lines="none" style="margin-bottom: 0;">
         <ion-input
-          placeholder="Email"
+          placeholder="{{'email' | translate}}"
           type="email"
           formControlName="email"
           [ngClass]="{'border-danger': createUserForm.get('email')?.invalid && createUserForm.get('email')?.touched}">
@@ -45,7 +45,7 @@
       >
         <ion-input
           [type]="showPassword ? 'text' : 'password'"
-          placeholder="Password"
+          placeholder="{{'password' | translate}}"
           formControlName="password"
           [ngClass]="{
             'border-danger': createUserForm.get('password')?.invalid && createUserForm.get('password')?.touched

@@ -1,152 +1,214 @@
 <ion-header [translucent]="true">
   <ion-toolbar>
     <ion-buttons slot="start">
-        <ion-back-button defaultHref="/"
-        class="custom-back-button"  text="">
-          <ion-icon slot="icon-only" style="display: none;"></ion-icon>
+      <ion-back-button
+        defaultHref="/"
+        class="custom-back-button"
+        text="">
+        <ion-icon slot="icon-only" style="display: none;"></ion-icon>
       </ion-back-button>
     </ion-buttons>
-    <ion-title>{{'settings' | translate}}</ion-title>
+    <ion-title>{{ 'settings' | translate }}</ion-title>
   </ion-toolbar>
 </ion-header>
 
-
 <ion-content [fullscreen]="true" class="ion-padding">
-
   <ion-modal #modal trigger="open-modal">
     <ng-template>
       <ion-header>
         <ion-toolbar>
           <ion-buttons slot="start">
-            <ion-icon (click)="cancel()" name="chevron-back-outline" class="cancel-btn"></ion-icon>
+            <ion-icon
+              (click)="cancel()"
+              name="chevron-back-outline"
+              class="cancel-btn">
+            </ion-icon>
           </ion-buttons>
-          <ion-title>{{'passwordOnApp' | translate}}</ion-title>
+          <ion-title>{{ 'passwordOnApp' | translate }}</ion-title>
         </ion-toolbar>
       </ion-header>
-      <ion-content class="ion-padding">
 
+      <ion-content class="ion-padding">
         <div class="pass-info-box enabled-info-box" *ngIf="password_enabled">
           <img src="../../assets/green-lock.png" />
-          <h3>{{'encryptionSuccessfullyWork' | translate}}</h3>
-          <p>{{'yourNotesAreSafeAndEncryptedWithYourPassword' | translate}}</p>
-        </div>
-        <h2 *ngIf="!password_enabled"
-          style="color: #0B0C19; font-weight: 600; font-family: 'Poppins'; font-size: 16px; margin-bottom: 20px;">
-          {{'lockAppWithPassword' | translate}}</h2>
-        <div *ngIf="!password_enabled">
-          <div class="input-group" style="position: relative;">
-            <ion-input type="{{ showPassword ? 'text' : 'password' }}" shape="round" placeholder="{{'password' | translate}}" (ionInput)="notesAppPasswordChange()"
-              [(ngModel)]="notesAppPassword" (keyup.enter)="save()"></ion-input>
-            <ion-icon slot="end" [name]="showPassword ? 'eye-off' : 'eye'"
-              (click)="togglePasswordVisibility()"></ion-icon>
-          </div>
-          <div class="input-group">
-            <ion-input type="{{ confirmShowPassword ? 'text' : 'password' }}" shape="round" placeholder="{{'confirmPassword' | translate}}"
-              [(ngModel)]="confirmPassword" (keyup.enter)="save()"></ion-input>
-            <ion-icon slot="end" [name]="confirmShowPassword ? 'eye-off' : 'eye'"
-              (click)="toggleConfirmPasswordVisibility()"></ion-icon>
-          </div>
+          <h3>{{ 'encryptionSuccessfullyWork' | translate }}</h3>
+          <p>{{ 'yourNotesAreSafeAndEncryptedWithYourPassword' | translate }}</p>
         </div>
 
+        <h2 *ngIf="!password_enabled" class="section-title">
+          {{ 'lockAppWithPassword' | translate }}
+        </h2>
+
+        <div *ngIf="!password_enabled">
+          <div class="input-group">
+            <ion-input
+              type="{{ showPassword ? 'text' : 'password' }}"
+              shape="round"
+              placeholder="{{ 'password' | translate }}"
+              (ionInput)="notesAppPasswordChange()"
+              [(ngModel)]="notesAppPassword"
+              (keyup.enter)="save()">
+            </ion-input>
+            <ion-icon
+              slot="end"
+              [name]="showPassword ? 'eye-off' : 'eye'"
+              (click)="togglePasswordVisibility()">
+            </ion-icon>
+          </div>
+
+          <div class="input-group">
+            <ion-input
+              type="{{ confirmShowPassword ? 'text' : 'password' }}"
+              shape="round"
+              placeholder="{{ 'confirmPassword' | translate }}"
+              [(ngModel)]="confirmPassword"
+              (keyup.enter)="save()">
+            </ion-input>
+            <ion-icon
+              slot="end"
+              [name]="confirmShowPassword ? 'eye-off' : 'eye'"
+              (click)="toggleConfirmPasswordVisibility()">
+            </ion-icon>
+          </div>
+        </div>
 
         <div *ngIf="!password_enabled" class="pass-info-box">
-          <p *ngif="!strongPass" class="pass-note">{{'passwordCharacters' | translate}}</p>
-          {{passwordStrengthHelperText}}
+          <p *ngIf="!strongPass" class="pass-note">
+            {{ 'passwordCharacters' | translate }}
+          </p>
+
+          <div class="password-helper-text">
+            {{ passwordStrengthHelperText }}
+          </div>
+
           <password-strength-meter [password]="notesAppPassword"></password-strength-meter>
-          <h4 style="color: #0B0C19; font-size: 12px; font-weight: 400; font-family: 'Poppins';">{{'itsBetterToHave' | translate}}
+
+          <h4 class="password-helper-title">
+            {{ 'itsBetterToHave' | translate }}
           </h4>
+
           <ul class="pass-list">
-            <li [ngClass]="{'active': upperLower}"><ion-icon name="checkmark-outline"></ion-icon> 
-              {{'upperAndLowerCaseLetters' | translate}}</li>
-            <li [ngClass]="{'active': specialChar}"><ion-icon name="checkmark-outline"></ion-icon> {{'aSymbol' | translate}} (#&$)</li>
-            <li [ngClass]="{'active': passwordStrength >= 3}">
-              <ion-icon name="checkmark-outline"></ion-icon> {{'longerPassword' | translate}}
+            <li [ngClass]="{ active: upperLower }">
+              <ion-icon name="checkmark-outline"></ion-icon>
+              {{ 'upperAndLowerCaseLetters' | translate }}
+            </li>
+            <li [ngClass]="{ active: specialChar }">
+              <ion-icon name="checkmark-outline"></ion-icon>
+              {{ 'aSymbol' | translate }} (#&$)
+            </li>
+            <li [ngClass]="{ active: passwordStrength >= 3 }">
+              <ion-icon name="checkmark-outline"></ion-icon>
+              {{ 'longerPassword' | translate }}
             </li>
           </ul>
         </div>
 
-        <hr style="background: #EAEAF0;"/>
-        <p expand="block" (click)="removePassword()" class="disable-pass-btn" *ngIf="password_enabled">{{'disableAppPassword' | translate}}</p>
-        <ion-button expand="block" (click)="save()" *ngIf="!password_enabled">{{'addAppPassword' | translate}}</ion-button>
+        <hr />
 
+        <p
+          expand="block"
+          (click)="removePassword()"
+          class="disable-pass-btn"
+          *ngIf="password_enabled">
+          {{ 'disableAppPassword' | translate }}
+        </p>
 
+        <ion-button expand="block" (click)="save()" *ngIf="!password_enabled">
+          {{ 'addAppPassword' | translate }}
+        </ion-button>
       </ion-content>
     </ng-template>
   </ion-modal>
 
   <ion-item>
-    <div class="pass-toggle-main" (click)="appPasswordChallengeDialog()">
-      <span class="pass-toggle-btn"><strong>{{'askForPasswordWhenOpeningApp' | translate}}</strong>
-        <span *ngIf="!password_enabled">{{'notSet' | translate}}</span>
-        <span *ngIf="password_enabled" class="enabled">{{'enabled' | translate}}</span></span>
-      <ion-icon name="chevron-forward-outline"></ion-icon>
+    <div class="setting-row" (click)="appPasswordChallengeDialog()">
+      <div class="setting-text">
+        <div class="setting-title">{{ 'askForPasswordWhenOpeningApp' | translate }}</div>
+        <div class="setting-status">
+          <span *ngIf="!password_enabled">{{ 'notSet' | translate }}</span>
+          <span *ngIf="password_enabled" class="enabled">{{ 'enabled' | translate }}</span>
+        </div>
+      </div>
+
+      <div class="setting-control setting-control--icon">
+        <ion-icon name="chevron-forward-outline"></ion-icon>
+      </div>
     </div>
   </ion-item>
 
-  <ion-item *ngIf="password_enabled" class="auto-lock-item">
-    <ion-label class="auto-lock-label">
-      <strong>Auto-lock timer</strong>
-      <span>{{ getAppLockTimeoutLabel(appLockTimeoutMinutes) }}</span>
-    </ion-label>
-    <ion-select
-      interface="action-sheet"
-      [(ngModel)]="appLockTimeoutMinutes"
-      (ionChange)="saveAppLockTimeout()">
-      <ion-select-option *ngFor="let option of appLockTimeoutOptions" [value]="option">
-        {{ getAppLockTimeoutLabel(option) }}
-      </ion-select-option>
-    </ion-select>
-  </ion-item>
+  <ion-item *ngIf="password_enabled" (click)="openAutoLockSelect()">
+    <div class="setting-row">
+      <div class="setting-text">
+        <div class="setting-title">{{ 'autoLockTimer' | translate }}</div>
+        <div class="setting-helper-text">
+          {{ 'autoLockTimerDescription' | translate }}
+        </div>
+      </div>
 
-  <div class="auto-lock-help" *ngIf="password_enabled">
-    After this time, the app locks automatically when inactive or in the background.
-  </div>
-
-  <ion-item *ngIf="password_enabled" class="auto-lock-item">
-    <ion-label class="auto-lock-label">
-      <strong>Block screenshots</strong>
-      <span>{{ screenshotProtectionEnabled ? 'Enabled' : 'Disabled' }}</span>
-    </ion-label>
-    <ion-toggle
-      [(ngModel)]="screenshotProtectionEnabled"
-      (ionChange)="screenshotProtectionChange()">
-    </ion-toggle>
-  </ion-item>
-
-  <div class="auto-lock-help" *ngIf="password_enabled">
-    Prevent screenshots and screen recordings where supported. Enabled by default to protect sensitive notes.
-  </div>
-
-  <ion-item *ngIf="password_enabled" class="auto-lock-item">
-    <ion-label class="auto-lock-label">
-      <strong>Inactive device wipe</strong>
-      <span>{{ getAppWipeAfterDaysLabel(appWipeAfterDays) }}</span>
-    </ion-label>
-    <ion-select
-      interface="action-sheet"
-      [(ngModel)]="appWipeAfterDays"
-      (ionChange)="saveAppWipeAfterDays()">
-      <ion-select-option *ngFor="let option of appWipeAfterDaysOptions" [value]="option">
-        {{ getAppWipeAfterDaysLabel(option) }}
-      </ion-select-option>
-    </ion-select>
-  </ion-item>
-
-  <div class="auto-lock-help wipe-help" *ngIf="password_enabled">
-    Erase all local notes and app data from this device if the app is not unlocked for the selected number of days.
-  </div>
-
-  <div class="auto-lock-help wipe-help wipe-help--warning" *ngIf="password_enabled && appWipeAfterDays > 0">
-    Synced notes are not deleted from your account, but everything stored on this device will be reset.
-  </div>
-
-  <hr>
-
-  <!--<p class="disable-pass-btn" expand="full" (click)="deleteWholeAppStorage()">
-    {{'deleteAllNotes' | translate}}</p>
-
-    <hr>-->
-    <div align="center" class="for-help">
-        For help go to <a href="https://stellarsecurity.com/" target="_blank"><strong>stellarsecurity.com</strong></a>
+      <div class="setting-control">
+        <ion-select
+          #autoLockSelect
+          interface="action-sheet"
+          [(ngModel)]="appLockTimeoutMinutes"
+          (ionChange)="saveAppLockTimeout()"
+          (click)="$event.stopPropagation()">
+          <ion-select-option
+            *ngFor="let option of appLockTimeoutOptions"
+            [value]="option">
+            {{ getAppLockTimeoutLabel(option) }}
+          </ion-select-option>
+        </ion-select>
+      </div>
     </div>
+  </ion-item>
+
+  <ion-item *ngIf="password_enabled" (click)="toggleScreenshotProtectionFromRow()">
+    <div class="setting-row setting-row--top">
+      <div class="setting-text">
+        <div class="setting-title">{{ 'blockScreenshots' | translate }}</div>
+        <div class="setting-helper-text">
+          {{ 'blockScreenshotsDescription' | translate }}
+        </div>
+      </div>
+
+      <div class="setting-control setting-control--toggle">
+        <ion-toggle
+          [(ngModel)]="screenshotProtectionEnabled"
+          (ionChange)="screenshotProtectionChange()"
+          (click)="$event.stopPropagation()">
+        </ion-toggle>
+      </div>
+    </div>
+  </ion-item>
+
+  <ion-item *ngIf="password_enabled" (click)="openWipeSelect()">
+    <div class="setting-row">
+      <div class="setting-text">
+        <div class="setting-title">{{ 'inactiveDeviceWipe' | translate }}</div>
+        <div class="setting-helper-text">
+          {{ 'inactiveDeviceWipeDescription' | translate }}
+        </div>
+      </div>
+
+      <div class="setting-control">
+        <ion-select
+          #wipeSelect
+          interface="action-sheet"
+          [(ngModel)]="appWipeAfterDays"
+          (ionChange)="saveAppWipeAfterDays()"
+          (click)="$event.stopPropagation()">
+          <ion-select-option
+            *ngFor="let option of appWipeAfterDaysOptions"
+            [value]="option">
+            {{ getAppWipeAfterDaysLabel(option) }}
+          </ion-select-option>
+        </ion-select>
+      </div>
+    </div>
+  </ion-item>
+
+  <div class="app-setting-support">
+    <div class="support-title">{{ 'needHelpQuestion' | translate }}</div>
+    <div class="support-text">{{ 'supportContactText' | translate }}</div>
+  </div>
 </ion-content>

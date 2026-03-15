@@ -427,10 +427,12 @@ export class HomePage {
 
     if (totalSeconds >= 60) {
       const minutes = Math.ceil(totalSeconds / 60);
-      return `Too many failed attempts. Try again in ${minutes} minute${minutes === 1 ? '' : 's'}.`;
+      const template = this.allTranslations?.tooManyFailedAttemptsTryAgainInMinutes ?? 'Too many failed attempts. Try again in {{count}} minute{{suffix}}.';
+      return template.replace('{{count}}', String(minutes)).replace('{{suffix}}', minutes === 1 ? '' : 's');
     }
 
-    return `Too many failed attempts. Try again in ${totalSeconds} second${totalSeconds === 1 ? '' : 's'}.`;
+    const template = this.allTranslations?.tooManyFailedAttemptsTryAgainInSeconds ?? 'Too many failed attempts. Try again in {{count}} second{{suffix}}.';
+    return template.replace('{{count}}', String(totalSeconds)).replace('{{suffix}}', totalSeconds === 1 ? '' : 's');
   }
 
   public async unlockNotesApp() {
@@ -448,7 +450,7 @@ export class HomePage {
 
     if (this.input_password_app_unlock.length == 0) {
       const toast = await this.toastController.create({
-        message: "Please enter your password.",
+        message: this.allTranslations?.pleaseEnterYourPasswordMessage ?? 'Please enter your password.',
         duration: 3000,
         position: 'bottom',
       });
