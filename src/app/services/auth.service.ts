@@ -57,4 +57,27 @@ export class AuthService {
   resetPassword(data: any): Observable<any> {
     return this.http.post<any>(baseUrl + auth.resetPasswordUrl, data);
   }
+
+  async buildAuthHeaders(): Promise<HttpHeaders> {
+    const token = await this.secureStorageService.getItem('ssToken');
+    return new HttpHeaders().set('Authorization', `Bearer ${token ?? ''}`);
+  }
+
+  deleteAccount(currentPassword: string): Observable<any> {
+    return new Observable<any>((subscriber) => {
+      this.buildAuthHeaders()
+        .then((headers) => {
+          this.http
+            .post<any>(baseUrl + auth.deleteUser, { current_password: currentPassword }, { headers })
+            .subscribe({
+              next: (response) => {
+                subscriber.next(response);
+                subscriber.complete();
+              },
+              error: (error) => subscriber.error(error),
+            });
+        })
+        .catch((error) => subscriber.error(error));
+    });
+  }
 }

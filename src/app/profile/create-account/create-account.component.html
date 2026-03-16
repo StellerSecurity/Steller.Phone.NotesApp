@@ -67,6 +67,22 @@
         <small>{{'passwordAtLeastLength' | translate}}</small>
       </ion-text>
 
+      <div class="legal-consent">
+        <ion-item class="legal-consent-item" lines="none">
+          <ion-checkbox slot="start" formControlName="acceptLegal"></ion-checkbox>
+          <ion-label>
+            I agree to the
+            <a (click)="openPrivacyPolicy($event)">Privacy Policy</a>
+            and
+            <a (click)="openTermsPage($event)">Terms &amp; Conditions</a>
+          </ion-label>
+        </ion-item>
+
+        <ion-text color="danger" *ngIf="createUserForm.get('acceptLegal')?.invalid && createUserForm.get('acceptLegal')?.touched">
+          <small>You must accept the Privacy Policy and Terms &amp; Conditions.</small>
+        </ion-text>
+      </div>
+
       <!-- Submit -->
       <ion-button class="create-button" expand="block" type="submit" [disabled]="isSaving">
         <ng-container *ngIf="!isSaving; else loading">

@@ -5,6 +5,7 @@ import { LoginComponent } from './login/login.component';
 import { CreateAccountComponent } from './create-account/create-account.component';
 import { ForgotPasswordComponent } from './forgot-password/forgot-password.component';
 import { CreateNewPasswordComponent } from './create-new-password/create-new-password.component';
+import { DeleteAccountComponent } from './delete-account/delete-account.component';
 
 const routes: Routes = [
   {
@@ -27,6 +28,10 @@ const routes: Routes = [
   {
     path: 'create-new-password',
     component: CreateNewPasswordComponent
+  },
+  {
+    path: 'delete-account',
+    component: DeleteAccountComponent
   }
 ];
 

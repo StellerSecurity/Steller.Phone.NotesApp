@@ -7,6 +7,7 @@ export const auth = {
   loginAcc:"api/v1/logincontroller/auth",
   updateEak: "api/v1/logincontroller/updateEak",
   forgotPassword:"api/v1/logincontroller/sendresetpasswordlink",
-  resetPasswordUrl: 'api/v1/logincontroller/resetpasswordupdate'
+  resetPasswordUrl: 'api/v1/logincontroller/resetpasswordupdate',
+  deleteUser: 'api/v1/logincontroller/deleteuser'
 }
 

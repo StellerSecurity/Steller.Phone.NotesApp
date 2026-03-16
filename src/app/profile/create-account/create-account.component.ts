@@ -65,7 +65,8 @@ export class CreateAccountComponent implements OnInit {
       password: ['', [
         Validators.required,
         Validators.minLength(6),   // example rule
-      ]]
+      ]],
+      acceptLegal: [false, Validators.requiredTrue]
     });
   }
 
@@ -74,7 +75,10 @@ export class CreateAccountComponent implements OnInit {
   }
 
   async createAccount() {
-    if (!this.createUserForm.valid) return;
+    if (!this.createUserForm.valid) {
+      this.createUserForm.markAllAsTouched();
+      return;
+    }
 
     this.isSaving = true;
 
@@ -157,6 +161,18 @@ export class CreateAccountComponent implements OnInit {
 
   goToLogin() {
     this.router.navigate(['/profile/login']);
+  }
+
+  openPrivacyPolicy(event?: Event) {
+    event?.preventDefault();
+    event?.stopPropagation();
+    window.open('https://stellarsecurity.com/privacy-page', '_blank');
+  }
+
+  openTermsPage(event?: Event) {
+    event?.preventDefault();
+    event?.stopPropagation();
+    window.open('https://stellarsecurity.com/terms-page', '_blank');
   }
 
   resendCode() {
