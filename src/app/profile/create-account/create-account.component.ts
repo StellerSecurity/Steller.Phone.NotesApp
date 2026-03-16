@@ -22,6 +22,7 @@ import { SecureStorageService } from 'src/app/services/secure-storage.service';
 import {DataService} from "../../services/data.service";
 import {CryptoService} from "../../services/crypto.service";
 import { CryptoKeyService } from '../../services/crypto-key.service';
+import { AppHapticsService } from '../../services/app-haptics.service';
 
 @Component({
   selector: 'app-create-account',
@@ -53,7 +54,8 @@ export class CreateAccountComponent implements OnInit {
               private notesApiV1Service: NotesApiV1Service,
               private cryptoKeyService: CryptoKeyService,
               private authService: AuthService, private toastMessageService: ToastMessageService,
-              private secureStorageService: SecureStorageService) {}
+              private secureStorageService: SecureStorageService,
+              private appHaptics: AppHapticsService) {}
 
   ngOnInit(): void {
     this.initCreateUserForm();
@@ -71,12 +73,14 @@ export class CreateAccountComponent implements OnInit {
   }
 
   togglePasswordVisibility() {
+    this.appHaptics.selectionChanged();
     this.showPassword = !this.showPassword;
   }
 
   async createAccount() {
     if (!this.createUserForm.valid) {
       this.createUserForm.markAllAsTouched();
+      await this.appHaptics.warning();
       return;
     }
 
@@ -144,9 +148,11 @@ export class CreateAccountComponent implements OnInit {
 
         if (notes.length == 0) {
           this.dataService.setForceDownloadOnHome(true);
+          await this.appHaptics.success();
           await this.router.navigate(['/']);
         } else {
           await this.notesApiV1Service.upload(0, JSON.parse(notes));
+          await this.appHaptics.success();
           await this.router.navigate(['/']);
         }
       } else {
@@ -160,16 +166,19 @@ export class CreateAccountComponent implements OnInit {
   }
 
   goToLogin() {
+    this.appHaptics.tap();
     this.router.navigate(['/profile/login']);
   }
 
   openPrivacyPolicy(event?: Event) {
+    this.appHaptics.tap();
     event?.preventDefault();
     event?.stopPropagation();
     window.open('https://stellarsecurity.com/privacy-page', '_blank');
   }
 
   openTermsPage(event?: Event) {
+    this.appHaptics.tap();
     event?.preventDefault();
     event?.stopPropagation();
     window.open('https://stellarsecurity.com/terms-page', '_blank');
@@ -179,6 +188,7 @@ export class CreateAccountComponent implements OnInit {
   }
 
   changeEmail() {
+    this.appHaptics.selectionChanged();
     this.showVerificationSection = false;
   }
 

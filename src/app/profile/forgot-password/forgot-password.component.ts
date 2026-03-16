@@ -3,6 +3,7 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from 'src/app/services/auth.service';
 import { ToastMessageService } from 'src/app/services/toast-message.service';
+import { AppHapticsService } from 'src/app/services/app-haptics.service';
 
 @Component({
   selector: 'app-forgot-password',
@@ -25,7 +26,8 @@ export class ForgotPasswordComponent implements OnInit {
 
   constructor(private fb: FormBuilder, private authService: AuthService,
     private toastMessageService: ToastMessageService,
-    private router: Router) {
+    private router: Router,
+    private appHaptics: AppHapticsService) {
 
   }
 
@@ -39,13 +41,14 @@ export class ForgotPasswordComponent implements OnInit {
     });
   }
 
-  sendCode() {
+  async sendCode() {
     if (this.forgotPasswordForm.valid) {
       this.isProcessing = true;
       this.authService.forgotPassword(this.forgotPasswordForm.get('email')?.value).subscribe({
         next: (response) => {
           this.isProcessing = false;
           if (response.response_code == 200) {
+            this.appHaptics.success();
             this.showVerification = true;
           } else {
             this.toastMessageService.showError(response.response_message);
@@ -60,10 +63,12 @@ export class ForgotPasswordComponent implements OnInit {
   }
 
   resendCode() {
+    this.appHaptics.tap();
     this.sendCode();
   }
 
   useDifferentEmail() {
+    this.appHaptics.selectionChanged();
     this.showVerification = false;
   }
 
@@ -71,6 +76,7 @@ export class ForgotPasswordComponent implements OnInit {
     this.otpValue = value;
 
     if(this.otpValue?.length == 6 ) {
+      this.appHaptics.success();
       this.router.navigate(['/profile/create-new-password'], {
         queryParams: {
           confirmationCode: this.otpValue,

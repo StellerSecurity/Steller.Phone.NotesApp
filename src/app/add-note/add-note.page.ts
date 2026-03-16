@@ -26,6 +26,7 @@ import { NoteLockedModalComponent } from '../note-locked-modal/note-locked-modal
 import { DeleteNoteModalComponent } from '../delete-note-modal/delete-note-modal.component';
 import { NoteV1 } from '../models/NoteV1';
 import { AuthService } from '../services/auth.service';
+import { AppHapticsService } from '../services/app-haptics.service';
 import { evaluatePasswordStrength, isPasswordLongEnough } from '../utils/password-policy';
 
 // ✅ New: use Stellar Crypto SDK
@@ -108,7 +109,8 @@ export class AddNotePage implements OnDestroy {
     private alertCtrl: AlertController,
     private notesApiV1Service: NotesApiV1Service,
     private translatorService: TranslatorService,
-    private authService: AuthService
+    private authService: AuthService,
+    private appHaptics: AppHapticsService,
   ) {
     this.routeSub = this.activatedRoute.paramMap.subscribe((params: ParamMap) => {
       const decrypted = this.notesService.getDecryptedNotes();
@@ -372,6 +374,7 @@ export class AddNotePage implements OnDestroy {
   }
 
   public async shareStellarSecret() {
+    await this.appHaptics.tap();
     const addSecretModal = new Secret();
     const secret_id = uuidv4();
 
@@ -396,6 +399,7 @@ export class AddNotePage implements OnDestroy {
   }
 
   enableEditingTitle() {
+    this.appHaptics.selectionChanged();
     this.isEditingTitle = true;
     setTimeout(() => this.titleInputRef?.setFocus(), 100);
   }
@@ -415,9 +419,11 @@ export class AddNotePage implements OnDestroy {
   }
 
   togglePasswordVisibility() {
+    this.appHaptics.selectionChanged();
     this.showPassword = !this.showPassword;
   }
   toggleConfirmPasswordVisibility() {
+    this.appHaptics.selectionChanged();
     this.confirmShowPassword = !this.confirmShowPassword;
   }
 
@@ -631,6 +637,7 @@ export class AddNotePage implements OnDestroy {
   }
 
   public back() {
+    this.appHaptics.tap();
     // Ensure save is executed before leaving via custom back button
     this.forceSaveNow();
     this.navController.back();
@@ -653,6 +660,7 @@ export class AddNotePage implements OnDestroy {
       duration: 3000,
       position: 'bottom',
     });
+    await this.appHaptics.error();
     await toast.present();
     await this.askforNotePassword();
   }
@@ -694,13 +702,16 @@ export class AddNotePage implements OnDestroy {
             await this.wrongPasswordEntered(lockoutMs);
           } else {
             this.notesService.clearNoteUnlockFailures(this.notes_id);
+            await this.appHaptics.success();
           }
         } else {
+          await this.appHaptics.tap();
           this.back();
         }
       }
 
       if (data?.role === 'backdrop') {
+        await this.appHaptics.tap();
         this.back();
       }
     });
@@ -741,6 +752,7 @@ export class AddNotePage implements OnDestroy {
   }
 
   public async dismissModal() {
+    await this.appHaptics.tap();
     await this.modal.dismiss();
   }
 
@@ -762,6 +774,7 @@ export class AddNotePage implements OnDestroy {
         duration: 2500,
         position: 'bottom',
       });
+      await this.appHaptics.warning();
       await toast.present();
       return;
     }
@@ -772,6 +785,7 @@ export class AddNotePage implements OnDestroy {
         duration: 3000,
         position: 'bottom',
       });
+      await this.appHaptics.warning();
       await toast.present();
       return;
     }
@@ -820,6 +834,7 @@ export class AddNotePage implements OnDestroy {
     this.notes_password_input = '';
 
     await this.dismissModal();
+    await this.appHaptics.success();
   }
 
   public async removeLock() {
@@ -830,11 +845,15 @@ export class AddNotePage implements OnDestroy {
         {
           text: this.allTranslations.cancel,
           role: 'cancel',
+          handler: () => {
+            this.appHaptics.tap();
+          },
         },
         {
           text: this.allTranslations.removeLock,
           role: 'confirm',
-          handler: () => {
+          handler: async () => {
+            await this.appHaptics.success();
             for (let i = 0; i < this.notes.length; i++) {
               if (this.notes[i].id === this.notes_id) {
                 this.notes[i].text = this.note_text;
@@ -869,6 +888,7 @@ export class AddNotePage implements OnDestroy {
   }
 
   public async openLockModal() {
+    await this.appHaptics.tap();
     this.save(null);
     await this.modal.present();
   }
@@ -878,6 +898,7 @@ export class AddNotePage implements OnDestroy {
   }
 
   public async deleteNote() {
+    await this.appHaptics.warning();
     const modal = await this.modalCtrl.create({
       component: DeleteNoteModalComponent,
       cssClass: 'confirmation-popup',
@@ -888,6 +909,7 @@ export class AddNotePage implements OnDestroy {
       if (data && data.data) {
         const { confirm } = data.data;
         if (confirm) {
+          await this.appHaptics.impactMedium();
           // ✅ prevent ionViewWillLeave() from saving the deleted note back
           this.suppressAutoSave = true;
 

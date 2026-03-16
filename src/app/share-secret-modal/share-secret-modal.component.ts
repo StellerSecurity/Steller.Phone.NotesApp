@@ -4,6 +4,7 @@ import { SecretapiService } from '../services/secretapi.service';
 import { Share } from '@capacitor/share';
 import { Router } from '@angular/router';
 import { TranslatorService } from '../services/translator.service';
+import { AppHapticsService } from '../services/app-haptics.service';
 
 @Component({
   selector: 'app-share-secret-modal',
@@ -26,7 +27,8 @@ export class ShareSecretModalComponent {
     private loadingController: LoadingController,
     private secretapi: SecretapiService,
     private router: Router,
-    private translatorService: TranslatorService,) {}
+    private translatorService: TranslatorService,
+    private appHaptics: AppHapticsService,) {}
 
     ionViewWillEnter() {
       this.step = 1;
@@ -34,10 +36,12 @@ export class ShareSecretModalComponent {
     }
 
   closeModal() {
+    this.appHaptics.tap();
     this.modalCtrl.dismiss();
   }
 
   async createSecret() {
+    await this.appHaptics.tap();
 
     const loading = await this.loadingController.create();
     await loading.present();
@@ -49,10 +53,12 @@ export class ShareSecretModalComponent {
       this.secretUrl = `https://stellarsecret.io/${this.secret_id}`
       //this.expiryText= `7 days (${this.formatDate(response?.expires_at)})`;
       this.expiryText = ''; // not in use atm.
+      await this.appHaptics.success();
     },
     error: async (error) => {
       await loading.dismiss();
       this.isLoading = false;
+      await this.appHaptics.error();
       alert(this.allTranslations?.failedToShareSecret ?? "Failed to share secret. Please check your internet connection or try again.");
     },
     complete: async () => {
@@ -64,6 +70,7 @@ export class ShareSecretModalComponent {
   }
 
   burnSecret() {
+    this.appHaptics.warning();
     this.isDeletingSecret = true;
     this.secretapi.delete(this.createdSecret?.id).subscribe({
       next: async (response) => {
@@ -74,6 +81,7 @@ export class ShareSecretModalComponent {
           position: 'bottom',
         });
 
+        await this.appHaptics.success();
         await toast.present();
       },
       error: async (error) => {
@@ -95,11 +103,13 @@ export class ShareSecretModalComponent {
         position: 'bottom',
       });
 
+      await this.appHaptics.success();
       await toast.present();
     });
   }
 
   async shareLink() {
+    await this.appHaptics.tap();
     await Share.share({
       title: this.allTranslations?.shareSecretTitle ?? 'Stellar Secret',
       text: this.allTranslations?.hereIsYourSecretLink ?? 'Here is your secret link',

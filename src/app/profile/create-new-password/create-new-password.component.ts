@@ -4,6 +4,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { AuthService } from 'src/app/services/auth.service';
 import { ToastMessageService } from 'src/app/services/toast-message.service';
+import { AppHapticsService } from 'src/app/services/app-haptics.service';
 
 @Component({
   selector: 'app-create-new-password',
@@ -24,7 +25,8 @@ export class CreateNewPasswordComponent implements OnInit, OnDestroy {
 
   constructor(private router: Router, private fb: FormBuilder,
     private authService: AuthService, private activatedRoute: ActivatedRoute,
-    private toastMessageService: ToastMessageService) {}
+    private toastMessageService: ToastMessageService,
+    private appHaptics: AppHapticsService) {}
 
   ngOnInit(): void {
     this.initPasswordForm();
@@ -66,10 +68,12 @@ export class CreateNewPasswordComponent implements OnInit, OnDestroy {
   }
 
   toggleNewPasswordVisibility() {
+    this.appHaptics.selectionChanged();
     this.showNewPassword = !this.showNewPassword;
   }
 
   toggleConfirmPasswordVisibility() {
+    this.appHaptics.selectionChanged();
     this.showConfirmPassword = !this.showConfirmPassword;
   }
 
@@ -86,6 +90,7 @@ export class CreateNewPasswordComponent implements OnInit, OnDestroy {
           next: (response: any) => {
             this.isSaving = false;
             if (response.response_code == 200) {
+              this.appHaptics.success();
               this.router.navigate(['/']);
             } else {
               this.toastMessageService.showError(response.response_message);
@@ -96,10 +101,14 @@ export class CreateNewPasswordComponent implements OnInit, OnDestroy {
             this.toastMessageService.showError(error?.error?.message);
           },
         });
+      return;
     }
+
+    this.appHaptics.warning();
   }
 
   backToLogin() {
+    this.appHaptics.tap();
     this.router.navigate(['/profile/login']);
   }
 

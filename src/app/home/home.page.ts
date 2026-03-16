@@ -21,7 +21,7 @@ import { AppProtectorService } from "../services/app-protector.service";
 import { DeleteNoteModalComponent } from '../delete-note-modal/delete-note-modal.component';
 import { ResetPassModalComponent } from '../restpass-modal/resetpass-modal.component';
 import { TranslatorService } from '../services/translator.service';
-import { Haptics } from "@capacitor/haptics";
+import { AppHapticsService } from '../services/app-haptics.service';
 import { NotesApiV1Service } from "../services/notes-api-v1.service";
 import { SecureStorageService } from "../services/secure-storage.service";
 import { ActivatedRoute, Router } from "@angular/router";
@@ -113,7 +113,8 @@ export class HomePage {
     private authService: AuthService,
     private cdr: ChangeDetectorRef,
     private crypto: CryptoKeyService,
-    private scrollService: ScrollService
+    private scrollService: ScrollService,
+    private appHaptics: AppHapticsService,
   ) {}
 
   // Small helper: base64 -> Uint8Array
@@ -193,6 +194,7 @@ export class HomePage {
   // UI Modes: Search & Checkbox
   // --------------------------------------------------
   enterSearchMode() {
+    this.appHaptics.tap();
     this.searchMode = true;
     setTimeout(() => {
       this.searchbar?.setFocus();
@@ -200,6 +202,7 @@ export class HomePage {
   }
 
   exitSearchMode() {
+    this.appHaptics.tap();
     this.search_query = '';
     this.pauseSync = false;
     this.search();
@@ -211,6 +214,7 @@ export class HomePage {
   }
 
   public toggleCheckbox() {
+    this.appHaptics.selectionChanged();
     this.checkboxOpened = !this.checkboxOpened;
     if (!this.checkboxOpened) {
       this.listOfCheckedCheckboxes = [];
@@ -283,6 +287,7 @@ export class HomePage {
   }
 
   handlePressStart(element: any) {
+    this.appHaptics.selectionStart();
     this.timeout = setTimeout(() => {
       this.checkboxOpened = true;
       setTimeout(() => {
@@ -295,7 +300,8 @@ export class HomePage {
           this.listOfCheckedCheckboxes.push(noteId);
         }
 
-        Haptics.vibrate({ duration: 50 }).then(() => {});
+        this.appHaptics.impactMedium();
+        this.appHaptics.selectionChanged();
         setTimeout(() => this.cdr.detectChanges(), HomePage.DETECT_CHANGES_DELAY_MS);
       }, HomePage.LONG_PRESS_START_DELAY_MS);
     }, HomePage.LONG_PRESS_START_DELAY_MS);
@@ -303,6 +309,7 @@ export class HomePage {
 
   handlePressEnd() {
     clearTimeout(this.timeout);
+    this.appHaptics.selectionEnd();
   }
 
   // --------------------------------------------------
@@ -419,6 +426,7 @@ export class HomePage {
   // Auth / Protection
   // --------------------------------------------------
   public togglePasswordVisibility() {
+    this.appHaptics.selectionChanged();
     this.showPassword = !this.showPassword;
   }
 
@@ -443,6 +451,7 @@ export class HomePage {
         duration: 3000,
         position: 'bottom',
       });
+      await this.appHaptics.warning();
       await toast.present();
       this.should_display = false;
       return;
@@ -454,6 +463,7 @@ export class HomePage {
         duration: 3000,
         position: 'bottom',
       });
+      await this.appHaptics.warning();
       await toast.present();
       return;
     }
@@ -489,6 +499,7 @@ export class HomePage {
         this.cdr.detectChanges();
       }, HomePage.DETECT_CHANGES_DELAY_MS);
 
+      await this.appHaptics.success();
       return;
     } catch (e: any) {
 
@@ -506,6 +517,7 @@ export class HomePage {
       this.should_display = false;
       this.input_password_app_unlock = "";
 
+      await this.appHaptics.error();
       await toast.present();
       return;
     }
@@ -530,20 +542,24 @@ export class HomePage {
   }
 
   public settings() {
+    this.appHaptics.tap();
     this.navController.navigateForward('app-settings').then(r => {});
   }
 
   goToProfile() {
+    this.appHaptics.tap();
     this.navController.navigateForward('profile').then(r => {});
   }
 
   public openOrCheckbox(note_id: string) {
     if (!this.checkboxOpened) {
+      this.appHaptics.tap();
       this.navController.navigateForward('/note/' + note_id).then(r => {});
     }
   }
 
   public async deleteSelectedNotes() {
+    await this.appHaptics.tap();
     const modal = await this.modalCtrl.create({
       component: DeleteNoteModalComponent,
       cssClass: 'confirmation-popup',
@@ -565,6 +581,7 @@ export class HomePage {
   }
 
   private deleteNotesConfirm() {
+    this.appHaptics.impactMedium();
     if (!this.listOfCheckedCheckboxes?.length) {
       this.toggleCheckbox();
       return;
@@ -611,6 +628,7 @@ export class HomePage {
   }
 
   public async resetPassword() {
+    await this.appHaptics.warning();
     const modal = await this.modalCtrl.create({
       component: ResetPassModalComponent,
       cssClass: 'confirmation-popup'
@@ -635,6 +653,7 @@ export class HomePage {
   }
 
   public selectNote(event: any, note_id: string) {
+    this.appHaptics.selectionChanged();
     event?.stopImmediatePropagation();
     event?.preventDefault();
 

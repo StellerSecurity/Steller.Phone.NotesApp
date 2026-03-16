@@ -6,6 +6,7 @@ import { firstValueFrom } from 'rxjs';
 import { AuthService } from 'src/app/services/auth.service';
 import { DataService } from 'src/app/services/data.service';
 import { ToastMessageService } from 'src/app/services/toast-message.service';
+import { AppHapticsService } from 'src/app/services/app-haptics.service';
 
 @Component({
   selector: 'app-delete-account',
@@ -24,6 +25,7 @@ export class DeleteAccountComponent implements OnInit {
     private authService: AuthService,
     private dataService: DataService,
     private toastMessageService: ToastMessageService,
+    private appHaptics: AppHapticsService,
   ) {}
 
   ngOnInit(): void {
@@ -34,12 +36,15 @@ export class DeleteAccountComponent implements OnInit {
   }
 
   togglePasswordVisibility() {
+    this.appHaptics.selectionChanged();
     this.showPassword = !this.showPassword;
   }
 
   async submitDeleteRequest() {
+    await this.appHaptics.warning();
     if (this.deleteForm.invalid || this.isSaving) {
       this.deleteForm.markAllAsTouched();
+      await this.appHaptics.warning();
       return;
     }
 
@@ -50,11 +55,15 @@ export class DeleteAccountComponent implements OnInit {
         {
           text: 'Cancel',
           role: 'cancel',
+          handler: () => {
+            this.appHaptics.tap();
+          },
         },
         {
           text: 'Delete',
           role: 'destructive',
           handler: async () => {
+            await this.appHaptics.impactHeavy();
             await this.performDelete();
           },
         },
@@ -89,6 +98,7 @@ export class DeleteAccountComponent implements OnInit {
   }
 
   goBack() {
+    this.appHaptics.tap();
     this.router.navigate(['/profile']);
   }
 }
