@@ -46,6 +46,26 @@
         <ion-label>{{'settings' | translate}}</ion-label>
       </div>
 
+      <div (click)="openPrivacyPolicy()" class="action-item">
+        <ion-icon name="shield-checkmark-outline" slot="start"></ion-icon>
+        <ion-label>Privacy Policy</ion-label>
+      </div>
+
+      <div (click)="openTermsPage()" class="action-item">
+        <ion-icon name="document-text-outline" slot="start"></ion-icon>
+        <ion-label>Terms &amp; Conditions</ion-label>
+      </div>
+
+      <div (click)="openContactUs()" class="action-item">
+        <ion-icon name="help-circle-outline" slot="start"></ion-icon>
+        <ion-label>Contact Us</ion-label>
+      </div>
+
+      <div *ngIf="isLoggedIn" (click)="goToDeleteAccount()" class="action-item action-item-danger">
+        <ion-icon name="trash-outline" slot="start"></ion-icon>
+        <ion-label>Delete Account</ion-label>
+      </div>
+
 
       <!-- Logout -->
       <div  *ngIf="isLoggedIn" (click)="confirmLogout()" class="action-item-logout">

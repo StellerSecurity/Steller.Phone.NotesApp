@@ -1,0 +1,115 @@
+ion-content {
+  --ion-background-color: #f6f6fd;
+}
+
+.danger-top-section {
+  background: linear-gradient(180deg, #7d1022 0%, #a3172d 100%);
+  min-height: 180px;
+  padding: 24px 20px 72px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+}
+
+.delete-form-card {
+  margin: -56px 16px 0 16px;
+  padding: 20px 16px 24px 16px;
+  box-sizing: border-box;
+  width: auto;
+}
+
+.logo-container {
+  text-align: center;
+}
+
+.app-name {
+  color: #ffffff;
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.form-card {
+  background: #ffffff;
+  margin: -44px 16px 24px;
+  border-radius: 24px;
+  padding: 20px;
+  box-shadow: 0 10px 30px rgba(11, 12, 25, 0.08);
+}
+
+.back-button {
+  margin-left: -8px;
+  --color: #0b0c19;
+}
+
+.title {
+  color: #0b0c19;
+  font-size: 22px;
+  font-weight: 700;
+  margin-top: 8px;
+}
+
+.subtitle {
+  color: #62626a;
+  font-size: 14px;
+  line-height: 1.5;
+  margin-top: 8px;
+  margin-bottom: 20px;
+}
+
+.input-field {
+  --background: #f6f6fd;
+  border-radius: 16px;
+  margin-bottom: 8px;
+}
+
+.password-toggle {
+  font-size: 20px;
+  color: #62626a;
+}
+
+.delete-warning-box {
+  background: #fff4f5;
+  border: 1px solid #ffd5db;
+  border-radius: 16px;
+  padding: 16px;
+  margin-top: 20px;
+  color: #5a1420;
+}
+
+.delete-warning-title {
+  font-size: 14px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.delete-warning-box ul {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.delete-warning-box li {
+  font-size: 13px;
+  line-height: 1.5;
+  margin-bottom: 6px;
+}
+
+.confirm-item {
+  --background: transparent;
+  --padding-start: 0;
+  --inner-padding-end: 0;
+  margin-top: 18px;
+}
+
+.confirm-item ion-label {
+  font-size: 14px;
+  color: #0b0c19;
+}
+
+.delete-button {
+  margin-top: 22px;
+  width: 100%;
+  height: 48px;
+  --border-radius: 32px;
+  font-size: 14px;
+  font-weight: 700;
+}

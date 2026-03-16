@@ -77,4 +77,21 @@ export class ProfileComponent  {
   goToLogin() {
     this.router.navigate(['/profile/login']);
   }
+
+  goToDeleteAccount() {
+    this.router.navigate(['/profile/delete-account']);
+  }
+
+  openPrivacyPolicy() {
+    window.open('https://stellarsecurity.com/privacy-page', '_blank');
+  }
+
+  openTermsPage() {
+    window.open('https://stellarsecurity.com/terms-page', '_blank');
+  }
+
+  openContactUs() {
+    window.open('https://stellarsecurity.com/contact-us', '_blank');
+  }
 }
+
