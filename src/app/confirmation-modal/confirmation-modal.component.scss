@@ -45,6 +45,7 @@
         font-family: 'Poppins';
         color: #62626A;
         text-align: center;
+        line-height: 1.5;
     }
 
     h2 {
@@ -54,6 +55,30 @@
         color: #0B0C19;
         text-align: center;
         margin: 0;
+    }
+
+    .warning-box {
+        width: 100%;
+        padding: 14px 16px;
+        border-radius: 16px;
+        background: #FFF1F1;
+        border: 1px solid #FFD5D5;
+        text-align: left;
+
+        strong {
+            display: block;
+            margin-bottom: 6px;
+            color: #B42318;
+            font-size: 13px;
+            font-weight: 600;
+            font-family: 'Poppins';
+        }
+
+        p {
+            text-align: left;
+            color: #7A271A;
+            font-size: 13px;
+        }
     }
 
     .buttons {
@@ -76,6 +101,10 @@
         color: rgb(225, 0, 0);
         font-weight: 600;
         cursor: pointer;
+    }
+
+    .danger-btn.blue-btn {
+        color: #E10000;
     }
 
     .transparent-btn.blue-btn {

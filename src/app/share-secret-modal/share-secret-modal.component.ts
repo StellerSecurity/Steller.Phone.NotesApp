@@ -53,7 +53,7 @@ export class ShareSecretModalComponent {
     error: async (error) => {
       await loading.dismiss();
       this.isLoading = false;
-      alert("Failed to share secret. Please check your internet connection or try again.");
+      alert(this.allTranslations?.failedToShareSecret ?? "Failed to share secret. Please check your internet connection or try again.");
     },
     complete: async () => {
       // Optional cleanup logic
@@ -90,7 +90,7 @@ export class ShareSecretModalComponent {
   copyLink() {
     navigator.clipboard.writeText(this.secretUrl).then(async ()=> {
       const toast = await this.toastController.create({
-        message: "Link copied.",
+        message: this.allTranslations?.linkCopied ?? "Link copied.",
         duration: 3000,
         position: 'bottom',
       });
@@ -101,10 +101,10 @@ export class ShareSecretModalComponent {
 
   async shareLink() {
     await Share.share({
-      title: 'Stellar Secret',
-      text: 'Here is your secret link',
+      title: this.allTranslations?.shareSecretTitle ?? 'Stellar Secret',
+      text: this.allTranslations?.hereIsYourSecretLink ?? 'Here is your secret link',
       url: this.secretUrl,
-      dialogTitle: 'Stellar Note',
+      dialogTitle: this.allTranslations?.shareDialogTitle ?? 'Stellar Note',
     });
   }
 

@@ -120,16 +120,18 @@ export class CreateAccountComponent implements OnInit {
 
         // optional app-locker layer
         if (this.notesService.appHasPasswordChallenge()) {
-          this.cryptoService.encrypt(
+          const encryptedEakB64 = this.cryptoService.encrypt(
             eakB64,
             this.notesService.getNotesAppPassword(),
           );
           await this.secureStorageService.setItem(
             'ssEakB64_Encrypted',
-            eakB64,
+            encryptedEakB64,
           );
+          await this.secureStorageService.removeItem('ssEakB64');
         } else {
           await this.secureStorageService.setItem('ssEakB64', eakB64);
+          await this.secureStorageService.removeItem('ssEakB64_Encrypted');
         }
 
         let notes = this.notesService.getNotes();
@@ -145,14 +147,12 @@ export class CreateAccountComponent implements OnInit {
           await this.router.navigate(['/']);
         } else {
           await this.notesApiV1Service.upload(0, JSON.parse(notes));
-          console.log('Notes sent.');
           await this.router.navigate(['/']);
         }
       } else {
         await this.toastMessageService.showError(response.response_message);
       }
     } catch (error: any) {
-      console.log("some error", error);
       await this.toastMessageService.showError(error?.error?.message ?? error?.message ?? error);
     } finally {
       this.isSaving = false;
@@ -176,7 +176,6 @@ export class CreateAccountComponent implements OnInit {
   }
 
   resendCode() {
-    console.log('Resend code to:', this.email);
   }
 
   changeEmail() {

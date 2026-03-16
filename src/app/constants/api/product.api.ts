@@ -11,3 +11,13 @@ export const auth = {
   deleteUser: 'api/v1/logincontroller/deleteuser'
 }
 
+
+export const notes = {
+  controller: 'api/v1/notescontroller/',
+  upload: 'upload',
+  syncPlan: 'sync-plan',
+};
+
+export function buildApiUrl(path: string): string {
+  return `${baseUrl}${path}`;
+}
