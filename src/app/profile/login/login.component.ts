@@ -18,6 +18,7 @@ import {
   ServerBundle,
 } from '@stellarsecurity/stellar-crypto';
 import { CryptoKeyService } from '../../services/crypto-key.service';
+import { AppHapticsService } from '../../services/app-haptics.service';
 
 @Component({
   selector: 'app-login',
@@ -39,7 +40,8 @@ export class LoginComponent implements OnInit {
     private dataService: DataService,
     private cryptoService: CryptoService,
     private secureStorageService: SecureStorageService,
-    private cryptoKeyService: CryptoKeyService
+    private cryptoKeyService: CryptoKeyService,
+    private appHaptics: AppHapticsService,
   ) {}
 
   ngOnInit(): void {
@@ -54,11 +56,15 @@ export class LoginComponent implements OnInit {
   }
 
   togglePasswordVisibility() {
+    this.appHaptics.selectionChanged();
     this.showPassword = !this.showPassword;
   }
 
   async login() {
-    if (!this.loginForm.valid) return;
+    if (!this.loginForm.valid) {
+      await this.appHaptics.warning();
+      return;
+    }
 
     this.isSaving = true;
 
@@ -119,16 +125,18 @@ export class LoginComponent implements OnInit {
 
         // optional app-locker layer
         if (this.notesService.appHasPasswordChallenge()) {
-          this.cryptoService.encrypt(
+          const encryptedEakB64 = this.cryptoService.encrypt(
             eakB64,
             this.notesService.getNotesAppPassword(),
           );
           await this.secureStorageService.setItem(
             'ssEakB64_Encrypted',
-            eakB64,
+            encryptedEakB64,
           );
+          await this.secureStorageService.removeItem('ssEakB64');
         } else {
           await this.secureStorageService.setItem('ssEakB64', eakB64);
+          await this.secureStorageService.removeItem('ssEakB64_Encrypted');
         }
 
         let notes = this.notesService.getNotes();
@@ -141,14 +149,14 @@ export class LoginComponent implements OnInit {
         this.dataService.setForceDownloadOnHome(true);
 
         if (notes.length === 0) {
+          await this.appHaptics.success();
           await this.router.navigate(['/']);
         } else {
           try {
             await this.notesApiV1Service.upload(0, JSON.parse(notes));
-            console.log('Notes sent.');
           } catch (err) {
-            console.log('notes error.', err);
           } finally {
+            await this.appHaptics.success();
             await this.router.navigate(['/']);
           }
         }
@@ -156,7 +164,6 @@ export class LoginComponent implements OnInit {
         await this.toastMessageService.showError(response.response_message);
       }
     } catch (error: any) {
-      console.log(error);
       await this.toastMessageService.showError('Something went wrong');
     } finally {
       this.isSaving = false;
@@ -165,10 +172,12 @@ export class LoginComponent implements OnInit {
   }
 
   navigateToRegister() {
+    this.appHaptics.tap();
     this.router.navigate(['/profile/create-account']);
   }
 
   forgotPassword() {
+    this.appHaptics.tap();
     this.router.navigate(['/profile/forgot-password']);
   }
 }

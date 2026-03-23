@@ -1,17 +1,14 @@
-import { AfterViewInit, Component, OnInit, ViewChild } from '@angular/core';
-import { AlertController, ModalController, ToastController, NavController } from "@ionic/angular";
-import { IonModal } from '@ionic/angular';
+import { AfterViewInit, Component, ViewChild } from '@angular/core';
+import { AlertController, IonModal, IonSelect, ModalController, ToastController } from "@ionic/angular";
 
 import { NotesService } from "../services/notes.service";
 import { CryptoService } from "../services/crypto.service";
-import { AppProtectorService } from "../services/app-protector.service";
 import { ConfirmationModalComponent } from '../confirmation-modal/confirmation-modal.component';
-import { DeleteNoteModalComponent } from '../delete-note-modal/delete-note-modal.component';
 import { TranslatorService } from '../services/translator.service';
-import {
-  CryptoKeyService,
-} from "../services/crypto-key.service";
 import { SecureStorageService } from "../services/secure-storage.service";
+import { evaluatePasswordStrength, isPasswordLongEnough } from '../utils/password-policy';
+import { ScreenshotProtectionService } from '../services/screenshot-protection.service';
+import { AppHapticsService } from '../services/app-haptics.service';
 
 @Component({
   selector: 'app-app-settings',
@@ -19,7 +16,6 @@ import { SecureStorageService } from "../services/secure-storage.service";
   styleUrls: ['./app-settings.page.scss'],
 })
 export class AppSettingsPage implements AfterViewInit {
-
   public appPasswordChallenge: boolean;
   public notesAppPassword: string = '';
   public confirmPassword: string = '';
@@ -35,21 +31,35 @@ export class AppSettingsPage implements AfterViewInit {
   public strongPass = false;
   public allTranslations: any;
 
+  public appLockTimeoutMinutes = 60;
+  public readonly appLockTimeoutOptions = [1, 5, 15, 30, 60, 120];
+
+  public screenshotProtectionEnabled = true;
+
+  public appWipeAfterDays = 0;
+  public readonly appWipeAfterDaysOptions = [0, 7, 14, 28, 30, 60, 90];
+
   @ViewChild(IonModal) modal: IonModal;
+  @ViewChild('autoLockSelect') autoLockSelect!: IonSelect;
+  @ViewChild('wipeSelect') wipeSelect!: IonSelect;
 
   constructor(
     private toastController: ToastController,
+    private alertController: AlertController,
     private noteService: NotesService,
     private cryptoService: CryptoService,
-    private appProtectorService: AppProtectorService,
-    private navController: NavController,
     private modalCtrl: ModalController,
     private secureStorageService: SecureStorageService,
-    private translatorService: TranslatorService
-  ) { }
+    private translatorService: TranslatorService,
+    private screenshotProtectionService: ScreenshotProtectionService,
+    private appHaptics: AppHapticsService,
+  ) {}
 
-  ionViewWillEnter(): void {
+  async ionViewWillEnter(): Promise<void> {
     this.allTranslations = this.translatorService.allTranslations;
+    this.appLockTimeoutMinutes = this.noteService.getAppLockTimeoutMinutes();
+    this.appWipeAfterDays = this.noteService.getAppWipeAfterDays();
+    this.screenshotProtectionEnabled = await this.screenshotProtectionService.isEnabled();
   }
 
   ionViewDidEnter() {
@@ -60,35 +70,42 @@ export class AppSettingsPage implements AfterViewInit {
     if (this.noteService.appHasPasswordChallenge()) {
       this.password_enabled = true;
     }
+
     this.appPasswordChallenge = this.noteService.appHasPasswordChallenge();
+    this.appLockTimeoutMinutes = this.noteService.getAppLockTimeoutMinutes();
+    this.appWipeAfterDays = this.noteService.getAppWipeAfterDays();
   }
 
   cancel() {
+    this.appHaptics.tap();
     this.appPasswordChallenge = this.noteService.appHasPasswordChallenge();
     this.modal.dismiss(null, 'cancel');
   }
 
   confirm() {
+    this.appHaptics.tap();
     this.modal.dismiss("", 'confirm');
   }
 
   public togglePasswordVisibility() {
+    this.appHaptics.selectionChanged();
     this.showPassword = !this.showPassword;
   }
 
   public toggleConfirmPasswordVisibility() {
+    this.appHaptics.selectionChanged();
     this.confirmShowPassword = !this.confirmShowPassword;
   }
 
   public async save() {
-
-    if (this.notesAppPassword.length < 3) {
+    if (!isPasswordLongEnough(this.notesAppPassword)) {
       const toast = await this.toastController.create({
         message: this.allTranslations.thePasswordIsWeakPleaseMakeYourPasswordStronger,
         duration: 3000,
         position: 'bottom',
       });
 
+      await this.appHaptics.warning();
       await toast.present();
       return;
     }
@@ -100,19 +117,17 @@ export class AppSettingsPage implements AfterViewInit {
         position: 'bottom',
       });
 
+      await this.appHaptics.warning();
       await toast.present();
       return;
     }
 
-    // can be in encrypted state or decrypted - depends on if the app_password_challenge is set.
     let notes = this.noteService.getNotes();
 
-    // in case user creates app-password, and there is no notes.
     if (notes === null) {
       notes = JSON.stringify([]);
     }
 
-    // Wrap EAK with notes app password (store encrypted EAK, remove plaintext)
     const existingEak = await this.secureStorageService.getItem('ssEakB64');
     if (existingEak != null) {
       const wrappedEak = this.cryptoService.encrypt(existingEak, this.notesAppPassword);
@@ -121,21 +136,27 @@ export class AppSettingsPage implements AfterViewInit {
       await this.secureStorageService.removeItem("ssEakB64");
     }
 
-    // first, we have to decrypt the notes (if they were encrypted before),
-    // and then encrypt them with the new app password.
     const encryptedNotes = this.cryptoService.encrypt(notes, this.notesAppPassword);
     this.noteService.setNotes(encryptedNotes);
 
     await this.modal.dismiss();
+    this.noteService.setAppLockTimeoutMinutes(this.appLockTimeoutMinutes);
+    this.noteService.setAppWipeAfterDays(this.appWipeAfterDays);
+    this.noteService.clearAppUnlockFailures();
     this.noteService.setNotesAppPassword(this.notesAppPassword);
+    this.noteService.setAppPasswordChallengeEnabled(true);
+    this.password_enabled = true;
+
+    await this.screenshotProtectionService.applyCurrentSetting(true);
+
     this.notesAppPassword = "";
     this.confirmPassword = "";
-    localStorage.setItem("app_password_challenge", "1");
-    window.location.href = "/app-settings";
-    this.password_enabled = false;
+    await this.appHaptics.success();
+    window.location.reload();
   }
 
   public async removePassword() {
+    await this.appHaptics.warning();
     const modal = await this.modalCtrl.create({
       component: ConfirmationModalComponent,
       cssClass: 'confirmation-popup'
@@ -146,7 +167,6 @@ export class AppSettingsPage implements AfterViewInit {
         const { confirm, inputValue } = data.data;
         if (confirm) {
           if (this.noteService.appHasPasswordChallenge() && inputValue) {
-
             let notes = this.noteService.getNotes();
             let decryptedNotes: string | null = null;
 
@@ -154,16 +174,16 @@ export class AppSettingsPage implements AfterViewInit {
               decryptedNotes = this.cryptoService.decrypt(notes, inputValue);
             } catch (e) {
               const toast = await this.toastController.create({
-                message: 'The entered password was not correct.',
+                message: this.allTranslations.enteredPasswordIncorrect,
                 duration: 3000,
                 position: 'bottom',
               });
 
+              await this.appHaptics.error();
               await toast.present();
               return;
             }
 
-            // Decrypt wrapped EAK back to plain EAK
             const encEak = await this.secureStorageService.getItem('ssEakB64_Encrypted');
             if (encEak != null) {
               const plainEak = this.cryptoService.decrypt(encEak, inputValue);
@@ -178,19 +198,23 @@ export class AppSettingsPage implements AfterViewInit {
             await this.modal.dismiss();
             this.notesAppPassword = "";
             this.confirmPassword = "";
+            this.appWipeAfterDays = 0;
+            this.noteService.clearAppUnlockFailures();
             this.noteService.setNotesAppPassword("");
-            localStorage.removeItem("app_password_challenge");
-            window.location.href = "/app-settings";
+            this.noteService.setAppPasswordChallengeEnabled(false);
+            this.password_enabled = false;
+            await this.screenshotProtectionService.applyCurrentSetting(false);
+            await this.appHaptics.success();
+            window.location.reload();
           } else {
             const toast = await this.toastController.create({
               message: this.allTranslations.enterYourCurrentPassword,
               duration: 3000,
               position: 'bottom',
             });
+            await this.appHaptics.warning();
             await toast.present();
           }
-        } else {
-          // cancelled
         }
       }
     });
@@ -199,61 +223,106 @@ export class AppSettingsPage implements AfterViewInit {
   }
 
   public notesAppPasswordChange() {
+    const strength = evaluatePasswordStrength(this.notesAppPassword);
 
-    this.passwordStrength = 0;
+    this.passwordStrength = strength.score;
+    this.upperLower = strength.upperLower;
+    this.specialChar = strength.specialChar;
+    this.strongPass = strength.strongPass;
+    this.passwordStrengthHelperText =
+      this.allTranslations?.[strength.helperKey] ?? '';
+  }
 
-    if (this.notesAppPassword.length == 0) {
-      this.passwordStrengthHelperText = this.allTranslations.passwordAtLeastLength;
+  public saveAppLockTimeout() {
+    this.appHaptics.selectionChanged();
+    this.noteService.setAppLockTimeoutMinutes(this.appLockTimeoutMinutes);
+  }
+
+  public async screenshotProtectionChange() {
+    await this.appHaptics.selectionChanged();
+    await this.screenshotProtectionService.setEnabled(this.screenshotProtectionEnabled);
+    await this.screenshotProtectionService.applyCurrentSetting(this.password_enabled);
+  }
+
+  public getAppLockTimeoutLabel(minutes: number): string {
+    if (minutes === 1) {
+      return this.allTranslations.autoLockAfterOneMinute;
+    }
+
+    return `${this.allTranslations.autoLockAfter} ${minutes} ${this.allTranslations.minutes}`;
+  }
+
+  public async saveAppWipeAfterDays() {
+    const previous = this.noteService.getAppWipeAfterDays();
+
+    if (this.appWipeAfterDays > 0 && previous === 0) {
+      const alert = await this.alertController.create({
+        header: this.allTranslations.enableInactiveDeviceWipeTitle,
+        message: this.allTranslations.enableInactiveDeviceWipeMessage,
+        buttons: [
+          {
+            text: this.allTranslations.cancel,
+            role: 'cancel',
+            handler: () => {
+              this.appHaptics.tap();
+              this.appWipeAfterDays = previous;
+            },
+          },
+          {
+            text: this.allTranslations.enableWipe,
+            role: 'confirm',
+            handler: async () => {
+              await this.appHaptics.warning();
+              this.noteService.setAppWipeAfterDays(this.appWipeAfterDays);
+              if (this.noteService.getLastSuccessfulAppUnlockAt() === 0) {
+                this.noteService.recordSuccessfulAppUnlock();
+              }
+            },
+          },
+        ],
+      });
+
+      await alert.present();
       return;
     }
 
-    // Check password length
-    if (this.notesAppPassword.length > 6) {
-      this.passwordStrength += 1;
-    }
+    this.noteService.setAppWipeAfterDays(this.appWipeAfterDays);
+    await this.appHaptics.selectionChanged();
 
-    // Check for mixed case
-    if (this.notesAppPassword.match(/[a-z]/) && this.notesAppPassword.match(/[A-Z]/)) {
-      this.passwordStrength += 1;
-      this.upperLower = true;
-    } else {
-      this.upperLower = false;
-    }
-
-    // Check for numbers
-    if (this.notesAppPassword.match(/\d/)) {
-      this.passwordStrength += 1;
-    }
-
-    // Check for special characters
-    if (this.notesAppPassword.match(/[^a-zA-Z\d]/)) {
-      this.passwordStrength += 1;
-      this.specialChar = true;
-    } else {
-      this.specialChar = false;
-    }
-
-    // Check password length
-    if (this.notesAppPassword.length >= 6) {
-      this.passwordStrength += 1;
-      this.strongPass = true;
-    } else {
-      this.strongPass = false;
-    }
-
-    // Return results
-    if (this.passwordStrength < 2) {
-      this.passwordStrengthHelperText = this.allTranslations.weakPassword;
-    } else if (this.passwordStrength === 2) {
-      this.passwordStrengthHelperText = this.allTranslations.averagePassword;
-    } else if (this.passwordStrength === 3) {
-      this.passwordStrengthHelperText = this.allTranslations.goodPassword;
-    } else {
-      this.passwordStrengthHelperText = this.allTranslations.greatPassword;
+    if (this.appWipeAfterDays > 0 && this.noteService.getLastSuccessfulAppUnlockAt() === 0) {
+      this.noteService.recordSuccessfulAppUnlock();
     }
   }
 
+  public getAppWipeAfterDaysLabel(days: number): string {
+    if (days === 0) {
+      return this.allTranslations.off;
+    }
+
+    if (days === 1) {
+      return this.allTranslations.afterOneDay;
+    }
+
+    return `${this.allTranslations.after} ${days} ${this.allTranslations.days}`;
+  }
+
   public async appPasswordChallengeDialog() {
+    await this.appHaptics.tap();
     await this.modal.present();
+  }
+
+  public openAutoLockSelect() {
+    this.appHaptics.tap();
+    this.autoLockSelect?.open();
+  }
+
+  public openWipeSelect() {
+    this.appHaptics.tap();
+    this.wipeSelect?.open();
+  }
+
+  public async toggleScreenshotProtectionFromRow() {
+    this.screenshotProtectionEnabled = !this.screenshotProtectionEnabled;
+    await this.screenshotProtectionChange();
   }
 }

@@ -28,13 +28,13 @@
         class="ql-header hidden-select"
         #headerSelect
         (change)="onHeaderChange($event)">
-        <option value="false">Standard</option>
-        <option value="1">Heading 1</option>
-        <option value="2">Heading 2</option>
-        <option value="3">Heading 3</option>
-        <option value="4">Heading 4</option>
-        <option value="5">Heading 5</option>
-        <option value="6">Heading 6</option>
+        <option value="false">{{'richTextStandard' | translate}}</option>
+        <option value="1">{{'richTextHeading1' | translate}}</option>
+        <option value="2">{{'richTextHeading2' | translate}}</option>
+        <option value="3">{{'richTextHeading3' | translate}}</option>
+        <option value="4">{{'richTextHeading4' | translate}}</option>
+        <option value="5">{{'richTextHeading5' | translate}}</option>
+        <option value="6">{{'richTextHeading6' | translate}}</option>
       </select>
 
       <!-- Visible trigger for all platforms -->
@@ -60,6 +60,6 @@
     (ngModelChange)="onContentChange($event)"
     [modules]="quillModules"
     (onEditorCreated)="onEditorCreated($event)"
-    placeholder="Enter your note here..">
+    placeholder="{{'enterYourNoteHere' | translate}}">
   </quill-editor>
 </div>

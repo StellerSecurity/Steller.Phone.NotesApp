@@ -29,7 +29,18 @@ export class SecureStorageService {
     }
 
       async removeItem(key: string): Promise<void> {
-        await SecureStoragePlugin.remove({ key });
+        try {
+          await SecureStoragePlugin.remove({ key });
+        } catch (err: any) {
+          const msg = String(err?.message || err);
+          if (
+            msg.includes('Item with given key does not exist') ||
+            msg.includes('not found')
+          ) {
+            return;
+          }
+          throw err;
+        }
       }
 
       async clear(): Promise<void> {

@@ -1,0 +1,74 @@
+<ion-content class="user-account-section" [scrollY]="true">
+  <div class="top-section">
+  <div class="logo-container">
+      <div class="app-name">Delete Account</div>
+    </div>
+  </div>
+
+  <div class="form-card delete-form-card">
+    <ion-button fill="clear" size="small" class="back-button" (click)="goBack()">
+      <ion-icon name="chevron-back-outline"></ion-icon>
+    </ion-button>
+
+    <div class="title">Delete your Stellar ID</div>
+    <p class="subtitle">
+      Enter your current password to permanently delete your account. This action cannot be undone.
+    </p>
+
+    <form [formGroup]="deleteForm">
+      <ion-item
+        class="input-field"
+        lines="none"
+        [ngClass]="{
+          'mb-0': deleteForm.get('currentPassword')?.invalid && deleteForm.get('currentPassword')?.touched
+        }"
+      >
+        <ion-input
+          [type]="showPassword ? 'text' : 'password'"
+          placeholder="Current password"
+          formControlName="currentPassword"
+          [ngClass]="{
+            'border-danger': deleteForm.get('currentPassword')?.invalid && deleteForm.get('currentPassword')?.touched
+          }"
+        ></ion-input>
+
+        <ion-icon
+          [name]="showPassword ? 'eye-off-outline' : 'eye-outline'"
+          slot="end"
+          class="password-toggle"
+          (click)="togglePasswordVisibility()"
+        ></ion-icon>
+      </ion-item>
+      <ion-text color="danger" *ngIf="deleteForm.get('currentPassword')?.hasError('required') && deleteForm.get('currentPassword')?.touched">
+        <small>Current password is required.</small>
+      </ion-text>
+
+      <div class="delete-warning-box">
+        <div class="delete-warning-title">Before you continue</div>
+        <ul>
+          <li>Your synced notes account will be deleted.</li>
+          <li>You will be logged out on this device.</li>
+          <li>This action cannot be undone.</li>
+        </ul>
+      </div>
+
+      <ion-item class="confirm-item" lines="none">
+        <ion-checkbox formControlName="confirmDelete" slot="start"></ion-checkbox>
+        <ion-label>I understand this action is permanent.</ion-label>
+      </ion-item>
+      <ion-text color="danger" *ngIf="deleteForm.get('confirmDelete')?.hasError('required') && deleteForm.get('confirmDelete')?.touched">
+        <small>Please confirm that you understand this action is permanent.</small>
+      </ion-text>
+
+      <ion-button class="delete-button" color="danger" (click)="submitDeleteRequest()" [disabled]="isSaving">
+        <ng-container *ngIf="!isSaving; else loading">
+          Delete Account
+        </ng-container>
+
+        <ng-template #loading>
+          <ion-spinner name="crescent"></ion-spinner>
+        </ng-template>
+      </ion-button>
+    </form>
+  </div>
+</ion-content>

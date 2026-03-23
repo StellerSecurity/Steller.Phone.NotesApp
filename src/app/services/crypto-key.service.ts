@@ -59,6 +59,13 @@ export class CryptoKeyService {
      * Import plaintext EAK (base64). Keeps it ONLY in RAM.
      * Call this after you’ve unwrapped the EAK from the server bundle.
      */
+    clearRuntimeKeys(): void {
+        this.zeroize(this.eakBytes);
+        this.eakBytes = null;
+        this.eakB64 = null;
+        this.mkKey = null;
+    }
+
     async importEAK(eakB64: string): Promise<void> {
         if (typeof eakB64 !== 'string' || !eakB64.length) {
             throw new Error('EAK missing');

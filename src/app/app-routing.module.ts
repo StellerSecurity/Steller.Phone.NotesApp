@@ -24,7 +24,8 @@ const routes: Routes = [
   },
   {
     path: 'account/login',
-    loadChildren: () => import('./app-settings/app-settings.module').then( m => m.AppSettingsPageModule)
+    redirectTo: 'profile/login',
+    pathMatch: 'full'
   },
   {
     path: 'profile',

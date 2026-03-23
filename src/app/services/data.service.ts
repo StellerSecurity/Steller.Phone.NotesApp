@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import {Router} from "@angular/router";
 import {SecureStorageService} from "./secure-storage.service";
 import { Preferences } from '@capacitor/preferences';
-import { Storage } from '@ionic/storage-angular';
+import { NotesStorageService } from './notes-storage.service';
 import { Filesystem, Directory } from '@capacitor/filesystem';
 
 @Injectable({
@@ -10,7 +10,10 @@ import { Filesystem, Directory } from '@capacitor/filesystem';
 })
 export class DataService {
 
-    constructor(private secureStorageService: SecureStorageService, private storage: Storage) { }
+    constructor(
+      private secureStorageService: SecureStorageService,
+      private notesStorageService: NotesStorageService
+    ) { }
 
     private forceDownloadOnHome = false;
 
@@ -22,11 +25,44 @@ export class DataService {
         return this.forceDownloadOnHome;
     }
 
-    public async clearAppData() {
-      console.log('Starting nuclear reset…');
+
+    private async clearLegacyNoteUnlockState() {
+      await this.notesStorageService.clearValuesByPrefixes([
+        'note_failed_attempts_',
+        'note_lockout_until_',
+      ]);
+    }
+  public async performInactiveWipeIfNeeded(): Promise<void> {
+    const wipeDaysRaw = this.notesStorageService.getAppWipeAfterDays();
+    const wipeDays = wipeDaysRaw ? Number(wipeDaysRaw) : 0;
+
+    if (!wipeDays || wipeDays <= 0) {
+      return;
+    }
+
+    const lastUnlockRaw = this.notesStorageService.getAppLastUnlockAt();
+    const lastUnlockTs = lastUnlockRaw ? Number(lastUnlockRaw) : 0;
+
+    if (!lastUnlockTs || lastUnlockTs <= 0) {
+      return;
+    }
+
+    const wipeAfterMs = wipeDays * 24 * 60 * 60 * 1000;
+    const now = Date.now();
+
+    if (now - lastUnlockTs < wipeAfterMs) {
+      return;
+    }
+
+    await this.clearAppData();
+  }
+
+
+  public async clearAppData() {
 
       await this.secureStorageService.clear();
-      localStorage.clear();
+      await this.notesStorageService.clearManagedData();
+      await this.clearLegacyNoteUnlockState();
       await Preferences.clear();
 
       // IndexedDB wipe (no try/catch suppression)
@@ -54,7 +90,6 @@ export class DataService {
       await wipeDir(Directory.Cache);
       await wipeDir(Directory.Data);
 
-      console.log('Nuke complete.');
     }
 
 }

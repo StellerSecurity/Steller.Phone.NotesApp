@@ -1,0 +1,30 @@
+.legal-consent {
+  margin-top: 16px;
+}
+
+.legal-consent-item {
+  --background: transparent;
+  --inner-padding-end: 0;
+  --padding-start: 0;
+  --min-height: auto;
+  align-items: flex-start;
+}
+
+.legal-consent-item ion-checkbox {
+  margin-top: 2px;
+  margin-right: 12px;
+}
+
+.legal-consent-item ion-label {
+  margin: 0;
+  color: #62626A;
+  font-size: 13px;
+  line-height: 1.5;
+  white-space: normal;
+}
+
+.legal-consent-item a {
+  color: #2761FC;
+  font-weight: 600;
+  text-decoration: none;
+}

@@ -7,6 +7,17 @@ export const auth = {
   loginAcc:"api/v1/logincontroller/auth",
   updateEak: "api/v1/logincontroller/updateEak",
   forgotPassword:"api/v1/logincontroller/sendresetpasswordlink",
-  resetPasswordUrl: 'api/v1/logincontroller/resetpasswordupdate'
+  resetPasswordUrl: 'api/v1/logincontroller/resetpasswordupdate',
+  deleteUser: 'api/v1/logincontroller/deleteuser'
 }
 
+
+export const notes = {
+  controller: 'api/v1/notescontroller/',
+  upload: 'upload',
+  syncPlan: 'sync-plan',
+};
+
+export function buildApiUrl(path: string): string {
+  return `${baseUrl}${path}`;
+}

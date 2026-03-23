@@ -20,7 +20,7 @@
       <!-- Email -->
       <ion-item class="input-field" lines="none" style="margin-bottom: 0;">
         <ion-input
-          placeholder="Email"
+          placeholder="{{'email' | translate}}"
           type="email"
           formControlName="email"
           [ngClass]="{'border-danger': createUserForm.get('email')?.invalid && createUserForm.get('email')?.touched}">
@@ -45,7 +45,7 @@
       >
         <ion-input
           [type]="showPassword ? 'text' : 'password'"
-          placeholder="Password"
+          placeholder="{{'password' | translate}}"
           formControlName="password"
           [ngClass]="{
             'border-danger': createUserForm.get('password')?.invalid && createUserForm.get('password')?.touched
@@ -66,6 +66,22 @@
       <ion-text color="danger" *ngIf="createUserForm.get('password')?.hasError('minlength') && createUserForm.get('password')?.touched">
         <small>{{'passwordAtLeastLength' | translate}}</small>
       </ion-text>
+
+      <div class="legal-consent">
+        <ion-item class="legal-consent-item" lines="none">
+          <ion-checkbox slot="start" formControlName="acceptLegal"></ion-checkbox>
+          <ion-label>
+            I agree to the
+            <a (click)="openPrivacyPolicy($event)">Privacy Policy</a>
+            and
+            <a (click)="openTermsPage($event)">Terms &amp; Conditions</a>
+          </ion-label>
+        </ion-item>
+
+        <ion-text color="danger" *ngIf="createUserForm.get('acceptLegal')?.invalid && createUserForm.get('acceptLegal')?.touched">
+          <small>You must accept the Privacy Policy and Terms &amp; Conditions.</small>
+        </ion-text>
+      </div>
 
       <!-- Submit -->
       <ion-button class="create-button" expand="block" type="submit" [disabled]="isSaving">

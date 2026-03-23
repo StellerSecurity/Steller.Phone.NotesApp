@@ -1,30 +1,38 @@
 import { Injectable } from '@angular/core';
 import { ToastController } from '@ionic/angular';
+import { TranslateService } from '@ngx-translate/core';
+import { AppHapticsService } from './app-haptics.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class ToastMessageService {
 
-  constructor(private toastController: ToastController) { }
+  constructor(
+    private toastController: ToastController,
+    private translate: TranslateService,
+    private appHaptics: AppHapticsService,
+  ) { }
 
-  async showSuccess(message: string = 'Operation Successful!') {
+  async showSuccess(message: string = this.translate.instant('operationSuccessful')) {
     const toast = await this.toastController.create({
       message: message,
       duration: 3000,
       position: 'top',
       color: 'success'
     });
+    await this.appHaptics.success();
     await toast.present();
   }
 
-  async showError(message: string = 'Operation Failed!') {
+  async showError(message: string = this.translate.instant('operationFailed')) {
     const toast = await this.toastController.create({
       message: message,
       duration: 3000,
       position: 'top',
       color: 'danger'
     });
+    await this.appHaptics.error();
     await toast.present();
   }
 

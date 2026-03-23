@@ -21,7 +21,7 @@ import { AppProtectorService } from "../services/app-protector.service";
 import { DeleteNoteModalComponent } from '../delete-note-modal/delete-note-modal.component';
 import { ResetPassModalComponent } from '../restpass-modal/resetpass-modal.component';
 import { TranslatorService } from '../services/translator.service';
-import { Haptics } from "@capacitor/haptics";
+import { AppHapticsService } from '../services/app-haptics.service';
 import { NotesApiV1Service } from "../services/notes-api-v1.service";
 import { SecureStorageService } from "../services/secure-storage.service";
 import { ActivatedRoute, Router } from "@angular/router";
@@ -77,6 +77,7 @@ export class HomePage {
   public timezone = "UTC";
   public search_query = "";
   public filteredResults: any = [];
+  public visibleNotes: any[] = [];
   public isSearching = false;
   public isSyncing = false;
   public waitForSync = false;
@@ -112,7 +113,8 @@ export class HomePage {
     private authService: AuthService,
     private cdr: ChangeDetectorRef,
     private crypto: CryptoKeyService,
-    private scrollService: ScrollService
+    private scrollService: ScrollService,
+    private appHaptics: AppHapticsService,
   ) {}
 
   // Small helper: base64 -> Uint8Array
@@ -149,10 +151,8 @@ export class HomePage {
     this.timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
     if (this.noteService.shouldAskForPassword()) {
-      console.log("Asking for password");
       this.should_display = false;
     } else {
-      console.log("Asking for password or no password needed.");
       this.setData(this.noteService.getNotesAppPassword());
       await this.syncFromServer();
       this.restoreScrollOnce();
@@ -171,7 +171,6 @@ export class HomePage {
       });
     });
   }
-
 
   ionViewDidEnter() {
     this.initializePressGesture();
@@ -195,6 +194,7 @@ export class HomePage {
   // UI Modes: Search & Checkbox
   // --------------------------------------------------
   enterSearchMode() {
+    this.appHaptics.tap();
     this.searchMode = true;
     setTimeout(() => {
       this.searchbar?.setFocus();
@@ -202,6 +202,7 @@ export class HomePage {
   }
 
   exitSearchMode() {
+    this.appHaptics.tap();
     this.search_query = '';
     this.pauseSync = false;
     this.search();
@@ -213,6 +214,7 @@ export class HomePage {
   }
 
   public toggleCheckbox() {
+    this.appHaptics.selectionChanged();
     this.checkboxOpened = !this.checkboxOpened;
     if (!this.checkboxOpened) {
       this.listOfCheckedCheckboxes = [];
@@ -231,6 +233,7 @@ export class HomePage {
     if (this.search_query.length == 0) {
       this.isSearching = false;
       this.filteredResults = this.notes;
+      this.refreshVisibleNotes();
       return;
     }
 
@@ -258,6 +261,7 @@ export class HomePage {
     this.isSearching = true;
     this.pauseSync = true;
     this.filteredResults = filteredNewResults;
+    this.refreshVisibleNotes();
 
     this.initializePressGesture();
     setTimeout(() => this.cdr.detectChanges(), HomePage.DETECT_CHANGES_DELAY_MS);
@@ -283,6 +287,7 @@ export class HomePage {
   }
 
   handlePressStart(element: any) {
+    this.appHaptics.selectionStart();
     this.timeout = setTimeout(() => {
       this.checkboxOpened = true;
       setTimeout(() => {
@@ -295,7 +300,8 @@ export class HomePage {
           this.listOfCheckedCheckboxes.push(noteId);
         }
 
-        Haptics.vibrate({ duration: 50 }).then(() => {});
+        this.appHaptics.impactMedium();
+        this.appHaptics.selectionChanged();
         setTimeout(() => this.cdr.detectChanges(), HomePage.DETECT_CHANGES_DELAY_MS);
       }, HomePage.LONG_PRESS_START_DELAY_MS);
     }, HomePage.LONG_PRESS_START_DELAY_MS);
@@ -303,6 +309,7 @@ export class HomePage {
 
   handlePressEnd() {
     clearTimeout(this.timeout);
+    this.appHaptics.selectionEnd();
   }
 
   // --------------------------------------------------
@@ -316,6 +323,7 @@ export class HomePage {
     // @ts-ignore
     this.notes = parsed ?? [];
     this.filteredResults = this.notes;
+    this.refreshVisibleNotes();
     return true;
   }
 
@@ -335,11 +343,9 @@ export class HomePage {
 
     if (!this.authService.isLoggedIn) return;
     if (this.pauseSync) {
-      console.log('Sync has paused.');
       return;
     }
 
-    console.log('Sync has started');
     if (this.syncTimer == null) {
       this.syncTimer = setInterval(() => {
         if (!this.pauseSync && this.authService.isLoggedIn) {
@@ -369,7 +375,6 @@ export class HomePage {
         }
 
         if (!this.mkRaw) {
-          console.warn('MK not loaded; skipping decrypt of note', s.id);
           continue;
         }
 
@@ -395,6 +400,7 @@ export class HomePage {
       const merged = Array.from(map.values()).filter((n: any) => !n.deleted);
       this.notes = merged;
       this.filteredResults = merged;
+      this.refreshVisibleNotes();
 
       if (this.noteService.appHasPasswordChallenge()) {
         const encryptedNotesSave = this.cryptoService.encrypt(
@@ -408,9 +414,7 @@ export class HomePage {
 
       this.setData(this.noteService.getNotesAppPassword());
 
-      console.log('Synching in 30 seconds...');
     } catch (err) {
-      console.error('Sync failed:', err);
     } finally {
       this.isSyncing = false;
       this.waitForSync = false;
@@ -422,16 +426,44 @@ export class HomePage {
   // Auth / Protection
   // --------------------------------------------------
   public togglePasswordVisibility() {
+    this.appHaptics.selectionChanged();
     this.showPassword = !this.showPassword;
   }
 
+  private formatLockoutMessage(remainingMs: number): string {
+    const totalSeconds = Math.max(1, Math.ceil(remainingMs / 1000));
+
+    if (totalSeconds >= 60) {
+      const minutes = Math.ceil(totalSeconds / 60);
+      const template = this.allTranslations?.tooManyFailedAttemptsTryAgainInMinutes ?? 'Too many failed attempts. Try again in {{count}} minute{{suffix}}.';
+      return template.replace('{{count}}', String(minutes)).replace('{{suffix}}', minutes === 1 ? '' : 's');
+    }
+
+    const template = this.allTranslations?.tooManyFailedAttemptsTryAgainInSeconds ?? 'Too many failed attempts. Try again in {{count}} second{{suffix}}.';
+    return template.replace('{{count}}', String(totalSeconds)).replace('{{suffix}}', totalSeconds === 1 ? '' : 's');
+  }
+
   public async unlockNotesApp() {
-    if (this.input_password_app_unlock.length == 0) {
+    const lockoutRemaining = this.noteService.getAppUnlockLockoutRemainingMs();
+    if (lockoutRemaining > 0) {
       const toast = await this.toastController.create({
-        message: "Please enter your password.",
+        message: this.formatLockoutMessage(lockoutRemaining),
         duration: 3000,
         position: 'bottom',
       });
+      await this.appHaptics.warning();
+      await toast.present();
+      this.should_display = false;
+      return;
+    }
+
+    if (this.input_password_app_unlock.length == 0) {
+      const toast = await this.toastController.create({
+        message: this.allTranslations?.pleaseEnterYourPasswordMessage ?? 'Please enter your password.',
+        duration: 3000,
+        position: 'bottom',
+      });
+      await this.appHaptics.warning();
       await toast.present();
       return;
     }
@@ -452,6 +484,9 @@ export class HomePage {
         await this.crypto.importEAK(eakB64);
       }
 
+      this.noteService.clearAppUnlockFailures();
+      this.noteService.recordSuccessfulAppUnlock();
+
       // init protection
       this.appProtectorService.init();
 
@@ -464,18 +499,25 @@ export class HomePage {
         this.cdr.detectChanges();
       }, HomePage.DETECT_CHANGES_DELAY_MS);
 
+      await this.appHaptics.success();
       return;
     } catch (e: any) {
-      console.error(e);
+
+      const lockoutMs = this.noteService.registerFailedAppUnlockAttempt();
       const toast = await this.toastController.create({
-        message: this.allTranslations.passwordIsNotCorrectTryAgain,
+        message:
+          lockoutMs > 0
+            ? this.formatLockoutMessage(lockoutMs)
+            : this.allTranslations.passwordIsNotCorrectTryAgain,
         duration: 3000,
         position: 'bottom',
       });
 
+      this.noteService.clearSensitiveRuntimeState();
       this.should_display = false;
       this.input_password_app_unlock = "";
 
+      await this.appHaptics.error();
       await toast.present();
       return;
     }
@@ -484,30 +526,40 @@ export class HomePage {
   // --------------------------------------------------
   // Notes helpers
   // --------------------------------------------------
+  private refreshVisibleNotes() {
+    const source = Array.isArray(this.filteredResults) ? this.filteredResults : [];
+    this.visibleNotes = [...source].sort((a: any, b: any) =>
+      (b?.last_modified ?? 0) - (a?.last_modified ?? 0)
+    );
+  }
+
+  trackByNoteId(index: number, note: any): string {
+    return note?.id ?? String(index);
+  }
+
   getNotes() {
-    if (this.filteredResults === undefined || this.filteredResults === null) {
-      return [];
-    }
-    // @ts-ignore
-    this.filteredResults = this.filteredResults.sort((a, b) => b.last_modified - a.last_modified);
-    return this.filteredResults;
+    return this.visibleNotes;
   }
 
   public settings() {
+    this.appHaptics.tap();
     this.navController.navigateForward('app-settings').then(r => {});
   }
 
   goToProfile() {
+    this.appHaptics.tap();
     this.navController.navigateForward('profile').then(r => {});
   }
 
   public openOrCheckbox(note_id: string) {
     if (!this.checkboxOpened) {
+      this.appHaptics.tap();
       this.navController.navigateForward('/note/' + note_id).then(r => {});
     }
   }
 
   public async deleteSelectedNotes() {
+    await this.appHaptics.tap();
     const modal = await this.modalCtrl.create({
       component: DeleteNoteModalComponent,
       cssClass: 'confirmation-popup',
@@ -529,6 +581,7 @@ export class HomePage {
   }
 
   private deleteNotesConfirm() {
+    this.appHaptics.impactMedium();
     if (!this.listOfCheckedCheckboxes?.length) {
       this.toggleCheckbox();
       return;
@@ -551,18 +604,20 @@ export class HomePage {
       }
     }
 
+    this.refreshVisibleNotes();
+
     if (this.noteService.appHasPasswordChallenge()) {
       const encryptedNotesSave = this.cryptoService.encrypt(
         JSON.stringify(this.notes),
         this.noteService.getNotesAppPassword()
       );
-      localStorage.setItem('app_password_challenge', '1');
+      this.noteService.setAppPasswordChallengeEnabled(true);
       this.noteService.setNotes(encryptedNotesSave);
     } else {
       this.noteService.setNotes(JSON.stringify(this.notes));
     }
 
-    this.noteService.setDecryptedNotes(this.noteService.getNotes());
+    this.noteService.setDecryptedNotes(JSON.stringify(this.notes));
 
     if (this.authService.isLoggedIn) {
       this.notesApiServiceV1.deleteNotes(this.listOfCheckedCheckboxes).then((data) => {});
@@ -573,6 +628,7 @@ export class HomePage {
   }
 
   public async resetPassword() {
+    await this.appHaptics.warning();
     const modal = await this.modalCtrl.create({
       component: ResetPassModalComponent,
       cssClass: 'confirmation-popup'
@@ -580,10 +636,15 @@ export class HomePage {
 
     modal.onDidDismiss().then(async (data) => {
       if (data && data.data) {
-        const {confirm} = data.data;
+        const { confirm } = data.data;
         if (confirm) {
+          this.noteService.clearSensitiveRuntimeState();
+          this.input_password_app_unlock = '';
+          this.should_display = true;
+
           await this.dataService.clearAppData();
-          window.location.href = '/';
+
+          window.location.reload();
         }
       }
     });
@@ -592,6 +653,7 @@ export class HomePage {
   }
 
   public selectNote(event: any, note_id: string) {
+    this.appHaptics.selectionChanged();
     event?.stopImmediatePropagation();
     event?.preventDefault();
 

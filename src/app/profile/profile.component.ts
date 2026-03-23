@@ -4,6 +4,8 @@ import { AlertController } from '@ionic/angular';
 import { SecureStorageService } from '../services/secure-storage.service';
 import { DataService } from "../services/data.service";
 import { AuthService } from '../services/auth.service';
+import { TranslatorService } from '../services/translator.service';
+import { AppHapticsService } from '../services/app-haptics.service';
 
 @Component({
   selector: 'app-profile',
@@ -20,7 +22,9 @@ export class ProfileComponent  {
     private alertController: AlertController,
     private secureStorageService: SecureStorageService,
     private dataService: DataService,
-    public authService: AuthService
+    public authService: AuthService,
+    private translatorService: TranslatorService,
+    private appHaptics: AppHapticsService,
   ) {}
 
   ionViewWillEnter() {
@@ -38,23 +42,28 @@ export class ProfileComponent  {
   }
 
   goToSettings() {
+    this.appHaptics.tap();
     this.router.navigate(['/app-settings']);
   }
 
   async confirmLogout() {
+    await this.appHaptics.warning();
     const alert = await this.alertController.create({
-      header: 'Confirm Logout',
-      message: 'Are you sure you want to logout?',
+      header: this.translatorService.allTranslations?.confirmLogout ?? 'Confirm Logout',
+      message: this.translatorService.allTranslations?.confirmLogoutMessage ?? 'Are you sure you want to logout?',
       buttons: [
         {
-          text: 'Cancel',
+          text: this.translatorService.allTranslations?.cancel ?? 'Cancel',
           role: 'cancel',
           cssClass: 'secondary',
+          handler: () => {
+            this.appHaptics.tap();
+          },
         },
         {
-          text: 'Logout',
+          text: this.translatorService.allTranslations?.logout ?? 'Logout',
           handler: () => {
-            console.log('Logout');
+            this.appHaptics.success();
             this.logout();
           },
         },
@@ -66,14 +75,37 @@ export class ProfileComponent  {
 
   private async logout() {
     await this.dataService.clearAppData();
-    window.location.href = '/';
+    await this.router.navigateByUrl('/', { replaceUrl: true });
   }
 
   navigateToRegister() {
+    this.appHaptics.tap();
     this.router.navigate(['/profile/create-account']);
   }
 
   goToLogin() {
+    this.appHaptics.tap();
     this.router.navigate(['/profile/login']);
   }
+
+  goToDeleteAccount() {
+    this.appHaptics.tap();
+    this.router.navigate(['/profile/delete-account']);
+  }
+
+  openPrivacyPolicy() {
+    this.appHaptics.tap();
+    window.open('https://stellarsecurity.com/privacy-page', '_blank');
+  }
+
+  openTermsPage() {
+    this.appHaptics.tap();
+    window.open('https://stellarsecurity.com/terms-page', '_blank');
+  }
+
+  openContactUs() {
+    this.appHaptics.tap();
+    window.open('https://stellarsecurity.com/contact-us', '_blank');
+  }
 }
+

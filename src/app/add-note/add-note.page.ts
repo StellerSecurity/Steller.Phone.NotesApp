@@ -10,6 +10,8 @@ import {
 } from '@ionic/angular';
 
 import { Subscription } from 'rxjs';
+import { App } from '@capacitor/app';
+import type { PluginListenerHandle } from '@capacitor/core';
 import { CryptoService } from '../services/crypto.service';
 import { NotesService } from '../services/notes.service';
 import { TranslatorService } from '../services/translator.service';
@@ -22,14 +24,13 @@ import { SecureStorageService } from '../services/secure-storage.service';
 import { DataService } from '../services/data.service';
 import { NoteLockedModalComponent } from '../note-locked-modal/note-locked-modal.component';
 import { DeleteNoteModalComponent } from '../delete-note-modal/delete-note-modal.component';
-import { NoteV1 } from "../models/NoteV1";
-import { AuthService } from "../services/auth.service";
+import { NoteV1 } from '../models/NoteV1';
+import { AuthService } from '../services/auth.service';
+import { AppHapticsService } from '../services/app-haptics.service';
+import { evaluatePasswordStrength, isPasswordLongEnough } from '../utils/password-policy';
 
 // ✅ New: use Stellar Crypto SDK
-import {
-  unpackCipherBlob,
-  decryptTextWithMK,
-} from '@stellarsecurity/stellar-crypto';
+import { unpackCipherBlob, decryptTextWithMK } from '@stellarsecurity/stellar-crypto';
 
 // ✅ keep CommonJS requires (no ES imports)
 declare var require: any;
@@ -80,6 +81,21 @@ export class AddNotePage implements OnDestroy {
   // 🔐 Master key held in RAM (derived from EAK)
   private mkRaw: Uint8Array | null = null;
   private saveDebounceTimer: any = null;
+  private encryptedProtectedText = '';
+  private encryptedProtectedTitle = '';
+  private noteUnlockModalOpen = false;
+  private appStateListener?: PluginListenerHandle;
+  private readonly visibilityChangeHandler = () => {
+    if (document.hidden) {
+      this.relockProtectedNote();
+      return;
+    }
+
+    this.promptUnlockForProtectedNote().then(() => {});
+  };
+
+  // ✅ Prevent “save on leave” from re-creating a note right after delete (or similar flows)
+  private suppressAutoSave = false;
 
   constructor(
     private cryptoService: CryptoService,
@@ -93,11 +109,16 @@ export class AddNotePage implements OnDestroy {
     private alertCtrl: AlertController,
     private notesApiV1Service: NotesApiV1Service,
     private translatorService: TranslatorService,
-    private authService: AuthService
+    private authService: AuthService,
+    private appHaptics: AppHapticsService,
   ) {
     this.routeSub = this.activatedRoute.paramMap.subscribe((params: ParamMap) => {
       const decrypted = this.notesService.getDecryptedNotes();
-      this.notes = decrypted ? (JSON.parse(decrypted) as NoteV1[]) : [];
+      try {
+        this.notes = decrypted ? (JSON.parse(decrypted) as NoteV1[]) : [];
+      } catch (error) {
+        this.notes = [];
+      }
 
       this.notes_id = params.get('id');
       if (this.notes_id === null) {
@@ -118,23 +139,34 @@ export class AddNotePage implements OnDestroy {
 
       if (this.currentNote.protected) {
         this.note_locked = true;
+        this.captureEncryptedProtectedState(this.currentNote);
+        this.clearProtectedNoteDraftFields();
         this.askforNotePassword().then(() => {});
+      } else {
+        this.note_text = this.currentNote.text ?? '';
+        this.note_title = this.currentNote.title !== undefined ? this.currentNote.title : this.getUntitledLabel();
       }
-
-      this.note_text = this.currentNote.text ?? '';
-      this.note_title = this.currentNote.title !== undefined ? this.currentNote.title : 'Untitled';
 
       this.startLiveNotePolling();
     });
   }
 
+  private getUntitledLabel(): string {
+    return this.allTranslations?.untitled ?? 'Untitled';
+  }
+
   ngOnDestroy(): void {
     this.routeSub?.unsubscribe();
     this.stopLiveNotePolling();
+    this.removeProtectedNoteRelockListeners().then(() => {});
+    this.clearProtectedNoteRuntimeState();
+    this.mkRaw = null;
   }
 
   ionViewDidEnter() {
     this.passwordStrengthHelperText = this.allTranslations?.passwordAtLeastLength ?? '';
+    this.installProtectedNoteRelockListeners().then(() => {});
+
     if (this.note_text.length === 0) {
       setTimeout(() => this.placeCursorAtEnd(), 100);
     }
@@ -167,12 +199,16 @@ export class AddNotePage implements OnDestroy {
         }
       }
     } catch (e) {
-      console.error('Failed to load MK from storage in AddNotePage:', e);
     }
   }
 
+  // ✅ Save when leaving the page (covers header back, swipe-back, router navigation, hardware back, etc.)
   ionViewWillLeave() {
+    this.forceSaveNow();
+    this.relockProtectedNote();
     this.stopLiveNotePolling();
+    this.removeProtectedNoteRelockListeners().then(() => {});
+
     // if (this.richTextEditorComponent?.onLeave) {
     //   this.richTextEditorComponent.onLeave();
     // }
@@ -195,8 +231,150 @@ export class AddNotePage implements OnDestroy {
     // }
   }
 
-  public async shareStellarSecret() {
+  private captureEncryptedProtectedState(note: NoteV1) {
+    this.encryptedProtectedText = typeof note.text === 'string' ? note.text : '';
+    this.encryptedProtectedTitle = typeof note.title === 'string' ? note.title : '';
+  }
 
+  private restoreEncryptedProtectedState() {
+    if (!this.currentNote?.protected) {
+      return;
+    }
+
+    if (this.encryptedProtectedText.length > 0) {
+      this.currentNote.text = this.encryptedProtectedText;
+    }
+
+    if (this.encryptedProtectedTitle.length > 0 || this.currentNote.title === undefined) {
+      this.currentNote.title = this.encryptedProtectedTitle;
+    }
+
+    for (let i = 0; i < this.notes.length; i++) {
+      if (this.notes[i].id === this.notes_id) {
+        this.notes[i].text = this.currentNote.text;
+        this.notes[i].title = this.currentNote.title;
+        break;
+      }
+    }
+  }
+
+  private clearProtectedNoteDraftFields() {
+    this.note_text = '';
+    this.note_title = '';
+    this.notes_password_input = '';
+    this.notes_password_confirm = '';
+  }
+
+  private clearProtectedNoteRuntimeState() {
+    this.restoreEncryptedProtectedState();
+    this.clearProtectedNoteDraftFields();
+    this.notes_password_stored = '';
+  }
+
+  private relockProtectedNote() {
+    if (!this.currentNote?.protected) {
+      return;
+    }
+
+    if (this.note_locked) {
+      this.clearProtectedNoteRuntimeState();
+      return;
+    }
+
+    this.note_locked = true;
+    this.clearProtectedNoteRuntimeState();
+  }
+
+  private async installProtectedNoteRelockListeners() {
+    if (!this.appStateListener) {
+      this.appStateListener = await App.addListener('appStateChange', ({ isActive }: { isActive: boolean }) => {
+        if (!isActive) {
+          this.relockProtectedNote();
+          return;
+        }
+
+        this.promptUnlockForProtectedNote().then(() => {});
+      });
+    }
+
+    if (typeof document !== 'undefined') {
+      document.removeEventListener('visibilitychange', this.visibilityChangeHandler, true);
+      document.addEventListener('visibilitychange', this.visibilityChangeHandler, true);
+    }
+  }
+
+  private async removeProtectedNoteRelockListeners() {
+    await this.appStateListener?.remove();
+    this.appStateListener = undefined;
+
+    if (typeof document !== 'undefined') {
+      document.removeEventListener('visibilitychange', this.visibilityChangeHandler, true);
+    }
+  }
+
+  private async promptUnlockForProtectedNote() {
+    if (!this.currentNote?.protected || !this.note_locked) {
+      return;
+    }
+
+    if (this.noteUnlockModalOpen || this.notesService.shouldAskForPassword()) {
+      return;
+    }
+
+    if (typeof document !== 'undefined' && document.hidden) {
+      return;
+    }
+
+    await this.askforNotePassword();
+  }
+
+  // --- Fix #1: prevent empty “new note” auto-save on leave ---
+
+  private htmlToPlainText(html: string): string {
+    if (!html) return '';
+    try {
+      const doc = new DOMParser().parseFromString(html, 'text/html');
+      return (doc.body?.textContent ?? '').replace(/\u00A0/g, ' ').trim();
+    } catch {
+      return html
+        .replace(/<br\s*\/?>/gi, '\n')
+        .replace(/<[^>]+>/g, '')
+        .replace(/\u00A0/g, ' ')
+        .trim();
+    }
+  }
+
+  private isEffectivelyEmptyNewNote(): boolean {
+    if (!this.newlyCreatedNote) return false;
+
+    const title = (this.note_title ?? '').trim();
+    const titleEmpty = title.length === 0 || title === this.getUntitledLabel();
+
+    const plainText = this.htmlToPlainText(this.note_text ?? '');
+    const textEmpty = plainText.length === 0;
+
+    return titleEmpty && textEmpty;
+  }
+
+  // ✅ Flush debounce and save immediately
+  private forceSaveNow(): void {
+    // Do not save if we are intentionally leaving after deleting (or other flows)
+    if (this.suppressAutoSave) return;
+
+    // Fix #1: do not auto-create empty notes when user immediately goes back
+    if (this.isEffectivelyEmptyNewNote()) return;
+
+    if (this.saveDebounceTimer) {
+      clearTimeout(this.saveDebounceTimer);
+      this.saveDebounceTimer = null;
+    }
+
+    this.typing = false;
+    this.save(null);
+  }
+
+  public async shareStellarSecret() {
+    await this.appHaptics.tap();
     const addSecretModal = new Secret();
     const secret_id = uuidv4();
 
@@ -221,6 +399,7 @@ export class AddNotePage implements OnDestroy {
   }
 
   enableEditingTitle() {
+    this.appHaptics.selectionChanged();
     this.isEditingTitle = true;
     setTimeout(() => this.titleInputRef?.setFocus(), 100);
   }
@@ -240,9 +419,11 @@ export class AddNotePage implements OnDestroy {
   }
 
   togglePasswordVisibility() {
+    this.appHaptics.selectionChanged();
     this.showPassword = !this.showPassword;
   }
   toggleConfirmPasswordVisibility() {
+    this.appHaptics.selectionChanged();
     this.confirmShowPassword = !this.confirmShowPassword;
   }
 
@@ -274,7 +455,6 @@ export class AddNotePage implements OnDestroy {
     if (this.note_locked) return;
 
     if (this.typing) {
-      console.log('Do not fetch live note');
       return;
     }
     if (!this.notes_id) return;
@@ -287,7 +467,6 @@ export class AddNotePage implements OnDestroy {
       this.notesApiV1Service
         .find(noteId)
         .then(async (note: any) => {
-          console.log('Fetched Live Note');
           if (this.currentNote == null) return;
 
           if (note.deleted) {
@@ -305,16 +484,13 @@ export class AddNotePage implements OnDestroy {
           if (!note.protected) this.notes_password_stored = '';
 
           if (this.currentNote.last_modified == note.last_modified) {
-            console.log('Equal');
             return;
           }
           if ((this.currentNote.last_modified ?? 0) > (note.last_modified ?? 0)) {
-            console.log('Higher');
             return;
           }
 
           if (!this.mkRaw) {
-            console.warn('MK not loaded in AddNotePage; skipping decrypt for live note');
             return;
           }
 
@@ -344,9 +520,7 @@ export class AddNotePage implements OnDestroy {
           this.currentNote.title = this.note_title;
 
           if (note.protected) {
-            console.log('Note is protected, lets decrypt it.');
             const ok = this.decryptNote(this.notes_password_stored, note);
-            console.log('Note decrypted...');
             if (!ok) {
               this.dismissModal().then(() => {});
               await this.navController.navigateForward('/');
@@ -357,13 +531,11 @@ export class AddNotePage implements OnDestroy {
           /* ignore; try again on next tick */
         });
     } catch (err) {
-      console.error('Find notes not done.', err);
     }
   }
 
   // should be called on key enter.
   save(ev: any) {
-    console.log('save');
     if (this.notes_id === null) return;
     if (this.note_locked) return;
 
@@ -403,6 +575,14 @@ export class AddNotePage implements OnDestroy {
       auto_wipe: true,
     };
 
+    if (protectedNote) {
+      this.encryptedProtectedText = encryptedText;
+      this.encryptedProtectedTitle = encryptedTitle && encryptedTitle.length ? encryptedTitle : formattedDate;
+    } else {
+      this.encryptedProtectedText = '';
+      this.encryptedProtectedTitle = '';
+    }
+
     if (this.notes === null) {
       this.notes = [note];
     } else {
@@ -422,6 +602,12 @@ export class AddNotePage implements OnDestroy {
   }
 
   async storeNoteInStorage(serverSync = true, forceDownloadOnHome = false) {
+    // --- Fix #3: clear previous queued upload timeout to avoid multiple uploads stacking ---
+    if (this.saveTimeout) {
+      clearTimeout(this.saveTimeout);
+      this.saveTimeout = null;
+    }
+
     if (this.notesService.appHasPasswordChallenge()) {
       const encryptedNotesSave = this.cryptoService.encrypt(
         JSON.stringify(this.notes),
@@ -451,42 +637,81 @@ export class AddNotePage implements OnDestroy {
   }
 
   public back() {
+    this.appHaptics.tap();
+    // Ensure save is executed before leaving via custom back button
+    this.forceSaveNow();
     this.navController.back();
   }
 
-  private async wrongPasswordEntered() {
+  private formatNoteLockoutMessage(remainingMs: number): string {
+    const totalSeconds = Math.max(1, Math.ceil(remainingMs / 1000));
+
+    if (totalSeconds >= 60) {
+      const minutes = Math.ceil(totalSeconds / 60);
+      return `Too many failed attempts. Try again in ${minutes} minute${minutes === 1 ? '' : 's'}.`;
+    }
+
+    return `Too many failed attempts. Try again in ${totalSeconds} second${totalSeconds === 1 ? '' : 's'}.`;
+  }
+
+  private async wrongPasswordEntered(lockoutMs = 0) {
     const toast = await this.toastController.create({
-      message: this.allTranslations.passwordIsNotCorrectTryAgain,
+      message: lockoutMs > 0 ? this.formatNoteLockoutMessage(lockoutMs) : this.allTranslations.passwordIsNotCorrectTryAgain,
       duration: 3000,
       position: 'bottom',
     });
+    await this.appHaptics.error();
     await toast.present();
     await this.askforNotePassword();
   }
 
   public async askforNotePassword() {
+    if (this.noteUnlockModalOpen) {
+      return;
+    }
+
+    this.noteUnlockModalOpen = true;
+
     const modal = await this.modalCtrl.create({
       component: NoteLockedModalComponent,
       cssClass: 'confirmation-popup',
     });
 
     modal.onDidDismiss().then(async (data) => {
+      this.noteUnlockModalOpen = false;
+
       if (data && data.data) {
         const { confirm, inputValue } = data.data || {};
         if (confirm) {
+          if (!this.notes_id) {
+            return;
+          }
+
+          const lockoutRemaining = this.notesService.getNoteUnlockLockoutRemainingMs(this.notes_id);
+          if (lockoutRemaining > 0) {
+            await this.wrongPasswordEntered(lockoutRemaining);
+            return;
+          }
+
           this.notes_password_stored = inputValue ?? '';
 
           const ok = this.decryptNote(this.notes_password_stored, this.currentNote);
           if (!ok) {
-            await this.wrongPasswordEntered();
+            const lockoutMs = this.notesService.registerFailedNoteUnlockAttempt(this.notes_id);
+            this.notes_password_stored = '';
+            await this.wrongPasswordEntered(lockoutMs);
           } else {
-            await modal.dismiss();
+            this.notesService.clearNoteUnlockFailures(this.notes_id);
+            await this.appHaptics.success();
           }
         } else {
+          await this.appHaptics.tap();
           this.back();
         }
       }
-      if (data.role === 'backdrop') {
+
+      if (data?.role === 'backdrop') {
+        await this.appHaptics.tap();
         this.back();
       }
     });
@@ -502,7 +727,6 @@ export class AddNotePage implements OnDestroy {
     try {
       decryptedText = this.cryptoService.decrypt(noteToDecrypt.text, notePassword);
     } catch (e) {
-      console.error(e);
       return false;
     }
 
@@ -519,6 +743,7 @@ export class AddNotePage implements OnDestroy {
       this.currentNote.text = decryptedText;
       this.currentNote.title = decryptedTitle;
     }
+
     this.note_text = decryptedText;
     this.note_title = decryptedTitle;
     this.note_locked = false;
@@ -527,51 +752,19 @@ export class AddNotePage implements OnDestroy {
   }
 
   public async dismissModal() {
+    await this.appHaptics.tap();
     await this.modal.dismiss();
   }
 
   public notesPasswordChange() {
-    this.passwordStrength = 0;
+    const strength = evaluatePasswordStrength(this.notes_password_input);
 
-    if (this.notes_password_input.length == 0) {
-      this.passwordStrengthHelperText = this.allTranslations.passwordAtLeastLength;
-      return;
-    }
-
-    if (this.notes_password_input.length > 4) this.passwordStrength += 1;
-
-    if (/[a-z]/.test(this.notes_password_input) && /[A-Z]/.test(this.notes_password_input)) {
-      this.passwordStrength += 1;
-      this.upperLower = true;
-    } else {
-      this.upperLower = false;
-    }
-
-    if (/\d/.test(this.notes_password_input)) this.passwordStrength += 1;
-
-    if (/[^a-zA-Z\d]/.test(this.notes_password_input)) {
-      this.passwordStrength += 1;
-      this.specialChar = true;
-    } else {
-      this.specialChar = false;
-    }
-
-    if (this.notes_password_input.length >= 6) {
-      this.passwordStrength += 1;
-      this.strongPass = true;
-    } else {
-      this.strongPass = false;
-    }
-
-    if (this.passwordStrength < 2) {
-      this.passwordStrengthHelperText = this.allTranslations.weakPassword;
-    } else if (this.passwordStrength === 2) {
-      this.passwordStrengthHelperText = this.allTranslations.averagePassword;
-    } else if (this.passwordStrength === 3) {
-      this.passwordStrengthHelperText = this.allTranslations.goodPassword;
-    } else {
-      this.passwordStrengthHelperText = this.allTranslations.greatPassword;
-    }
+    this.passwordStrength = strength.score;
+    this.upperLower = strength.upperLower;
+    this.specialChar = strength.specialChar;
+    this.strongPass = strength.strongPass;
+    this.passwordStrengthHelperText =
+      this.allTranslations?.[strength.helperKey] ?? '';
   }
 
   public async lockNote() {
@@ -581,21 +774,26 @@ export class AddNotePage implements OnDestroy {
         duration: 2500,
         position: 'bottom',
       });
+      await this.appHaptics.warning();
       await toast.present();
       return;
     }
 
-    if (this.notes_password_input.length < 2) {
+    if (!isPasswordLongEnough(this.notes_password_input)) {
       const toast = await this.toastController.create({
         message: this.allTranslations.thePasswordIsTooWeakPleaseMakeItStronger,
         duration: 3000,
         position: 'bottom',
       });
+      await this.appHaptics.warning();
       await toast.present();
       return;
     }
 
     this.notes_password_stored = this.notes_password_input;
+    if (this.notes_id) {
+      this.notesService.clearNoteUnlockFailures(this.notes_id);
+    }
 
     const decryptedText = this.note_text;
     const decryptedTitle = this.note_title;
@@ -636,6 +834,7 @@ export class AddNotePage implements OnDestroy {
     this.notes_password_input = '';
 
     await this.dismissModal();
+    await this.appHaptics.success();
   }
 
   public async removeLock() {
@@ -646,11 +845,15 @@ export class AddNotePage implements OnDestroy {
         {
           text: this.allTranslations.cancel,
           role: 'cancel',
+          handler: () => {
+            this.appHaptics.tap();
+          },
         },
         {
           text: this.allTranslations.removeLock,
           role: 'confirm',
-          handler: () => {
+          handler: async () => {
+            await this.appHaptics.success();
             for (let i = 0; i < this.notes.length; i++) {
               if (this.notes[i].id === this.notes_id) {
                 this.notes[i].text = this.note_text;
@@ -659,6 +862,11 @@ export class AddNotePage implements OnDestroy {
                 this.notes[i].protected = false;
                 this.currentNote = this.notes[i];
                 this.notes_password_stored = '';
+                this.encryptedProtectedText = '';
+                this.encryptedProtectedTitle = '';
+                if (this.notes_id) {
+                  this.notesService.clearNoteUnlockFailures(this.notes_id);
+                }
                 break;
               }
             }
@@ -680,6 +888,7 @@ export class AddNotePage implements OnDestroy {
   }
 
   public async openLockModal() {
+    await this.appHaptics.tap();
     this.save(null);
     await this.modal.present();
   }
@@ -689,6 +898,7 @@ export class AddNotePage implements OnDestroy {
   }
 
   public async deleteNote() {
+    await this.appHaptics.warning();
     const modal = await this.modalCtrl.create({
       component: DeleteNoteModalComponent,
       cssClass: 'confirmation-popup',
@@ -699,6 +909,12 @@ export class AddNotePage implements OnDestroy {
       if (data && data.data) {
         const { confirm } = data.data;
         if (confirm) {
+          await this.appHaptics.impactMedium();
+          // ✅ prevent ionViewWillLeave() from saving the deleted note back
+          this.suppressAutoSave = true;
+
+          const deletedId = this.notes_id;
+
           for (let i = 0; i < this.notes.length; i++) {
             if (this.notes[i].id === this.notes_id) {
               this.notes[i].deleted = true;
@@ -713,8 +929,16 @@ export class AddNotePage implements OnDestroy {
           }
 
           await this.storeNoteInStorage(true, this.newlyCreatedNote);
+
+          if (deletedId) {
+            this.notesService.clearNoteUnlockFailures(deletedId);
+          }
+
+          // Extra safety: make sure save() can’t re-add this note
           this.currentNote = null;
-          await this.navController.navigateForward('/?hide_ids=' + this.notes_id);
+          this.notes_id = null;
+
+          await this.navController.navigateForward('/?hide_ids=' + (deletedId ?? ''));
         }
       }
     });
@@ -754,6 +978,6 @@ export class AddNotePage implements OnDestroy {
     this.saveDebounceTimer = setTimeout(() => {
       this.typing = false;
       this.save(null);
-    }, 800); // ← sweet spot (500–1000ms)
+    }, 800); // sweet spot (500–1000ms)
   }
 }

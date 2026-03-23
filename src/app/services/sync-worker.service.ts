@@ -4,15 +4,19 @@ import { Network } from '@capacitor/network';
 import { App } from '@capacitor/app';
 import { OutboxStorage } from './outbox-storage.service';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import {SecureStorageService} from "./secure-storage.service";
+import { SecureStorageService } from './secure-storage.service';
+import { firstValueFrom } from 'rxjs';
+import { OutboxOp } from '../models/Sync';
+import { buildApiUrl, notes } from '../constants/api/product.api';
 
 const MAX_ATTEMPT = 8;
 
 @Injectable({ providedIn: 'root' })
 export class SyncWorkerService {
   private syncing = false;
+  private started = false;
 
-  private base = 'https://stellarprivatenotesuiappapiprod-dmefgreabahpcsbm.swedencentral-01.azurewebsites.net/api/v1/notescontroller/';
+  private base = buildApiUrl(notes.controller);
 
   constructor(
     private http: HttpClient,
@@ -22,14 +26,20 @@ export class SyncWorkerService {
   ) {}
 
   init() {
-    console.log('SyncWorkerService initialized');
-    // Run every 10s (tweak as needed)
+    if (this.started) {
+      return;
+    }
+    this.started = true;
+
+
     setInterval(() => this.trySync(), 10_000);
-
     Network.addListener('networkStatusChange', () => this.trySync());
-    App.addListener('appStateChange', (s) => { if (s.isActive) this.trySync(); });
+    App.addListener('appStateChange', (s) => {
+      if (s.isActive) {
+        this.trySync();
+      }
+    });
 
-    // Kick off once on startup
     this.trySync();
   }
 
@@ -39,25 +49,79 @@ export class SyncWorkerService {
   }
 
   private backoffMs(attempt: number): number {
-    // 1s, 2s, 4s, 8s, ... cap at ~60s
     return Math.min(60_000, 1000 * Math.pow(2, Math.max(0, attempt - 1)));
   }
 
-  private async authHeaders(): Promise<HttpHeaders> {
+  private async authHeaders(): Promise<HttpHeaders | null> {
     const token = await this.secure.getItem('ssToken');
-    let h = new HttpHeaders();
-    if (token) h = h.set('Authorization', `Bearer ${token}`);
-    return h;
+    if (!token) {
+      return null;
+    }
+
+    return new HttpHeaders().set('Authorization', `Bearer ${token}`);
+  }
+
+  private async sendOp(op: OutboxOp, headers: HttpHeaders): Promise<void> {
+    if (op.type === 'upload') {
+      await firstValueFrom(
+        this.http.post(`${this.base}${notes.upload}`, op.payload, { headers })
+      );
+      return;
+    }
+
+    if (op.type === 'delete') {
+      const body = {
+        deleted_ids: op.payload.deleted_ids ?? [],
+        notes: [],
+      };
+      await firstValueFrom(
+        this.http.post(`${this.base}${notes.syncPlan}`, body, { headers })
+      );
+      return;
+    }
+
+    throw new Error(`Unknown op type: ${op.type}`);
+  }
+
+  private applyFailure(
+    nextQueue: OutboxOp[],
+    opId: string,
+    now: number
+  ): OutboxOp[] {
+    const updatedQueue: OutboxOp[] = [];
+
+    for (const item of nextQueue) {
+      if (item.opId !== opId) {
+        updatedQueue.push(item);
+        continue;
+      }
+
+      const attempt = (item.attempt ?? 0) + 1;
+      if (attempt > MAX_ATTEMPT) {
+        continue;
+      }
+
+      updatedQueue.push({
+        ...item,
+        attempt,
+        nextAt: now + this.backoffMs(attempt),
+      });
+    }
+
+    return updatedQueue;
   }
 
   async trySync() {
-
     if (this.syncing) {
-      console.log('Already syncing...');
       return;
     }
+
     if (!(await this.isOnline())) {
-      console.log('Skip sync: offline');
+      return;
+    }
+
+    const headers = await this.authHeaders();
+    if (!headers) {
       return;
     }
 
@@ -70,77 +134,29 @@ export class SyncWorkerService {
         return;
       }
 
-      const body = {
-        ops: batch.map(o => ({
-          opId: o.opId,
-          type: o.type,
-          payload: o.payload,
-        })),
-      };
+      let nextQueue = await this.outbox.getAll();
 
-      const headers = await this.authHeaders();
-
-      const res = await this.http.post(`${this.base}/sync-plan`, body, { headers }).toPromise();
-
-      // Assume success returns list of applied opIds (or simply 200 OK = all applied)
-      const appliedOpIds: string[] = Array.isArray((res as any)?.applied)
-        ? (res as any).applied
-        : batch.map(b => b.opId);
-
-      // Drop applied
-      await this.outbox.drop(appliedOpIds);
-
-      // For any not-applied (partial failures), update attempts + nextAt
-      const remaining = await this.outbox.getAll();
-      const remainingById = new Map(remaining.map(i => [i.opId, i]));
       for (const op of batch) {
         try {
-          if (op.type === 'upload') {
-            // Payload already has: { op_id, since, notes, deleted_ids? }
-            await this.http.post(`${this.base}upload`, op.payload, { headers }).toPromise();
-            await this.outbox.drop([op.opId]);
-          } else if (op.type === 'delete') {
-            // Server wants: { deleted_ids, notes: [] }
-            const body = { deleted_ids: op.payload.deleted_ids ?? [], notes: [] };
-            await this.http.post(`${this.base}sync-plan`, body, { headers }).toPromise();
-            await this.outbox.drop([op.opId]);
-          } else {
-            console.warn('Unknown op type, dropping', op.type, op.opId);
-            await this.outbox.drop([op.opId]);
-          }
+          await this.sendOp(op, headers);
+          nextQueue = nextQueue.filter((item: OutboxOp) => item.opId !== op.opId);
         } catch (e) {
-          console.error('Sync send failed for', op.opId, e);
-          // backoff this op, leave others to try
-          const all = await this.outbox.getAll();
-          const item = all.find(a => a.opId === op.opId);
-          if (item) {
-            item.attempt = (item.attempt ?? 0) + 1;
-            if (item.attempt > MAX_ATTEMPT) {
-              // dead-letter: drop it (or move to separate key if you want)
-              await this.outbox.drop([item.opId]);
-            } else {
-              item.nextAt = Date.now() + this.backoffMs(item.attempt);
-              await this.outbox.replace(all);
-            }
-          }
+          nextQueue = this.applyFailure(nextQueue, op.opId, Date.now());
         }
       }
-      await this.outbox.replace(Array.from(remainingById.values()));
+
+      await this.outbox.replace(nextQueue);
     } catch (e) {
-      console.log('Error..?');
-      console.error(e);
-      console.log(e);
-      // Network/API error: push back whole batch
-      const all = await this.outbox.getAll();
-      const ids = new Set(all.map(a => a.opId));
+
       const now = Date.now();
-      for (const op of all) {
-        if (ids.has(op.opId)) {
-          op.attempt = (op.attempt ?? 0) + 1;
-          op.nextAt = now + this.backoffMs(op.attempt);
+      const batch = await this.outbox.peekBatch(50, now);
+      if (batch.length > 0) {
+        let nextQueue = await this.outbox.getAll();
+        for (const op of batch) {
+          nextQueue = this.applyFailure(nextQueue, op.opId, now);
         }
+        await this.outbox.replace(nextQueue);
       }
-      await this.outbox.replace(all);
     } finally {
       this.syncing = false;
     }

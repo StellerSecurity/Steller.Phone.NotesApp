@@ -22,6 +22,7 @@ import { SecureStorageService } from 'src/app/services/secure-storage.service';
 import {DataService} from "../../services/data.service";
 import {CryptoService} from "../../services/crypto.service";
 import { CryptoKeyService } from '../../services/crypto-key.service';
+import { AppHapticsService } from '../../services/app-haptics.service';
 
 @Component({
   selector: 'app-create-account',
@@ -53,7 +54,8 @@ export class CreateAccountComponent implements OnInit {
               private notesApiV1Service: NotesApiV1Service,
               private cryptoKeyService: CryptoKeyService,
               private authService: AuthService, private toastMessageService: ToastMessageService,
-              private secureStorageService: SecureStorageService) {}
+              private secureStorageService: SecureStorageService,
+              private appHaptics: AppHapticsService) {}
 
   ngOnInit(): void {
     this.initCreateUserForm();
@@ -65,16 +67,22 @@ export class CreateAccountComponent implements OnInit {
       password: ['', [
         Validators.required,
         Validators.minLength(6),   // example rule
-      ]]
+      ]],
+      acceptLegal: [false, Validators.requiredTrue]
     });
   }
 
   togglePasswordVisibility() {
+    this.appHaptics.selectionChanged();
     this.showPassword = !this.showPassword;
   }
 
   async createAccount() {
-    if (!this.createUserForm.valid) return;
+    if (!this.createUserForm.valid) {
+      this.createUserForm.markAllAsTouched();
+      await this.appHaptics.warning();
+      return;
+    }
 
     this.isSaving = true;
 
@@ -116,16 +124,18 @@ export class CreateAccountComponent implements OnInit {
 
         // optional app-locker layer
         if (this.notesService.appHasPasswordChallenge()) {
-          this.cryptoService.encrypt(
+          const encryptedEakB64 = this.cryptoService.encrypt(
             eakB64,
             this.notesService.getNotesAppPassword(),
           );
           await this.secureStorageService.setItem(
             'ssEakB64_Encrypted',
-            eakB64,
+            encryptedEakB64,
           );
+          await this.secureStorageService.removeItem('ssEakB64');
         } else {
           await this.secureStorageService.setItem('ssEakB64', eakB64);
+          await this.secureStorageService.removeItem('ssEakB64_Encrypted');
         }
 
         let notes = this.notesService.getNotes();
@@ -138,17 +148,17 @@ export class CreateAccountComponent implements OnInit {
 
         if (notes.length == 0) {
           this.dataService.setForceDownloadOnHome(true);
+          await this.appHaptics.success();
           await this.router.navigate(['/']);
         } else {
           await this.notesApiV1Service.upload(0, JSON.parse(notes));
-          console.log('Notes sent.');
+          await this.appHaptics.success();
           await this.router.navigate(['/']);
         }
       } else {
         await this.toastMessageService.showError(response.response_message);
       }
     } catch (error: any) {
-      console.log("some error", error);
       await this.toastMessageService.showError(error?.error?.message ?? error?.message ?? error);
     } finally {
       this.isSaving = false;
@@ -156,14 +166,29 @@ export class CreateAccountComponent implements OnInit {
   }
 
   goToLogin() {
+    this.appHaptics.tap();
     this.router.navigate(['/profile/login']);
   }
 
+  openPrivacyPolicy(event?: Event) {
+    this.appHaptics.tap();
+    event?.preventDefault();
+    event?.stopPropagation();
+    window.open('https://stellarsecurity.com/privacy-page', '_blank');
+  }
+
+  openTermsPage(event?: Event) {
+    this.appHaptics.tap();
+    event?.preventDefault();
+    event?.stopPropagation();
+    window.open('https://stellarsecurity.com/terms-page', '_blank');
+  }
+
   resendCode() {
-    console.log('Resend code to:', this.email);
   }
 
   changeEmail() {
+    this.appHaptics.selectionChanged();
     this.showVerificationSection = false;
   }
 
