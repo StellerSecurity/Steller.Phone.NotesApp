@@ -26,7 +26,7 @@ import { DeleteNoteModalComponent } from '../delete-note-modal/delete-note-modal
 import { NoteV1 } from '../models/NoteV1';
 import { AuthService } from '../services/auth.service';
 import { AppHapticsService } from '../services/app-haptics.service';
-import { evaluatePasswordStrength, isPasswordLongEnough } from '../utils/password-policy';
+import { evaluatePasswordStrength, getWeakPasswordEducationKeys, isPasswordAcceptable, shouldConfirmWeakPassword } from '../utils/password-policy';
 import { unpackCipherBlob, decryptTextWithMK } from '@stellarsecurity/stellar-crypto';
 declare var require: any;
 const { v4: uuidv4 } = require('uuid');
@@ -51,6 +51,8 @@ export class AddNotePage implements OnDestroy {
   public upperLower = false;
   public specialChar = false;
   public passwordStrength = 0;
+  public weakPasswordWarningVisible = false;
+  public weakPasswordEducationKeys: string[] = [];
   public note_text = '';
   public note_title = '';
   public allTranslations: any;
@@ -728,12 +730,41 @@ export class AddNotePage implements OnDestroy {
     await this.appHaptics.tap();
     await this.modal.dismiss();
   }
+  private async confirmWeakPasswordUsage(): Promise<boolean> {
+    const alert = await this.alertCtrl.create({
+      header: this.allTranslations?.warning ?? 'Warning',
+      message: this.allTranslations?.weakPasswordConfirmMessage ?? 'This password is weak and may be easier to guess. Do you want to continue anyway?',
+      buttons: [
+        {
+          text: this.allTranslations?.cancel ?? 'Cancel',
+          role: 'cancel',
+          handler: () => {
+            this.appHaptics.tap();
+          },
+        },
+        {
+          text: this.allTranslations?.useAnyway ?? 'Use anyway',
+          role: 'confirm',
+          handler: () => {
+            this.appHaptics.warning();
+          },
+        },
+      ],
+    });
+    await alert.present();
+    const result = await alert.onDidDismiss();
+    return result.role === 'confirm';
+  }
   public notesPasswordChange() {
     const strength = evaluatePasswordStrength(this.notes_password_input);
     this.passwordStrength = strength.score;
     this.upperLower = strength.upperLower;
     this.specialChar = strength.specialChar;
     this.strongPass = strength.strongPass;
+    this.weakPasswordWarningVisible = shouldConfirmWeakPassword(this.notes_password_input);
+    this.weakPasswordEducationKeys = this.weakPasswordWarningVisible
+      ? getWeakPasswordEducationKeys(this.notes_password_input)
+      : [];
     this.passwordStrengthHelperText =
       this.allTranslations?.[strength.helperKey] ?? '';
   }
@@ -748,7 +779,7 @@ export class AddNotePage implements OnDestroy {
       await toast.present();
       return;
     }
-    if (!isPasswordLongEnough(this.notes_password_input)) {
+    if (!isPasswordAcceptable(this.notes_password_input)) {
       const toast = await this.toastController.create({
         message: this.allTranslations.thePasswordIsTooWeakPleaseMakeItStronger,
         duration: 3000,
@@ -757,6 +788,12 @@ export class AddNotePage implements OnDestroy {
       await this.appHaptics.warning();
       await toast.present();
       return;
+    }
+    if (shouldConfirmWeakPassword(this.notes_password_input)) {
+      const confirmed = await this.confirmWeakPasswordUsage();
+      if (!confirmed) {
+        return;
+      }
     }
     this.notes_password_stored = this.notes_password_input;
     if (this.notes_id) {

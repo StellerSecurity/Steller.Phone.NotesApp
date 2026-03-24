@@ -242,5 +242,22 @@
   "undo": "Rückgängig",
   "privacyMode": "Privatsphäre-Modus",
   "privacyModeDescription": "Notizvorschauen auf dem Startbildschirm ausblenden.",
-  "privateNoteHidden": "Private Notiz verborgen"
+  "privateNoteHidden": "Private Notiz verborgen",
+  "language": "Sprache",
+  "languageDescription": "Wähle die App-Sprache oder verwende die Sprache deines Telefons.",
+  "usePhoneLanguage": "Telefonsprache verwenden",
+  "weakPasswordConfirmMessage": "Dieses Passwort ist schwach und könnte leichter erraten werden. Möchtest du trotzdem fortfahren?",
+  "useAnyway": "Trotzdem verwenden",
+  "weakPasswordContinueWarning": "Dieses Passwort ist erlaubt, aber immer noch schwach.",
+  "weakPasswordTipCommon": "Vermeide häufige Passwörter oder bekannte Muster.",
+  "weakPasswordTipSequence": "Vermeide einfache Folgen wie 1234 oder abcd.",
+  "weakPasswordTipRepeated": "Vermeide wiederholte Zeichen wie aaaa oder 1111.",
+  "weakPasswordTipMixCase": "Verwende Groß- und Kleinbuchstaben gemischt.",
+  "weakPasswordTipAddNumber": "Füge mindestens eine Zahl hinzu.",
+  "weakPasswordTipAddSymbol": "Füge ein Symbol wie !, # oder $ hinzu.",
+  "weakPasswordTipLessPredictable": "Verwende eine weniger vorhersehbare Kombination aus Wörtern oder Zeichen.",
+  "securitySection": "Sicherheit",
+  "privacySection": "Privatsphäre",
+  "generalSection": "Allgemein",
+  "accountSection": "Konto"
 }

@@ -115,6 +115,18 @@
         <div *ngIf="!note_locked && !getProtected()" class="pass-info-box">
           <p *ngIf="!strongPass" class="pass-note">{{ 'passwordCharacters' | translate }}</p>
           {{ passwordStrengthHelperText }}
+          <div *ngIf="weakPasswordWarningVisible" class="password-warning-box">
+            <p class="password-warning-text">
+              {{ 'weakPasswordContinueWarning' | translate }}
+            </p>
+            <ul
+              *ngIf="weakPasswordEducationKeys.length > 0"
+              class="password-warning-tips">
+              <li *ngFor="let tipKey of weakPasswordEducationKeys">
+                {{ tipKey | translate }}
+              </li>
+            </ul>
+          </div>
           <password-strength-meter [password]="notes_password_input"></password-strength-meter>
           <h4 style="color: #0B0C19; font-size: 12px; font-weight: 400; font-family: 'Poppins';">
             {{ 'itsBetterToHave' | translate }}

@@ -6,7 +6,7 @@ import { CryptoService } from "../services/crypto.service";
 import { ConfirmationModalComponent } from '../confirmation-modal/confirmation-modal.component';
 import { TranslatorService } from '../services/translator.service';
 import { SecureStorageService } from "../services/secure-storage.service";
-import { evaluatePasswordStrength, isPasswordLongEnough } from '../utils/password-policy';
+import { evaluatePasswordStrength, getWeakPasswordEducationKeys, isPasswordAcceptable, shouldConfirmWeakPassword } from '../utils/password-policy';
 import { ScreenshotProtectionService } from '../services/screenshot-protection.service';
 import { AppHapticsService } from '../services/app-haptics.service';
 import { AuthService } from '../services/auth.service';
@@ -21,6 +21,8 @@ export class AppSettingsPage implements AfterViewInit {
   public confirmPassword: string = '';
   public passwordStrengthHelperText = "";
   public passwordStrength = 0;
+  public weakPasswordWarningVisible = false;
+  public weakPasswordEducationKeys: string[] = [];
   public password_enabled = false;
   public showPassword = false;
   public confirmShowPassword = false;
@@ -37,10 +39,13 @@ export class AppSettingsPage implements AfterViewInit {
   public readonly clipboardAutoClearOptions = [0, 30, 60, 120];
   public privacyModeEnabled = false;
   public isSavingPassword = false;
+  public selectedLanguage = 'system';
+  public languageOptions = this.translatorService.getSupportedLanguageOptions();
   @ViewChild(IonModal) modal: IonModal;
   @ViewChild('autoLockSelect') autoLockSelect!: IonSelect;
   @ViewChild('wipeSelect') wipeSelect!: IonSelect;
   @ViewChild('clipboardSelect') clipboardSelect!: IonSelect;
+  @ViewChild('languageSelect') languageSelect!: IonSelect;
   constructor(
     private toastController: ToastController,
     private alertController: AlertController,
@@ -61,6 +66,8 @@ export class AppSettingsPage implements AfterViewInit {
     this.clipboardAutoClearSeconds = this.noteService.getClipboardAutoClearSeconds();
     this.privacyModeEnabled = this.noteService.isPrivacyModeEnabled();
     this.screenshotProtectionEnabled = await this.screenshotProtectionService.isEnabled();
+    this.selectedLanguage = await this.translatorService.getLanguagePreference();
+    this.languageOptions = this.translatorService.getSupportedLanguageOptions();
   }
   ionViewDidEnter() {
     this.passwordStrengthHelperText =
@@ -97,6 +104,8 @@ export class AppSettingsPage implements AfterViewInit {
     this.notesAppPassword = '';
     this.confirmPassword = '';
     this.passwordStrength = 0;
+    this.weakPasswordWarningVisible = false;
+    this.weakPasswordEducationKeys = [];
     this.upperLower = false;
     this.specialChar = false;
     this.strongPass = false;
@@ -107,7 +116,7 @@ export class AppSettingsPage implements AfterViewInit {
     if (this.isSavingPassword) {
       return;
     }
-    if (!isPasswordLongEnough(this.notesAppPassword)) {
+    if (!isPasswordAcceptable(this.notesAppPassword)) {
       const toast = await this.toastController.create({
         message: this.allTranslations?.thePasswordIsWeakPleaseMakeYourPasswordStronger ?? 'The password is weak. Please make your password stronger.',
         duration: 3000,
@@ -116,6 +125,12 @@ export class AppSettingsPage implements AfterViewInit {
       await this.appHaptics.warning();
       await toast.present();
       return;
+    }
+    if (shouldConfirmWeakPassword(this.notesAppPassword)) {
+      const confirmed = await this.confirmWeakPasswordUsage();
+      if (!confirmed) {
+        return;
+      }
     }
     if (this.notesAppPassword !== this.confirmPassword) {
       const toast = await this.toastController.create({
@@ -216,12 +231,41 @@ export class AppSettingsPage implements AfterViewInit {
     });
     return await modal.present();
   }
+  private async confirmWeakPasswordUsage(): Promise<boolean> {
+    const alert = await this.alertController.create({
+      header: this.allTranslations?.warning ?? 'Warning',
+      message: this.allTranslations?.weakPasswordConfirmMessage ?? 'This password is weak and may be easier to guess. Do you want to continue anyway?',
+      buttons: [
+        {
+          text: this.allTranslations?.cancel ?? 'Cancel',
+          role: 'cancel',
+          handler: () => {
+            this.appHaptics.tap();
+          },
+        },
+        {
+          text: this.allTranslations?.useAnyway ?? 'Use anyway',
+          role: 'confirm',
+          handler: () => {
+            this.appHaptics.warning();
+          },
+        },
+      ],
+    });
+    await alert.present();
+    const result = await alert.onDidDismiss();
+    return result.role === 'confirm';
+  }
   public notesAppPasswordChange() {
     const strength = evaluatePasswordStrength(this.notesAppPassword);
     this.passwordStrength = strength.score;
     this.upperLower = strength.upperLower;
     this.specialChar = strength.specialChar;
     this.strongPass = strength.strongPass;
+    this.weakPasswordWarningVisible = shouldConfirmWeakPassword(this.notesAppPassword);
+    this.weakPasswordEducationKeys = this.weakPasswordWarningVisible
+      ? getWeakPasswordEducationKeys(this.notesAppPassword)
+      : [];
     this.passwordStrengthHelperText =
       this.allTranslations?.[strength.helperKey] ?? '';
   }
@@ -327,6 +371,18 @@ export class AppSettingsPage implements AfterViewInit {
     this.privacyModeEnabled = !this.privacyModeEnabled;
     await this.privacyModeChange();
   }
+  public async saveLanguage() {
+    await this.appHaptics.selectionChanged();
+    await this.translatorService.setLanguage(this.selectedLanguage);
+    this.allTranslations = this.translatorService.allTranslations ?? {};
+    this.languageOptions = this.translatorService.getSupportedLanguageOptions();
+  }
+  public getLanguageLabel(option: { value: string; label?: string; labelKey?: string }): string {
+    if (option.label) {
+      return option.label;
+    }
+    return this.allTranslations?.[option.labelKey ?? 'usePhoneLanguage'] ?? 'Use phone language';
+  }
   public async appPasswordChallengeDialog() {
     await this.appHaptics.tap();
     await this.modal.present();
@@ -342,6 +398,10 @@ export class AppSettingsPage implements AfterViewInit {
   public openClipboardSelect() {
     this.appHaptics.tap();
     this.clipboardSelect?.open();
+  }
+  public openLanguageSelect() {
+    this.appHaptics.tap();
+    this.languageSelect?.open();
   }
   public async toggleScreenshotProtectionFromRow() {
     this.screenshotProtectionEnabled = !this.screenshotProtectionEnabled;

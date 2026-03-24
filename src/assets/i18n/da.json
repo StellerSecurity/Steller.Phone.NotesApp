@@ -242,5 +242,22 @@
   "undo": "Fortryd",
   "privacyMode": "Privat tilstand",
   "privacyModeDescription": "Skjul notevisninger på startsiden.",
-  "privateNoteHidden": "Privat note skjult"
+  "privateNoteHidden": "Privat note skjult",
+  "language": "Sprog",
+  "languageDescription": "Vælg appens sprog, eller brug telefonens sprog.",
+  "usePhoneLanguage": "Brug telefonens sprog",
+  "weakPasswordConfirmMessage": "Denne adgangskode er svag og kan være lettere at gætte. Vil du fortsætte alligevel?",
+  "useAnyway": "Brug alligevel",
+  "weakPasswordContinueWarning": "Denne adgangskode er tilladt, men er stadig svag.",
+  "weakPasswordTipCommon": "Undgå almindelige adgangskoder eller kendte mønstre.",
+  "weakPasswordTipSequence": "Undgå lette sekvenser som 1234 eller abcd.",
+  "weakPasswordTipRepeated": "Undgå gentagne tegn som aaaa eller 1111.",
+  "weakPasswordTipMixCase": "Brug både store og små bogstaver.",
+  "weakPasswordTipAddNumber": "Tilføj mindst ét tal.",
+  "weakPasswordTipAddSymbol": "Tilføj et symbol som !, # eller $.",
+  "weakPasswordTipLessPredictable": "Brug en mindre forudsigelig kombination af ord eller tegn.",
+  "securitySection": "Sikkerhed",
+  "privacySection": "Privatliv",
+  "generalSection": "Generelt",
+  "accountSection": "Konto"
 }

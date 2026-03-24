@@ -1,45 +1,50 @@
 import { HttpClient } from "@angular/common/http";
 import { Injectable } from "@angular/core";
 import { TranslateService } from "@ngx-translate/core";
+import { Preferences } from "@capacitor/preferences";
 import { map } from "rxjs";
 import * as EnLangTranslations from "src/assets/i18n/en.json";
+import * as EsLangTranslations from "src/assets/i18n/es.json";
 import * as DaLangTranslations from "src/assets/i18n/da.json";
 import * as DeLangTranslations from "src/assets/i18n/de.json";
 import * as FrLangTranslations from "src/assets/i18n/fr.json";
 import * as SeLangTranslations from "src/assets/i18n/se.json";
-
 @Injectable({
   providedIn: "root",
 })
 export class TranslatorService {
   language: string = "en";
   allTranslations: any;
-
-  private readonly supportedLanguages = ["en", "da", "de", "fr", "se"];
-
+  private readonly LANGUAGE_PREFERENCE_KEY = "app_language";
+  private readonly supportedLanguages = ["en", "es", "da", "de", "fr", "se"];
   constructor(private http: HttpClient, private translate: TranslateService) {
-    this.language = this.resolveLanguage();
-    this.loadTranslationsFromJsonFile();
+    this.loadTranslationsFromJsonFile().then(() => {});
   }
-
-  private resolveLanguage(): string {
+  private normalizeLanguage(lang: string): string {
+    const normalized = lang.toLowerCase().split("-")[0];
+    if (normalized === "sv") {
+      return "se";
+    }
+    return this.supportedLanguages.includes(normalized) ? normalized : "en";
+  }
+  private resolveSystemLanguage(): string {
     const raw =
       (typeof navigator !== "undefined" ? navigator.language : "") ||
       this.translate.getBrowserLang() ||
       "en";
-
-    const normalized = raw.toLowerCase().split("-")[0];
-
-    // Map Swedish locale to your existing se.json file
-    if (normalized === "sv") {
-      return "se";
-    }
-
-    return this.supportedLanguages.includes(normalized) ? normalized : "en";
+    return this.normalizeLanguage(raw);
   }
-
+  private async resolveLanguage(): Promise<string> {
+    const { value } = await Preferences.get({ key: this.LANGUAGE_PREFERENCE_KEY });
+    if (!value || value === "system") {
+      return this.resolveSystemLanguage();
+    }
+    return this.normalizeLanguage(value);
+  }
   private getBundledTranslations(lang: string): any {
     switch (lang) {
+      case "es":
+        return EsLangTranslations;
       case "da":
         return DaLangTranslations;
       case "de":
@@ -53,24 +58,30 @@ export class TranslatorService {
         return EnLangTranslations;
     }
   }
-
-  loadTranslationsFromJsonFile(): void {
+  async getLanguagePreference(): Promise<string> {
+    const { value } = await Preferences.get({ key: this.LANGUAGE_PREFERENCE_KEY });
+    return value ?? "system";
+  }
+  getSupportedLanguageOptions() {
+    return [
+      { value: "system", labelKey: "usePhoneLanguage" },
+      { value: "en", label: "English" },
+      { value: "es", label: "Español" },
+      { value: "de", label: "Deutsch" },
+      { value: "da", label: "Dansk" },
+      { value: "fr", label: "Français" },
+      { value: "se", label: "Svenska" },
+    ];
+  }
+  async loadTranslationsFromJsonFile(): Promise<void> {
+    this.language = await this.resolveLanguage();
     this.translate.addLangs(this.supportedLanguages);
-
     this.allTranslations = this.getBundledTranslations(this.language);
-
     this.translate.setTranslation(this.language, this.allTranslations, true);
     this.translate.setDefaultLang(this.language);
     this.translate.use(this.language);
   }
-
   loadTranslations(data: any) {
-    this.language = this.resolveLanguage();
-
-    this.translate.addLangs(this.supportedLanguages);
-    this.translate.setDefaultLang(this.language);
-    this.translate.use(this.language);
-
     return this.http.get(`${data}${this.language}.json`).pipe(
       map((translations: any) => {
         this.allTranslations = translations;
@@ -79,17 +90,12 @@ export class TranslatorService {
       })
     );
   }
-
-  setLanguage(lang: string) {
-    const normalized = lang.toLowerCase().split("-")[0];
-    const finalLang =
-      normalized === "sv"
-        ? "se"
-        : this.supportedLanguages.includes(normalized)
-          ? normalized
-          : "en";
-
-    this.language = finalLang;
-    this.loadTranslationsFromJsonFile();
+  async setLanguage(lang: string) {
+    const finalLang = lang === "system" ? "system" : this.normalizeLanguage(lang);
+    await Preferences.set({
+      key: this.LANGUAGE_PREFERENCE_KEY,
+      value: finalLang,
+    });
+    await this.loadTranslationsFromJsonFile();
   }
 }

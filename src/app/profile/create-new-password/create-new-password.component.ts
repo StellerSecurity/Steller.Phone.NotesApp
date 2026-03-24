@@ -5,6 +5,7 @@ import { Subscription } from 'rxjs';
 import { AuthService } from 'src/app/services/auth.service';
 import { ToastMessageService } from 'src/app/services/toast-message.service';
 import { AppHapticsService } from 'src/app/services/app-haptics.service';
+import { isPasswordAcceptable } from 'src/app/utils/password-policy';
 
 @Component({
   selector: 'app-create-new-password',
@@ -79,6 +80,14 @@ export class CreateNewPasswordComponent implements OnInit, OnDestroy {
 
   confirm() {
     if (this.passwordForm.valid) {
+      const password = this.passwordForm.get("password")?.value ?? "";
+      if (!isPasswordAcceptable(password)) {
+        this.appHaptics.warning();
+        this.toastMessageService.showError(
+          'Password is too weak. Please avoid common passwords like 123456 or password123.'
+        );
+        return;
+      }
       this.isSaving = true;
       this.authService
         .resetPassword({

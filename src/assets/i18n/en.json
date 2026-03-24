@@ -242,5 +242,22 @@
   "undo": "Undo",
   "privacyMode": "Privacy mode",
   "privacyModeDescription": "Hide note previews on the Home screen.",
-  "privateNoteHidden": "Private note hidden"
+  "privateNoteHidden": "Private note hidden",
+  "language": "Language",
+  "languageDescription": "Choose app language or use your phone language.",
+  "usePhoneLanguage": "Use phone language",
+  "weakPasswordConfirmMessage": "This password is weak and may be easier to guess. Do you want to continue anyway?",
+  "useAnyway": "Use anyway",
+  "weakPasswordContinueWarning": "This password is allowed, but it is still weak.",
+  "weakPasswordTipCommon": "Avoid common passwords or well-known patterns.",
+  "weakPasswordTipSequence": "Avoid easy sequences like 1234 or abcd.",
+  "weakPasswordTipRepeated": "Avoid repeated characters like aaaa or 1111.",
+  "weakPasswordTipMixCase": "Mix uppercase and lowercase letters.",
+  "weakPasswordTipAddNumber": "Add at least one number.",
+  "weakPasswordTipAddSymbol": "Add a symbol like !, #, or $.",
+  "weakPasswordTipLessPredictable": "Use a less predictable combination of words or characters.",
+  "securitySection": "Security",
+  "privacySection": "Privacy",
+  "generalSection": "General",
+  "accountSection": "Account"
 }

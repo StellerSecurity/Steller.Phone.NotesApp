@@ -8,7 +8,6 @@ import { Keyboard, KeyboardResize } from '@capacitor/keyboard';
 import { Capacitor } from '@capacitor/core';
 import { App } from '@capacitor/app';
 import { ScreenshotProtectionService } from './services/screenshot-protection.service';
-
 @Component({
   selector: 'app-root',
   templateUrl: 'app.component.html',
@@ -16,7 +15,6 @@ import { ScreenshotProtectionService } from './services/screenshot-protection.se
 })
 export class AppComponent {
   public showPrivacyShield = false;
-
   constructor(
     private translator: TranslatorService,
     private storage: IonicStorage,
@@ -28,15 +26,12 @@ export class AppComponent {
     this.syncWorker.init();
     this.installPrivacyShield();
     void this.screenshotProtectionService.applyCurrentSetting(this.noteService.appHasPasswordChallenge());
-
     StatusBar.setBackgroundColor({ color: '#F6F6FD' }).then(() => {});
     StatusBar.setStyle({ style: Style.Light }).then(() => {});
-
     if (typeof navigator !== 'undefined') {
-      this.translator.loadTranslations('./assets/i18n/').subscribe(() => {});
+      this.initializeTranslations();
     }
   }
-
   ngOnInit() {
     if (Capacitor.getPlatform() === 'ios') {
       Keyboard.setResizeMode({
@@ -44,14 +39,16 @@ export class AppComponent {
       });
     }
   }
-
+  private async initializeTranslations() {
+    await this.translator.loadTranslationsFromJsonFile();
+    this.translator.loadTranslations('./assets/i18n/').subscribe(() => {});
+  }
   private installPrivacyShield() {
     App.addListener('appStateChange', ({ isActive }: { isActive: boolean }) => {
       this.zone.run(() => {
         this.updatePrivacyShield(!isActive);
       });
     });
-
     if (typeof document !== 'undefined') {
       document.addEventListener(
         'visibilitychange',
@@ -64,13 +61,11 @@ export class AppComponent {
       );
     }
   }
-
   private updatePrivacyShield(shouldShow: boolean) {
     if (!this.noteService.appHasPasswordChallenge()) {
       this.showPrivacyShield = false;
       return;
     }
-
     this.showPrivacyShield = shouldShow;
   }
 }

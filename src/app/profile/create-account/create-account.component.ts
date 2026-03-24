@@ -23,6 +23,7 @@ import {DataService} from "../../services/data.service";
 import {CryptoService} from "../../services/crypto.service";
 import { CryptoKeyService } from '../../services/crypto-key.service';
 import { AppHapticsService } from '../../services/app-haptics.service';
+import { isPasswordAcceptable } from '../../utils/password-policy';
 
 @Component({
   selector: 'app-create-account',
@@ -81,6 +82,14 @@ export class CreateAccountComponent implements OnInit {
     if (!this.createUserForm.valid) {
       this.createUserForm.markAllAsTouched();
       await this.appHaptics.warning();
+      return;
+    }
+    const password = this.createUserForm.get('password')?.value ?? '';
+    if (!isPasswordAcceptable(password)) {
+      await this.appHaptics.warning();
+      await this.toastMessageService.showError(
+        'Password is too weak. Please avoid common passwords like 123456 or password123.'
+      );
       return;
     }
 

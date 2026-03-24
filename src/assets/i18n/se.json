@@ -242,5 +242,22 @@
   "undo": "Ångra",
   "privacyMode": "Integritetsläge",
   "privacyModeDescription": "Dölj förhandsvisningar av anteckningar på hemskärmen.",
-  "privateNoteHidden": "Privat anteckning dold"
+  "privateNoteHidden": "Privat anteckning dold",
+  "language": "Språk",
+  "languageDescription": "Välj appens språk eller använd telefonens språk.",
+  "usePhoneLanguage": "Använd telefonens språk",
+  "weakPasswordConfirmMessage": "Det här lösenordet är svagt och kan vara lättare att gissa. Vill du fortsätta ändå?",
+  "useAnyway": "Använd ändå",
+  "weakPasswordContinueWarning": "Det här lösenordet är tillåtet, men är fortfarande svagt.",
+  "weakPasswordTipCommon": "Undvik vanliga lösenord eller välkända mönster.",
+  "weakPasswordTipSequence": "Undvik enkla sekvenser som 1234 eller abcd.",
+  "weakPasswordTipRepeated": "Undvik upprepade tecken som aaaa eller 1111.",
+  "weakPasswordTipMixCase": "Blanda stora och små bokstäver.",
+  "weakPasswordTipAddNumber": "Lägg till minst en siffra.",
+  "weakPasswordTipAddSymbol": "Lägg till en symbol som !, # eller $.",
+  "weakPasswordTipLessPredictable": "Använd en mindre förutsägbar kombination av ord eller tecken.",
+  "securitySection": "Säkerhet",
+  "privacySection": "Integritet",
+  "generalSection": "Allmänt",
+  "accountSection": "Konto"
 }
