@@ -7,6 +7,7 @@ import { AuthService } from 'src/app/services/auth.service';
 import { DataService } from 'src/app/services/data.service';
 import { ToastMessageService } from 'src/app/services/toast-message.service';
 import { AppHapticsService } from 'src/app/services/app-haptics.service';
+import { TranslatorService } from 'src/app/services/translator.service';
 
 @Component({
   selector: 'app-delete-account',
@@ -26,6 +27,7 @@ export class DeleteAccountComponent implements OnInit {
     private dataService: DataService,
     private toastMessageService: ToastMessageService,
     private appHaptics: AppHapticsService,
+    private translatorService: TranslatorService,
   ) {}
 
   ngOnInit(): void {
@@ -48,19 +50,21 @@ export class DeleteAccountComponent implements OnInit {
       return;
     }
 
+    const t = this.translatorService.allTranslations;
+
     const alert = await this.alertController.create({
-      header: 'Delete account?',
-      message: 'This permanently deletes your Stellar ID for Notes and cannot be undone.',
+      header: t?.deleteAccountQuestion ?? 'Delete account?',
+      message: t?.deleteAccountConfirmMessage ?? 'This permanently deletes your Stellar ID for Notes and cannot be undone.',
       buttons: [
         {
-          text: 'Cancel',
+          text: t?.cancel ?? 'Cancel',
           role: 'cancel',
           handler: () => {
             this.appHaptics.tap();
           },
         },
         {
-          text: 'Delete',
+          text: t?.delete ?? 'Delete',
           role: 'destructive',
           handler: async () => {
             await this.appHaptics.impactHeavy();
@@ -75,6 +79,7 @@ export class DeleteAccountComponent implements OnInit {
 
   private async performDelete() {
     this.isSaving = true;
+    const t = this.translatorService.allTranslations;
 
     try {
       const response: any = await firstValueFrom(
@@ -82,16 +87,25 @@ export class DeleteAccountComponent implements OnInit {
       );
 
       if (response?.response_code === 200) {
-        await this.toastMessageService.showSuccess(response?.response_message ?? 'Account deleted successfully.');
+        await this.toastMessageService.showSuccess(
+          response?.response_message ?? t?.accountDeletedSuccessfully ?? 'Account deleted successfully.',
+        );
         await this.dataService.clearAppData();
         await this.authService.initializeAuthState();
         window.location.href = '/';
         return;
       }
 
-      await this.toastMessageService.showError(response?.response_message ?? 'Unable to delete account.');
+      await this.toastMessageService.showError(
+        response?.response_message ?? t?.unableToDeleteAccount ?? 'Unable to delete account.',
+      );
     } catch (error: any) {
-      await this.toastMessageService.showError(error?.error?.response_message ?? error?.error?.message ?? 'Unable to delete account.');
+      await this.toastMessageService.showError(
+        error?.error?.response_message ??
+        error?.error?.message ??
+        t?.unableToDeleteAccount ??
+        'Unable to delete account.',
+      );
     } finally {
       this.isSaving = false;
     }

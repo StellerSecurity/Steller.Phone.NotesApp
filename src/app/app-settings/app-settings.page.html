@@ -11,7 +11,6 @@
     <ion-title>{{ 'settings' | translate }}</ion-title>
   </ion-toolbar>
 </ion-header>
-
 <ion-content [fullscreen]="true" class="ion-padding">
   <ion-modal #modal trigger="open-modal">
     <ng-template>
@@ -27,18 +26,15 @@
           <ion-title>{{ 'passwordOnApp' | translate }}</ion-title>
         </ion-toolbar>
       </ion-header>
-
       <ion-content class="ion-padding">
         <div class="pass-info-box enabled-info-box" *ngIf="password_enabled">
           <img src="../../assets/green-lock.png" />
           <h3>{{ 'encryptionSuccessfullyWork' | translate }}</h3>
           <p>{{ 'yourNotesAreSafeAndEncryptedWithYourPassword' | translate }}</p>
         </div>
-
         <h2 *ngIf="!password_enabled" class="section-title">
           {{ 'lockAppWithPassword' | translate }}
         </h2>
-
         <div *ngIf="!password_enabled">
           <div class="input-group">
             <ion-input
@@ -55,7 +51,6 @@
               (click)="togglePasswordVisibility()">
             </ion-icon>
           </div>
-
           <div class="input-group">
             <ion-input
               type="{{ confirmShowPassword ? 'text' : 'password' }}"
@@ -71,22 +66,17 @@
             </ion-icon>
           </div>
         </div>
-
         <div *ngIf="!password_enabled" class="pass-info-box">
           <p *ngIf="!strongPass" class="pass-note">
             {{ 'passwordCharacters' | translate }}
           </p>
-
           <div class="password-helper-text">
             {{ passwordStrengthHelperText }}
           </div>
-
           <password-strength-meter [password]="notesAppPassword"></password-strength-meter>
-
           <h4 class="password-helper-title">
             {{ 'itsBetterToHave' | translate }}
           </h4>
-
           <ul class="pass-list">
             <li [ngClass]="{ active: upperLower }">
               <ion-icon name="checkmark-outline"></ion-icon>
@@ -102,9 +92,7 @@
             </li>
           </ul>
         </div>
-
         <hr />
-
         <p
           expand="block"
           (click)="removePassword()"
@@ -112,14 +100,12 @@
           *ngIf="password_enabled">
           {{ 'disableAppPassword' | translate }}
         </p>
-
         <ion-button expand="block" (click)="save()" *ngIf="!password_enabled">
           {{ 'addAppPassword' | translate }}
         </ion-button>
       </ion-content>
     </ng-template>
   </ion-modal>
-
   <ion-item>
     <div class="setting-row" (click)="appPasswordChallengeDialog()">
       <div class="setting-text">
@@ -129,13 +115,28 @@
           <span *ngIf="password_enabled" class="enabled">{{ 'enabled' | translate }}</span>
         </div>
       </div>
-
       <div class="setting-control setting-control--icon">
         <ion-icon name="chevron-forward-outline"></ion-icon>
       </div>
     </div>
   </ion-item>
-
+  <ion-item (click)="togglePrivacyModeFromRow()">
+    <div class="setting-row setting-row--top">
+      <div class="setting-text">
+        <div class="setting-title">{{ 'privacyMode' | translate }}</div>
+        <div class="setting-helper-text">
+          {{ 'privacyModeDescription' | translate }}
+        </div>
+      </div>
+      <div class="setting-control setting-control--toggle">
+        <ion-toggle
+          [(ngModel)]="privacyModeEnabled"
+          (ionChange)="privacyModeChange()"
+          (click)="$event.stopPropagation()">
+        </ion-toggle>
+      </div>
+    </div>
+  </ion-item>
   <ion-item *ngIf="password_enabled" (click)="openAutoLockSelect()">
     <div class="setting-row">
       <div class="setting-text">
@@ -144,7 +145,6 @@
           {{ 'autoLockTimerDescription' | translate }}
         </div>
       </div>
-
       <div class="setting-control">
         <ion-select
           #autoLockSelect
@@ -161,8 +161,31 @@
       </div>
     </div>
   </ion-item>
-
-  <ion-item *ngIf="password_enabled" (click)="toggleScreenshotProtectionFromRow()">
+  <ion-item (click)="openClipboardSelect()">
+    <div class="setting-row">
+      <div class="setting-text">
+        <div class="setting-title">{{ 'clipboardAutoClear' | translate }}</div>
+        <div class="setting-helper-text">
+          {{ 'clipboardAutoClearDescription' | translate }}
+        </div>
+      </div>
+      <div class="setting-control">
+        <ion-select
+          #clipboardSelect
+          interface="action-sheet"
+          [(ngModel)]="clipboardAutoClearSeconds"
+          (ionChange)="saveClipboardAutoClear()"
+          (click)="$event.stopPropagation()">
+          <ion-select-option
+            *ngFor="let option of clipboardAutoClearOptions"
+            [value]="option">
+            {{ getClipboardAutoClearLabel(option) }}
+          </ion-select-option>
+        </ion-select>
+      </div>
+    </div>
+  </ion-item>
+  <ion-item (click)="toggleScreenshotProtectionFromRow()">
     <div class="setting-row setting-row--top">
       <div class="setting-text">
         <div class="setting-title">{{ 'blockScreenshots' | translate }}</div>
@@ -170,7 +193,6 @@
           {{ 'blockScreenshotsDescription' | translate }}
         </div>
       </div>
-
       <div class="setting-control setting-control--toggle">
         <ion-toggle
           [(ngModel)]="screenshotProtectionEnabled"
@@ -180,7 +202,6 @@
       </div>
     </div>
   </ion-item>
-
   <ion-item *ngIf="password_enabled" (click)="openWipeSelect()">
     <div class="setting-row">
       <div class="setting-text">
@@ -189,8 +210,6 @@
           {{ 'inactiveDeviceWipeDescription' | translate }}
         </div>
       </div>
-
-
       <div class="setting-control">
         <ion-select
           #wipeSelect
@@ -205,10 +224,18 @@
           </ion-select-option>
         </ion-select>
       </div>
-
     </div>
   </ion-item>
-
+  <ion-item *ngIf="authService.isLoggedIn" (click)="goToDeleteAccount()">
+    <div class="setting-row">
+      <div class="setting-text">
+        <div class="setting-title setting-title--danger">{{ 'deleteAccount' | translate }}</div>
+      </div>
+      <div class="setting-control setting-control--icon setting-control--danger">
+        <ion-icon name="chevron-forward-outline"></ion-icon>
+      </div>
+    </div>
+  </ion-item>
   <div class="app-setting-support">
     <div class="support-title">{{ 'needHelpQuestion' | translate }}</div>
     <div class="support-text">{{ 'supportContactText' | translate }}</div>

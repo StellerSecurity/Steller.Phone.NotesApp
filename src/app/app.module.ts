@@ -43,9 +43,9 @@ export function initNotesStorage(notesStorageService: NotesStorageService) {
   };
 }
 
-export function initInactiveWipe(dataService: DataService) {
+export function initWipeProtection(dataService: DataService) {
   return async () => {
-    await dataService.performInactiveWipeIfNeeded();
+    await dataService.initializeWipeProtection();
   };
 }
 
@@ -106,7 +106,7 @@ export function initInactiveWipe(dataService: DataService) {
     },
     {
       provide: APP_INITIALIZER,
-      useFactory: initInactiveWipe,
+      useFactory: initWipeProtection,
       deps: [DataService],
       multi: true,
     },

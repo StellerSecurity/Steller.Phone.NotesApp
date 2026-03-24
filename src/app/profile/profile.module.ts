@@ -12,11 +12,11 @@ import { ForgotPasswordComponent } from './forgot-password/forgot-password.compo
 import { CreateNewPasswordComponent } from './create-new-password/create-new-password.component';
 import { NgOtpInputModule } from 'ng-otp-input';
 import { DeleteAccountComponent } from './delete-account/delete-account.component';
-
+import { AboutComponent } from './about/about.component';
 
 @NgModule({
-  declarations: [ProfileComponent, LoginComponent, CreateAccountComponent, 
-    ForgotPasswordComponent, CreateNewPasswordComponent, DeleteAccountComponent],
+  declarations: [ProfileComponent, LoginComponent, CreateAccountComponent,
+    ForgotPasswordComponent, CreateNewPasswordComponent, DeleteAccountComponent, AboutComponent],
   imports: [
     CommonModule,
     FormsModule,

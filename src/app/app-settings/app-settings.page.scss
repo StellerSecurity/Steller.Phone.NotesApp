@@ -110,6 +110,15 @@ ion-select {
   margin: 0 0 4px 0;
 }
 
+
+.setting-title--danger {
+  color: #e10000;
+}
+
+.setting-control--danger ion-icon {
+  color: #e10000;
+}
+
 .setting-helper-text {
   color: #7b7b88;
   font-size: 11px;

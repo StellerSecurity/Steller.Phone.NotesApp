@@ -30,7 +30,7 @@ import { normalize } from "../utils/home-normalize.util";
 import { initializePressGestures, LongPressConfig } from "../utils/home-gesture.util";
 import { setDecryptedNotesAndParse } from "../utils/home-notes.util";
 import { AuthService } from "../services/auth.service";
-import { IonContent, RefresherCustomEvent } from '@ionic/angular';
+import { IonContent } from '@ionic/angular';
 
 import {
   decryptTextWithMK,
@@ -38,7 +38,6 @@ import {
 } from '@stellarsecurity/stellar-crypto';
 import { CryptoKeyService } from '../services/crypto-key.service';
 import { ScrollService } from '../services/scroll.service';
-
 
 @Component({
   selector: 'app-home',
@@ -61,11 +60,12 @@ export class HomePage {
   @ViewChild(IonModal) modal: IonModal;
   @ViewChild('searchbar') searchbar: IonSearchbar;
   @ViewChildren('longPressElements', { read: ElementRef }) longPressElements: QueryList<ElementRef>;
+  @ViewChild(IonContent, { static: false }) content!: IonContent;
 
   // --------------------------------------------------
   // State
   // --------------------------------------------------
-  private notes: any;
+  private notes: any[] = [];
   private pauseSync = false;
   private hiddenId: string | null = null;
 
@@ -76,8 +76,9 @@ export class HomePage {
   public input_password_app_unlock = "";
   public timezone = "UTC";
   public search_query = "";
-  public filteredResults: any = [];
+  public filteredResults: any[] = [];
   public visibleNotes: any[] = [];
+  public activeFilter: 'all' | 'favorites' = 'all';
   public isSearching = false;
   public isSyncing = false;
   public waitForSync = false;
@@ -91,14 +92,15 @@ export class HomePage {
   private mkRaw: Uint8Array | null = null;
 
   private syncTimer: any = null;
-  @ViewChild(IonContent, { static: false }) content!: IonContent;
+  private pendingDeletedNotes: any[] = [];
+  private pendingDeletedIds: string[] = [];
 
   private scrollRestored = false;
   private url = this.router.url;
 
   constructor(
     private cryptoService: CryptoService,
-    private noteService: NotesService,
+    public noteService: NotesService,
     private navController: NavController,
     private toastController: ToastController,
     private appProtectorService: AppProtectorService,
@@ -250,7 +252,7 @@ export class HomePage {
         titleExists = normalizedTitle.includes(normalizedQuery);
       }
 
-      // dont search in locked notes.
+      // don't search in locked notes text
       if (result && !this.notes[i].protected) {
         filteredNewResults.push(this.notes[i]);
       } else if (titleExists) {
@@ -320,8 +322,12 @@ export class HomePage {
     if (!parsed && this.noteService.appHasPasswordChallenge()) {
       return false;
     }
-    // @ts-ignore
-    this.notes = parsed ?? [];
+
+    this.notes = (parsed ?? []).map((note: any) => ({
+      ...note,
+      favorite: !!note?.favorite,
+      pinned: !!note?.pinned,
+    }));
     this.filteredResults = this.notes;
     this.refreshVisibleNotes();
     return true;
@@ -340,11 +346,8 @@ export class HomePage {
   }
 
   async syncFromServer() {
-
     if (!this.authService.isLoggedIn) return;
-    if (this.pauseSync) {
-      return;
-    }
+    if (this.pauseSync) return;
 
     if (this.syncTimer == null) {
       this.syncTimer = setInterval(() => {
@@ -370,7 +373,9 @@ export class HomePage {
         }
 
         if (s.deleted) {
-          if (!local || (s.last_modified ?? 0) >= (local?.last_modified ?? 0)) map.delete(s.id);
+          if (!local || (s.last_modified ?? 0) >= (local?.last_modified ?? 0)) {
+            map.delete(s.id);
+          }
           continue;
         }
 
@@ -378,11 +383,15 @@ export class HomePage {
           continue;
         }
 
-        // Decrypt text (required)
+        // Decrypt text
         const blobText = unpackCipherBlob(s.text);
         s.text = await decryptTextWithMK(this.mkRaw, { ...blobText, v: 1, aad_b64: btoa(s.id) });
 
-        // Decrypt title ONLY if present; otherwise set to empty string
+        // Preserve favorite/pinned if server does not carry them
+        s.favorite = !!(s.favorite ?? local?.favorite);
+        s.pinned = !!(s.pinned ?? local?.pinned);
+
+        // Decrypt title
         if (typeof s.title === 'string' && s.title.length > 0) {
           const blobTitle = unpackCipherBlob(s.title);
           s.title = await decryptTextWithMK(
@@ -393,8 +402,14 @@ export class HomePage {
           s.title = '';
         }
 
-        if (!local) { map.set(s.id, s); continue; }
-        if ((s.last_modified ?? 0) >= (local.last_modified ?? 0)) map.set(s.id, { ...local, ...s });
+        if (!local) {
+          map.set(s.id, s);
+          continue;
+        }
+
+        if ((s.last_modified ?? 0) >= (local.last_modified ?? 0)) {
+          map.set(s.id, { ...local, ...s });
+        }
       }
 
       const merged = Array.from(map.values()).filter((n: any) => !n.deleted);
@@ -412,8 +427,8 @@ export class HomePage {
         this.noteService.setNotes(JSON.stringify(merged));
       }
 
+      await this.noteService.flushPersistence();
       this.setData(this.noteService.getNotesAppPassword());
-
     } catch (err) {
     } finally {
       this.isSyncing = false;
@@ -476,18 +491,16 @@ export class HomePage {
 
       let eakB64 = await this.secureStorageService.getItem('ssEakB64_Encrypted');
       if (eakB64) {
-        // decrypt stored MK using app-lock password
         eakB64 = this.cryptoService.decrypt(eakB64, this.input_password_app_unlock) as string;
         this.mkRaw = this.b64ToBytes(eakB64);
 
-        // Import into crypto vault (keeps MK in RAM, used for AES-GCM note encryption)
         await this.crypto.importEAK(eakB64);
       }
 
       this.noteService.clearAppUnlockFailures();
       this.noteService.recordSuccessfulAppUnlock();
+      await this.noteService.flushPersistence();
 
-      // init protection
       this.appProtectorService.init();
 
       this.input_password_app_unlock = "";
@@ -502,8 +515,9 @@ export class HomePage {
       await this.appHaptics.success();
       return;
     } catch (e: any) {
-
       const lockoutMs = this.noteService.registerFailedAppUnlockAttempt();
+      await this.noteService.flushPersistence();
+
       const toast = await this.toastController.create({
         message:
           lockoutMs > 0
@@ -528,9 +542,81 @@ export class HomePage {
   // --------------------------------------------------
   private refreshVisibleNotes() {
     const source = Array.isArray(this.filteredResults) ? this.filteredResults : [];
-    this.visibleNotes = [...source].sort((a: any, b: any) =>
-      (b?.last_modified ?? 0) - (a?.last_modified ?? 0)
-    );
+    const filtered = this.activeFilter === 'favorites'
+      ? source.filter((note: any) => !!note?.favorite)
+      : source;
+
+    this.visibleNotes = [...filtered].sort((a: any, b: any) => {
+      const pinnedDiff = Number(!!b?.pinned) - Number(!!a?.pinned);
+      if (pinnedDiff !== 0) {
+        return pinnedDiff;
+      }
+      return (b?.last_modified ?? 0) - (a?.last_modified ?? 0);
+    });
+  }
+
+  public setActiveFilter(filter: 'all' | 'favorites') {
+    if (this.activeFilter === filter) {
+      return;
+    }
+    this.appHaptics.selectionChanged();
+    this.activeFilter = filter;
+    this.refreshVisibleNotes();
+  }
+
+  public onActiveFilterChange(value: unknown) {
+    const nextFilter = value === 'favorites' ? 'favorites' : 'all';
+    this.setActiveFilter(nextFilter);
+  }
+  public isPrivacyModeEnabled(): boolean {
+    return this.noteService.isPrivacyModeEnabled();
+  }
+
+  private restorePendingDeletedNotes() {
+    if (!this.pendingDeletedNotes.length) {
+      this.pendingDeletedIds = [];
+      return;
+    }
+
+    this.notes = [...this.notes, ...this.pendingDeletedNotes];
+    this.pendingDeletedNotes = [];
+    this.pendingDeletedIds = [];
+
+    if (this.search_query.length > 0) {
+      this.search();
+      return;
+    }
+
+    this.filteredResults = this.notes;
+    this.refreshVisibleNotes();
+  }
+
+  private async commitPendingDelete() {
+    if (!this.pendingDeletedIds.length) {
+      return;
+    }
+
+    const deletedIds = [...this.pendingDeletedIds];
+    this.pendingDeletedNotes = [];
+    this.pendingDeletedIds = [];
+
+    if (this.noteService.appHasPasswordChallenge()) {
+      const encryptedNotesSave = this.cryptoService.encrypt(
+        JSON.stringify(this.notes),
+        this.noteService.getNotesAppPassword()
+      );
+      this.noteService.setAppPasswordChallengeEnabled(true);
+      this.noteService.setNotes(encryptedNotesSave);
+    } else {
+      this.noteService.setNotes(JSON.stringify(this.notes));
+    }
+
+    this.noteService.setDecryptedNotes(JSON.stringify(this.notes));
+    await this.noteService.flushPersistence();
+
+    if (this.authService.isLoggedIn) {
+      this.notesApiServiceV1.deleteNotes(deletedIds).then(() => {});
+    }
   }
 
   trackByNoteId(index: number, note: any): string {
@@ -541,6 +627,59 @@ export class HomePage {
     return this.visibleNotes;
   }
 
+  private async persistNotesState() {
+    if (this.noteService.appHasPasswordChallenge()) {
+      const encryptedNotesSave = this.cryptoService.encrypt(
+        JSON.stringify(this.notes),
+        this.noteService.getNotesAppPassword()
+      );
+      this.noteService.setNotes(encryptedNotesSave);
+    } else {
+      this.noteService.setNotes(JSON.stringify(this.notes));
+    }
+    this.noteService.setDecryptedNotes(JSON.stringify(this.notes));
+    await this.noteService.flushPersistence();
+  }
+  public async togglePinnedFromHome(event: Event, noteId: string) {
+    event?.stopPropagation();
+    event?.preventDefault();
+    await this.appHaptics.selectionChanged();
+    const targetNote = this.notes.find((note: any) => note?.id === noteId);
+    if (!targetNote) {
+      return;
+    }
+    targetNote.pinned = !targetNote.pinned;
+    targetNote.last_modified = Date.now();
+    if (this.filteredResults !== this.notes) {
+      const filteredNote = this.filteredResults.find((note: any) => note?.id === noteId);
+      if (filteredNote) {
+        filteredNote.pinned = targetNote.pinned;
+        filteredNote.last_modified = targetNote.last_modified;
+      }
+    }
+    this.refreshVisibleNotes();
+    await this.persistNotesState();
+  }
+  public async toggleFavoriteFromHome(event: Event, noteId: string) {
+    event?.stopPropagation();
+    event?.preventDefault();
+    await this.appHaptics.selectionChanged();
+    const targetNote = this.notes.find((note: any) => note?.id === noteId);
+    if (!targetNote) {
+      return;
+    }
+    targetNote.favorite = !targetNote.favorite;
+    targetNote.last_modified = Date.now();
+    if (this.filteredResults !== this.notes) {
+      const filteredNote = this.filteredResults.find((note: any) => note?.id === noteId);
+      if (filteredNote) {
+        filteredNote.favorite = targetNote.favorite;
+        filteredNote.last_modified = targetNote.last_modified;
+      }
+    }
+    this.refreshVisibleNotes();
+    await this.persistNotesState();
+  }
   public settings() {
     this.appHaptics.tap();
     this.navController.navigateForward('app-settings').then(r => {});
@@ -572,7 +711,7 @@ export class HomePage {
       if (data && data.data) {
         const { confirm } = data.data;
         if (confirm) {
-          this.deleteNotesConfirm();
+          await this.deleteNotesConfirm();
         }
       }
     });
@@ -580,14 +719,19 @@ export class HomePage {
     return await modal.present();
   }
 
-  private deleteNotesConfirm() {
+  private async deleteNotesConfirm() {
     this.appHaptics.impactMedium();
     if (!this.listOfCheckedCheckboxes?.length) {
       this.toggleCheckbox();
       return;
     }
 
+    if (this.pendingDeletedIds.length > 0) {
+      await this.commitPendingDelete();
+    }
+
     const idsToDelete = new Set(this.listOfCheckedCheckboxes);
+    const deletedNotes = this.notes.filter((note: any) => idsToDelete.has(note.id));
 
     for (let j = this.notes.length - 1; j >= 0; j--) {
       if (idsToDelete.has(this.notes[j].id)) {
@@ -602,29 +746,45 @@ export class HomePage {
           this.filteredResults.splice(k, 1);
         }
       }
+    } else {
+      this.filteredResults = this.notes;
     }
+
+    this.pendingDeletedNotes = deletedNotes;
+    this.pendingDeletedIds = deletedNotes.map((note: any) => note.id);
 
     this.refreshVisibleNotes();
 
-    if (this.noteService.appHasPasswordChallenge()) {
-      const encryptedNotesSave = this.cryptoService.encrypt(
-        JSON.stringify(this.notes),
-        this.noteService.getNotesAppPassword()
-      );
-      this.noteService.setAppPasswordChallengeEnabled(true);
-      this.noteService.setNotes(encryptedNotesSave);
-    } else {
-      this.noteService.setNotes(JSON.stringify(this.notes));
-    }
+    const deletedCount = deletedNotes.length;
+    const toast = await this.toastController.create({
+      message: deletedCount === 1
+        ? (this.allTranslations?.noteDeleted ?? 'Note deleted')
+        : (this.allTranslations?.notesDeletedWithCount ?? '{{count}} notes deleted').replace('{{count}}', String(deletedCount)),
+      duration: 4000,
+      position: 'bottom',
+      buttons: [
+        {
+          text: this.allTranslations?.undo ?? 'Undo',
+          role: 'cancel',
+          handler: () => {
+            this.appHaptics.tap();
+            this.restorePendingDeletedNotes();
+          },
+        },
+      ],
+    });
 
-    this.noteService.setDecryptedNotes(JSON.stringify(this.notes));
+    toast.onDidDismiss().then(async (result) => {
+      if (result.role === 'cancel') {
+        return;
+      }
 
-    if (this.authService.isLoggedIn) {
-      this.notesApiServiceV1.deleteNotes(this.listOfCheckedCheckboxes).then((data) => {});
-    }
+      await this.commitPendingDelete();
+    });
 
     this.listOfCheckedCheckboxes = [];
     this.toggleCheckbox();
+    await toast.present();
   }
 
   public async resetPassword() {

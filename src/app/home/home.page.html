@@ -1,26 +1,19 @@
 <ion-header [translucent]="true" mode="md">
   <ion-toolbar>
-
-    <!-- TITLE AREA -->
     <ion-title *ngIf="!searchMode">
-      <span *ngIf="checkboxOpened && filteredResults !== null &&  filteredResults.length > 0"
+      <span *ngIf="checkboxOpened && filteredResults !== null && filteredResults.length > 0"
             (click)="toggleCheckbox()"
             style="display:flex; align-items:center;">
-
         <img src="assets/tabler-icon-x.svg"
              style="position: relative; top: 5px;"
              class="margin-right-top">
-
         {{listOfCheckedCheckboxes.length}} {{'notesSelected' | translate}}
       </span>
-
       <div class="logo-container" *ngIf="!checkboxOpened">
         <img class="logo-img" src="./assets/note-logo.png" alt="">
         <div class="logo-text">{{'appNameStellarPrivateNotes' | translate}}</div>
       </div>
     </ion-title>
-
-    <!-- SEARCHBAR (Proper Ionic Placement) -->
     <ion-searchbar
       *ngIf="searchMode"
       #searchbar
@@ -31,56 +24,41 @@
       clear-icon="trash-bin"
       animated="true">
     </ion-searchbar>
-
-    <!-- RIGHT BUTTONS -->
     <ion-buttons slot="end" style="position: relative; top: 5px;">
-
       <ng-container *ngIf="!searchMode">
-
         <ion-button
           *ngIf="filteredResults !== null && filteredResults.length > 0"
           fill="clear"
           (click)="enterSearchMode()">
           <ion-icon name="search-outline" style="font-size: 24px;"></ion-icon>
         </ion-button>
-
         <ion-button
           *ngIf="filteredResults !== null && filteredResults.length > 0"
           fill="clear"
           (click)="toggleCheckbox()">
           <img src="assets/tabler-icon-square-check.svg">
         </ion-button>
-
         <ion-button
           fill="clear"
           style="padding-right: 15px"
           (click)="goToProfile()">
           <img src="assets/user-circle.png" width="24px" height="24px">
         </ion-button>
-
       </ng-container>
-
       <ng-container *ngIf="searchMode">
         <ion-button fill="clear" (click)="exitSearchMode()">
           <ion-icon name="close-outline" style="font-size: 30px;"></ion-icon>
         </ion-button>
       </ng-container>
-
     </ion-buttons>
-
   </ion-toolbar>
-
-  <!-- PROGRESS BAR -->
   <ion-progress-bar
     *ngIf="waitForSync"
     type="indeterminate"
     color="primary"
     class="header-progress">
   </ion-progress-bar>
-
 </ion-header>
-
-<!-- modal ask for password -->
 <ion-modal trigger="app-ask-password" [isOpen]="!should_display">
   <ng-template>
     <ion-content class="ion-padding">
@@ -91,7 +69,6 @@
         </div>
       </div>
       <br><br><br>
-
       <div align="center"><img src="assets/icon-lock.svg"></div><br><br>
       <div style="text-align: center;
 font-family: Poppins;
@@ -119,7 +96,6 @@ gap: 10px;
 align-self: stretch; background: #2761FC; color: #fff; border-radius: 250px" (click)="unlockNotesApp()">{{'unlock' | translate}}</span>
       <br><br>
     </ion-content>
-
     <ion-footer style="--ion-background-color: #F6F6FD; padding: 20px; position: relative; top: -30px; background: #F6F6FD; box-shadow: none;">
       <div align="center">
         <span
@@ -131,7 +107,6 @@ align-self: stretch; background: #2761FC; color: #fff; border-radius: 250px" (cl
     </ion-footer>
   </ng-template>
 </ion-modal>
-
 <ion-fab
   class="fab-lift"
   slot="bottom"
@@ -143,12 +118,22 @@ align-self: stretch; background: #2761FC; color: #fff; border-radius: 250px" (cl
     <ion-icon name="add"></ion-icon>
   </ion-fab-button>
 </ion-fab>
-
 <ion-content [fullscreen]="true" class="ion-padding" *ngIf="should_display && !waitForSync">
   <ion-refresher slot="fixed" (ionRefresh)="handleRefresh($event)" *ngIf="isLoggedIn()">
     <ion-refresher-content></ion-refresher-content>
   </ion-refresher>
-
+  <div
+    class="favorites-filter"
+    *ngIf="filteredResults !== null && filteredResults.length > 0 && !checkboxOpened">
+    <ion-segment [value]="activeFilter" (ionChange)="onActiveFilterChange($event.detail.value)">
+      <ion-segment-button value="all">
+        <ion-label>{{ 'allNotes' | translate }}</ion-label>
+      </ion-segment-button>
+      <ion-segment-button value="favorites">
+        <ion-label>{{ 'favorites' | translate }}</ion-label>
+      </ion-segment-button>
+    </ion-segment>
+  </div>
   <ion-grid *ngIf="filteredResults !== null && filteredResults.length == 0 && !isSearching" style="height: -webkit-calc(100vh - 170px);
   height: calc(100vh - 170px);">
     <ion-row class="ion-align-items-center ion-justify-content-center" style="min-height: 100%;">
@@ -182,8 +167,6 @@ align-self: stretch; background: #2761FC; color: #fff; border-radius: 250px" (cl
       </ion-col>
     </ion-row>
   </ion-grid>
-
-  <!-- no results -->
   <ion-grid *ngIf="filteredResults !== null && filteredResults.length == 0 && isSearching" style="height: -webkit-calc(100vh - 170px);
   height: calc(100vh - 170px);">
     <ion-row class="ion-align-items-center ion-justify-content-center" style="min-height: 100%;">
@@ -217,17 +200,57 @@ align-self: stretch; background: #2761FC; color: #fff; border-radius: 250px" (cl
       </ion-col>
     </ion-row>
   </ion-grid>
-
+  <ion-grid *ngIf="activeFilter === 'favorites' && visibleNotes.length == 0 && filteredResults !== null && filteredResults.length > 0 && !isSearching" style="height: -webkit-calc(100vh - 220px); height: calc(100vh - 220px);">
+    <ion-row class="ion-align-items-center ion-justify-content-center" style="min-height: 100%;">
+      <ion-col size-md="12">
+        <p class="ion-padding" align="center">
+          <span style="background: #EAEAF0;
+          border-radius: 50%;
+          height: 72px;
+          width: 72px;
+          display: flex;
+          align-items: center;
+          justify-content: center;">
+            <ion-icon name="star-outline" style="font-size: 30px; color: #8B8D98;"></ion-icon>
+          </span><br>
+          <span style="color: #0B0C19;
+    text-align: center;
+    font-family: Poppins;
+    font-size: 16px;
+    font-style: normal;
+    font-weight: 600;
+    position: relative;">{{'noFavoritesYet' | translate}}</span><br>
+          <span style="overflow: hidden;
+    color: #62626A;
+    text-align: center;
+    text-overflow: ellipsis;
+    font-family: Poppins;
+    font-size: 14px;
+    font-style: normal;
+    font-weight: 400;">{{'starNotesToKeepThemClose' | translate}}</span>
+        </p>
+      </ion-col>
+    </ion-row>
+  </ion-grid>
   <ion-list>
-    <ion-item
-      lines="none"
-      *ngFor="let note of visibleNotes; trackBy: trackByNoteId"
-      (click)="$event.stopPropagation(); openOrCheckbox(note.id)"
-      [detail]="false"
-      class="long-press-target"
-      #longPressElements
-      [id]="note.id">
-
+    <ng-container *ngFor="let note of visibleNotes; let i = index; trackBy: trackByNoteId">
+      <div
+        *ngIf="note.pinned && (i === 0 || !visibleNotes[i - 1]?.pinned)"
+        style="padding: 8px 16px 6px; color: #62626A; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em;">
+        Pinned
+      </div>
+      <div
+        *ngIf="!note.pinned && (i === 0 || visibleNotes[i - 1]?.pinned)"
+        style="padding: 8px 16px 6px; color: #62626A; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em;">
+        Notes
+      </div>
+      <ion-item
+        lines="none"
+        (click)="$event.stopPropagation(); openOrCheckbox(note.id)"
+        [detail]="false"
+        class="long-press-target"
+        #longPressElements
+        [id]="note.id">
       <div class="box-item-main">
         <ion-checkbox
           *ngIf="checkboxOpened"
@@ -238,26 +261,47 @@ align-self: stretch; background: #2761FC; color: #fff; border-radius: 250px" (cl
           [checked]="listOfCheckedCheckboxes.includes(note.id) ? true : false"
           id="checkbox_{{note.id}}">
         </ion-checkbox>
-
         <ion-label class="ion-text-wrap" *ngIf="!note.protected">
-          <ion-note><span>{{ note.last_modified | date: "yyyy-MM-dd H:mm":(timezone || 'UTC') }}</span></ion-note>
-          <span *ngIf="!note.protected">
+          <ion-note>
+            <span>{{ note.last_modified | date: "yyyy-MM-dd H:mm":(timezone || 'UTC') }}</span>
+          </ion-note>
+          <span *ngIf="isPrivacyModeEnabled(); else visibleNoteContent">
+            <span class="note-txt-title">{{ 'privateNoteHidden' | translate }}</span>
+          </span>
+          <ng-template #visibleNoteContent>
             <span class="note-txt-title" *ngIf="note.title !== undefined">{{ (note.title.length > 40) ? (note.title | striphtml | slice:0:40) + '...' : (note.title | striphtml) }}<br></span>
             <span class="note-txt">{{ (note.text.length > 40) ? (note.text | striphtml | slice:0:40) + '...' : (note.text | striphtml) }}</span>
-          </span>
+          </ng-template>
         </ion-label>
-
         <ion-label class="ion-text-wrap" *ngIf="note.protected">
-          <ion-note><span>{{ 'thisNoteIsLocked' | translate }}</span></ion-note>
+          <ion-note>
+            <span>{{ 'thisNoteIsLocked' | translate }}</span>
+          </ion-note>
           <span class="note-txt-title">{{ 'thisNoteIsLocked' | translate }}</span>
         </ion-label>
-        <img *ngIf="note.protected" src="/assets/tabler-icon-lock.svg">
+        <div
+          *ngIf="!checkboxOpened"
+          style="display:flex; align-items:center; margin-left:auto; gap:8px;">
+          <img *ngIf="note.protected" src="/assets/tabler-icon-lock.svg">
+          <ion-icon
+            *ngIf="note.favorite"
+            name="star"
+            style="font-size:17px; cursor:pointer; color:#F4B400;"
+            (click)="toggleFavoriteFromHome($event, note.id)">
+          </ion-icon>
+          <ion-icon
+            *ngIf="note.pinned"
+            name="bookmark"
+            style="font-size:18px; cursor:pointer; color:#2761FC;"
+            (click)="togglePinnedFromHome($event, note.id)">
+          </ion-icon>
+        </div>
+        <img *ngIf="note.protected && checkboxOpened" src="/assets/tabler-icon-lock.svg">
       </div>
-    </ion-item>
+      </ion-item>
+    </ng-container>
   </ion-list>
-
 </ion-content>
-
 <ion-toolbar slot="fixed" class="toolbar-bottom" *ngIf="checkboxOpened && visibleNotes.length > 0">
   <ion-button
     color="danger"

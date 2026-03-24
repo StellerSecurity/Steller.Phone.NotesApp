@@ -1,6 +1,5 @@
 import { Injectable } from '@angular/core';
-import {Router} from "@angular/router";
-import {SecureStorageService} from "./secure-storage.service";
+import { SecureStorageService } from "./secure-storage.service";
 import { Preferences } from '@capacitor/preferences';
 import { NotesStorageService } from './notes-storage.service';
 import { Filesystem, Directory } from '@capacitor/filesystem';
@@ -9,29 +8,109 @@ import { Filesystem, Directory } from '@capacitor/filesystem';
   providedIn: 'root'
 })
 export class DataService {
+  private static readonly WIPE_PENDING_KEY = 'wipe_pending';
+  private static readonly APP_DB_NAME = '__stellar_notes';
 
-    constructor(
-      private secureStorageService: SecureStorageService,
-      private notesStorageService: NotesStorageService
-    ) { }
+  private wipeInProgress: Promise<void> | null = null;
+  private forceDownloadOnHome = false;
 
-    private forceDownloadOnHome = false;
+  constructor(
+    private secureStorageService: SecureStorageService,
+    private notesStorageService: NotesStorageService
+  ) { }
 
-    public setForceDownloadOnHome(forceDownloadOnHome: boolean) {
-        this.forceDownloadOnHome = forceDownloadOnHome;
+  public setForceDownloadOnHome(forceDownloadOnHome: boolean) {
+    this.forceDownloadOnHome = forceDownloadOnHome;
+  }
+
+  public getForceDownloadOnHome() {
+    return this.forceDownloadOnHome;
+  }
+
+  private async clearLegacyNoteUnlockState() {
+    await this.notesStorageService.clearValuesByPrefixes([
+      'note_failed_attempts_',
+      'note_lockout_until_',
+    ]);
+  }
+
+  private async markWipePending(): Promise<void> {
+    await Preferences.set({
+      key: DataService.WIPE_PENDING_KEY,
+      value: '1',
+    });
+  }
+
+  private async clearWipePending(): Promise<void> {
+    await Preferences.remove({
+      key: DataService.WIPE_PENDING_KEY,
+    });
+  }
+
+  private async isWipePending(): Promise<boolean> {
+    const result = await Preferences.get({
+      key: DataService.WIPE_PENDING_KEY,
+    });
+    return result.value === '1';
+  }
+
+  private async clearBrowserStorage(): Promise<void> {
+    try {
+      sessionStorage.clear();
+    } catch {}
+
+    try {
+      localStorage.clear();
+    } catch {}
+  }
+
+  private async clearCacheStorage(): Promise<void> {
+    if (typeof caches === 'undefined') {
+      return;
     }
 
-    public getForceDownloadOnHome() {
-        return this.forceDownloadOnHome;
+    try {
+      const cacheKeys = await caches.keys();
+      await Promise.all(cacheKeys.map((key) => caches.delete(key)));
+    } catch {}
+  }
+
+  private async deleteIndexedDbDatabase(name: string): Promise<void> {
+    if (typeof indexedDB === 'undefined') {
+      return;
     }
 
+    await new Promise<void>((resolve) => {
+      const req = indexedDB.deleteDatabase(name);
+      req.onsuccess = () => resolve();
+      req.onblocked = () => resolve();
+      req.onerror = () => resolve();
+    });
+  }
 
-    private async clearLegacyNoteUnlockState() {
-      await this.notesStorageService.clearValuesByPrefixes([
-        'note_failed_attempts_',
-        'note_lockout_until_',
-      ]);
+  private async wipeDir(dir: Directory): Promise<void> {
+    try {
+      const list: any = await Filesystem.readdir({ directory: dir, path: '' });
+      const files = list.files ?? list;
+
+      for (const entry of files) {
+        const name = typeof entry === 'string' ? entry : entry.name;
+        await Filesystem.deleteFile({ directory: dir, path: name }).catch(() =>
+          Filesystem.rmdir({ directory: dir, path: name, recursive: true }).catch(() => {})
+        );
+      }
+    } catch {}
+  }
+
+  public async initializeWipeProtection(): Promise<void> {
+    if (await this.isWipePending()) {
+      await this.clearAppData();
+      return;
     }
+
+    await this.performInactiveWipeIfNeeded();
+  }
+
   public async performInactiveWipeIfNeeded(): Promise<void> {
     const wipeDaysRaw = this.notesStorageService.getAppWipeAfterDays();
     const wipeDays = wipeDaysRaw ? Number(wipeDaysRaw) : 0;
@@ -57,39 +136,34 @@ export class DataService {
     await this.clearAppData();
   }
 
-
-  public async clearAppData() {
-
-      await this.secureStorageService.clear();
-      await this.notesStorageService.clearManagedData();
-      await this.clearLegacyNoteUnlockState();
-      await Preferences.clear();
-
-      // IndexedDB wipe (no try/catch suppression)
-      await new Promise<void>((resolve) => {
-        const req = indexedDB.deleteDatabase('__stellar_notes');
-        req.onsuccess = () => resolve();
-        req.onblocked = () => resolve();
-        req.onerror = () => resolve();
-      });
-
-      // Delete all cache + data files
-      const wipeDir = async (dir: Directory) => {
-        try {
-          const list: any = await Filesystem.readdir({ directory: dir, path: '' });
-          const files = list.files ?? list;
-          for (const e of files) {
-            const name = typeof e === 'string' ? e : e.name;
-            await Filesystem.deleteFile({ directory: dir, path: name }).catch(() =>
-              Filesystem.rmdir({ directory: dir, path: name, recursive: true }).catch(() => {})
-            );
-          }
-        } catch {}
-      };
-
-      await wipeDir(Directory.Cache);
-      await wipeDir(Directory.Data);
-
+  public async clearAppData(): Promise<void> {
+    if (this.wipeInProgress) {
+      await this.wipeInProgress;
+      return;
     }
 
+    this.wipeInProgress = (async () => {
+      await this.markWipePending();
+
+      try {
+        await this.notesStorageService.flush();
+        await this.secureStorageService.clear();
+        await this.notesStorageService.clearManagedData();
+        await this.clearLegacyNoteUnlockState();
+        await this.clearBrowserStorage();
+        await this.clearCacheStorage();
+        await this.deleteIndexedDbDatabase(DataService.APP_DB_NAME);
+        await this.wipeDir(Directory.Cache);
+        await this.wipeDir(Directory.Data);
+        await Preferences.clear();
+      } finally {
+        try {
+          await this.clearWipePending();
+        } catch {}
+        this.wipeInProgress = null;
+      }
+    })();
+
+    await this.wipeInProgress;
+  }
 }
