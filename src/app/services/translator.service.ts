@@ -5,6 +5,7 @@ import { Preferences } from "@capacitor/preferences";
 import { map } from "rxjs";
 import * as EnLangTranslations from "src/assets/i18n/en.json";
 import * as EsLangTranslations from "src/assets/i18n/es.json";
+import * as NlLangTranslations from "src/assets/i18n/nl.json";
 import * as DaLangTranslations from "src/assets/i18n/da.json";
 import * as DeLangTranslations from "src/assets/i18n/de.json";
 import * as FrLangTranslations from "src/assets/i18n/fr.json";
@@ -16,7 +17,7 @@ export class TranslatorService {
   language: string = "en";
   allTranslations: any;
   private readonly LANGUAGE_PREFERENCE_KEY = "app_language";
-  private readonly supportedLanguages = ["en", "es", "da", "de", "fr", "se"];
+  private readonly supportedLanguages = ["en", "es", "nl", "da", "de", "fr", "se"];
   constructor(private http: HttpClient, private translate: TranslateService) {
     this.loadTranslationsFromJsonFile().then(() => {});
   }
@@ -45,6 +46,8 @@ export class TranslatorService {
     switch (lang) {
       case "es":
         return EsLangTranslations;
+      case "nl":
+        return NlLangTranslations;
       case "da":
         return DaLangTranslations;
       case "de":
@@ -67,6 +70,7 @@ export class TranslatorService {
       { value: "system", labelKey: "usePhoneLanguage" },
       { value: "en", label: "English" },
       { value: "es", label: "Español" },
+      { value: "nl", label: "Nederlands" },
       { value: "de", label: "Deutsch" },
       { value: "da", label: "Dansk" },
       { value: "fr", label: "Français" },
