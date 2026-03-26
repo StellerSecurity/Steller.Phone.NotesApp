@@ -14,6 +14,8 @@
   "aSymbol": "Un símbolo",
   "settings": "Ajustes",
   "passwordOnApp": "Contraseña en la app",
+  "hapticFeedback": "Respuesta háptica",
+  "hapticFeedbackDescription": "Vibra ligeramente al tocar, seleccionar, recibir advertencias y confirmar acciones exitosas.",
   "encryptionSuccessfullyWork": "El cifrado funciona correctamente",
   "yourNotesAreSafeAndEncryptedWithYourPassword": "Tus notas están seguras y cifradas con tu contraseña.",
   "lockAppWithPassword": "Bloquear app con contraseña",

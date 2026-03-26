@@ -13,6 +13,8 @@
   "confirmPassword": "Confirm Password",
   "aSymbol": "A symbol",
   "settings": "Settings",
+  "hapticFeedback": "Haptic feedback",
+  "hapticFeedbackDescription": "Vibrate slightly for taps, selections, warnings, and success states.",
   "passwordOnApp": "Password On App",
   "encryptionSuccessfullyWork": "Encryption successfully work",
   "yourNotesAreSafeAndEncryptedWithYourPassword": "Your notes are safe and encrypted with your password.",

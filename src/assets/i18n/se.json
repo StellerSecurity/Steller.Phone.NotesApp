@@ -14,6 +14,8 @@
   "aSymbol": "En symbol",
   "settings": "Inställningar",
   "passwordOnApp": "Lösenord för appen",
+  "hapticFeedback": "Haptisk feedback",
+  "hapticFeedbackDescription": "Vibrerar lätt vid tryck, val, varningar och lyckade åtgärder.",
   "encryptionSuccessfullyWork": "Krypteringen fungerar korrekt",
   "yourNotesAreSafeAndEncryptedWithYourPassword": "Dina anteckningar är säkra och krypterade med ditt lösenord.",
   "lockAppWithPassword": "Lås appen med lösenord",

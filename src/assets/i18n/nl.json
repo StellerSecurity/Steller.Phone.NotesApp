@@ -11,6 +11,8 @@
   "removeLockPassword": "Vergrendelingswachtwoord verwijderen",
   "inputPassword": "Voer wachtwoord in",
   "confirmPassword": "Bevestig wachtwoord",
+  "hapticFeedback": "Haptische feedback",
+  "hapticFeedbackDescription": "Trilt licht bij tikken, selecties, waarschuwingen en succesvolle acties.",
   "aSymbol": "Een symbool",
   "settings": "Instellingen",
   "passwordOnApp": "App-wachtwoord",

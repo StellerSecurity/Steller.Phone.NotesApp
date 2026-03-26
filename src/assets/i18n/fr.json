@@ -13,6 +13,8 @@
   "confirmPassword": "Confirmer le mot de passe",
   "aSymbol": "Un symbole",
   "settings": "Paramètres",
+  "hapticFeedback": "Retour haptique",
+  "hapticFeedbackDescription": "Fait vibrer légèrement lors des appuis, sélections, avertissements et confirmations de succès.",
   "passwordOnApp": "Mot de passe de l’application",
   "encryptionSuccessfullyWork": "Le chiffrement fonctionne correctement",
   "yourNotesAreSafeAndEncryptedWithYourPassword": "Vos notes sont sécurisées et chiffrées avec votre mot de passe.",
