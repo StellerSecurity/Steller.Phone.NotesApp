@@ -72,11 +72,9 @@ export class ProfileComponent  {
     this.showAccountName = !this.showAccountName;
   }
   goToSettings() {
-    this.appHaptics.tap();
     this.router.navigate(['/app-settings']);
   }
   goToAbout() {
-    this.appHaptics.tap();
     this.router.navigate(['/profile/about']);
   }
   async confirmLogout() {
@@ -109,15 +107,9 @@ export class ProfileComponent  {
     await this.router.navigateByUrl('/', { replaceUrl: true });
   }
   navigateToRegister() {
-    this.appHaptics.tap();
     this.router.navigate(['/profile/create-account']);
   }
   goToLogin() {
-    this.appHaptics.tap();
     this.router.navigate(['/profile/login']);
-  }
-  goToDeleteAccount() {
-    this.appHaptics.tap();
-    this.router.navigate(['/profile/delete-account']);
   }
 }

@@ -196,7 +196,6 @@ export class HomePage {
   // UI Modes: Search & Checkbox
   // --------------------------------------------------
   enterSearchMode() {
-    this.appHaptics.tap();
     this.searchMode = true;
     setTimeout(() => {
       this.searchbar?.setFocus();
@@ -204,7 +203,6 @@ export class HomePage {
   }
 
   exitSearchMode() {
-    this.appHaptics.tap();
     this.search_query = '';
     this.pauseSync = false;
     this.search();
@@ -681,12 +679,10 @@ export class HomePage {
     await this.persistNotesState();
   }
   public settings() {
-    this.appHaptics.tap();
     this.navController.navigateForward('app-settings').then(r => {});
   }
 
   goToProfile() {
-    this.appHaptics.tap();
     this.navController.navigateForward('profile').then(r => {});
   }
 

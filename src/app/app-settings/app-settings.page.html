@@ -216,7 +216,29 @@
       </div>
     </div>
   </ion-item>
+
   <div class="settings-section-label">{{ 'generalSection' | translate }}</div>
+
+  <ion-item (click)="toggleHapticsFromRow()">
+    <div class="setting-row setting-row--top">
+      <div class="setting-text">
+        <div class="setting-title">{{ allTranslations?.hapticFeedback ?? 'Haptic feedback' }}</div>
+        <div class="setting-helper-text">
+          {{ allTranslations?.hapticFeedbackDescription ?? 'Vibrate slightly for taps, selections, warnings, and success states.' }}
+        </div>
+      </div>
+      <div class="setting-control setting-control--toggle">
+        <ion-toggle
+          [(ngModel)]="hapticsEnabled"
+          (ionChange)="hapticsChange()"
+          (click)="$event.stopPropagation()">
+        </ion-toggle>
+      </div>
+    </div>
+  </ion-item>
+
+
+
   <ion-item (click)="openClipboardSelect()">
     <div class="setting-row">
       <div class="setting-text">

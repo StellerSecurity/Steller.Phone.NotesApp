@@ -635,7 +635,6 @@ export class AddNotePage implements OnDestroy {
     }, 500);
   }
   public back() {
-    this.appHaptics.tap();
     this.forceSaveNow();
     this.navController.back();
   }
@@ -890,7 +889,6 @@ export class AddNotePage implements OnDestroy {
     await alert.present();
   }
   public async openLockModal() {
-    await this.appHaptics.tap();
     this.save(null);
     await this.modal.present();
   }
