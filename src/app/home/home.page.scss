@@ -240,6 +240,9 @@ ion-modal {
 .toolbar-bottom {
   --padding-start: 20px;
   --padding-end: 20px;
+  --padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 12px);
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 12px);
+  background: #F6F6FD;
 }
 
 .input-group {
@@ -298,7 +301,7 @@ ion-searchbar {
 }
 
 ion-fab.fab-lift {
-  margin-bottom: 60px;
+  margin-bottom: calc(env(safe-area-inset-bottom, 0px) + 60px);
 }
 
 .favorites-filter {
