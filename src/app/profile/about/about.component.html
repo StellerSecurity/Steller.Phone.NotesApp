@@ -1,0 +1,66 @@
+<ion-header [translucent]="true" style="box-shadow:none;">
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button
+        defaultHref="/profile"
+        text=""
+        icon="chevron-back-outline"
+        class="custom-back-button">
+      </ion-back-button>
+    </ion-buttons>
+    <ion-title style="padding:0 10px;color:#0B0C19;font-size:18px;font-weight:400;">
+      {{ 'about' | translate }}
+    </ion-title>
+  </ion-toolbar>
+</ion-header>
+<ion-content [fullscreen]="true" class="ion-padding">
+  <div class="about-page">
+    <div class="about-hero-card">
+      <button type="button" class="about-brand-mark" (click)="openStellarSecurity()">
+        <img
+          src="https://stellarsecurity.com/assets/images/header/Company-Logo-blue.png"
+          alt="Stellar Security"
+          class="about-brand-logo">
+      </button>
+      <div class="about-eyebrow">{{ 'aboutPrivateByDesign' | translate }}</div>
+      <div class="about-title">{{ 'stellarPrivateNotes' | translate }}</div>
+      <div class="about-description">
+        {{ 'aboutDescription' | translate }}
+      </div>
+      <div class="about-credit">{{ 'builtByStellarSecurity' | translate }}</div>
+      <button type="button" class="about-source-link" (click)="openGithub()">
+        <ion-icon name="logo-github"></ion-icon>
+        <span>{{ 'openSourceOnGithub' | translate }}</span>
+      </button>
+    </div>
+    <div class="about-section-label">{{ 'aboutMore' | translate }}</div>
+    <div (click)="openGithub()" class="action-item">
+      <div class="action-item-icon">
+        <ion-icon name="logo-github" slot="start"></ion-icon>
+      </div>
+      <ion-label>{{ 'openSource' | translate }}</ion-label>
+      <ion-icon name="chevron-forward-outline" class="action-item-arrow"></ion-icon>
+    </div>
+    <div (click)="openPrivacyPolicy()" class="action-item">
+      <div class="action-item-icon">
+        <ion-icon name="shield-checkmark-outline" slot="start"></ion-icon>
+      </div>
+      <ion-label>{{ 'privacyPolicy' | translate }}</ion-label>
+      <ion-icon name="chevron-forward-outline" class="action-item-arrow"></ion-icon>
+    </div>
+    <div (click)="openTermsPage()" class="action-item">
+      <div class="action-item-icon">
+        <ion-icon name="document-text-outline" slot="start"></ion-icon>
+      </div>
+      <ion-label>{{ 'termsAndConditions' | translate }}</ion-label>
+      <ion-icon name="chevron-forward-outline" class="action-item-arrow"></ion-icon>
+    </div>
+    <div (click)="openContactUs()" class="action-item">
+      <div class="action-item-icon">
+        <ion-icon name="mail-outline" slot="start"></ion-icon>
+      </div>
+      <ion-label>{{ 'contactUs' | translate }}</ion-label>
+      <ion-icon name="chevron-forward-outline" class="action-item-arrow"></ion-icon>
+    </div>
+  </div>
+</ion-content>

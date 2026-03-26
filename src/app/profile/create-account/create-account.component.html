@@ -33,7 +33,6 @@
         <small>{{'invalidEmailFormat' | translate}}</small>
       </ion-text>
 
-
       <!-- Password -->
       <ion-item
         class="input-field"
@@ -71,15 +70,15 @@
         <ion-item class="legal-consent-item" lines="none">
           <ion-checkbox slot="start" formControlName="acceptLegal"></ion-checkbox>
           <ion-label>
-            I agree to the
-            <a (click)="openPrivacyPolicy($event)">Privacy Policy</a>
-            and
-            <a (click)="openTermsPage($event)">Terms &amp; Conditions</a>
+            {{ 'iAgreeToThe' | translate }}
+            <a (click)="openPrivacyPolicy($event)">{{ 'privacyPolicy' | translate }}</a>
+            {{ 'and' | translate }}
+            <a (click)="openTermsPage($event)">{{ 'termsAndConditions' | translate }}</a>
           </ion-label>
         </ion-item>
 
         <ion-text color="danger" *ngIf="createUserForm.get('acceptLegal')?.invalid && createUserForm.get('acceptLegal')?.touched">
-          <small>You must accept the Privacy Policy and Terms &amp; Conditions.</small>
+          <small>{{ 'acceptLegalRequired' | translate }}</small>
         </ion-text>
       </div>
 
@@ -95,7 +94,6 @@
       </ion-button>
     </form>
 
-
     <div class="footer">
       <span class="label-beforee-link">{{'alreadyHaveStellarID' | translate}} </span>
       <a (click)="goToLogin()">{{'login' | translate}}</a>
@@ -105,14 +103,13 @@
   <!-- VERIFICATION SECTION -->
   <div class="form-card" *ngIf="showVerificationSection">
     <div class="verify-icon">
-      <!-- <ion-icon name="mail-outline" class="mail-icon"></ion-icon> -->
       <img src="./assets/tabler-icon-mail-forward.png" width="40" height="40">
     </div>
     <div class="title" style="margin-top: 14px;">{{'pleaseInputCode' | translate}}</div>
     <p class="subtitle">{{'weSentAnAccountVerificationCodeTo' | translate}} <br /><strong>{{ email }}</strong></p>
 
     <div class="code-input-wrapper">
-        <ng-otp-input
+      <ng-otp-input
         (onInputChange)="onOtpChange($event)"
         [config]="otpConfig"
         containerClass="ng-ong-otp-box">

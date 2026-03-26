@@ -4,15 +4,15 @@
     "type": "APK",
     "kind": "Directory"
   },
-  "applicationId": "steller.phone.notesapptest",
+  "applicationId": "steller.phone.notesapp",
   "variantName": "release",
   "elements": [
     {
       "type": "SINGLE",
       "filters": [],
       "attributes": [],
-      "versionCode": 20,
-      "versionName": "2.63",
+      "versionCode": 32,
+      "versionName": "2.72",
       "outputFile": "app-release.apk"
     }
   ],

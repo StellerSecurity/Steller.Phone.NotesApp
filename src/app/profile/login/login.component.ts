@@ -19,6 +19,7 @@ import {
 } from '@stellarsecurity/stellar-crypto';
 import { CryptoKeyService } from '../../services/crypto-key.service';
 import { AppHapticsService } from '../../services/app-haptics.service';
+import { TranslatorService } from '../../services/translator.service';
 
 @Component({
   selector: 'app-login',
@@ -42,6 +43,7 @@ export class LoginComponent implements OnInit {
     private secureStorageService: SecureStorageService,
     private cryptoKeyService: CryptoKeyService,
     private appHaptics: AppHapticsService,
+    private translatorService: TranslatorService,
   ) {}
 
   ngOnInit(): void {
@@ -81,11 +83,7 @@ export class LoginComponent implements OnInit {
       if (response.response_code === 200) {
         await this.secureStorageService.setItem('ssToken', response.token);
 
-        // the user does not have any eak.. kdf etc, can be for several reasons:
-        // user created their stellar id on stellarsecurity.com or other places, so it was not needed.
-        // let's do it now using the public SDK.
         if (response.user.eak_b64 == null) {
-          // 🔐 Create fresh vault & bundle via SDK
           const { header } = await createVault(loginObj.password);
           const bundle = exportServerBundleFromHeader(header);
 
@@ -93,10 +91,8 @@ export class LoginComponent implements OnInit {
             ...bundle,
           };
 
-          // send bundle to backend so it can patch the user with E2EE data
           await this.authService.updateEak(payload);
 
-          // mirror updated crypto fields locally on response.user
           response.user.crypto_version = payload.crypto_version;
           response.user.kdf_params = payload.kdf_params;
           response.user.kdf_salt_b64 = payload.kdf_salt;
@@ -108,22 +104,19 @@ export class LoginComponent implements OnInit {
 
         const bundle: ServerBundle = {
           crypto_version: user.crypto_version,
-          kdf_params: user.kdf_params,      // { algo:'PBKDF2', hash:'SHA-256', iters: 210000 }
-          kdf_salt: user.kdf_salt_b64,      // base64
-          eak: user.eak_b64,                // base64(IV||CT)
+          kdf_params: user.kdf_params,
+          kdf_salt: user.kdf_salt_b64,
+          eak: user.eak_b64,
         };
 
-        // 🔓 Derive plaintext EAK from bundle with SDK
         const { eakB64: derivedEakB64 } = await extractPlainEAK(
           loginObj.password,
           bundle,
         );
         let eakB64 = derivedEakB64;
 
-        // Import EAK into runtime crypto (MK in RAM for immediate use)
         await this.cryptoKeyService.importEAK(eakB64);
 
-        // optional app-locker layer
         if (this.notesService.appHasPasswordChallenge()) {
           const encryptedEakB64 = this.cryptoService.encrypt(
             eakB64,
@@ -141,7 +134,6 @@ export class LoginComponent implements OnInit {
 
         let notes = this.notesService.getNotes();
 
-        // user has app-locker enabled.
         if (this.notesService.getDecryptedNotes() !== null) {
           notes = this.notesService.getDecryptedNotes();
         }
@@ -164,7 +156,9 @@ export class LoginComponent implements OnInit {
         await this.toastMessageService.showError(response.response_message);
       }
     } catch (error: any) {
-      await this.toastMessageService.showError('Something went wrong');
+      await this.toastMessageService.showError(
+        this.translatorService.allTranslations?.somethingWentWrong ?? 'Something went wrong',
+      );
     } finally {
       this.isSaving = false;
       await this.authService.initializeAuthState();

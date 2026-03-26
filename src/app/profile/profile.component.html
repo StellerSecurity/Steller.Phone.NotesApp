@@ -13,19 +13,26 @@
     </ion-title>
   </ion-toolbar>
 </ion-header>
-
 <ion-content [fullscreen]="true" class="ion-padding">
-  <div  class="account-menu-content" *ngIf="!isLoading">
-
-
-     <!-- Account Name Card -->
+  <div class="account-menu-content" *ngIf="!isLoading">
+    <!-- Account Name Card -->
     <div *ngIf="isLoggedIn; else loginBlock">
       <div class="account-name-card">
         <div class="label-title">{{'accountName' | translate}}</div>
-        <div class="account-name">{{user?.email}}</div>
+        <div class="account-name-row">
+          <div class="account-name">
+            {{ showAccountName ? user?.email : maskedAccountName }}
+          </div>
+          <button
+            type="button"
+            class="account-visibility-btn"
+            (click)="toggleAccountNameVisibility($event)"
+            [attr.aria-label]="showAccountName ? 'Hide account name' : 'Show account name'">
+            <ion-icon [name]="showAccountName ? 'eye-off-outline' : 'eye-outline'"></ion-icon>
+          </button>
+        </div>
       </div>
     </div>
-
     <ng-template #loginBlock>
       <div class="login-profile-box">
         <div class="login-title">{{'logInToYourStellarId' | translate}}</div>
@@ -33,45 +40,22 @@
         <ion-button expand="block" class="login-button" (click)="goToLogin()">{{'login' | translate}}</ion-button>
         <br>
         <div class="footer">
-            <span class="label-beforee-link">{{'dontHaveStellarIdQuestion' | translate}} </span>
-            <a (click)="navigateToRegister()">{{'createStellarID' | translate}}</a>
+          <span class="label-beforee-link">{{'dontHaveStellarIdQuestion' | translate}} </span>
+          <a (click)="navigateToRegister()">{{'createStellarID' | translate}}</a>
         </div>
       </div>
     </ng-template>
-
-
-      <!-- Settings -->
-      <div (click)="goToSettings()" class="action-item">
-        <ion-icon name="options-outline" slot="start"></ion-icon>
-        <ion-label>{{'settings' | translate}}</ion-label>
-      </div>
-
-      <div (click)="openPrivacyPolicy()" class="action-item">
-        <ion-icon name="shield-checkmark-outline" slot="start"></ion-icon>
-        <ion-label>Privacy Policy</ion-label>
-      </div>
-
-      <div (click)="openTermsPage()" class="action-item">
-        <ion-icon name="document-text-outline" slot="start"></ion-icon>
-        <ion-label>Terms &amp; Conditions</ion-label>
-      </div>
-
-      <div (click)="openContactUs()" class="action-item">
-        <ion-icon name="help-circle-outline" slot="start"></ion-icon>
-        <ion-label>Contact Us</ion-label>
-      </div>
-
-      <div *ngIf="isLoggedIn" (click)="goToDeleteAccount()" class="action-item action-item-danger">
-        <ion-icon name="trash-outline" slot="start"></ion-icon>
-        <ion-label>Delete Account</ion-label>
-      </div>
-
-
-      <!-- Logout -->
-      <div  *ngIf="isLoggedIn" (click)="confirmLogout()" class="action-item-logout">
-        <ion-icon name="log-out-outline" slot="start"></ion-icon>
-        <ion-label>{{'logout' | translate}}</ion-label>
-      </div>
-
+    <div (click)="goToSettings()" class="action-item">
+      <ion-icon name="options-outline" slot="start"></ion-icon>
+      <ion-label>{{'settings' | translate}}</ion-label>
+    </div>
+    <div (click)="goToAbout()" class="action-item">
+      <ion-icon name="information-circle-outline" slot="start"></ion-icon>
+      <ion-label>{{'about' | translate}}</ion-label>
+    </div>
+    <div *ngIf="isLoggedIn" (click)="confirmLogout()" class="action-item-logout">
+      <ion-icon name="log-out-outline" slot="start"></ion-icon>
+      <ion-label>{{'logout' | translate}}</ion-label>
+    </div>
   </div>
 </ion-content>

@@ -1,7 +1,7 @@
 <ion-content class="user-account-section" [scrollY]="true">
   <div class="top-section">
-  <div class="logo-container">
-      <div class="app-name">Delete Account</div>
+    <div class="logo-container">
+      <div class="app-name">{{ 'deleteAccount' | translate }}</div>
     </div>
   </div>
 
@@ -10,9 +10,9 @@
       <ion-icon name="chevron-back-outline"></ion-icon>
     </ion-button>
 
-    <div class="title">Delete your Stellar ID</div>
+    <div class="title">{{ 'deleteYourStellarId' | translate }}</div>
     <p class="subtitle">
-      Enter your current password to permanently delete your account. This action cannot be undone.
+      {{ 'deleteAccountDescription' | translate }}
     </p>
 
     <form [formGroup]="deleteForm">
@@ -25,7 +25,7 @@
       >
         <ion-input
           [type]="showPassword ? 'text' : 'password'"
-          placeholder="Current password"
+          [placeholder]="'currentPassword' | translate"
           formControlName="currentPassword"
           [ngClass]="{
             'border-danger': deleteForm.get('currentPassword')?.invalid && deleteForm.get('currentPassword')?.touched
@@ -40,29 +40,29 @@
         ></ion-icon>
       </ion-item>
       <ion-text color="danger" *ngIf="deleteForm.get('currentPassword')?.hasError('required') && deleteForm.get('currentPassword')?.touched">
-        <small>Current password is required.</small>
+        <small>{{ 'currentPasswordRequired' | translate }}</small>
       </ion-text>
 
       <div class="delete-warning-box">
-        <div class="delete-warning-title">Before you continue</div>
+        <div class="delete-warning-title">{{ 'beforeYouContinue' | translate }}</div>
         <ul>
-          <li>Your synced notes account will be deleted.</li>
-          <li>You will be logged out on this device.</li>
-          <li>This action cannot be undone.</li>
+          <li>{{ 'deleteAccountWarningLine1' | translate }}</li>
+          <li>{{ 'deleteAccountWarningLine2' | translate }}</li>
+          <li>{{ 'deleteAccountWarningLine3' | translate }}</li>
         </ul>
       </div>
 
       <ion-item class="confirm-item" lines="none">
         <ion-checkbox formControlName="confirmDelete" slot="start"></ion-checkbox>
-        <ion-label>I understand this action is permanent.</ion-label>
+        <ion-label>{{ 'deleteAccountPermanentConfirm' | translate }}</ion-label>
       </ion-item>
       <ion-text color="danger" *ngIf="deleteForm.get('confirmDelete')?.hasError('required') && deleteForm.get('confirmDelete')?.touched">
-        <small>Please confirm that you understand this action is permanent.</small>
+        <small>{{ 'deleteAccountPermanentConfirmError' | translate }}</small>
       </ion-text>
 
       <ion-button class="delete-button" color="danger" (click)="submitDeleteRequest()" [disabled]="isSaving">
         <ng-container *ngIf="!isSaving; else loading">
-          Delete Account
+          {{ 'deleteAccount' | translate }}
         </ng-container>
 
         <ng-template #loading>
