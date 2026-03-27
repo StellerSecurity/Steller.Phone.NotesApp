@@ -16,6 +16,8 @@ import {
   exportServerBundleFromHeader,
   extractPlainEAK,
   ServerBundle,
+  decryptTextWithMK,
+  unpackCipherBlob,
 } from '@stellarsecurity/stellar-crypto';
 import { CryptoKeyService } from '../../services/crypto-key.service';
 import { AppHapticsService } from '../../services/app-haptics.service';
@@ -60,6 +62,97 @@ export class LoginComponent implements OnInit {
   togglePasswordVisibility() {
     this.appHaptics.selectionChanged();
     this.showPassword = !this.showPassword;
+  }
+
+  private b64ToBytes(b64: string): Uint8Array {
+    const bin = atob(b64);
+    const out = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) {
+      out[i] = bin.charCodeAt(i);
+    }
+    return out;
+  }
+
+  private async syncNotesAfterLogin(eakB64: string): Promise<void> {
+    try {
+      const res = await this.notesApiV1Service.download(0);
+      const serverNotes = res?.notes ?? [];
+
+      let localNotesRaw = this.notesService.getNotes();
+      if (this.notesService.getDecryptedNotes() !== null) {
+        localNotesRaw = this.notesService.getDecryptedNotes();
+      }
+
+      let localNotes: any[] = [];
+      try {
+        localNotes = localNotesRaw ? JSON.parse(localNotesRaw) : [];
+      } catch (err) {
+        console.error('Failed to parse local notes during login sync', err);
+        localNotes = [];
+      }
+
+      const mkRaw = this.b64ToBytes(eakB64);
+      const map = new Map<string, any>((localNotes ?? []).map((n: any) => [n.id, n]));
+
+      for (const s of serverNotes) {
+        const local = map.get(s.id);
+
+        if (s.deleted) {
+          if (!local || (s.last_modified ?? 0) >= (local?.last_modified ?? 0)) {
+            map.delete(s.id);
+          }
+          continue;
+        }
+
+        const blobText = unpackCipherBlob(s.text);
+        s.text = await decryptTextWithMK(mkRaw, {
+          ...blobText,
+          v: 1,
+          aad_b64: btoa(s.id),
+        });
+
+        s.favorite = !!(s.favorite ?? local?.favorite);
+        s.pinned = !!(s.pinned ?? local?.pinned);
+
+        if (typeof s.title === 'string' && s.title.length > 0) {
+          const blobTitle = unpackCipherBlob(s.title);
+          s.title = await decryptTextWithMK(mkRaw, {
+            ...blobTitle,
+            v: 1,
+            aad_b64: btoa(s.id + '#title'),
+          });
+        } else {
+          s.title = '';
+        }
+
+        if (!local) {
+          map.set(s.id, s);
+          continue;
+        }
+
+        if ((s.last_modified ?? 0) >= (local.last_modified ?? 0)) {
+          map.set(s.id, { ...local, ...s });
+        }
+      }
+
+      const merged = Array.from(map.values()).filter((n: any) => !n.deleted);
+      const mergedJson = JSON.stringify(merged);
+
+      if (this.notesService.appHasPasswordChallenge()) {
+        const encryptedNotesSave = this.cryptoService.encrypt(
+          mergedJson,
+          this.notesService.getNotesAppPassword(),
+        );
+        this.notesService.setNotes(encryptedNotesSave);
+      } else {
+        this.notesService.setNotes(mergedJson);
+      }
+
+      this.notesService.setDecryptedNotes(mergedJson);
+      await this.notesService.flushPersistence();
+    } catch (err) {
+      console.error('Post-login notes download failed', err);
+    }
   }
 
   async login() {
@@ -113,7 +206,7 @@ export class LoginComponent implements OnInit {
           loginObj.password,
           bundle,
         );
-        let eakB64 = derivedEakB64;
+        const eakB64 = derivedEakB64;
 
         await this.cryptoKeyService.importEAK(eakB64);
 
@@ -140,28 +233,34 @@ export class LoginComponent implements OnInit {
 
         this.dataService.setForceDownloadOnHome(true);
 
-        if (notes.length === 0) {
-          await this.appHaptics.success();
-          await this.router.navigate(['/']);
-        } else {
+        if (notes.length > 0) {
           try {
-            await this.notesApiV1Service.upload(0, JSON.parse(notes));
+            const parsedNotes = JSON.parse(notes);
+            const uploadResult: any = await this.notesApiV1Service.upload(0, parsedNotes);
+
+            if (uploadResult?.queued) {
+              console.warn('Notes upload was queued during login:', uploadResult.reason);
+            }
           } catch (err) {
-          } finally {
-            await this.appHaptics.success();
-            await this.router.navigate(['/']);
+            console.error('Notes upload failed during login', err);
           }
         }
+
+        await this.syncNotesAfterLogin(eakB64);
+        await this.authService.initializeAuthState();
+        await this.appHaptics.success();
+        await this.router.navigate(['/']);
+        return;
       } else {
         await this.toastMessageService.showError(response.response_message);
       }
     } catch (error: any) {
+      console.error('Login failed', error);
       await this.toastMessageService.showError(
         this.translatorService.allTranslations?.somethingWentWrong ?? 'Something went wrong',
       );
     } finally {
       this.isSaving = false;
-      await this.authService.initializeAuthState();
     }
   }
 
