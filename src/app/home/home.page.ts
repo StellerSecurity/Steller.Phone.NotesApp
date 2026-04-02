@@ -53,12 +53,18 @@ export class HomePage {
   private static readonly MOVE_TOLERANCE_PX = 15;
   private static readonly SEARCH_FOCUS_DELAY_MS = 100;
   private static readonly DETECT_CHANGES_DELAY_MS = 200;
+  private static readonly PAGER_SWIPE_LOCK_X_PX = 10;
+  private static readonly PAGER_SWIPE_DIRECTION_RATIO = 1.2;
+  private static readonly PAGER_SNAP_RATIO = 0.32;
+  private static readonly PAGER_SNAP_VELOCITY = 0.25;
+  private static readonly PAGER_EDGE_RESISTANCE = 0.28;
 
   // --------------------------------------------------
   // View Refs
   // --------------------------------------------------
   @ViewChild(IonModal) modal: IonModal;
   @ViewChild('searchbar') searchbar: IonSearchbar;
+  @ViewChild('pagerShell', { read: ElementRef }) pagerShell?: ElementRef<HTMLElement>;
   @ViewChildren('longPressElements', { read: ElementRef }) longPressElements: QueryList<ElementRef>;
   @ViewChild(IonContent, { static: false }) content!: IonContent;
 
@@ -78,7 +84,11 @@ export class HomePage {
   public search_query = "";
   public filteredResults: any[] = [];
   public visibleNotes: any[] = [];
+  public allVisibleNotes: any[] = [];
+  public favoriteVisibleNotes: any[] = [];
   public activeFilter: 'all' | 'favorites' = 'all';
+  public isPagerDragging = false;
+  public pagerTransform = 'translate3d(0px, 0, 0)';
   public isSearching = false;
   public isSyncing = false;
   public waitForSync = false;
@@ -97,6 +107,14 @@ export class HomePage {
 
   private scrollRestored = false;
   private url = this.router.url;
+  private pagerTouchStartX: number | null = null;
+  private pagerTouchStartY: number | null = null;
+  private pagerLastX: number | null = null;
+  private pagerLastMoveAt = 0;
+  private pagerVelocityX = 0;
+  private pagerDeltaX = 0;
+  private pagerTracking = false;
+  private pagerWidth = 0;
 
   constructor(
     private cryptoService: CryptoService,
@@ -538,13 +556,8 @@ export class HomePage {
   // --------------------------------------------------
   // Notes helpers
   // --------------------------------------------------
-  private refreshVisibleNotes() {
-    const source = Array.isArray(this.filteredResults) ? this.filteredResults : [];
-    const filtered = this.activeFilter === 'favorites'
-      ? source.filter((note: any) => !!note?.favorite)
-      : source;
-
-    this.visibleNotes = [...filtered].sort((a: any, b: any) => {
+  private sortNotes(source: any[]): any[] {
+    return [...source].sort((a: any, b: any) => {
       const pinnedDiff = Number(!!b?.pinned) - Number(!!a?.pinned);
       if (pinnedDiff !== 0) {
         return pinnedDiff;
@@ -553,18 +566,188 @@ export class HomePage {
     });
   }
 
-  public setActiveFilter(filter: 'all' | 'favorites') {
-    if (this.activeFilter === filter) {
-      return;
+  private syncVisibleNotesFromActiveFilter() {
+    this.visibleNotes = this.activeFilter === 'favorites'
+      ? [...this.favoriteVisibleNotes]
+      : [...this.allVisibleNotes];
+  }
+
+  private getPagerIndex(): number {
+    return this.activeFilter === 'favorites' ? 1 : 0;
+  }
+
+  private setPagerWidthFromEvent(event?: TouchEvent) {
+    const target = event?.currentTarget as HTMLElement | null;
+    const width = target?.clientWidth ?? this.pagerShell?.nativeElement?.clientWidth ?? 0;
+    if (width > 0) {
+      this.pagerWidth = width;
     }
-    this.appHaptics.selectionChanged();
+  }
+
+  private updatePagerTransform(offsetX = 0) {
+    const baseX = -this.getPagerIndex() * this.pagerWidth;
+    this.pagerTransform = `translate3d(${baseX + offsetX}px, 0, 0)`;
+  }
+
+  private refreshVisibleNotes() {
+    const source = Array.isArray(this.filteredResults) ? this.filteredResults : [];
+    this.allVisibleNotes = this.sortNotes(source);
+    this.favoriteVisibleNotes = this.sortNotes(
+      source.filter((note: any) => !!note?.favorite)
+    );
+    this.syncVisibleNotesFromActiveFilter();
+
+    if (!this.isPagerDragging) {
+      this.updatePagerTransform();
+    }
+  }
+
+  public get shouldUsePager(): boolean {
+    return !this.checkboxOpened
+      && !this.searchMode
+      && !this.isSearching
+      && Array.isArray(this.filteredResults)
+      && this.filteredResults.length > 0;
+  }
+
+  public setActiveFilter(filter: 'all' | 'favorites') {
+    const changed = this.activeFilter !== filter;
     this.activeFilter = filter;
-    this.refreshVisibleNotes();
+    this.syncVisibleNotesFromActiveFilter();
+    this.isPagerDragging = false;
+    this.updatePagerTransform();
+
+    if (changed) {
+      this.appHaptics.selectionChanged();
+    }
   }
 
   public onActiveFilterChange(value: unknown) {
     const nextFilter = value === 'favorites' ? 'favorites' : 'all';
     this.setActiveFilter(nextFilter);
+  }
+
+  public onPagerTouchStart(event: TouchEvent) {
+    if (event.touches.length !== 1 || !this.shouldUsePager) {
+      this.resetPagerTouch();
+      return;
+    }
+
+    this.setPagerWidthFromEvent(event);
+
+    const touch = event.touches[0];
+    this.pagerTouchStartX = touch.clientX;
+    this.pagerTouchStartY = touch.clientY;
+    this.pagerLastX = touch.clientX;
+    this.pagerLastMoveAt = Date.now();
+    this.pagerVelocityX = 0;
+    this.pagerDeltaX = 0;
+    this.pagerTracking = false;
+    this.isPagerDragging = false;
+  }
+
+  public onPagerTouchMove(event: TouchEvent) {
+    if (!this.shouldUsePager || this.pagerTouchStartX === null || this.pagerTouchStartY === null || event.touches.length !== 1) {
+      return;
+    }
+
+    const touch = event.touches[0];
+    const deltaX = touch.clientX - this.pagerTouchStartX;
+    const deltaY = touch.clientY - this.pagerTouchStartY;
+
+    if (!this.pagerTracking) {
+      if (Math.abs(deltaX) < HomePage.PAGER_SWIPE_LOCK_X_PX) {
+        return;
+      }
+
+      if (Math.abs(deltaX) <= Math.abs(deltaY) * HomePage.PAGER_SWIPE_DIRECTION_RATIO) {
+        return;
+      }
+
+      this.pagerTracking = true;
+      this.isPagerDragging = true;
+      this.setPagerWidthFromEvent(event);
+    }
+
+    const now = Date.now();
+    if (this.pagerLastX !== null) {
+      const dt = Math.max(now - this.pagerLastMoveAt, 1);
+      this.pagerVelocityX = (touch.clientX - this.pagerLastX) / dt;
+    }
+
+    this.pagerLastX = touch.clientX;
+    this.pagerLastMoveAt = now;
+    this.pagerDeltaX = deltaX;
+
+    const currentIndex = this.getPagerIndex();
+    const isOverdraggingLeftEdge = currentIndex === 0 && deltaX > 0;
+    const isOverdraggingRightEdge = currentIndex === 1 && deltaX < 0;
+    const offsetX = (isOverdraggingLeftEdge || isOverdraggingRightEdge)
+      ? deltaX * HomePage.PAGER_EDGE_RESISTANCE
+      : deltaX;
+
+    this.updatePagerTransform(offsetX);
+
+    if (event.cancelable) {
+      event.preventDefault();
+    }
+  }
+
+  public onPagerTouchEnd() {
+    if (this.pagerTouchStartX === null || this.pagerTouchStartY === null) {
+      this.resetPagerTouch();
+      return;
+    }
+
+    if (!this.pagerTracking) {
+      this.resetPagerTouch();
+      this.updatePagerTransform();
+      return;
+    }
+
+    const width = this.pagerWidth || this.pagerShell?.nativeElement?.clientWidth || 1;
+    const currentIndex = this.getPagerIndex();
+    const shouldSnapToNextPage =
+      Math.abs(this.pagerDeltaX) > width * HomePage.PAGER_SNAP_RATIO
+      || Math.abs(this.pagerVelocityX) > HomePage.PAGER_SNAP_VELOCITY;
+
+    let nextIndex = currentIndex;
+    if (shouldSnapToNextPage) {
+      if (this.pagerDeltaX < 0) {
+        nextIndex = Math.min(1, currentIndex + 1);
+      } else if (this.pagerDeltaX > 0) {
+        nextIndex = Math.max(0, currentIndex - 1);
+      }
+    }
+
+    const nextFilter = nextIndex === 1 ? 'favorites' : 'all';
+    const changed = nextFilter !== this.activeFilter;
+
+    this.activeFilter = nextFilter;
+    this.syncVisibleNotesFromActiveFilter();
+    this.isPagerDragging = false;
+    this.updatePagerTransform();
+
+    if (changed) {
+      this.appHaptics.selectionChanged();
+    }
+
+    this.resetPagerTouch(false);
+  }
+
+  private resetPagerTouch(resetTransform = true) {
+    this.pagerTouchStartX = null;
+    this.pagerTouchStartY = null;
+    this.pagerLastX = null;
+    this.pagerLastMoveAt = 0;
+    this.pagerVelocityX = 0;
+    this.pagerDeltaX = 0;
+    this.pagerTracking = false;
+    this.isPagerDragging = false;
+
+    if (resetTransform) {
+      this.updatePagerTransform();
+    }
   }
   public isPrivacyModeEnabled(): boolean {
     return this.noteService.isPrivacyModeEnabled();
