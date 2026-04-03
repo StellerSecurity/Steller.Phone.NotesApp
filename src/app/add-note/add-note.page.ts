@@ -88,6 +88,22 @@ export class AddNotePage implements OnDestroy {
   private suppressAutoSave = false;
   private pendingDeletedNote: NoteV1 | null = null;
 
+  private initialNoteSnapshot: {
+    title: string;
+    text: string;
+    favorite: boolean;
+    pinned: boolean;
+    protected: boolean;
+  } | null = null;
+
+  private lastSavedSnapshot: {
+    title: string;
+    text: string;
+    favorite: boolean;
+    pinned: boolean;
+    protected: boolean;
+  } | null = null;
+
   constructor(
     private cryptoService: CryptoService,
     public activatedRoute: ActivatedRoute,
@@ -113,10 +129,16 @@ export class AddNotePage implements OnDestroy {
       }
 
       this.notes_id = params.get('id');
+      this.currentNote = null;
+      this.initialNoteSnapshot = null;
+      this.lastSavedSnapshot = null;
 
       if (this.notes_id === null) {
         this.newlyCreatedNote = true;
         this.notes_id = uuidv4();
+        this.note_text = '';
+        this.note_title = '';
+        this.captureInitialSnapshot();
         return;
       }
 
@@ -125,6 +147,9 @@ export class AddNotePage implements OnDestroy {
       if (!this.currentNote) {
         this.newlyCreatedNote = true;
         this.notes_id = uuidv4();
+        this.note_text = '';
+        this.note_title = '';
+        this.captureInitialSnapshot();
         return;
       }
 
@@ -139,6 +164,7 @@ export class AddNotePage implements OnDestroy {
       } else {
         this.note_text = this.currentNote.text ?? '';
         this.note_title = this.currentNote.title !== undefined ? this.currentNote.title : this.getUntitledLabel();
+        this.captureInitialSnapshot();
       }
 
       this.startLiveNotePolling();
@@ -147,6 +173,69 @@ export class AddNotePage implements OnDestroy {
 
   private getUntitledLabel(): string {
     return this.allTranslations?.untitled ?? 'Untitled';
+  }
+
+  private createCurrentSnapshot() {
+    return {
+      title: this.note_title ?? '',
+      text: this.note_text ?? '',
+      favorite: !!this.currentNote?.favorite,
+      pinned: !!this.currentNote?.pinned,
+      protected: !!this.currentNote?.protected,
+    };
+  }
+
+  private snapshotsEqual(
+    a: {
+      title: string;
+      text: string;
+      favorite: boolean;
+      pinned: boolean;
+      protected: boolean;
+    } | null,
+    b: {
+      title: string;
+      text: string;
+      favorite: boolean;
+      pinned: boolean;
+      protected: boolean;
+    } | null,
+  ): boolean {
+    if (!a || !b) return false;
+
+    return a.title === b.title
+      && a.text === b.text
+      && a.favorite === b.favorite
+      && a.pinned === b.pinned
+      && a.protected === b.protected;
+  }
+
+  private captureInitialSnapshot() {
+    const snapshot = this.createCurrentSnapshot();
+    this.initialNoteSnapshot = { ...snapshot };
+    this.lastSavedSnapshot = { ...snapshot };
+  }
+
+  private markSnapshotSaved() {
+    this.lastSavedSnapshot = { ...this.createCurrentSnapshot() };
+
+    if (!this.initialNoteSnapshot) {
+      this.initialNoteSnapshot = { ...this.lastSavedSnapshot };
+    }
+  }
+
+  private hasMeaningfulChanges(): boolean {
+    const current = this.createCurrentSnapshot();
+
+    if (this.lastSavedSnapshot && !this.snapshotsEqual(current, this.lastSavedSnapshot)) {
+      return true;
+    }
+
+    if (this.initialNoteSnapshot && !this.snapshotsEqual(current, this.initialNoteSnapshot)) {
+      return true;
+    }
+
+    return false;
   }
 
   public isFavorite(): boolean {
@@ -431,6 +520,7 @@ export class AddNotePage implements OnDestroy {
   private forceSaveNow(): void {
     if (this.suppressAutoSave) return;
     if (this.isEffectivelyEmptyNewNote()) return;
+    if (!this.hasMeaningfulChanges()) return;
 
     if (this.saveDebounceTimer) {
       clearTimeout(this.saveDebounceTimer);
@@ -476,6 +566,19 @@ export class AddNotePage implements OnDestroy {
     this.currentNote = restoredNote;
     this.notes_id = restoredNote.id;
     this.suppressAutoSave = false;
+
+    const titleToShow = restoredNote.title !== undefined ? restoredNote.title : this.getUntitledLabel();
+
+    if (restoredNote.protected) {
+      this.note_locked = true;
+      this.captureEncryptedProtectedState(restoredNote);
+      this.clearProtectedNoteDraftFields();
+    } else {
+      this.note_locked = false;
+      this.note_text = restoredNote.text ?? '';
+      this.note_title = titleToShow;
+      this.captureInitialSnapshot();
+    }
 
     await this.persistLocalNotesState();
     await this.navController.navigateForward('/note/' + restoredNote.id);
@@ -670,7 +773,10 @@ export class AddNotePage implements OnDestroy {
             if (!ok) {
               this.dismissModal().then(() => {});
               await this.navController.navigateForward('/');
+              return;
             }
+          } else {
+            this.captureInitialSnapshot();
           }
         })
         .catch(() => {
@@ -772,6 +878,7 @@ export class AddNotePage implements OnDestroy {
 
     this.notesService.setDecryptedNotes(JSON.stringify(this.notes));
     await this.notesService.flushPersistence();
+    this.markSnapshotSaved();
 
     if (forceDownloadOnHome) {
       this.dataService.setForceDownloadOnHome(true);
@@ -854,6 +961,7 @@ export class AddNotePage implements OnDestroy {
             await this.wrongPasswordEntered(lockoutMs);
           } else {
             this.notesService.clearNoteUnlockFailures(this.notes_id);
+            this.captureInitialSnapshot();
             await this.appHaptics.success();
           }
         } else {
@@ -1037,6 +1145,10 @@ export class AddNotePage implements OnDestroy {
       this.currentNote.pinned = pinned;
     }
 
+    this.note_text = decryptedText;
+    this.note_title = decryptedTitle;
+    this.captureInitialSnapshot();
+
     this.notes_password_confirm = '';
     this.notes_password_input = '';
 
@@ -1098,6 +1210,7 @@ export class AddNotePage implements OnDestroy {
             }
 
             await this.storeNoteInStorage(true);
+            this.captureInitialSnapshot();
             this.modal.dismiss();
           },
         },
