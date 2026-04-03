@@ -5,21 +5,28 @@ import { Pipe, PipeTransform } from '@angular/core';
 })
 export class StriphtmlPipe implements PipeTransform {
 
-  transform(value: string): any {
-
-    const parser = new DOMParser;
-
-    value = value.replace("<br>", " ");
-    value = value.replace("<div>", " ");
-
-    value = value.replace(/<[^>]*>/g, '');
-
-    const dom = parser.parseFromString(value, 'text/html');
-    if (typeof dom.body.textContent === "string") {
-      value = dom.body.textContent;
+  transform(value: string): string {
+    if (!value) {
+      return '';
     }
 
-    return value;
+    const parser = new DOMParser();
+
+    value = value
+      .replace(/<br\s*\/?>/gi, ' ')
+      .replace(/<\/div>/gi, ' ')
+      .replace(/<div[^>]*>/gi, ' ')
+      .replace(/<\/p>/gi, ' ')
+      .replace(/<p[^>]*>/gi, ' ')
+      .replace(/<\/li>/gi, ' ')
+      .replace(/<li[^>]*>/gi, ' ')
+      .replace(/&nbsp;/gi, ' ')
+      .replace(/<[^>]*>/g, ' ');
+
+    const dom = parser.parseFromString(value, 'text/html');
+    const text = dom.body.textContent || '';
+
+    return text.replace(/\s+/g, ' ').trim();
   }
 
 }

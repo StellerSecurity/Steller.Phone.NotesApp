@@ -59,6 +59,7 @@ export class HomePage implements AfterViewInit, OnDestroy {
   private static readonly PAGER_SNAP_RATIO = 0.32;
   private static readonly PAGER_SNAP_VELOCITY = 0.25;
   private static readonly PAGER_EDGE_RESISTANCE = 0.28;
+  private static readonly PAGER_DRAG_RATIO = 0.95;
   private static readonly CHECKBOX_DISMISS_EDGE_PX = 120;
   private static readonly CHECKBOX_DISMISS_TRIGGER_PX = 56;
   private static readonly CHECKBOX_DISMISS_DIRECTION_RATIO = 1.2;
@@ -91,10 +92,12 @@ export class HomePage implements AfterViewInit, OnDestroy {
   public activeFilter: 'all' | 'favorites' = 'all';
   public isPagerDragging = false;
   public pagerTransform = 'translate3d(0px, 0, 0)';
+  public segmentLineTransform = 'translate3d(0%, 0, 0)';
   public isSearching = false;
   public isSyncing = false;
   public waitForSync = false;
   public searchMode = false;
+  public headerHasShadow = false;
 
   timeout: any;
   isClicked: boolean = false;
@@ -122,6 +125,8 @@ export class HomePage implements AfterViewInit, OnDestroy {
   private checkboxDismissStartX: number | null = null;
   private checkboxDismissStartY: number | null = null;
   private checkboxDismissTracking = false;
+
+  public initialHomeLoadFinished = false;
 
   private readonly boundGlobalTouchEnd = () => {
     if (this.pagerTouchStartX !== null || this.pagerTracking || this.isPagerDragging) {
@@ -156,6 +161,31 @@ export class HomePage implements AfterViewInit, OnDestroy {
     private appHaptics: AppHapticsService,
     private platform: Platform,
   ) {}
+
+  public get hasAnyRenderedNotes(): boolean {
+    return Array.isArray(this.filteredResults) && this.filteredResults.length > 0;
+  }
+
+
+  public get shouldShowHomeSkeleton(): boolean {
+    if (!this.should_display) {
+      return false;
+    }
+
+    if (this.waitForSync) {
+      return true;
+    }
+
+    if (!this.initialHomeLoadFinished) {
+      return true;
+    }
+
+    if (this.isSyncing && !this.hasAnyRenderedNotes) {
+      return true;
+    }
+
+    return false;
+  }
 
   private b64ToBytes(b64: string): Uint8Array {
     const bin = atob(b64);
@@ -228,6 +258,9 @@ export class HomePage implements AfterViewInit, OnDestroy {
   }
 
   async ionViewWillEnter() {
+    this.initialHomeLoadFinished = false;
+    this.headerHasShadow = false;
+
     this.scrollRestored = false;
     this.resetPagerTouch();
     this.resetCheckboxDismissGesture();
@@ -252,11 +285,13 @@ export class HomePage implements AfterViewInit, OnDestroy {
 
     if (this.noteService.shouldAskForPassword()) {
       this.should_display = false;
+      this.initialHomeLoadFinished = true;
     } else {
       this.setData(this.noteService.getNotesAppPassword());
-      await this.syncFromServer();
       this.restoreScrollOnce();
       this.schedulePressGestureInit();
+      this.initialHomeLoadFinished = true;
+      this.syncFromServer().then(() => {});
     }
   }
 
@@ -284,6 +319,7 @@ export class HomePage implements AfterViewInit, OnDestroy {
     this.exitSearchMode();
     this.pauseSync = true;
     this.scrollRestored = false;
+    this.headerHasShadow = false;
     this.resetPagerTouch();
     this.resetCheckboxDismissGesture();
 
@@ -335,6 +371,11 @@ export class HomePage implements AfterViewInit, OnDestroy {
       this.cdr.detectChanges();
       this.schedulePressGestureInit();
     }, HomePage.DETECT_CHANGES_DELAY_MS);
+  }
+
+  public onHomeScroll(event: CustomEvent) {
+    const scrollTop = event?.detail?.scrollTop ?? 0;
+    this.headerHasShadow = scrollTop > 8;
   }
 
   public toggleCheckbox() {
@@ -564,6 +605,7 @@ export class HomePage implements AfterViewInit, OnDestroy {
     }
 
     this.isSyncing = true;
+
     try {
       const res = await this.notesApiServiceV1.download(0);
 
@@ -582,6 +624,12 @@ export class HomePage implements AfterViewInit, OnDestroy {
           if (!local || (s.last_modified ?? 0) >= (local?.last_modified ?? 0)) {
             map.delete(s.id);
           }
+
+          this.noteService.reconcileServerConfirmation(s);
+          continue;
+        }
+
+        if (this.noteService.shouldIgnoreServerNote(s)) {
           continue;
         }
 
@@ -590,7 +638,11 @@ export class HomePage implements AfterViewInit, OnDestroy {
         }
 
         const blobText = unpackCipherBlob(s.text);
-        s.text = await decryptTextWithMK(this.mkRaw, { ...blobText, v: 1, aad_b64: btoa(s.id) });
+        s.text = await decryptTextWithMK(this.mkRaw, {
+          ...blobText,
+          v: 1,
+          aad_b64: btoa(s.id)
+        });
 
         s.favorite = !!(s.favorite ?? local?.favorite);
         s.pinned = !!(s.pinned ?? local?.pinned);
@@ -607,12 +659,15 @@ export class HomePage implements AfterViewInit, OnDestroy {
 
         if (!local) {
           map.set(s.id, s);
+          this.noteService.reconcileServerConfirmation(s);
           continue;
         }
 
         if ((s.last_modified ?? 0) >= (local.last_modified ?? 0)) {
           map.set(s.id, { ...local, ...s });
         }
+
+        this.noteService.reconcileServerConfirmation(s);
       }
 
       const merged = Array.from(map.values()).filter((n: any) => !n.deleted);
@@ -632,7 +687,6 @@ export class HomePage implements AfterViewInit, OnDestroy {
 
       await this.noteService.flushPersistence();
       this.setData(this.noteService.getNotesAppPassword());
-      this.schedulePressGestureInit();
     } catch (err) {
     } finally {
       this.isSyncing = false;
@@ -772,6 +826,13 @@ export class HomePage implements AfterViewInit, OnDestroy {
     this.pagerTransform = `translate3d(${baseX + offsetX}px, 0, 0)`;
   }
 
+  private updateSegmentLine(offsetPx = 0) {
+    const width = this.pagerWidth || this.pagerShell?.nativeElement?.clientWidth || 1;
+    const currentIndex = this.getPagerIndex();
+    const progress = Math.max(0, Math.min(1, currentIndex + (-offsetPx / width)));
+    this.segmentLineTransform = `translate3d(${progress * 100}%, 0, 0)`;
+  }
+
   private refreshVisibleNotes() {
     const source = Array.isArray(this.filteredResults) ? this.filteredResults : [];
     this.allVisibleNotes = this.sortNotes(source);
@@ -782,6 +843,7 @@ export class HomePage implements AfterViewInit, OnDestroy {
 
     if (!this.isPagerDragging) {
       this.updatePagerTransform();
+      this.updateSegmentLine();
     }
 
     this.schedulePressGestureInit();
@@ -798,10 +860,19 @@ export class HomePage implements AfterViewInit, OnDestroy {
   public setActiveFilter(filter: 'all' | 'favorites') {
     this.resetPagerTouch();
 
+    const changed = this.activeFilter !== filter;
+
     this.activeFilter = filter;
     this.syncVisibleNotesFromActiveFilter();
     this.updatePagerTransform();
+    this.updateSegmentLine();
     this.schedulePressGestureInit();
+
+    if (changed && filter === 'favorites') {
+      requestAnimationFrame(() => {
+        this.content?.scrollToTop(220);
+      });
+    }
   }
 
   public onActiveFilterChange(value: unknown) {
@@ -874,16 +945,17 @@ export class HomePage implements AfterViewInit, OnDestroy {
     const isOverdraggingRightEdge = currentIndex === 1 && deltaX < 0;
     const offsetX = (isOverdraggingLeftEdge || isOverdraggingRightEdge)
       ? deltaX * HomePage.PAGER_EDGE_RESISTANCE
-      : deltaX;
+      : deltaX * HomePage.PAGER_DRAG_RATIO;
 
     this.updatePagerTransform(offsetX);
+    this.updateSegmentLine(offsetX);
 
     if (event.cancelable) {
       event.preventDefault();
     }
   }
 
-  public onPagerTouchEnd() {
+  public async onPagerTouchEnd() {
     if (this.pagerTouchStartX === null || this.pagerTouchStartY === null) {
       this.resetPagerTouch();
       return;
@@ -909,20 +981,29 @@ export class HomePage implements AfterViewInit, OnDestroy {
       }
     }
 
-    const nextFilter = nextIndex === 1 ? 'favorites' : 'all';
+    const nextFilter: 'all' | 'favorites' = nextIndex === 1 ? 'favorites' : 'all';
+    const changed = nextFilter !== this.activeFilter;
 
     this.activeFilter = nextFilter;
     this.syncVisibleNotesFromActiveFilter();
     this.isPagerDragging = false;
     this.updatePagerTransform();
+    this.updateSegmentLine();
     this.schedulePressGestureInit();
 
     this.resetPagerTouch(false);
+
+    if (changed && nextFilter === 'favorites') {
+      requestAnimationFrame(() => {
+        this.content?.scrollToTop(220);
+      });
+    }
   }
 
   public onPagerTouchCancel() {
     this.isPagerDragging = false;
     this.updatePagerTransform();
+    this.updateSegmentLine();
     this.resetPagerTouch(false);
   }
 
@@ -939,6 +1020,7 @@ export class HomePage implements AfterViewInit, OnDestroy {
 
     if (resetTransform) {
       this.updatePagerTransform();
+      this.updateSegmentLine();
     }
   }
 
@@ -950,6 +1032,12 @@ export class HomePage implements AfterViewInit, OnDestroy {
     if (!this.pendingDeletedNotes.length) {
       this.pendingDeletedIds = [];
       return;
+    }
+
+    for (const note of this.pendingDeletedNotes) {
+      if (note?.id) {
+        this.noteService.clearPendingMutation(note.id);
+      }
     }
 
     this.notes = [...this.notes, ...this.pendingDeletedNotes];
@@ -1028,6 +1116,8 @@ export class HomePage implements AfterViewInit, OnDestroy {
     targetNote.pinned = !targetNote.pinned;
     targetNote.last_modified = Date.now();
 
+    this.noteService.markPendingMutation(noteId, 'pin', targetNote.last_modified);
+
     if (this.filteredResults !== this.notes) {
       const filteredNote = this.filteredResults.find((note: any) => note?.id === noteId);
       if (filteredNote) {
@@ -1052,6 +1142,8 @@ export class HomePage implements AfterViewInit, OnDestroy {
 
     targetNote.favorite = !targetNote.favorite;
     targetNote.last_modified = Date.now();
+
+    this.noteService.markPendingMutation(noteId, 'favorite', targetNote.last_modified);
 
     if (this.filteredResults !== this.notes) {
       const filteredNote = this.filteredResults.find((note: any) => note?.id === noteId);
@@ -1117,6 +1209,10 @@ export class HomePage implements AfterViewInit, OnDestroy {
 
     const idsToDelete = new Set(this.listOfCheckedCheckboxes);
     const deletedNotes = this.notes.filter((note: any) => idsToDelete.has(note.id));
+
+    for (const note of deletedNotes) {
+      this.noteService.markPendingMutation(note.id, 'delete', Date.now());
+    }
 
     for (let j = this.notes.length - 1; j >= 0; j--) {
       if (idsToDelete.has(this.notes[j].id)) {
