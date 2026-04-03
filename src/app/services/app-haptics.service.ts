@@ -8,8 +8,22 @@ import { Preferences } from '@capacitor/preferences';
 })
 export class AppHapticsService {
   private static readonly HAPTICS_ENABLED_KEY = 'haptics_enabled';
+
+  private static readonly MIN_GAP_LIGHT_MS = 45;
+  private static readonly MIN_GAP_MEDIUM_MS = 70;
+  private static readonly MIN_GAP_NOTIFICATION_MS = 140;
+  private static readonly MIN_GAP_SELECTION_CHANGED_MS = 55;
+  private static readonly MIN_GAP_SELECTION_STATE_MS = 90;
+
   private enabled = true;
   private loadPreferencePromise: Promise<void> | null = null;
+
+  private lastAnyHapticAt = 0;
+  private lastLightAt = 0;
+  private lastMediumAt = 0;
+  private lastNotificationAt = 0;
+  private lastSelectionChangedAt = 0;
+  private lastSelectionStateAt = 0;
 
   private get shouldPlay(): boolean {
     try {
@@ -54,61 +68,195 @@ export class AppHapticsService {
         value: String(enabled),
       });
     } catch {
-      // No-op by design. Preference persistence should never break the app.
+      // Haptics preference persistence should never break the app.
     }
   }
 
-  private async run(action: () => Promise<void>): Promise<void> {
+  private now(): number {
+    return Date.now();
+  }
+
+  private canFire(lastAt: number, minGapMs: number): boolean {
+    return this.now() - lastAt >= minGapMs;
+  }
+
+  private markAny(): void {
+    this.lastAnyHapticAt = this.now();
+  }
+
+  private async run(
+    action: () => Promise<void>,
+    options?: {
+      minGapMs?: number;
+      channel?: 'light' | 'medium' | 'notification' | 'selectionChanged' | 'selectionState';
+    }
+  ): Promise<void> {
     await this.ensurePreferenceLoaded();
 
     if (!this.shouldPlay) {
       return;
     }
 
+    const minGapMs = options?.minGapMs ?? 0;
+    const channel = options?.channel;
+
+    if (channel === 'light' && !this.canFire(this.lastLightAt, minGapMs)) {
+      return;
+    }
+
+    if (channel === 'medium' && !this.canFire(this.lastMediumAt, minGapMs)) {
+      return;
+    }
+
+    if (channel === 'notification' && !this.canFire(this.lastNotificationAt, minGapMs)) {
+      return;
+    }
+
+    if (channel === 'selectionChanged' && !this.canFire(this.lastSelectionChangedAt, minGapMs)) {
+      return;
+    }
+
+    if (channel === 'selectionState' && !this.canFire(this.lastSelectionStateAt, minGapMs)) {
+      return;
+    }
+
     try {
       await action();
+
+      const now = this.now();
+      this.markAny();
+
+      if (channel === 'light') {
+        this.lastLightAt = now;
+      } else if (channel === 'medium') {
+        this.lastMediumAt = now;
+      } else if (channel === 'notification') {
+        this.lastNotificationAt = now;
+      } else if (channel === 'selectionChanged') {
+        this.lastSelectionChangedAt = now;
+      } else if (channel === 'selectionState') {
+        this.lastSelectionStateAt = now;
+      }
     } catch {
-      // No-op by design. Haptics should never break the primary flow.
+      // Haptics should never break the primary flow.
     }
   }
 
+  // --------------------------------------------------
+  // Premium semantic API
+  // --------------------------------------------------
+
   tap(): Promise<void> {
-    return this.impactLight();
+    return this.light();
   }
 
-  impactLight(): Promise<void> {
-    return this.run(() => Haptics.impact({ style: ImpactStyle.Light }));
+  light(): Promise<void> {
+    return this.run(
+      () => Haptics.impact({ style: ImpactStyle.Light }),
+      {
+        minGapMs: AppHapticsService.MIN_GAP_LIGHT_MS,
+        channel: 'light',
+      }
+    );
   }
 
-  impactMedium(): Promise<void> {
-    return this.run(() => Haptics.impact({ style: ImpactStyle.Medium }));
+  medium(): Promise<void> {
+    return this.run(
+      () => Haptics.impact({ style: ImpactStyle.Medium }),
+      {
+        minGapMs: AppHapticsService.MIN_GAP_MEDIUM_MS,
+        channel: 'medium',
+      }
+    );
   }
 
-  impactHeavy(): Promise<void> {
-    return this.run(() => Haptics.impact({ style: ImpactStyle.Heavy }));
+  heavy(): Promise<void> {
+    return this.run(
+      () => Haptics.impact({ style: ImpactStyle.Heavy }),
+      {
+        minGapMs: AppHapticsService.MIN_GAP_MEDIUM_MS,
+        channel: 'medium',
+      }
+    );
   }
 
   success(): Promise<void> {
-    return this.run(() => Haptics.notification({ type: NotificationType.Success }));
+    return this.run(
+      () => Haptics.notification({ type: NotificationType.Success }),
+      {
+        minGapMs: AppHapticsService.MIN_GAP_NOTIFICATION_MS,
+        channel: 'notification',
+      }
+    );
   }
 
   warning(): Promise<void> {
-    return this.run(() => Haptics.notification({ type: NotificationType.Warning }));
+    return this.run(
+      () => Haptics.notification({ type: NotificationType.Warning }),
+      {
+        minGapMs: AppHapticsService.MIN_GAP_NOTIFICATION_MS,
+        channel: 'notification',
+      }
+    );
   }
 
   error(): Promise<void> {
-    return this.run(() => Haptics.notification({ type: NotificationType.Error }));
+    return this.run(
+      () => Haptics.notification({ type: NotificationType.Error }),
+      {
+        minGapMs: AppHapticsService.MIN_GAP_NOTIFICATION_MS,
+        channel: 'notification',
+      }
+    );
   }
 
+  // --------------------------------------------------
+  // Selection-style interactions
+  // --------------------------------------------------
+
   selectionStart(): Promise<void> {
-    return this.run(() => Haptics.selectionStart());
+    return this.run(
+      () => Haptics.selectionStart(),
+      {
+        minGapMs: AppHapticsService.MIN_GAP_SELECTION_STATE_MS,
+        channel: 'selectionState',
+      }
+    );
   }
 
   selectionChanged(): Promise<void> {
-    return this.run(() => Haptics.selectionChanged());
+    return this.run(
+      () => Haptics.selectionChanged(),
+      {
+        minGapMs: AppHapticsService.MIN_GAP_SELECTION_CHANGED_MS,
+        channel: 'selectionChanged',
+      }
+    );
   }
 
   selectionEnd(): Promise<void> {
-    return this.run(() => Haptics.selectionEnd());
+    return this.run(
+      () => Haptics.selectionEnd(),
+      {
+        minGapMs: AppHapticsService.MIN_GAP_SELECTION_STATE_MS,
+        channel: 'selectionState',
+      }
+    );
+  }
+
+  // --------------------------------------------------
+  // Backward-compatible aliases
+  // --------------------------------------------------
+
+  impactLight(): Promise<void> {
+    return this.light();
+  }
+
+  impactMedium(): Promise<void> {
+    return this.medium();
+  }
+
+  impactHeavy(): Promise<void> {
+    return this.heavy();
   }
 }
