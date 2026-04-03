@@ -162,10 +162,22 @@
   </ion-fab-button>
 </ion-fab>
 
-<ion-content [fullscreen]="true" class="ion-padding" *ngIf="should_display && !waitForSync">
+<ion-content
+  [fullscreen]="true"
+  class="ion-padding"
+  *ngIf="should_display && !waitForSync">
   <ion-refresher slot="fixed" (ionRefresh)="handleRefresh($event)" *ngIf="isLoggedIn()">
     <ion-refresher-content></ion-refresher-content>
   </ion-refresher>
+
+  <div
+    *ngIf="checkboxOpened"
+    class="checkbox-dismiss-edge"
+    (touchstart)="onCheckboxDismissTouchStart($event)"
+    (touchmove)="onCheckboxDismissTouchMove($event)"
+    (touchend)="onCheckboxDismissTouchEnd()"
+    (touchcancel)="onCheckboxDismissTouchEnd()">
+  </div>
 
   <div
     class="favorites-filter"
@@ -396,7 +408,7 @@
       (touchstart)="onPagerTouchStart($event)"
       (touchmove)="onPagerTouchMove($event)"
       (touchend)="onPagerTouchEnd()"
-      (touchcancel)="onPagerTouchEnd()">
+      (touchcancel)="onPagerTouchCancel()">
       <div
         class="home-pager-track"
         [class.is-dragging]="isPagerDragging"

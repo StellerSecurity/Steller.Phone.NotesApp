@@ -1,19 +1,24 @@
 import {
+  AfterViewInit,
   ChangeDetectorRef,
   Component,
   ElementRef,
+  OnDestroy,
   QueryList,
   ViewChild,
   ViewChildren
 } from '@angular/core';
 import {
   GestureController,
+  IonContent,
   IonModal,
   IonSearchbar,
   ModalController,
   NavController,
+  Platform,
   ToastController,
 } from '@ionic/angular';
+import { Subscription } from 'rxjs';
 
 import { CryptoService } from "../services/crypto.service";
 import { NotesService } from "../services/notes.service";
@@ -30,7 +35,6 @@ import { normalize } from "../utils/home-normalize.util";
 import { initializePressGestures, LongPressConfig } from "../utils/home-gesture.util";
 import { setDecryptedNotesAndParse } from "../utils/home-notes.util";
 import { AuthService } from "../services/auth.service";
-import { IonContent } from '@ionic/angular';
 
 import {
   decryptTextWithMK,
@@ -44,10 +48,7 @@ import { ScrollService } from '../services/scroll.service';
   templateUrl: 'home.page.html',
   styleUrls: ['home.page.scss'],
 })
-export class HomePage {
-  // --------------------------------------------------
-  // Constants
-  // --------------------------------------------------
+export class HomePage implements AfterViewInit, OnDestroy {
   private static readonly LONG_PRESS_DELAY_MS = 200;
   private static readonly LONG_PRESS_START_DELAY_MS = 100;
   private static readonly MOVE_TOLERANCE_PX = 15;
@@ -58,22 +59,23 @@ export class HomePage {
   private static readonly PAGER_SNAP_RATIO = 0.32;
   private static readonly PAGER_SNAP_VELOCITY = 0.25;
   private static readonly PAGER_EDGE_RESISTANCE = 0.28;
+  private static readonly CHECKBOX_DISMISS_EDGE_PX = 120;
+  private static readonly CHECKBOX_DISMISS_TRIGGER_PX = 56;
+  private static readonly CHECKBOX_DISMISS_DIRECTION_RATIO = 1.2;
 
-  // --------------------------------------------------
-  // View Refs
-  // --------------------------------------------------
   @ViewChild(IonModal) modal: IonModal;
   @ViewChild('searchbar') searchbar: IonSearchbar;
   @ViewChild('pagerShell', { read: ElementRef }) pagerShell?: ElementRef<HTMLElement>;
   @ViewChildren('longPressElements', { read: ElementRef }) longPressElements: QueryList<ElementRef>;
   @ViewChild(IonContent, { static: false }) content!: IonContent;
 
-  // --------------------------------------------------
-  // State
-  // --------------------------------------------------
   private notes: any[] = [];
   private pauseSync = false;
   private hiddenId: string | null = null;
+  private destroyPressGestures: (() => void) | null = null;
+  private pressGestureInitTimer: any = null;
+  private longPressElementsChangesSub: Subscription | null = null;
+  private backButtonSub: any = null;
 
   public should_display = true;
   public checkboxOpened = false;
@@ -98,7 +100,6 @@ export class HomePage {
   isClicked: boolean = false;
   allTranslations: any;
 
-  // 🔐 MK kept in RAM (EAK already resolved to plaintext MK elsewhere)
   private mkRaw: Uint8Array | null = null;
 
   private syncTimer: any = null;
@@ -107,6 +108,7 @@ export class HomePage {
 
   private scrollRestored = false;
   private url = this.router.url;
+
   private pagerTouchStartX: number | null = null;
   private pagerTouchStartY: number | null = null;
   private pagerLastX: number | null = null;
@@ -114,7 +116,24 @@ export class HomePage {
   private pagerVelocityX = 0;
   private pagerDeltaX = 0;
   private pagerTracking = false;
+  private pagerHorizontalLocked = false;
   private pagerWidth = 0;
+
+  private checkboxDismissStartX: number | null = null;
+  private checkboxDismissStartY: number | null = null;
+  private checkboxDismissTracking = false;
+
+  private readonly boundGlobalTouchEnd = () => {
+    if (this.pagerTouchStartX !== null || this.pagerTracking || this.isPagerDragging) {
+      this.onPagerTouchCancel();
+    }
+  };
+
+  private readonly boundGlobalTouchCancel = () => {
+    if (this.pagerTouchStartX !== null || this.pagerTracking || this.isPagerDragging) {
+      this.onPagerTouchCancel();
+    }
+  };
 
   constructor(
     private cryptoService: CryptoService,
@@ -135,9 +154,9 @@ export class HomePage {
     private crypto: CryptoKeyService,
     private scrollService: ScrollService,
     private appHaptics: AppHapticsService,
+    private platform: Platform,
   ) {}
 
-  // Small helper: base64 -> Uint8Array
   private b64ToBytes(b64: string): Uint8Array {
     const bin = atob(b64);
     const out = new Uint8Array(bin.length);
@@ -145,11 +164,73 @@ export class HomePage {
     return out;
   }
 
-  // --------------------------------------------------
-  // Lifecycle
-  // --------------------------------------------------
+  private schedulePressGestureInit(delay = 0): void {
+    if (this.pressGestureInitTimer) {
+      clearTimeout(this.pressGestureInitTimer);
+      this.pressGestureInitTimer = null;
+    }
+
+    this.pressGestureInitTimer = setTimeout(() => {
+      this.initializePressGesture();
+      this.pressGestureInitTimer = null;
+    }, delay);
+  }
+
+  private registerBackButtonHandler(): void {
+    if (this.backButtonSub) {
+      this.backButtonSub.unsubscribe();
+      this.backButtonSub = null;
+    }
+
+    this.backButtonSub = this.platform.backButton.subscribeWithPriority(1000, () => {
+      if (this.checkboxOpened) {
+        this.toggleCheckbox();
+        return;
+      }
+
+      if (this.searchMode) {
+        this.exitSearchMode();
+      }
+    });
+  }
+
+  ngAfterViewInit(): void {
+    this.longPressElementsChangesSub = this.longPressElements.changes.subscribe(() => {
+      this.schedulePressGestureInit();
+    });
+
+    this.schedulePressGestureInit();
+  }
+
+  ngOnDestroy(): void {
+    if (this.pressGestureInitTimer) {
+      clearTimeout(this.pressGestureInitTimer);
+      this.pressGestureInitTimer = null;
+    }
+
+    if (this.longPressElementsChangesSub) {
+      this.longPressElementsChangesSub.unsubscribe();
+      this.longPressElementsChangesSub = null;
+    }
+
+    if (this.destroyPressGestures) {
+      this.destroyPressGestures();
+      this.destroyPressGestures = null;
+    }
+
+    if (this.backButtonSub) {
+      this.backButtonSub.unsubscribe();
+      this.backButtonSub = null;
+    }
+
+    window.removeEventListener('touchend', this.boundGlobalTouchEnd);
+    window.removeEventListener('touchcancel', this.boundGlobalTouchCancel);
+  }
+
   async ionViewWillEnter() {
     this.scrollRestored = false;
+    this.resetPagerTouch();
+    this.resetCheckboxDismissGesture();
 
     if (this.pauseSync) this.pauseSync = false;
 
@@ -159,7 +240,6 @@ export class HomePage {
       this.waitForSync = true;
     }
 
-    // If app does NOT have password challenge, load MK directly from secure storage
     if (!this.noteService.appHasPasswordChallenge()) {
       const eakB64 = await this.secureStorageService.getItem('ssEakB64');
       if (eakB64) {
@@ -176,6 +256,7 @@ export class HomePage {
       this.setData(this.noteService.getNotesAppPassword());
       await this.syncFromServer();
       this.restoreScrollOnce();
+      this.schedulePressGestureInit();
     }
   }
 
@@ -193,13 +274,36 @@ export class HomePage {
   }
 
   ionViewDidEnter() {
-    this.initializePressGesture();
+    this.schedulePressGestureInit();
+    this.registerBackButtonHandler();
+    window.addEventListener('touchend', this.boundGlobalTouchEnd, { passive: true });
+    window.addEventListener('touchcancel', this.boundGlobalTouchCancel, { passive: true });
   }
 
   async ionViewWillLeave() {
     this.exitSearchMode();
     this.pauseSync = true;
     this.scrollRestored = false;
+    this.resetPagerTouch();
+    this.resetCheckboxDismissGesture();
+
+    window.removeEventListener('touchend', this.boundGlobalTouchEnd);
+    window.removeEventListener('touchcancel', this.boundGlobalTouchCancel);
+
+    if (this.backButtonSub) {
+      this.backButtonSub.unsubscribe();
+      this.backButtonSub = null;
+    }
+
+    if (this.pressGestureInitTimer) {
+      clearTimeout(this.pressGestureInitTimer);
+      this.pressGestureInitTimer = null;
+    }
+
+    if (this.destroyPressGestures) {
+      this.destroyPressGestures();
+      this.destroyPressGestures = null;
+    }
 
     if (this.syncTimer) {
       clearInterval(this.syncTimer);
@@ -210,10 +314,9 @@ export class HomePage {
     this.scrollService.save(this.url, el.scrollTop);
   }
 
-  // --------------------------------------------------
-  // UI Modes: Search & Checkbox
-  // --------------------------------------------------
   enterSearchMode() {
+    this.resetPagerTouch();
+    this.resetCheckboxDismissGesture();
     this.searchMode = true;
     setTimeout(() => {
       this.searchbar?.setFocus();
@@ -221,18 +324,24 @@ export class HomePage {
   }
 
   exitSearchMode() {
+    this.resetPagerTouch();
+    this.resetCheckboxDismissGesture();
     this.search_query = '';
     this.pauseSync = false;
     this.search();
-    this.initializePressGesture();
+
     setTimeout(() => {
       this.searchMode = false;
       this.cdr.detectChanges();
+      this.schedulePressGestureInit();
     }, HomePage.DETECT_CHANGES_DELAY_MS);
   }
 
   public toggleCheckbox() {
     this.appHaptics.selectionChanged();
+    this.resetPagerTouch();
+    this.resetCheckboxDismissGesture();
+
     this.checkboxOpened = !this.checkboxOpened;
     if (!this.checkboxOpened) {
       this.listOfCheckedCheckboxes = [];
@@ -240,14 +349,79 @@ export class HomePage {
     } else {
       this.pauseSync = true;
     }
-    this.initializePressGesture();
-    setTimeout(() => this.cdr.detectChanges(), HomePage.DETECT_CHANGES_DELAY_MS);
+
+    setTimeout(() => {
+      this.cdr.detectChanges();
+      this.schedulePressGestureInit();
+    }, HomePage.DETECT_CHANGES_DELAY_MS);
   }
 
-  // --------------------------------------------------
-  // Search
-  // --------------------------------------------------
+  public onCheckboxDismissTouchStart(event: TouchEvent) {
+    if (!this.checkboxOpened || !event.touches || event.touches.length !== 1) {
+      this.resetCheckboxDismissGesture();
+      return;
+    }
+
+    const touch = event.touches[0];
+
+    if (touch.clientX > HomePage.CHECKBOX_DISMISS_EDGE_PX) {
+      this.resetCheckboxDismissGesture();
+      return;
+    }
+
+    this.checkboxDismissStartX = touch.clientX;
+    this.checkboxDismissStartY = touch.clientY;
+    this.checkboxDismissTracking = true;
+  }
+
+  public onCheckboxDismissTouchMove(event: TouchEvent) {
+    if (
+      !this.checkboxOpened ||
+      !this.checkboxDismissTracking ||
+      this.checkboxDismissStartX === null ||
+      this.checkboxDismissStartY === null ||
+      !event.touches ||
+      event.touches.length !== 1
+    ) {
+      return;
+    }
+
+    const touch = event.touches[0];
+    const deltaX = touch.clientX - this.checkboxDismissStartX;
+    const deltaY = touch.clientY - this.checkboxDismissStartY;
+
+    if (deltaX <= 0) {
+      return;
+    }
+
+    if (Math.abs(deltaX) <= Math.abs(deltaY) * HomePage.CHECKBOX_DISMISS_DIRECTION_RATIO) {
+      return;
+    }
+
+    if (event.cancelable) {
+      event.preventDefault();
+    }
+
+    if (deltaX >= HomePage.CHECKBOX_DISMISS_TRIGGER_PX) {
+      this.toggleCheckbox();
+      this.resetCheckboxDismissGesture();
+    }
+  }
+
+  public onCheckboxDismissTouchEnd() {
+    this.resetCheckboxDismissGesture();
+  }
+
+  private resetCheckboxDismissGesture() {
+    this.checkboxDismissStartX = null;
+    this.checkboxDismissStartY = null;
+    this.checkboxDismissTracking = false;
+  }
+
   search() {
+    this.resetPagerTouch();
+    this.resetCheckboxDismissGesture();
+
     if (this.search_query.length == 0) {
       this.isSearching = false;
       this.filteredResults = this.notes;
@@ -268,7 +442,6 @@ export class HomePage {
         titleExists = normalizedTitle.includes(normalizedQuery);
       }
 
-      // don't search in locked notes text
       if (result && !this.notes[i].protected) {
         filteredNewResults.push(this.notes[i]);
       } else if (titleExists) {
@@ -281,21 +454,29 @@ export class HomePage {
     this.filteredResults = filteredNewResults;
     this.refreshVisibleNotes();
 
-    this.initializePressGesture();
-    setTimeout(() => this.cdr.detectChanges(), HomePage.DETECT_CHANGES_DELAY_MS);
+    setTimeout(() => {
+      this.cdr.detectChanges();
+      this.schedulePressGestureInit();
+    }, HomePage.DETECT_CHANGES_DELAY_MS);
   }
 
-  // --------------------------------------------------
-  // Long-press selection
-  // --------------------------------------------------
   initializePressGesture(): void {
+    if (this.destroyPressGestures) {
+      this.destroyPressGestures();
+      this.destroyPressGestures = null;
+    }
+
+    if (!this.longPressElements || this.longPressElements.length === 0) {
+      return;
+    }
+
     const cfg: LongPressConfig = {
       delayMs: HomePage.LONG_PRESS_DELAY_MS,
       moveTolerancePx: HomePage.MOVE_TOLERANCE_PX,
       startDelayMs: HomePage.LONG_PRESS_START_DELAY_MS,
     };
 
-    initializePressGestures(
+    this.destroyPressGestures = initializePressGestures(
       this.longPressElements,
       this.gestureCtrl,
       (nativeEl) => this.handlePressStart(nativeEl),
@@ -305,9 +486,16 @@ export class HomePage {
   }
 
   handlePressStart(element: any) {
+    this.resetPagerTouch();
+    this.resetCheckboxDismissGesture();
     this.appHaptics.selectionStart();
+
     this.timeout = setTimeout(() => {
       this.checkboxOpened = true;
+      this.pauseSync = true;
+      this.resetPagerTouch();
+      this.resetCheckboxDismissGesture();
+
       setTimeout(() => {
         this.cdr.detectChanges();
         const noteId = element.id;
@@ -320,7 +508,11 @@ export class HomePage {
 
         this.appHaptics.impactMedium();
         this.appHaptics.selectionChanged();
-        setTimeout(() => this.cdr.detectChanges(), HomePage.DETECT_CHANGES_DELAY_MS);
+
+        setTimeout(() => {
+          this.cdr.detectChanges();
+          this.schedulePressGestureInit();
+        }, HomePage.DETECT_CHANGES_DELAY_MS);
       }, HomePage.LONG_PRESS_START_DELAY_MS);
     }, HomePage.LONG_PRESS_START_DELAY_MS);
   }
@@ -328,11 +520,9 @@ export class HomePage {
   handlePressEnd() {
     clearTimeout(this.timeout);
     this.appHaptics.selectionEnd();
+    this.resetPagerTouch();
   }
 
-  // --------------------------------------------------
-  // Data loading / syncing
-  // --------------------------------------------------
   private setData(password: string = ""): boolean {
     const { parsed } = setDecryptedNotesAndParse(this.noteService, this.cryptoService, password);
     if (!parsed && this.noteService.appHasPasswordChallenge()) {
@@ -399,15 +589,12 @@ export class HomePage {
           continue;
         }
 
-        // Decrypt text
         const blobText = unpackCipherBlob(s.text);
         s.text = await decryptTextWithMK(this.mkRaw, { ...blobText, v: 1, aad_b64: btoa(s.id) });
 
-        // Preserve favorite/pinned if server does not carry them
         s.favorite = !!(s.favorite ?? local?.favorite);
         s.pinned = !!(s.pinned ?? local?.pinned);
 
-        // Decrypt title
         if (typeof s.title === 'string' && s.title.length > 0) {
           const blobTitle = unpackCipherBlob(s.title);
           s.title = await decryptTextWithMK(
@@ -445,6 +632,7 @@ export class HomePage {
 
       await this.noteService.flushPersistence();
       this.setData(this.noteService.getNotesAppPassword());
+      this.schedulePressGestureInit();
     } catch (err) {
     } finally {
       this.isSyncing = false;
@@ -453,9 +641,6 @@ export class HomePage {
     }
   }
 
-  // --------------------------------------------------
-  // Auth / Protection
-  // --------------------------------------------------
   public togglePasswordVisibility() {
     this.appHaptics.selectionChanged();
     this.showPassword = !this.showPassword;
@@ -524,8 +709,8 @@ export class HomePage {
       this.syncFromServer().then(() => {});
 
       setTimeout(() => {
-        this.initializePressGesture();
         this.cdr.detectChanges();
+        this.schedulePressGestureInit();
       }, HomePage.DETECT_CHANGES_DELAY_MS);
 
       await this.appHaptics.success();
@@ -553,9 +738,6 @@ export class HomePage {
     }
   }
 
-  // --------------------------------------------------
-  // Notes helpers
-  // --------------------------------------------------
   private sortNotes(source: any[]): any[] {
     return [...source].sort((a: any, b: any) => {
       const pinnedDiff = Number(!!b?.pinned) - Number(!!a?.pinned);
@@ -585,7 +767,8 @@ export class HomePage {
   }
 
   private updatePagerTransform(offsetX = 0) {
-    const baseX = -this.getPagerIndex() * this.pagerWidth;
+    const width = this.pagerWidth || this.pagerShell?.nativeElement?.clientWidth || 0;
+    const baseX = -this.getPagerIndex() * width;
     this.pagerTransform = `translate3d(${baseX + offsetX}px, 0, 0)`;
   }
 
@@ -600,6 +783,8 @@ export class HomePage {
     if (!this.isPagerDragging) {
       this.updatePagerTransform();
     }
+
+    this.schedulePressGestureInit();
   }
 
   public get shouldUsePager(): boolean {
@@ -611,15 +796,12 @@ export class HomePage {
   }
 
   public setActiveFilter(filter: 'all' | 'favorites') {
-    const changed = this.activeFilter !== filter;
+    this.resetPagerTouch();
+
     this.activeFilter = filter;
     this.syncVisibleNotesFromActiveFilter();
-    this.isPagerDragging = false;
     this.updatePagerTransform();
-
-    if (changed) {
-      this.appHaptics.selectionChanged();
-    }
+    this.schedulePressGestureInit();
   }
 
   public onActiveFilterChange(value: unknown) {
@@ -642,12 +824,19 @@ export class HomePage {
     this.pagerLastMoveAt = Date.now();
     this.pagerVelocityX = 0;
     this.pagerDeltaX = 0;
-    this.pagerTracking = false;
+    this.pagerTracking = true;
+    this.pagerHorizontalLocked = false;
     this.isPagerDragging = false;
   }
 
   public onPagerTouchMove(event: TouchEvent) {
-    if (!this.shouldUsePager || this.pagerTouchStartX === null || this.pagerTouchStartY === null || event.touches.length !== 1) {
+    if (
+      !this.shouldUsePager ||
+      !this.pagerTracking ||
+      this.pagerTouchStartX === null ||
+      this.pagerTouchStartY === null ||
+      event.touches.length !== 1
+    ) {
       return;
     }
 
@@ -655,16 +844,17 @@ export class HomePage {
     const deltaX = touch.clientX - this.pagerTouchStartX;
     const deltaY = touch.clientY - this.pagerTouchStartY;
 
-    if (!this.pagerTracking) {
+    if (!this.pagerHorizontalLocked) {
       if (Math.abs(deltaX) < HomePage.PAGER_SWIPE_LOCK_X_PX) {
         return;
       }
 
       if (Math.abs(deltaX) <= Math.abs(deltaY) * HomePage.PAGER_SWIPE_DIRECTION_RATIO) {
+        this.resetPagerTouch();
         return;
       }
 
-      this.pagerTracking = true;
+      this.pagerHorizontalLocked = true;
       this.isPagerDragging = true;
       this.setPagerWidthFromEvent(event);
     }
@@ -699,9 +889,8 @@ export class HomePage {
       return;
     }
 
-    if (!this.pagerTracking) {
+    if (!this.pagerHorizontalLocked) {
       this.resetPagerTouch();
-      this.updatePagerTransform();
       return;
     }
 
@@ -721,17 +910,19 @@ export class HomePage {
     }
 
     const nextFilter = nextIndex === 1 ? 'favorites' : 'all';
-    const changed = nextFilter !== this.activeFilter;
 
     this.activeFilter = nextFilter;
     this.syncVisibleNotesFromActiveFilter();
     this.isPagerDragging = false;
     this.updatePagerTransform();
+    this.schedulePressGestureInit();
 
-    if (changed) {
-      this.appHaptics.selectionChanged();
-    }
+    this.resetPagerTouch(false);
+  }
 
+  public onPagerTouchCancel() {
+    this.isPagerDragging = false;
+    this.updatePagerTransform();
     this.resetPagerTouch(false);
   }
 
@@ -743,12 +934,14 @@ export class HomePage {
     this.pagerVelocityX = 0;
     this.pagerDeltaX = 0;
     this.pagerTracking = false;
+    this.pagerHorizontalLocked = false;
     this.isPagerDragging = false;
 
     if (resetTransform) {
       this.updatePagerTransform();
     }
   }
+
   public isPrivacyModeEnabled(): boolean {
     return this.noteService.isPrivacyModeEnabled();
   }
@@ -821,16 +1014,20 @@ export class HomePage {
     this.noteService.setDecryptedNotes(JSON.stringify(this.notes));
     await this.noteService.flushPersistence();
   }
+
   public async togglePinnedFromHome(event: Event, noteId: string) {
     event?.stopPropagation();
     event?.preventDefault();
     await this.appHaptics.selectionChanged();
+
     const targetNote = this.notes.find((note: any) => note?.id === noteId);
     if (!targetNote) {
       return;
     }
+
     targetNote.pinned = !targetNote.pinned;
     targetNote.last_modified = Date.now();
+
     if (this.filteredResults !== this.notes) {
       const filteredNote = this.filteredResults.find((note: any) => note?.id === noteId);
       if (filteredNote) {
@@ -838,19 +1035,24 @@ export class HomePage {
         filteredNote.last_modified = targetNote.last_modified;
       }
     }
+
     this.refreshVisibleNotes();
     await this.persistNotesState();
   }
+
   public async toggleFavoriteFromHome(event: Event, noteId: string) {
     event?.stopPropagation();
     event?.preventDefault();
     await this.appHaptics.selectionChanged();
+
     const targetNote = this.notes.find((note: any) => note?.id === noteId);
     if (!targetNote) {
       return;
     }
+
     targetNote.favorite = !targetNote.favorite;
     targetNote.last_modified = Date.now();
+
     if (this.filteredResults !== this.notes) {
       const filteredNote = this.filteredResults.find((note: any) => note?.id === noteId);
       if (filteredNote) {
@@ -858,9 +1060,11 @@ export class HomePage {
         filteredNote.last_modified = targetNote.last_modified;
       }
     }
+
     this.refreshVisibleNotes();
     await this.persistNotesState();
   }
+
   public settings() {
     this.navController.navigateForward('app-settings').then(r => {});
   }
@@ -878,6 +1082,7 @@ export class HomePage {
 
   public async deleteSelectedNotes() {
     await this.appHaptics.tap();
+
     const modal = await this.modalCtrl.create({
       component: DeleteNoteModalComponent,
       cssClass: 'confirmation-popup',
@@ -900,6 +1105,7 @@ export class HomePage {
 
   private async deleteNotesConfirm() {
     this.appHaptics.impactMedium();
+
     if (!this.listOfCheckedCheckboxes?.length) {
       this.toggleCheckbox();
       return;
@@ -968,6 +1174,7 @@ export class HomePage {
 
   public async resetPassword() {
     await this.appHaptics.warning();
+
     const modal = await this.modalCtrl.create({
       component: ResetPassModalComponent,
       cssClass: 'confirmation-popup'

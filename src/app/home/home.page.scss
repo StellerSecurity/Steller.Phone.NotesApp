@@ -273,7 +273,19 @@ ion-modal {
 }
 
 .long-press-target {
-  touch-action: manipulation;
+  touch-action: pan-y;
+}
+
+.checkbox-dismiss-edge {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 28px;
+  height: 100vh;
+  z-index: 9999;
+  background: transparent;
+  touch-action: pan-y;
+  pointer-events: auto;
 }
 
 ion-searchbar {
