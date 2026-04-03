@@ -111,6 +111,7 @@ export class HomePage implements AfterViewInit, OnDestroy {
 
   private scrollRestored = false;
   private url = this.router.url;
+  private checkboxModeScrollTop = 0;
 
   private pagerTouchStartX: number | null = null;
   private pagerTouchStartY: number | null = null;
@@ -166,7 +167,6 @@ export class HomePage implements AfterViewInit, OnDestroy {
     return Array.isArray(this.filteredResults) && this.filteredResults.length > 0;
   }
 
-
   public get shouldShowHomeSkeleton(): boolean {
     if (!this.should_display) {
       return false;
@@ -194,6 +194,25 @@ export class HomePage implements AfterViewInit, OnDestroy {
     return out;
   }
 
+  private async saveCheckboxModeScrollTop(): Promise<void> {
+    try {
+      const el = await this.content?.getScrollElement();
+      this.checkboxModeScrollTop = el?.scrollTop ?? 0;
+    } catch {
+      this.checkboxModeScrollTop = 0;
+    }
+  }
+
+  private restoreCheckboxModeScrollTop(): void {
+    const y = this.checkboxModeScrollTop;
+
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        this.content?.scrollToPoint(0, y, 0);
+      });
+    });
+  }
+
   private schedulePressGestureInit(delay = 0): void {
     if (this.pressGestureInitTimer) {
       clearTimeout(this.pressGestureInitTimer);
@@ -214,7 +233,7 @@ export class HomePage implements AfterViewInit, OnDestroy {
 
     this.backButtonSub = this.platform.backButton.subscribeWithPriority(1000, () => {
       if (this.checkboxOpened) {
-        this.toggleCheckbox();
+        this.toggleCheckbox().then(() => {});
         return;
       }
 
@@ -378,10 +397,12 @@ export class HomePage implements AfterViewInit, OnDestroy {
     this.headerHasShadow = scrollTop > 8;
   }
 
-  public toggleCheckbox() {
+  public async toggleCheckbox() {
     this.appHaptics.selectionChanged();
     this.resetPagerTouch();
     this.resetCheckboxDismissGesture();
+
+    await this.saveCheckboxModeScrollTop();
 
     this.checkboxOpened = !this.checkboxOpened;
     if (!this.checkboxOpened) {
@@ -394,6 +415,7 @@ export class HomePage implements AfterViewInit, OnDestroy {
     setTimeout(() => {
       this.cdr.detectChanges();
       this.schedulePressGestureInit();
+      this.restoreCheckboxModeScrollTop();
     }, HomePage.DETECT_CHANGES_DELAY_MS);
   }
 
@@ -444,7 +466,7 @@ export class HomePage implements AfterViewInit, OnDestroy {
     }
 
     if (deltaX >= HomePage.CHECKBOX_DISMISS_TRIGGER_PX) {
-      this.toggleCheckbox();
+      this.toggleCheckbox().then(() => {});
       this.resetCheckboxDismissGesture();
     }
   }
@@ -531,7 +553,9 @@ export class HomePage implements AfterViewInit, OnDestroy {
     this.resetCheckboxDismissGesture();
     this.appHaptics.selectionStart();
 
-    this.timeout = setTimeout(() => {
+    this.timeout = setTimeout(async () => {
+      await this.saveCheckboxModeScrollTop();
+
       this.checkboxOpened = true;
       this.pauseSync = true;
       this.resetPagerTouch();
@@ -553,6 +577,7 @@ export class HomePage implements AfterViewInit, OnDestroy {
         setTimeout(() => {
           this.cdr.detectChanges();
           this.schedulePressGestureInit();
+          this.restoreCheckboxModeScrollTop();
         }, HomePage.DETECT_CHANGES_DELAY_MS);
       }, HomePage.LONG_PRESS_START_DELAY_MS);
     }, HomePage.LONG_PRESS_START_DELAY_MS);
@@ -1199,7 +1224,7 @@ export class HomePage implements AfterViewInit, OnDestroy {
     this.appHaptics.impactMedium();
 
     if (!this.listOfCheckedCheckboxes?.length) {
-      this.toggleCheckbox();
+      await this.toggleCheckbox();
       return;
     }
 
@@ -1264,7 +1289,7 @@ export class HomePage implements AfterViewInit, OnDestroy {
     });
 
     this.listOfCheckedCheckboxes = [];
-    this.toggleCheckbox();
+    await this.toggleCheckbox();
     await toast.present();
   }
 
