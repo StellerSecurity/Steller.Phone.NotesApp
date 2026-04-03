@@ -4,11 +4,11 @@ android {
     namespace "Steller.Phone.NotesApp"
     compileSdkVersion 35
     defaultConfig {
-        applicationId "steller.phone.notesapps"
+        applicationId "steller.phone.notesapp"
         minSdkVersion 23
         targetSdkVersion 35
-        versionCode 32
-        versionName "2.72"
+        versionCode 33
+        versionName "2.80"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
