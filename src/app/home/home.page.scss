@@ -636,8 +636,16 @@ ion-header.header-shadow {
 
 .folder-browser-list ion-item-option {
   --border-radius: 12px;
+  --background: var(--ion-color-danger, #eb445a);
+  --color: #ffffff;
+  background: var(--ion-color-danger, #eb445a);
+  color: #ffffff;
   border-radius: 12px;
   min-width: 72px;
+}
+
+.folder-browser-list ion-item-option ion-icon {
+  color: #ffffff;
 }
 
 

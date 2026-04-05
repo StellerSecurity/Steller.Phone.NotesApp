@@ -1567,8 +1567,16 @@ export class HomePage implements AfterViewInit, OnDestroy {
             await this.persistFoldersState();
             if (options?.onCreated) {
               await options.onCreated(folderName);
-            } else if (!options?.keepCurrentView) {
-              this.selectFolder(folderName);
+            } else {
+              const toast = await this.toastController.create({
+                message: this.allTranslations?.folderCreated ?? 'Folder created',
+                duration: 1800,
+                position: 'bottom',
+              });
+              await toast.present();
+              if (!options?.keepCurrentView) {
+                this.selectFolder(folderName);
+              }
             }
             this.cdr.detectChanges();
             return true;

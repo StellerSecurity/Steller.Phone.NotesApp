@@ -273,5 +273,6 @@
   "deleteFolder": "Slet mappe",
   "deleteFolderDescription": "Er du sikker på, at du vil slette mappen \"{{ folder }}\" og alle {{ count }} noter i den?",
   "noteMovedToFolder": "Noten blev flyttet",
-  "notesMovedToFolder": "{{count}} noter blev flyttet"
+  "notesMovedToFolder": "{{count}} noter blev flyttet",
+  "folderCreated": "Mappe oprettet"
 }

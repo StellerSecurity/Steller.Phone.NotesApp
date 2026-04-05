@@ -273,5 +273,6 @@
   "deleteFolder": "Eliminar carpeta",
   "deleteFolderDescription": "¿Seguro que quieres eliminar la carpeta \"{{ folder }}\" y las {{ count }} notas que contiene?",
   "noteMovedToFolder": "Nota movida",
-  "notesMovedToFolder": "{{count}} notas movidas"
+  "notesMovedToFolder": "{{count}} notas movidas",
+  "folderCreated": "Carpeta creada"
 }

@@ -273,5 +273,6 @@
   "deleteFolder": "Delete folder",
   "deleteFolderDescription": "Are you sure you want to delete the folder \"{{ folder }}\" and all {{ count }} notes inside it?",
   "noteMovedToFolder": "Note moved",
-  "notesMovedToFolder": "{{count}} notes moved"
+  "notesMovedToFolder": "{{count}} notes moved",
+  "folderCreated": "Folder created"
 }

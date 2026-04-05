@@ -273,5 +273,6 @@
   "deleteFolder": "Supprimer le dossier",
   "deleteFolderDescription": "Voulez-vous vraiment supprimer le dossier \"{{ folder }}\" et les {{ count }} notes qu’il contient ?",
   "noteMovedToFolder": "Note déplacée",
-  "notesMovedToFolder": "{{count}} notes déplacées"
+  "notesMovedToFolder": "{{count}} notes déplacées",
+  "folderCreated": "Dossier créé"
 }

@@ -273,5 +273,6 @@
   "deleteFolder": "Map verwijderen",
   "deleteFolderDescription": "Weet je zeker dat je de map \"{{ folder }}\" en alle {{ count }} notities daarin wilt verwijderen?",
   "noteMovedToFolder": "Notitie verplaatst",
-  "notesMovedToFolder": "{{count}} notities verplaatst"
+  "notesMovedToFolder": "{{count}} notities verplaatst",
+  "folderCreated": "Map aangemaakt"
 }

@@ -273,5 +273,6 @@
   "deleteFolder": "Ta bort mapp",
   "deleteFolderDescription": "Är du säker på att du vill ta bort mappen \"{{ folder }}\" och alla {{ count }} anteckningar i den?",
   "noteMovedToFolder": "Anteckning flyttad",
-  "notesMovedToFolder": "{{count}} anteckningar flyttade"
+  "notesMovedToFolder": "{{count}} anteckningar flyttade",
+  "folderCreated": "Mapp skapad"
 }

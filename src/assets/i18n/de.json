@@ -273,5 +273,6 @@
   "deleteFolder": "Ordner löschen",
   "deleteFolderDescription": "Möchtest du den Ordner \"{{ folder }}\" und alle {{ count }} darin enthaltenen Notizen wirklich löschen?",
   "noteMovedToFolder": "Notiz verschoben",
-  "notesMovedToFolder": "{{count}} Notizen verschoben"
+  "notesMovedToFolder": "{{count}} Notizen verschoben",
+  "folderCreated": "Ordner erstellt"
 }
