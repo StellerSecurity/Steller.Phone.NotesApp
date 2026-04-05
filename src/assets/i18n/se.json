@@ -274,5 +274,16 @@
   "deleteFolderDescription": "Är du säker på att du vill ta bort mappen \"{{ folder }}\" och alla {{ count }} anteckningar i den?",
   "noteMovedToFolder": "Anteckning flyttad",
   "notesMovedToFolder": "{{count}} anteckningar flyttade",
-  "folderCreated": "Mapp skapad"
+  "folderCreated": "Mapp skapad",
+  "folderEmptyTitle": "Inga anteckningar i den här mappen ännu",
+  "folderEmptyDescription": "Tryck på + för att lägga till din första anteckning här.",
+  "folderDeletedWithCount": "Mapp borttagen med {{count}} anteckningar",
+  "tooManyFailedAttemptsTryAgainInMinutes": "För många misslyckade försök. Försök igen om {{count}} minut{{suffix}}.",
+  "tooManyFailedAttemptsTryAgainInSeconds": "För många misslyckade försök. Försök igen om {{count}} sekund{{suffix}}.",
+  "pinned": "Fästa",
+  "showAccountName": "Visa kontonamn",
+  "hideAccountName": "Dölj kontonamn",
+  "signInWithYourStellarId": "Logga in med ditt Stellar ID.",
+  "username": "Användarnamn",
+  "signInUpper": "Logga in"
 }

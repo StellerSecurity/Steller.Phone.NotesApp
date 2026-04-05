@@ -274,5 +274,16 @@
   "deleteFolderDescription": "Möchtest du den Ordner \"{{ folder }}\" und alle {{ count }} darin enthaltenen Notizen wirklich löschen?",
   "noteMovedToFolder": "Notiz verschoben",
   "notesMovedToFolder": "{{count}} Notizen verschoben",
-  "folderCreated": "Ordner erstellt"
+  "folderCreated": "Ordner erstellt",
+  "folderEmptyTitle": "Noch keine Notizen in diesem Ordner",
+  "folderEmptyDescription": "Tippe auf +, um hier deine erste Notiz hinzuzufügen.",
+  "folderDeletedWithCount": "Ordner mit {{count}} Notizen gelöscht",
+  "tooManyFailedAttemptsTryAgainInMinutes": "Zu viele fehlgeschlagene Versuche. Versuche es in {{count}} Minute{{suffix}} erneut.",
+  "tooManyFailedAttemptsTryAgainInSeconds": "Zu viele fehlgeschlagene Versuche. Versuche es in {{count}} Sekunde{{suffix}} erneut.",
+  "pinned": "Angeheftet",
+  "showAccountName": "Kontonamen anzeigen",
+  "hideAccountName": "Kontonamen ausblenden",
+  "signInWithYourStellarId": "Mit deiner Stellar ID anmelden.",
+  "username": "Benutzername",
+  "signInUpper": "Anmelden"
 }

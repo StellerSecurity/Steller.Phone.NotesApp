@@ -417,7 +417,7 @@
         <div
           *ngIf="note.pinned && (i === 0 || !notes[i - 1]?.pinned)"
           style="padding: 8px 16px 6px; color: #62626A; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em;">
-          Pinned
+          {{ 'pinned' | translate }}
         </div>
 
         <div

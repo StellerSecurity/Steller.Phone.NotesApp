@@ -274,5 +274,16 @@
   "deleteFolderDescription": "Are you sure you want to delete the folder \"{{ folder }}\" and all {{ count }} notes inside it?",
   "noteMovedToFolder": "Note moved",
   "notesMovedToFolder": "{{count}} notes moved",
-  "folderCreated": "Folder created"
+  "folderCreated": "Folder created",
+  "folderEmptyTitle": "No notes in this folder yet",
+  "folderEmptyDescription": "Tap + to add your first note here.",
+  "folderDeletedWithCount": "Folder deleted with {{count}} notes",
+  "tooManyFailedAttemptsTryAgainInMinutes": "Too many failed attempts. Try again in {{count}} minute{{suffix}}.",
+  "tooManyFailedAttemptsTryAgainInSeconds": "Too many failed attempts. Try again in {{count}} second{{suffix}}.",
+  "pinned": "Pinned",
+  "showAccountName": "Show account name",
+  "hideAccountName": "Hide account name",
+  "signInWithYourStellarId": "Sign in with your Stellar ID.",
+  "username": "Username",
+  "signInUpper": "Sign In"
 }

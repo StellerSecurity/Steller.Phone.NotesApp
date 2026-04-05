@@ -274,5 +274,16 @@
   "deleteFolderDescription": "Voulez-vous vraiment supprimer le dossier \"{{ folder }}\" et les {{ count }} notes qu’il contient ?",
   "noteMovedToFolder": "Note déplacée",
   "notesMovedToFolder": "{{count}} notes déplacées",
-  "folderCreated": "Dossier créé"
+  "folderCreated": "Dossier créé",
+  "folderEmptyTitle": "Aucune note dans ce dossier pour le moment",
+  "folderEmptyDescription": "Touchez + pour ajouter votre première note ici.",
+  "folderDeletedWithCount": "Dossier supprimé avec {{count}} notes",
+  "tooManyFailedAttemptsTryAgainInMinutes": "Trop de tentatives échouées. Réessayez dans {{count}} minute{{suffix}}.",
+  "tooManyFailedAttemptsTryAgainInSeconds": "Trop de tentatives échouées. Réessayez dans {{count}} seconde{{suffix}}.",
+  "pinned": "Épinglé",
+  "showAccountName": "Afficher le nom du compte",
+  "hideAccountName": "Masquer le nom du compte",
+  "signInWithYourStellarId": "Connectez-vous avec votre Stellar ID.",
+  "username": "Nom d’utilisateur",
+  "signInUpper": "Se connecter"
 }
