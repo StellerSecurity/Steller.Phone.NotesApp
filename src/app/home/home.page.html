@@ -1,6 +1,14 @@
-<ion-header [translucent]="true" mode="md" [class.header-shadow]="headerHasShadow">  <ion-toolbar>
+<ion-header [translucent]="true" mode="md" [class.header-shadow]="headerHasShadow">
+  <ion-toolbar>
+    <ion-buttons slot="start" *ngIf="!searchMode && !checkboxOpened && !folderBrowserMode">
+      <ion-button fill="clear" class="folder-back-button" (click)="backToFolders()">
+        <ion-icon name="chevron-back-outline"></ion-icon>
+        <span>{{ 'folders' | translate }}</span>
+      </ion-button>
+    </ion-buttons>
+
     <ion-title *ngIf="!searchMode">
-      <span *ngIf="checkboxOpened && filteredResults !== null && filteredResults.length > 0"
+      <span *ngIf="checkboxOpened"
             (click)="toggleCheckbox()"
             style="display:flex; align-items:center;">
         <img src="assets/tabler-icon-x.svg"
@@ -9,10 +17,7 @@
         {{listOfCheckedCheckboxes.length}} {{'notesSelected' | translate}}
       </span>
 
-      <div class="logo-container" *ngIf="!checkboxOpened">
-        <img class="logo-img" src="./assets/note-logo.png" alt="">
-        <div class="logo-text">{{'appNameStellarPrivateNotes' | translate}}</div>
-      </div>
+      <span *ngIf="!checkboxOpened" class="home-header-title">{{ homeHeaderTitle }}</span>
     </ion-title>
 
     <ion-searchbar
@@ -27,16 +32,16 @@
     </ion-searchbar>
 
     <ion-buttons slot="end" style="position: relative; top: 5px;">
-      <ng-container *ngIf="!searchMode">
+      <ng-container *ngIf="!searchMode && !checkboxOpened">
         <ion-button
-          *ngIf="filteredResults !== null && filteredResults.length > 0"
+          *ngIf="canSearchNotes"
           fill="clear"
           (click)="enterSearchMode()">
           <ion-icon name="search-outline" style="font-size: 24px;"></ion-icon>
         </ion-button>
 
         <ion-button
-          *ngIf="filteredResults !== null && filteredResults.length > 0"
+          *ngIf="canSelectNotesFromCurrentView"
           fill="clear"
           (click)="toggleCheckbox()">
           <img src="assets/tabler-icon-square-check.svg">
@@ -156,7 +161,7 @@
   vertical="bottom"
   horizontal="end"
   *ngIf="!checkboxOpened && should_display">
-  <ion-fab-button routerLink="/note">
+  <ion-fab-button [routerLink]="['/note']" [queryParams]="newNoteQueryParams">
     <ion-icon name="add"></ion-icon>
   </ion-fab-button>
 </ion-fab>
@@ -205,108 +210,166 @@
       (touchcancel)="onCheckboxDismissTouchEnd()">
     </div>
 
-    <div
-      class="favorites-filter"
-      *ngIf="filteredResults !== null && filteredResults.length > 0 && !checkboxOpened">
+
+    <ng-container *ngIf="shouldShowFolderBrowser">
+      <div class="folder-browser-screen" *ngIf="!checkboxOpened">
+        <div class="folder-browser-section-label">{{ 'folders' | translate }}</div>
+
+        <ion-list class="folder-browser-list">
+          <ion-item lines="none" button detail="false" (click)="selectFolder('__all__')">
+            <div class="folder-row-icon folder-row-icon-all">
+              <ion-icon name="document-text-outline"></ion-icon>
+            </div>
+            <ion-label class="folder-row-label">{{ 'allNotes' | translate }}</ion-label>
+            <ion-icon name="chevron-forward-outline" class="folder-row-chevron"></ion-icon>
+          </ion-item>
+
+          <ion-item-sliding *ngFor="let folder of folders" #folderSliding>
+            <ion-item
+              lines="none"
+              button
+              detail="false"
+              (click)="!folderPressTriggered && selectFolder(folder.name)"
+              (touchstart)="onFolderTouchStart(folder.name)"
+              (touchmove)="onFolderTouchMove()"
+              (touchend)="onFolderTouchEnd()"
+              (touchcancel)="onFolderTouchEnd()">
+              <div class="folder-row-icon folder-row-icon-folder">
+                <ion-icon name="folder-outline"></ion-icon>
+              </div>
+              <ion-label class="folder-row-label">{{ folder.name }}</ion-label>
+              <ion-icon name="chevron-forward-outline" class="folder-row-chevron"></ion-icon>
+            </ion-item>
+
+            <ion-item-options side="end">
+              <ion-item-option color="danger" (click)="promptDeleteFolder(folder.name, folderSliding)">
+                <ion-icon name="trash-outline"></ion-icon>
+              </ion-item-option>
+            </ion-item-options>
+          </ion-item-sliding>
+        </ion-list>
+
+        <div class="folder-browser-actions">
+          <ion-button fill="outline" shape="round" (click)="promptCreateFolder()">
+            <ion-icon name="add-circle-outline" slot="start"></ion-icon>
+            {{ 'newFolder' | translate }}
+          </ion-button>
+        </div>
+
+        <div class="folder-browser-empty-state" *ngIf="notes.length === 0 && folders.length === 0">
+          <span class="folder-browser-empty-icon">
+            <img src="assets/tabler-icon-notes.svg" />
+          </span>
+          <div class="folder-browser-empty-title">{{ 'yourNotesAwait' | translate }}</div>
+          <div class="folder-browser-empty-text">{{ 'tapTo' | translate }} <strong>+ {{ 'button' | translate }}</strong> {{ 'toAddNote' | translate }}</div>
+        </div>
+      </div>
+    </ng-container>
+
+    <ng-container *ngIf="!shouldShowFolderBrowser">
       <div
-        class="favorites-filter-line"
-        [class.is-dragging]="isPagerDragging"
-        [style.transform]="segmentLineTransform">
+        class="favorites-filter"
+        *ngIf="!checkboxOpened">
+        <div
+          class="favorites-filter-line"
+          [class.is-dragging]="isPagerDragging"
+          [style.transform]="segmentLineTransform">
+        </div>
+
+        <ion-segment [value]="activeFilter" (ionChange)="onActiveFilterChange($event.detail.value)">
+          <ion-segment-button value="all">
+            <ion-label>{{ 'allNotes' | translate }}</ion-label>
+          </ion-segment-button>
+          <ion-segment-button value="favorites">
+            <ion-label>{{ 'favorites' | translate }}</ion-label>
+          </ion-segment-button>
+        </ion-segment>
       </div>
 
-      <ion-segment [value]="activeFilter" (ionChange)="onActiveFilterChange($event.detail.value)">
-        <ion-segment-button value="all">
-          <ion-label>{{ 'allNotes' | translate }}</ion-label>
-        </ion-segment-button>
-        <ion-segment-button value="favorites">
-          <ion-label>{{ 'favorites' | translate }}</ion-label>
-        </ion-segment-button>
-      </ion-segment>
-    </div>
+      <ion-grid
+        *ngIf="filteredResults !== null && filteredResults.length == 0 && !isSearching"
+        style="height: -webkit-calc(100vh - 170px); height: calc(100vh - 170px);">
+        <ion-row class="ion-align-items-center ion-justify-content-center" style="min-height: 100%;">
+          <ion-col size-md="12">
+            <p class="ion-padding" align="center">
+              <span style="background: #EAEAF0;
+                           border-radius: 50%;
+                           height: 72px;
+                           width: 72px;
+                           display: flex;
+                           align-items: center;
+                           justify-content: center;">
+                <img src="assets/tabler-icon-notes.svg" />
+              </span>
+              <br>
+              <span style="color: #0B0C19;
+                           text-align: center;
+                           font-family: Poppins;
+                           font-size: 16px;
+                           font-style: normal;
+                           font-weight: 600;
+                           position: relative;">
+                {{'yourNotesAwait' | translate}}
+              </span>
+              <br>
+              <span style="overflow: hidden;
+                           color: #62626A;
+                           text-align: center;
+                           text-overflow: ellipsis;
+                           font-family: Poppins;
+                           font-size: 14px;
+                           font-style: normal;
+                           font-weight: 400;">
+                {{'tapTo' | translate}}
+                <span style="color: #2761FC; font-weight: bold">+ {{'button' | translate}}</span>
+                {{'toAddNote' | translate}}
+              </span>
+            </p>
+          </ion-col>
+        </ion-row>
+      </ion-grid>
 
-    <ion-grid
-      *ngIf="filteredResults !== null && filteredResults.length == 0 && !isSearching"
-      style="height: -webkit-calc(100vh - 170px); height: calc(100vh - 170px);">
-      <ion-row class="ion-align-items-center ion-justify-content-center" style="min-height: 100%;">
-        <ion-col size-md="12">
-          <p class="ion-padding" align="center">
-            <span style="background: #EAEAF0;
-                         border-radius: 50%;
-                         height: 72px;
-                         width: 72px;
-                         display: flex;
-                         align-items: center;
-                         justify-content: center;">
-              <img src="assets/tabler-icon-notes.svg" />
-            </span>
-            <br>
-            <span style="color: #0B0C19;
-                         text-align: center;
-                         font-family: Poppins;
-                         font-size: 16px;
-                         font-style: normal;
-                         font-weight: 600;
-                         position: relative;">
-              {{'yourNotesAwait' | translate}}
-            </span>
-            <br>
-            <span style="overflow: hidden;
-                         color: #62626A;
-                         text-align: center;
-                         text-overflow: ellipsis;
-                         font-family: Poppins;
-                         font-size: 14px;
-                         font-style: normal;
-                         font-weight: 400;">
-              {{'tapTo' | translate}}
-              <span style="color: #2761FC; font-weight: bold">+ {{'button' | translate}}</span>
-              {{'toAddNote' | translate}}
-            </span>
-          </p>
-        </ion-col>
-      </ion-row>
-    </ion-grid>
+      <ion-grid
+        *ngIf="filteredResults !== null && filteredResults.length == 0 && isSearching"
+        style="height: -webkit-calc(100vh - 170px); height: calc(100vh - 170px);">
+        <ion-row class="ion-align-items-center ion-justify-content-center" style="min-height: 100%;">
+          <ion-col size-md="12">
+            <p class="ion-padding" align="center">
+              <span style="background: #EAEAF0;
+                           border-radius: 50%;
+                           height: 72px;
+                           width: 72px;
+                           display: flex;
+                           align-items: center;
+                           justify-content: center;">
+                <img src="assets/tabler-icon-notes.svg" />
+              </span>
+              <br>
+              <span style="color: #0B0C19;
+                           text-align: center;
+                           font-family: Poppins;
+                           font-size: 16px;
+                           font-style: normal;
+                           font-weight: 600;
+                           position: relative;">
+                {{'NoResultsFor' | translate}} "{{search_query}}"
+              </span>
+              <br>
+              <span style="overflow: hidden;
+                           color: #62626A;
+                           text-align: center;
+                           text-overflow: ellipsis;
+                           font-family: Poppins;
+                           font-size: 14px;
+                           font-style: normal;
+                           font-weight: 400;">
+                {{'TryAnotherSearchQuery' | translate}}
+              </span>
+            </p>
+          </ion-col>
+        </ion-row>
+      </ion-grid>
 
-    <ion-grid
-      *ngIf="filteredResults !== null && filteredResults.length == 0 && isSearching"
-      style="height: -webkit-calc(100vh - 170px); height: calc(100vh - 170px);">
-      <ion-row class="ion-align-items-center ion-justify-content-center" style="min-height: 100%;">
-        <ion-col size-md="12">
-          <p class="ion-padding" align="center">
-            <span style="background: #EAEAF0;
-                         border-radius: 50%;
-                         height: 72px;
-                         width: 72px;
-                         display: flex;
-                         align-items: center;
-                         justify-content: center;">
-              <img src="assets/tabler-icon-notes.svg" />
-            </span>
-            <br>
-            <span style="color: #0B0C19;
-                         text-align: center;
-                         font-family: Poppins;
-                         font-size: 16px;
-                         font-style: normal;
-                         font-weight: 600;
-                         position: relative;">
-              {{'NoResultsFor' | translate}} "{{search_query}}"
-            </span>
-            <br>
-            <span style="overflow: hidden;
-                         color: #62626A;
-                         text-align: center;
-                         text-overflow: ellipsis;
-                         font-family: Poppins;
-                         font-size: 14px;
-                         font-style: normal;
-                         font-weight: 400;">
-              {{'TryAnotherSearchQuery' | translate}}
-            </span>
-          </p>
-        </ion-col>
-      </ion-row>
-    </ion-grid>
 
     <ng-template #favoritesEmptyStateTemplate>
       <ion-grid style="height: -webkit-calc(100vh - 220px); height: calc(100vh - 220px);">
@@ -360,7 +423,7 @@
         <div
           *ngIf="!note.pinned && (i === 0 || notes[i - 1]?.pinned)"
           style="padding: 8px 16px 6px; color: #62626A; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em;">
-          Notes
+          {{ selectedFolderDisplayName }}
         </div>
 
         <ion-item
@@ -382,8 +445,14 @@
             </ion-checkbox>
 
             <ion-label class="ion-text-wrap" *ngIf="!note.protected">
-              <ion-note>
+              <ion-note class="note-meta-row">
                 <span>{{ note.last_modified | date: "yyyy-MM-dd H:mm":(timezone || 'UTC') }}</span>
+                <span
+                  *ngIf="activeFolderName === '__all__' && (note?.folder ?? '').trim()"
+                  class="note-folder-pill">
+                  <ion-icon name="folder-outline"></ion-icon>
+                  <span>{{ note.folder }}</span>
+                </span>
               </ion-note>
 
               <span *ngIf="isPrivacyModeEnabled(); else visibleNoteContent">
@@ -461,6 +530,47 @@
 
     <ng-template #standardNotesList>
       <ion-grid
+        *ngIf="activeFilter === 'all' && visibleNotes.length == 0 && filteredResults !== null && filteredResults.length > 0 && !isSearching"
+        style="height: -webkit-calc(100vh - 220px); height: calc(100vh - 220px);">
+        <ion-row class="ion-align-items-center ion-justify-content-center" style="min-height: 100%;">
+          <ion-col size-md="12">
+            <p class="ion-padding" align="center">
+              <span style="background: #EAEAF0;
+                           border-radius: 50%;
+                           height: 72px;
+                           width: 72px;
+                           display: flex;
+                           align-items: center;
+                           justify-content: center;">
+                <ion-icon name="folder-open-outline" style="font-size: 30px; color: #8B8D98;"></ion-icon>
+              </span>
+              <br>
+              <span style="color: #0B0C19;
+                           text-align: center;
+                           font-family: Poppins;
+                           font-size: 16px;
+                           font-style: normal;
+                           font-weight: 600;
+                           position: relative;">
+                {{ currentFolderEmptyTitle }}
+              </span>
+              <br>
+              <span style="overflow: hidden;
+                           color: #62626A;
+                           text-align: center;
+                           text-overflow: ellipsis;
+                           font-family: Poppins;
+                           font-size: 14px;
+                           font-style: normal;
+                           font-weight: 400;">
+                {{ currentFolderEmptyDescription }}
+              </span>
+            </p>
+          </ion-col>
+        </ion-row>
+      </ion-grid>
+
+      <ion-grid
         *ngIf="activeFilter === 'favorites' && visibleNotes.length == 0 && filteredResults !== null && filteredResults.length > 0 && !isSearching"
         style="height: -webkit-calc(100vh - 220px); height: calc(100vh - 220px);">
         <ion-row class="ion-align-items-center ion-justify-content-center" style="min-height: 100%;">
@@ -505,10 +615,22 @@
         <ng-container *ngTemplateOutlet="notesListTemplate; context: { $implicit: visibleNotes }"></ng-container>
       </ion-list>
     </ng-template>
+
+    </ng-container>
   </ng-container>
 </ion-content>
 
 <ion-toolbar slot="fixed" class="toolbar-bottom" *ngIf="checkboxOpened && visibleNotes.length > 0">
+  <ion-button
+    color="primary"
+    shape="round"
+    fill="outline"
+    class="delete-btn"
+    [disabled]="listOfCheckedCheckboxes.length == 0"
+    (click)="moveSelectedNotesToFolder()">
+    <ion-icon name="folder-open-outline" style="margin-right: 10px"></ion-icon>
+    {{'move' | translate}}
+  </ion-button>
   <ion-button
     color="danger"
     shape="round"

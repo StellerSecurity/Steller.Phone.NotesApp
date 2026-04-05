@@ -209,7 +209,7 @@
   "aboutDescription": "Un endroit discret pour vos pensées — conçu pour la confidentialité, protégé par un chiffrement côté client, et pensé pour que vos notes restent les vôtres.",
   "openSourceOnGithub": "Open source sur GitHub",
   "aboutMore": "En savoir plus",
-  "openSource": "Open Source",
+  "openSource": "Open source",
   "deleteYourStellarId": "Supprimer votre Stellar ID",
   "deleteAccountDescription": "Saisissez votre mot de passe actuel pour supprimer définitivement votre compte. Cette action est irréversible.",
   "currentPassword": "Mot de passe actuel",
@@ -261,5 +261,17 @@
   "securitySection": "Sécurité",
   "privacySection": "Confidentialité",
   "generalSection": "Général",
-  "accountSection": "Compte"
+  "accountSection": "Compte",
+  "folders": "Dossiers",
+  "allFolders": "Tous les dossiers",
+  "unfiled": "Toutes",
+  "newFolder": "Nouveau dossier",
+  "folderNamePlaceholder": "Nom du dossier",
+  "moveToFolder": "Déplacer vers le dossier",
+  "move": "Déplacer",
+  "create": "Créer",
+  "deleteFolder": "Supprimer le dossier",
+  "deleteFolderDescription": "Voulez-vous vraiment supprimer le dossier \"{{ folder }}\" et les {{ count }} notes qu’il contient ?",
+  "noteMovedToFolder": "Note déplacée",
+  "notesMovedToFolder": "{{count}} notes déplacées"
 }

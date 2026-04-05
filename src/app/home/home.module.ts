@@ -11,6 +11,7 @@ import { TranslateModule } from '@ngx-translate/core';
 import {AppModule} from "../app.module";
 import {StriphtmlPipe} from "../striphtml.pipe";
 import { ClickOutsideDirective } from '../directives/click-outside.directive';
+import { DeleteFolderModalModule } from '../delete-folder-modal/delete-folder-modal.module';
 
 @NgModule({
     imports: [
@@ -20,6 +21,7 @@ import { ClickOutsideDirective } from '../directives/click-outside.directive';
         HomePageRoutingModule,
         DeleteNoteModalModule,
         RestPassModalModule,
+        DeleteFolderModalModule,
         TranslateModule
     ],
     declarations: [HomePage, StriphtmlPipe, ClickOutsideDirective]

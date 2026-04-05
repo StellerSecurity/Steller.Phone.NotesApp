@@ -261,5 +261,17 @@
   "securitySection": "Seguridad",
   "privacySection": "Privacidad",
   "generalSection": "General",
-  "accountSection": "Cuenta"
+  "accountSection": "Cuenta",
+  "folders": "Carpetas",
+  "allFolders": "Todas las carpetas",
+  "unfiled": "Todas",
+  "newFolder": "Nueva carpeta",
+  "folderNamePlaceholder": "Nombre de la carpeta",
+  "moveToFolder": "Mover a la carpeta",
+  "move": "Mover",
+  "create": "Crear",
+  "deleteFolder": "Eliminar carpeta",
+  "deleteFolderDescription": "¿Seguro que quieres eliminar la carpeta \"{{ folder }}\" y las {{ count }} notas que contiene?",
+  "noteMovedToFolder": "Nota movida",
+  "notesMovedToFolder": "{{count}} notas movidas"
 }

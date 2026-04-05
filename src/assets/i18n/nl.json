@@ -209,7 +209,7 @@
   "aboutDescription": "Een rustige plek voor je gedachten — ontworpen met privacy in gedachten, beschermd met client-side versleuteling en gebouwd zodat je notities van jou blijven.",
   "openSourceOnGithub": "Open source op GitHub",
   "aboutMore": "Meer",
-  "openSource": "Open Source",
+  "openSource": "Open source",
   "deleteYourStellarId": "Verwijder je Stellar ID",
   "deleteAccountDescription": "Voer je huidige wachtwoord in om je account permanent te verwijderen. Deze actie kan niet ongedaan worden gemaakt.",
   "currentPassword": "Huidig wachtwoord",
@@ -261,5 +261,17 @@
   "securitySection": "Beveiliging",
   "privacySection": "Privacy",
   "generalSection": "Algemeen",
-  "accountSection": "Account"
+  "accountSection": "Account",
+  "folders": "Mappen",
+  "allFolders": "Alle mappen",
+  "unfiled": "Alle",
+  "newFolder": "Nieuwe map",
+  "folderNamePlaceholder": "Mapnaam",
+  "moveToFolder": "Verplaatsen naar map",
+  "move": "Verplaatsen",
+  "create": "Aanmaken",
+  "deleteFolder": "Map verwijderen",
+  "deleteFolderDescription": "Weet je zeker dat je de map \"{{ folder }}\" en alle {{ count }} notities daarin wilt verwijderen?",
+  "noteMovedToFolder": "Notitie verplaatst",
+  "notesMovedToFolder": "{{count}} notities verplaatst"
 }

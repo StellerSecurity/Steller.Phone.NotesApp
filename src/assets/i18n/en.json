@@ -261,5 +261,17 @@
   "securitySection": "Security",
   "privacySection": "Privacy",
   "generalSection": "General",
-  "accountSection": "Account"
+  "accountSection": "Account",
+  "folders": "Folders",
+  "allFolders": "All folders",
+  "unfiled": "All",
+  "newFolder": "New folder",
+  "folderNamePlaceholder": "Folder name",
+  "moveToFolder": "Move to folder",
+  "move": "Move",
+  "create": "Create",
+  "deleteFolder": "Delete folder",
+  "deleteFolderDescription": "Are you sure you want to delete the folder \"{{ folder }}\" and all {{ count }} notes inside it?",
+  "noteMovedToFolder": "Note moved",
+  "notesMovedToFolder": "{{count}} notes moved"
 }

@@ -209,7 +209,7 @@
   "aboutDescription": "En stillsam plats för dina tankar — utformad för integritet, skyddad med kryptering på klientsidan och byggd så att dina anteckningar förblir dina.",
   "openSourceOnGithub": "Open source på GitHub",
   "aboutMore": "Mer",
-  "openSource": "Open Source",
+  "openSource": "Öppen källkod",
   "deleteYourStellarId": "Radera ditt Stellar ID",
   "deleteAccountDescription": "Ange ditt nuvarande lösenord för att permanent radera ditt konto. Den här åtgärden kan inte ångras.",
   "currentPassword": "Nuvarande lösenord",
@@ -261,5 +261,17 @@
   "securitySection": "Säkerhet",
   "privacySection": "Integritet",
   "generalSection": "Allmänt",
-  "accountSection": "Konto"
+  "accountSection": "Konto",
+  "folders": "Mappar",
+  "allFolders": "Alla mappar",
+  "unfiled": "Alla",
+  "newFolder": "Ny mapp",
+  "folderNamePlaceholder": "Mappnamn",
+  "moveToFolder": "Flytta till mapp",
+  "move": "Flytta",
+  "create": "Skapa",
+  "deleteFolder": "Ta bort mapp",
+  "deleteFolderDescription": "Är du säker på att du vill ta bort mappen \"{{ folder }}\" och alla {{ count }} anteckningar i den?",
+  "noteMovedToFolder": "Anteckning flyttad",
+  "notesMovedToFolder": "{{count}} anteckningar flyttade"
 }

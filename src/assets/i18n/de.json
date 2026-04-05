@@ -261,5 +261,17 @@
   "securitySection": "Sicherheit",
   "privacySection": "Privatsphäre",
   "generalSection": "Allgemein",
-  "accountSection": "Konto"
+  "accountSection": "Konto",
+  "folders": "Ordner",
+  "allFolders": "Alle Ordner",
+  "unfiled": "Alle",
+  "newFolder": "Neuer Ordner",
+  "folderNamePlaceholder": "Ordnername",
+  "moveToFolder": "In Ordner verschieben",
+  "move": "Verschieben",
+  "create": "Erstellen",
+  "deleteFolder": "Ordner löschen",
+  "deleteFolderDescription": "Möchtest du den Ordner \"{{ folder }}\" und alle {{ count }} darin enthaltenen Notizen wirklich löschen?",
+  "noteMovedToFolder": "Notiz verschoben",
+  "notesMovedToFolder": "{{count}} Notizen verschoben"
 }

@@ -172,8 +172,11 @@ export class AppSettingsPage implements AfterViewInit {
         await this.secureStorageService.removeItem('ssEakB64');
       }
 
+      const plainFolders = this.noteService.getFolders() ?? JSON.stringify([]);
       const encryptedNotes = this.cryptoService.encrypt(plainNotes, this.notesAppPassword);
+      const encryptedFolders = this.cryptoService.encrypt(plainFolders, this.notesAppPassword);
       this.noteService.setNotes(encryptedNotes);
+      this.noteService.setFolders(encryptedFolders);
       this.noteService.setDecryptedNotes(plainNotes);
       this.noteService.setAppLockTimeoutMinutes(this.appLockTimeoutMinutes || 60);
       this.noteService.setAppWipeAfterDays(this.appWipeAfterDays);
@@ -208,10 +211,13 @@ export class AppSettingsPage implements AfterViewInit {
         if (confirm) {
           if (this.noteService.appHasPasswordChallenge() && inputValue) {
             const notes = this.noteService.getNotes();
+            const folders = this.noteService.getFolders();
             let decryptedNotes: string | null = null;
+            let decryptedFolders: string | null = null;
 
             try {
               decryptedNotes = this.cryptoService.decrypt(notes, inputValue);
+              decryptedFolders = this.cryptoService.decrypt(folders, inputValue);
             } catch (e) {
               const toast = await this.toastController.create({
                 message: this.allTranslations?.enteredPasswordIncorrect ?? 'The entered password was not correct.',
@@ -231,6 +237,7 @@ export class AppSettingsPage implements AfterViewInit {
             }
 
             this.noteService.setNotes(decryptedNotes);
+            this.noteService.setFolders(decryptedFolders ?? JSON.stringify([]));
             this.noteService.setDecryptedNotes(decryptedNotes);
             this.appWipeAfterDays = 0;
             this.noteService.clearAppUnlockFailures();

@@ -8,6 +8,7 @@ export class NotesStorageService {
   private readonly MIGRATION_VERSION_KEY = 'storage_migration_version';
   private readonly managedKeys = [
     'notes',
+    'folders',
     'app_password_challenge',
     'failedAttemptsApp',
     'app_lockout_until',
@@ -91,6 +92,12 @@ export class NotesStorageService {
   }
   public setNotesRaw(raw: string): void {
     this.setValue('notes', raw);
+  }
+  public getFoldersRaw(): string {
+    return this.getValue('folders') ?? '[]';
+  }
+  public setFoldersRaw(raw: string): void {
+    this.setValue('folders', raw);
   }
   public getAppPasswordChallengeFlag(): string | null {
     return this.getValue('app_password_challenge');

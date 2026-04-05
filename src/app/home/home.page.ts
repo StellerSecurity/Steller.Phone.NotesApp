@@ -13,6 +13,7 @@ import {
   IonContent,
   IonModal,
   IonSearchbar,
+  AlertController,
   ModalController,
   NavController,
   Platform,
@@ -24,6 +25,7 @@ import { CryptoService } from "../services/crypto.service";
 import { NotesService } from "../services/notes.service";
 import { AppProtectorService } from "../services/app-protector.service";
 import { DeleteNoteModalComponent } from '../delete-note-modal/delete-note-modal.component';
+import { DeleteFolderModalComponent } from '../delete-folder-modal/delete-folder-modal.component';
 import { ResetPassModalComponent } from '../restpass-modal/resetpass-modal.component';
 import { TranslatorService } from '../services/translator.service';
 import { AppHapticsService } from '../services/app-haptics.service';
@@ -42,6 +44,7 @@ import {
 } from '@stellarsecurity/stellar-crypto';
 import { CryptoKeyService } from '../services/crypto-key.service';
 import { ScrollService } from '../services/scroll.service';
+import { Folder } from '../models/Folder';
 
 @Component({
   selector: 'app-home',
@@ -70,7 +73,8 @@ export class HomePage implements AfterViewInit, OnDestroy {
   @ViewChildren('longPressElements', { read: ElementRef }) longPressElements: QueryList<ElementRef>;
   @ViewChild(IonContent, { static: false }) content!: IonContent;
 
-  private notes: any[] = [];
+  public notes: any[] = [];
+  public folders: Folder[] = [];
   private pauseSync = false;
   private hiddenId: string | null = null;
   private destroyPressGestures: (() => void) | null = null;
@@ -90,6 +94,8 @@ export class HomePage implements AfterViewInit, OnDestroy {
   public allVisibleNotes: any[] = [];
   public favoriteVisibleNotes: any[] = [];
   public activeFilter: 'all' | 'favorites' = 'all';
+  public activeFolderName: string = '__all__';
+  public folderBrowserMode = true;
   public isPagerDragging = false;
   public pagerTransform = 'translate3d(0px, 0, 0)';
   public segmentLineTransform = 'translate3d(0%, 0, 0)';
@@ -126,8 +132,14 @@ export class HomePage implements AfterViewInit, OnDestroy {
   private checkboxDismissStartX: number | null = null;
   private checkboxDismissStartY: number | null = null;
   private checkboxDismissTracking = false;
+  private folderPressTimer: any = null;
+  public folderPressTriggered = false;
 
   public initialHomeLoadFinished = false;
+
+  private folderBrowserModeBeforeSearch = true;
+  private activeFolderNameBeforeSearch = '__all__';
+  private activeFilterBeforeSearch: 'all' | 'favorites' = 'all';
 
   private readonly boundGlobalTouchEnd = () => {
     if (this.pagerTouchStartX !== null || this.pagerTracking || this.isPagerDragging) {
@@ -146,6 +158,7 @@ export class HomePage implements AfterViewInit, OnDestroy {
     public noteService: NotesService,
     private navController: NavController,
     private toastController: ToastController,
+    private alertController: AlertController,
     private appProtectorService: AppProtectorService,
     private modalCtrl: ModalController,
     private route: ActivatedRoute,
@@ -162,6 +175,85 @@ export class HomePage implements AfterViewInit, OnDestroy {
     private appHaptics: AppHapticsService,
     private platform: Platform,
   ) {}
+
+
+  public get folderVisibleNotes(): any[] {
+    return this.activeFolderName === '__all__'
+      ? this.visibleNotes
+      : this.visibleNotes.filter((note: any) => (note?.folder ?? '') === this.activeFolderName);
+  }
+
+  public folderChipCount(folderName: string): number {
+    return this.notes.filter((note: any) => (note?.folder ?? '') === folderName).length;
+  }
+
+  public get selectedFolderDisplayName(): string {
+    return this.activeFolderName === '__all__'
+      ? (this.allTranslations?.allNotes ?? 'All')
+      : this.activeFolderName;
+  }
+
+  public get homeHeaderTitle(): string {
+    if (this.checkboxOpened) {
+      return `${this.listOfCheckedCheckboxes.length} ${this.allTranslations?.notesSelected ?? 'notes selected'}`;
+    }
+
+    if (this.folderBrowserMode) {
+      return this.allTranslations?.folders ?? 'Folders';
+    }
+
+    return this.selectedFolderDisplayName;
+  }
+
+  public get totalNotesCount(): number {
+    return this.notes.length;
+  }
+
+  public get favoriteNotesCount(): number {
+    return this.notes.filter((note: any) => !!note?.favorite).length;
+  }
+
+  public get shouldShowFolderBrowser(): boolean {
+    return !this.searchMode && this.folderBrowserMode;
+  }
+
+  public get canSearchNotes(): boolean {
+    return this.notes.length > 0;
+  }
+
+  public get canSelectNotesFromCurrentView(): boolean {
+    return !this.folderBrowserMode && this.visibleNotes.length > 0;
+  }
+
+  public get newNoteQueryParams(): Record<string, string> | null {
+    if (this.folderBrowserMode) {
+      return null;
+    }
+
+    if (this.activeFolderName === '__all__') {
+      return null;
+    }
+
+    return { folder: this.activeFolderName };
+  }
+
+  public get currentFolderEmptyTitle(): string {
+    return this.allTranslations?.folderEmptyTitle ?? 'No notes in this folder yet';
+  }
+
+  public get currentFolderEmptyDescription(): string {
+    return this.allTranslations?.folderEmptyDescription ?? 'Tap + to add your first note here.';
+  }
+
+
+  public shouldShowNoteFolderLabel(note: any): boolean {
+    const noteFolder = (note?.folder ?? '').trim();
+    if (!noteFolder) {
+      return false;
+    }
+
+    return !this.folderBrowserMode && (!this.activeFolderName || this.activeFolderName === '__all__');
+  }
 
   public get hasAnyRenderedNotes(): boolean {
     return Array.isArray(this.filteredResults) && this.filteredResults.length > 0;
@@ -239,6 +331,11 @@ export class HomePage implements AfterViewInit, OnDestroy {
 
       if (this.searchMode) {
         this.exitSearchMode();
+        return;
+      }
+
+      if (!this.folderBrowserMode) {
+        this.backToFolders();
       }
     });
   }
@@ -335,7 +432,9 @@ export class HomePage implements AfterViewInit, OnDestroy {
   }
 
   async ionViewWillLeave() {
-    this.exitSearchMode();
+    if (this.searchMode) {
+      this.exitSearchMode();
+    }
     this.pauseSync = true;
     this.scrollRestored = false;
     this.headerHasShadow = false;
@@ -372,7 +471,16 @@ export class HomePage implements AfterViewInit, OnDestroy {
   enterSearchMode() {
     this.resetPagerTouch();
     this.resetCheckboxDismissGesture();
+    this.folderBrowserModeBeforeSearch = this.folderBrowserMode;
+    this.activeFolderNameBeforeSearch = this.activeFolderName;
+    this.activeFilterBeforeSearch = this.activeFilter;
+
     this.searchMode = true;
+    this.folderBrowserMode = false;
+    this.activeFolderName = '__all__';
+    this.activeFilter = 'all';
+    this.refreshVisibleNotes();
+
     setTimeout(() => {
       this.searchbar?.setFocus();
     }, HomePage.SEARCH_FOCUS_DELAY_MS);
@@ -387,6 +495,10 @@ export class HomePage implements AfterViewInit, OnDestroy {
 
     setTimeout(() => {
       this.searchMode = false;
+      this.folderBrowserMode = this.folderBrowserModeBeforeSearch;
+      this.activeFolderName = this.activeFolderNameBeforeSearch;
+      this.activeFilter = this.activeFilterBeforeSearch;
+      this.refreshVisibleNotes();
       this.cdr.detectChanges();
       this.schedulePressGestureInit();
     }, HomePage.DETECT_CHANGES_DELAY_MS);
@@ -505,9 +617,12 @@ export class HomePage implements AfterViewInit, OnDestroy {
         titleExists = normalizedTitle.includes(normalizedQuery);
       }
 
+      const normalizedFolder = normalize(this.notes[i]?.folder ?? '');
+      const folderMatches = normalizedFolder.includes(normalizedQuery);
+
       if (result && !this.notes[i].protected) {
         filteredNewResults.push(this.notes[i]);
-      } else if (titleExists) {
+      } else if (titleExists || folderMatches) {
         filteredNewResults.push(this.notes[i]);
       }
     }
@@ -589,6 +704,52 @@ export class HomePage implements AfterViewInit, OnDestroy {
     this.resetPagerTouch();
   }
 
+  private loadFolders(password: string = ''): void {
+    let parsedFolders: Folder[] = [];
+    try {
+      const rawFolders = this.noteService.getFolders();
+      const decodedFolders = this.noteService.appHasPasswordChallenge()
+        ? this.cryptoService.decrypt(rawFolders, password)
+        : rawFolders;
+      parsedFolders = decodedFolders ? JSON.parse(decodedFolders) : [];
+    } catch {
+      parsedFolders = [];
+    }
+
+    const folderMap = new Map<string, Folder>();
+
+    for (const folder of parsedFolders ?? []) {
+      const name = (folder?.name ?? '').trim();
+      if (!name) {
+        continue;
+      }
+      folderMap.set(name.toLowerCase(), {
+        name,
+        last_modified: folder?.last_modified ?? Date.now(),
+      });
+    }
+
+    for (const note of this.notes ?? []) {
+      const name = (note?.folder ?? '').trim();
+      if (!name) {
+        continue;
+      }
+      if (!folderMap.has(name.toLowerCase())) {
+        folderMap.set(name.toLowerCase(), {
+          name,
+          last_modified: note?.last_modified ?? Date.now(),
+        });
+      }
+    }
+
+    this.folders = Array.from(folderMap.values()).sort((a, b) => a.name.localeCompare(b.name));
+
+    if (this.activeFolderName !== '__all__'
+      && !this.folders.some((folder) => folder.name === this.activeFolderName)) {
+      this.activeFolderName = '__all__';
+    }
+  }
+
   private setData(password: string = ""): boolean {
     const { parsed } = setDecryptedNotesAndParse(this.noteService, this.cryptoService, password);
     if (!parsed && this.noteService.appHasPasswordChallenge()) {
@@ -599,7 +760,9 @@ export class HomePage implements AfterViewInit, OnDestroy {
       ...note,
       favorite: !!note?.favorite,
       pinned: !!note?.pinned,
+      folder: (note?.folder ?? '').trim(),
     }));
+    this.loadFolders(password);
     this.filteredResults = this.notes;
     this.refreshVisibleNotes();
     return true;
@@ -859,11 +1022,23 @@ export class HomePage implements AfterViewInit, OnDestroy {
   }
 
   private refreshVisibleNotes() {
-    const source = Array.isArray(this.filteredResults) ? this.filteredResults : [];
-    this.allVisibleNotes = this.sortNotes(source);
-    this.favoriteVisibleNotes = this.sortNotes(
-      source.filter((note: any) => !!note?.favorite)
-    );
+    const sorted = [...(this.filteredResults ?? [])].sort((a: any, b: any) => {
+      const aPinned = a?.pinned ? 1 : 0;
+      const bPinned = b?.pinned ? 1 : 0;
+      if (aPinned !== bPinned) return bPinned - aPinned;
+      return (b?.last_modified ?? 0) - (a?.last_modified ?? 0);
+    });
+
+    const folderScoped = sorted.filter((note: any) => {
+      const noteFolder = (note?.folder ?? '').trim();
+      if (this.activeFolderName === '__all__') {
+        return true;
+      }
+      return noteFolder === this.activeFolderName;
+    });
+
+    this.allVisibleNotes = folderScoped;
+    this.favoriteVisibleNotes = folderScoped.filter((note: any) => !!note?.favorite);
     this.syncVisibleNotesFromActiveFilter();
 
     if (!this.isPagerDragging) {
@@ -878,8 +1053,9 @@ export class HomePage implements AfterViewInit, OnDestroy {
     return !this.checkboxOpened
       && !this.searchMode
       && !this.isSearching
-      && Array.isArray(this.filteredResults)
-      && this.filteredResults.length > 0;
+      && !this.folderBrowserMode
+      && Array.isArray(this.allVisibleNotes)
+      && this.allVisibleNotes.length > 0;
   }
 
   public setActiveFilter(filter: 'all' | 'favorites') {
@@ -1180,6 +1356,373 @@ export class HomePage implements AfterViewInit, OnDestroy {
 
     this.refreshVisibleNotes();
     await this.persistNotesState();
+  }
+
+
+  public backToFolders(): void {
+    this.resetPagerTouch();
+    this.resetCheckboxDismissGesture();
+    this.folderBrowserMode = true;
+    this.activeFilter = 'all';
+    this.syncVisibleNotesFromActiveFilter();
+    this.updatePagerTransform();
+    this.updateSegmentLine();
+
+    requestAnimationFrame(() => {
+      this.content?.scrollToTop(200);
+    });
+  }
+
+  public selectFolder(folderName: string): void {
+    this.resetPagerTouch();
+    this.resetCheckboxDismissGesture();
+    this.activeFolderName = folderName;
+    this.folderBrowserMode = false;
+    this.activeFilter = 'all';
+    this.refreshVisibleNotes();
+
+    requestAnimationFrame(() => {
+      this.content?.scrollToTop(200);
+    });
+  }
+
+  private async persistFoldersState(): Promise<void> {
+    const rawFolders = JSON.stringify(this.folders);
+    if (this.noteService.appHasPasswordChallenge()) {
+      const encryptedFolders = this.cryptoService.encrypt(rawFolders, this.noteService.getNotesAppPassword());
+      this.noteService.setFolders(encryptedFolders);
+    } else {
+      this.noteService.setFolders(rawFolders);
+    }
+    await this.noteService.flushPersistence();
+  }
+
+  private upsertFolder(name: string): string {
+    const normalizedName = (name ?? '').trim();
+    if (!normalizedName) {
+      return '';
+    }
+
+    const existing = this.folders.find((folder) => folder.name.toLowerCase() === normalizedName.toLowerCase());
+    if (existing) {
+      return existing.name;
+    }
+
+    this.folders = [...this.folders, { name: normalizedName, last_modified: Date.now() }]
+      .sort((a, b) => a.name.localeCompare(b.name));
+    return normalizedName;
+  }
+
+
+  public onFolderTouchStart(folderName: string): void {
+    this.clearFolderPressTimer();
+    this.folderPressTriggered = false;
+    this.folderPressTimer = setTimeout(() => {
+      this.folderPressTriggered = true;
+      this.promptDeleteFolder(folderName).then(() => {});
+    }, 550);
+  }
+
+  public onFolderTouchMove(): void {
+    this.clearFolderPressTimer();
+  }
+
+  public onFolderTouchEnd(): void {
+    const triggered = this.folderPressTriggered;
+    this.clearFolderPressTimer();
+
+    if (triggered) {
+      setTimeout(() => {
+        this.folderPressTriggered = false;
+      }, 200);
+    }
+  }
+
+  private clearFolderPressTimer(): void {
+    if (this.folderPressTimer) {
+      clearTimeout(this.folderPressTimer);
+      this.folderPressTimer = null;
+    }
+  }
+
+  public async promptDeleteFolder(folderName: string, slidingItem?: any): Promise<void> {
+    this.clearFolderPressTimer();
+    const normalizedFolder = (folderName ?? '').trim();
+    if (!normalizedFolder) {
+      return;
+    }
+
+    await this.appHaptics.tap();
+
+    const noteCount = this.folderChipCount(normalizedFolder);
+    const modal = await this.modalCtrl.create({
+      component: DeleteFolderModalComponent,
+      cssClass: 'confirmation-popup',
+      componentProps: {
+        folderName: normalizedFolder,
+        noteCount,
+      },
+    });
+
+    modal.onDidDismiss().then(async (data) => {
+      try {
+        await slidingItem?.close?.();
+      } catch {}
+
+      if (data?.data?.confirm) {
+        await this.deleteFolderConfirm(normalizedFolder);
+      }
+    });
+
+    await modal.present();
+  }
+
+  private async deleteFolderConfirm(folderName: string): Promise<void> {
+    this.appHaptics.impactMedium();
+
+    if (this.pendingDeletedIds.length > 0) {
+      await this.commitPendingDelete();
+    }
+
+    const idsToDelete = new Set(
+      this.notes
+        .filter((note: any) => (note?.folder ?? '').trim() === folderName)
+        .map((note: any) => note.id)
+    );
+
+    const now = Date.now();
+    const deletedNotes = this.notes.filter((note: any) => idsToDelete.has(note.id));
+
+    for (const note of deletedNotes) {
+      this.noteService.markPendingMutation(note.id, 'delete', now);
+    }
+
+    const filteredResultsWasNotes = this.filteredResults === this.notes;
+    this.notes = this.notes.filter((note: any) => !idsToDelete.has(note.id));
+    this.filteredResults = filteredResultsWasNotes
+      ? this.notes
+      : this.filteredResults.filter((note: any) => !idsToDelete.has(note?.id));
+
+    this.pendingDeletedNotes = deletedNotes;
+    this.pendingDeletedIds = deletedNotes.map((note: any) => note.id);
+
+    this.folders = this.folders.filter((folder) => folder.name !== folderName);
+    await this.persistFoldersState();
+
+    if (this.activeFolderName === folderName) {
+      this.backToFolders();
+    } else {
+      this.refreshVisibleNotes();
+    }
+
+    const toast = await this.toastController.create({
+      message: (this.allTranslations?.folderDeletedWithCount ?? 'Folder deleted with {{count}} notes').replace('{{count}}', String(deletedNotes.length)),
+      duration: 4000,
+      position: 'bottom',
+      buttons: [
+        {
+          text: this.allTranslations?.undo ?? 'Undo',
+          role: 'cancel',
+          handler: () => {
+            this.appHaptics.tap();
+            this.restorePendingDeletedNotes();
+            this.folders = [...this.folders, { name: folderName, last_modified: now }]
+              .sort((a, b) => a.name.localeCompare(b.name));
+            this.persistFoldersState().then(() => {});
+            this.refreshVisibleNotes();
+          }
+        }
+      ]
+    });
+
+    toast.onDidDismiss().then(async (detail) => {
+      if (detail.role !== 'cancel') {
+        await this.commitPendingDelete();
+      }
+    });
+
+    await toast.present();
+  }
+
+  public async promptCreateFolder(options?: { keepCurrentView?: boolean; onCreated?: (folderName: string) => Promise<void> | void }): Promise<void> {
+    await this.appHaptics.tap();
+    const alert = await this.alertController.create({
+      header: this.allTranslations?.newFolder ?? 'New folder',
+      inputs: [
+        {
+          name: 'folderName',
+          type: 'text',
+          placeholder: this.allTranslations?.folderNamePlaceholder ?? 'Folder name',
+        },
+      ],
+      buttons: [
+        { text: this.allTranslations?.cancel ?? 'Cancel', role: 'cancel' },
+        {
+          text: this.allTranslations?.create ?? 'Create',
+          handler: async (data) => {
+            const folderName = this.upsertFolder(data?.folderName ?? '');
+            if (!folderName) {
+              return false;
+            }
+            await this.persistFoldersState();
+            if (options?.onCreated) {
+              await options.onCreated(folderName);
+            } else if (!options?.keepCurrentView) {
+              this.selectFolder(folderName);
+            }
+            this.cdr.detectChanges();
+            return true;
+          },
+        },
+      ],
+    });
+    await alert.present();
+  }
+
+  public async moveSelectedNotesToFolder(): Promise<void> {
+    if (!this.listOfCheckedCheckboxes?.length) {
+      return;
+    }
+
+    await this.appHaptics.tap();
+
+    const currentFolderName = (!this.folderBrowserMode && this.activeFolderName !== '__all__')
+      ? this.activeFolderName
+      : null;
+
+    const inputs: any[] = [
+      {
+        label: this.allTranslations?.allNotes ?? 'All',
+        type: 'radio',
+        value: '__all__',
+        checked: false,
+      },
+      ...this.folders
+        .filter((folder) => !currentFolderName || folder.name !== currentFolderName)
+        .map((folder) => ({
+          label: folder.name,
+          type: 'radio',
+          value: folder.name,
+          checked: false,
+        })),
+    ];
+
+    const applyFolderMove = async (selectedFolder: string): Promise<void> => {
+      const targetFolder = selectedFolder === '__all__' ? '' : this.upsertFolder(selectedFolder ?? '');
+      const selectedIds = new Set(this.listOfCheckedCheckboxes);
+      const movedCount = selectedIds.size;
+      const now = Date.now();
+
+      this.notes = this.notes.map((note: any) => {
+        if (!selectedIds.has(note.id)) {
+          return note;
+        }
+        this.noteService.markPendingMutation(note.id, 'update', now);
+        return { ...note, folder: targetFolder, last_modified: now };
+      });
+
+      this.filteredResults = this.search_query.length > 0 ? this.filteredResults.map((note: any) => {
+        if (!selectedIds.has(note.id)) {
+          return note;
+        }
+        return { ...note, folder: targetFolder, last_modified: now };
+      }) : this.notes;
+
+      await this.persistNotesState();
+      await this.persistFoldersState();
+      this.refreshVisibleNotes();
+
+      if (this.checkboxOpened) {
+        this.listOfCheckedCheckboxes = [];
+        await this.toggleCheckbox();
+      }
+
+      const toast = await this.toastController.create({
+        message: movedCount === 1
+          ? (this.allTranslations?.noteMovedToFolder ?? 'Note moved')
+          : (this.allTranslations?.notesMovedToFolder ?? '{{count}} notes moved').replace('{{count}}', String(movedCount)),
+        duration: 2200,
+        position: 'bottom',
+      });
+      await toast.present();
+    };
+
+    const alert = await this.alertController.create({
+      header: this.allTranslations?.moveToFolder ?? 'Move to folder',
+      inputs,
+      buttons: [
+        { text: this.allTranslations?.cancel ?? 'Cancel', role: 'cancel' },
+        {
+          text: this.allTranslations?.newFolder ?? 'New folder',
+          handler: async () => {
+            await alert.dismiss();
+            setTimeout(() => {
+              this.promptCreateFolder({
+                keepCurrentView: true,
+                onCreated: async (folderName: string) => {
+                  await this.applyNewFolderMoveSelection(folderName);
+                }
+              }).then(() => {});
+            }, 50);
+            return false;
+          },
+        },
+        {
+          text: this.allTranslations?.move ?? 'Move',
+          handler: async (selectedFolder: string) => {
+            await applyFolderMove(selectedFolder);
+            return true;
+          },
+        },
+      ],
+    });
+
+    await alert.present();
+  }
+
+  private async applyNewFolderMoveSelection(folderName: string): Promise<void> {
+    await this.appHaptics.tap();
+    const targetFolder = this.upsertFolder(folderName);
+    if (!targetFolder) {
+      return;
+    }
+
+    const selectedIds = new Set(this.listOfCheckedCheckboxes);
+    const movedCount = selectedIds.size;
+    const now = Date.now();
+
+    this.notes = this.notes.map((note: any) => {
+      if (!selectedIds.has(note.id)) {
+        return note;
+      }
+      this.noteService.markPendingMutation(note.id, 'update', now);
+      return { ...note, folder: targetFolder, last_modified: now };
+    });
+
+    this.filteredResults = this.search_query.length > 0 ? this.filteredResults.map((note: any) => {
+      if (!selectedIds.has(note.id)) {
+        return note;
+      }
+      return { ...note, folder: targetFolder, last_modified: now };
+    }) : this.notes;
+
+    await this.persistNotesState();
+    await this.persistFoldersState();
+    this.refreshVisibleNotes();
+
+    if (this.checkboxOpened) {
+      this.listOfCheckedCheckboxes = [];
+      await this.toggleCheckbox();
+    }
+
+    const toast = await this.toastController.create({
+      message: movedCount === 1
+        ? (this.allTranslations?.noteMovedToFolder ?? 'Note moved')
+        : (this.allTranslations?.notesMovedToFolder ?? '{{count}} notes moved').replace('{{count}}', String(movedCount)),
+      duration: 2200,
+      position: 'bottom',
+    });
+    await toast.present();
   }
 
   public settings() {
