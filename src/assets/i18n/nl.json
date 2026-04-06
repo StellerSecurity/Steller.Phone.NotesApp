@@ -289,5 +289,12 @@
   "pin": "Notitie vastzetten",
   "unpin": "Vastzetten opheffen",
   "markAsFavorite": "Markeer als favoriet",
-  "removeFavorite": "Favoriet verwijderen"
+  "removeFavorite": "Favoriet verwijderen",
+  "renameFolder": "Map hernoemen",
+  "save": "Opslaan",
+  "folderRenamed": "Map hernoemd naar {{folderName}}",
+  "folderAlreadyExists": "Map bestaat al",
+  "saveImage": "Afbeelding opslaan",
+  "saveImageSuccess": "Afbeelding opgeslagen",
+  "saveImageFailed": "Afbeelding kon niet worden opgeslagen"
 }

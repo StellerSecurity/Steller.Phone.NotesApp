@@ -289,5 +289,12 @@
   "pin": "Fäst anteckning",
   "unpin": "Ta bort fästning",
   "markAsFavorite": "Markera som favorit",
-  "removeFavorite": "Ta bort favorit"
+  "removeFavorite": "Ta bort favorit",
+  "renameFolder": "Byt namn på mapp",
+  "save": "Spara",
+  "folderRenamed": "Mappen bytte namn till {{folderName}}",
+  "folderAlreadyExists": "Mappen finns redan",
+  "saveImage": "Spara bild",
+  "saveImageSuccess": "Bilden sparades",
+  "saveImageFailed": "Det gick inte att spara bilden"
 }

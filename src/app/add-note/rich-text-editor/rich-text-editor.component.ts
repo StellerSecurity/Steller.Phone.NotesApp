@@ -21,12 +21,14 @@ export class RichTextEditorComponent implements OnInit, OnDestroy {
 
   @Input() note_text: string = '';
   @Output() noteChange = new EventEmitter<string>();
+  @Output() imagePreviewRequested = new EventEmitter<string>();
 
   quill: any;
   private isDropdownOpen = false;
   private dropdownElement: HTMLElement | null = null;
   private resizeListener: (() => void) | null = null;
   private clickOutsideListener: (() => void) | null = null;
+  private editorImageClickListener: (() => void) | null = null;
 
   readonly headerOptions: HeaderOption[] = [
     { value: 'false', label: 'standard' },
@@ -73,10 +75,34 @@ export class RichTextEditorComponent implements OnInit, OnDestroy {
     if (this.resizeListener) {
       this.resizeListener();
     }
+    if (this.editorImageClickListener) {
+      this.editorImageClickListener();
+      this.editorImageClickListener = null;
+    }
   }
 
   onEditorCreated(quillInstance: any) {
     this.quill = quillInstance;
+
+    if (this.editorImageClickListener) {
+      this.editorImageClickListener();
+      this.editorImageClickListener = null;
+    }
+
+    if (this.quill?.root) {
+      this.editorImageClickListener = this.renderer.listen(this.quill.root, 'click', (event: Event) => {
+        const target = event.target as HTMLElement | null;
+        const imageElement = target?.closest('img') as HTMLImageElement | null;
+
+        if (!imageElement?.src) {
+          return;
+        }
+
+        event.preventDefault();
+        event.stopPropagation();
+        this.imagePreviewRequested.emit(imageElement.src);
+      });
+    }
 
       // Wait for DOM + Ionic rendering
       requestAnimationFrame(() => {

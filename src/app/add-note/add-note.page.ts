@@ -10,6 +10,9 @@ import {
 } from '@ionic/angular';
 import { Subscription } from 'rxjs';
 import { App } from '@capacitor/app';
+import { Share } from '@capacitor/share';
+import { Capacitor } from '@capacitor/core';
+import { Directory, Filesystem } from '@capacitor/filesystem';
 import type { PluginListenerHandle } from '@capacitor/core';
 import { CryptoService } from '../services/crypto.service';
 import { NotesService } from '../services/notes.service';
@@ -67,6 +70,8 @@ export class AddNotePage implements OnDestroy {
   public folderPickerSelection = '__all__';
   public newFolderModalOpen = false;
   public newFolderName = '';
+  public imagePreviewOpen = false;
+  public imagePreviewSrc = '';
 
   private notes_id: string | null = null;
   private notes: NoteV1[] = [];
@@ -339,6 +344,128 @@ export class AddNotePage implements OnDestroy {
     await this.deleteNote();
   }
 
+
+  public openImagePreview(imageSrc: string): void {
+    if (!imageSrc) {
+      return;
+    }
+
+    this.imagePreviewSrc = imageSrc;
+    this.imagePreviewOpen = true;
+  }
+
+  public closeImagePreview(): void {
+    this.imagePreviewOpen = false;
+    this.imagePreviewSrc = '';
+  }
+
+  private getImageFileExtension(imageSrc: string): string {
+    const match = /^data:image\/([a-zA-Z0-9.+-]+);base64,/.exec(imageSrc || '');
+    const type = (match?.[1] ?? 'png').toLowerCase();
+
+    if (type === 'jpeg') {
+      return 'jpg';
+    }
+
+    if (type === 'svg+xml') {
+      return 'svg';
+    }
+
+    return type;
+  }
+
+  private getImageBase64Payload(imageSrc: string): string | null {
+    const match = /^data:image\/[a-zA-Z0-9.+-]+;base64,(.+)$/s.exec(imageSrc || '');
+    return match?.[1] ?? null;
+  }
+
+  private async downloadImageOnWeb(imageSrc: string, fileName: string): Promise<void> {
+    const anchor = document.createElement('a');
+    anchor.href = imageSrc;
+    anchor.download = fileName;
+    anchor.rel = 'noopener';
+    document.body.appendChild(anchor);
+    anchor.click();
+    document.body.removeChild(anchor);
+  }
+
+  private async writeImageToLocalFile(imageSrc: string): Promise<{ uri: string; fileName: string }> {
+    const base64Payload = this.getImageBase64Payload(imageSrc);
+    if (!base64Payload) {
+      throw new Error('Unsupported image format');
+    }
+
+    const extension = this.getImageFileExtension(imageSrc);
+    const fileName = `stellar-note-image-${Date.now()}.${extension}`;
+    const result = await Filesystem.writeFile({
+      path: fileName,
+      data: base64Payload,
+      directory: Directory.Documents,
+      recursive: true,
+    });
+
+    return {
+      uri: result.uri,
+      fileName,
+    };
+  }
+
+  public async savePreviewImage(): Promise<void> {
+    if (!this.imagePreviewSrc) {
+      return;
+    }
+
+    try {
+      const fileName = `stellar-note-image-${Date.now()}.${this.getImageFileExtension(this.imagePreviewSrc)}`;
+
+      if (Capacitor.getPlatform() === 'web') {
+        await this.downloadImageOnWeb(this.imagePreviewSrc, fileName);
+      } else {
+        await this.writeImageToLocalFile(this.imagePreviewSrc);
+      }
+
+      const toast = await this.toastController.create({
+        message: this.allTranslations?.saveImageSuccess ?? 'Image saved',
+        duration: 2200,
+        position: 'bottom',
+      });
+      await toast.present();
+    } catch {
+      const toast = await this.toastController.create({
+        message: this.allTranslations?.saveImageFailed ?? 'Unable to save image',
+        duration: 2400,
+        position: 'bottom',
+      });
+      await toast.present();
+    }
+  }
+
+  public async sharePreviewImage(): Promise<void> {
+    if (!this.imagePreviewSrc) {
+      return;
+    }
+
+    try {
+      if (Capacitor.getPlatform() === 'web') {
+        await Share.share({
+          title: this.note_title || this.getUntitledLabel(),
+          text: this.allTranslations?.shareImage ?? 'Share image',
+          url: this.imagePreviewSrc,
+          dialogTitle: this.allTranslations?.shareImage ?? 'Share image',
+        });
+      } else {
+        const file = await this.writeImageToLocalFile(this.imagePreviewSrc);
+        await Share.share({
+          title: this.note_title || this.getUntitledLabel(),
+          text: this.allTranslations?.shareImage ?? 'Share image',
+          url: file.uri,
+          dialogTitle: this.allTranslations?.shareImage ?? 'Share image',
+        });
+      }
+    } catch {
+    }
+  }
+
   private normalizeFolderId(folderId: any): string | null {
     return typeof folderId === 'string' && folderId.trim().length > 0 ? folderId.trim() : null;
   }
@@ -382,7 +509,7 @@ export class AddNotePage implements OnDestroy {
       return;
     }
 
-    await this.notesApiV1Service.upload(0, [], undefined, this.getStoredFolders());
+    void this.notesApiV1Service.upload(0, [], undefined, this.getStoredFolders()).then(() => {});
   }
 
   private loadFolders(): void {
@@ -443,7 +570,7 @@ export class AddNotePage implements OnDestroy {
       this.notesService.setFolders(rawFolders);
     }
     await this.notesService.flushPersistence();
-    await this.uploadFoldersState();
+    void this.uploadFoldersState();
   }
 
   private upsertFolder(name: string): string {
@@ -743,6 +870,7 @@ export class AddNotePage implements OnDestroy {
 
   ionViewWillLeave() {
     this.closeMoreMenu();
+    this.closeImagePreview();
     this.forceSaveNow();
     this.relockProtectedNote();
     this.stopLiveNotePolling();

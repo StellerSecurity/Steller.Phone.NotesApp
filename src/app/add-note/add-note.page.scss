@@ -454,3 +454,80 @@ ion-input {
   --color: #ffffff;
   --box-shadow: 0 12px 28px rgba(39, 97, 252, 0.28);
 }
+
+.note-image-preview-content {
+  --background: rgba(10, 12, 24, 0.72);
+}
+
+.note-image-preview-shell {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 24px 18px 28px;
+  gap: 18px;
+  position: relative;
+}
+
+.note-image-preview-close {
+  position: absolute;
+  top: max(18px, env(safe-area-inset-top));
+  right: 18px;
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(10px);
+}
+
+.note-image-preview-close ion-icon {
+  font-size: 20px;
+}
+
+.note-image-preview-stage {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.note-image-preview-image {
+  max-width: 100%;
+  max-height: min(68vh, 720px);
+  object-fit: contain;
+  border-radius: 24px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.28);
+  background: rgba(255, 255, 255, 0.96);
+}
+
+.note-image-preview-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.note-image-preview-actions ion-button {
+  flex: 1 1 0;
+  margin: 0;
+  height: 50px;
+}
+
+.note-image-preview-secondary {
+  --background: rgba(255, 255, 255, 0.16);
+  --color: #ffffff;
+  --border-radius: 18px;
+  --box-shadow: none;
+  backdrop-filter: blur(12px);
+}
+
+.note-image-preview-primary {
+  --background: #2761fc;
+  --color: #ffffff;
+  --border-radius: 18px;
+  --box-shadow: 0 16px 30px rgba(39, 97, 252, 0.28);
+}

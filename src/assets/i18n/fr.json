@@ -289,5 +289,12 @@
   "pin": "Épingler la note",
   "unpin": "Désépingler la note",
   "markAsFavorite": "Ajouter aux favoris",
-  "removeFavorite": "Retirer des favoris"
+  "removeFavorite": "Retirer des favoris",
+  "renameFolder": "Renommer le dossier",
+  "save": "Enregistrer",
+  "folderRenamed": "Le dossier a été renommé en {{folderName}}",
+  "folderAlreadyExists": "Le dossier existe déjà",
+  "saveImage": "Enregistrer l’image",
+  "saveImageSuccess": "Image enregistrée",
+  "saveImageFailed": "Impossible d’enregistrer l’image"
 }

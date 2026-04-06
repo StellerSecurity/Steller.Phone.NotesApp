@@ -145,7 +145,7 @@
               </ion-button>
             </div>
           </div>
-        </ion-content>
+</ion-content>
       </ng-template>
     </ion-modal>
 
@@ -294,7 +294,40 @@
     <app-rich-text-editor
       #richTextEditorComponentRef
       [note_text]="note_text"
-      (noteChange)="onSave($event, 'note_text')">
+      (noteChange)="onSave($event, 'note_text')"
+      (imagePreviewRequested)="openImagePreview($event)">
     </app-rich-text-editor>
   </div>
+
+  <ion-modal
+    [isOpen]="imagePreviewOpen"
+    cssClass="note-image-preview-modal"
+    [backdropDismiss]="true"
+    [showBackdrop]="true"
+    (didDismiss)="closeImagePreview()">
+    <ng-template>
+      <ion-content class="note-image-preview-content">
+        <div class="note-image-preview-shell">
+          <button type="button" class="note-image-preview-close" (click)="closeImagePreview()" aria-label="Close image preview">
+            <ion-icon name="close-outline"></ion-icon>
+          </button>
+
+          <div class="note-image-preview-stage">
+            <img [src]="imagePreviewSrc" alt="Preview image" class="note-image-preview-image" />
+          </div>
+
+          <div class="note-image-preview-actions">
+            <ion-button fill="clear" class="note-image-preview-secondary" (click)="sharePreviewImage()">
+              <ion-icon slot="start" name="share-social-outline"></ion-icon>
+              {{ 'share' | translate }}
+            </ion-button>
+            <ion-button class="note-image-preview-primary" (click)="savePreviewImage()">
+              <ion-icon slot="start" name="download-outline"></ion-icon>
+              {{ 'saveImage' | translate }}
+            </ion-button>
+          </div>
+        </div>
+      </ion-content>
+    </ng-template>
+  </ion-modal>
 </ion-content>

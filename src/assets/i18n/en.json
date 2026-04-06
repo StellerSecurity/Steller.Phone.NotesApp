@@ -289,5 +289,12 @@
   "pin": "Pin note",
   "unpin": "Unpin note",
   "markAsFavorite": "Favorite note",
-  "removeFavorite": "Remove favorite"
+  "removeFavorite": "Remove favorite",
+  "renameFolder": "Rename Folder",
+  "save": "Save",
+  "folderRenamed": "Folder renamed to {{folderName}}",
+  "folderAlreadyExists": "Folder already exists",
+  "saveImage": "Save image",
+  "saveImageSuccess": "Image saved",
+  "saveImageFailed": "Unable to save image"
 }

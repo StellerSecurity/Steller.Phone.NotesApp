@@ -289,5 +289,12 @@
   "pin": "Fastgør note",
   "unpin": "Fjern fastgørelse",
   "markAsFavorite": "Gør til favorit",
-  "removeFavorite": "Fjern favorit"
+  "removeFavorite": "Fjern favorit",
+  "renameFolder": "Omdøb mappe",
+  "save": "Gem",
+  "folderRenamed": "Mappen blev omdøbt til {{folderName}}",
+  "folderAlreadyExists": "Mappen findes allerede",
+  "saveImage": "Gem billede",
+  "saveImageSuccess": "Billede gemt",
+  "saveImageFailed": "Kunne ikke gemme billedet"
 }
