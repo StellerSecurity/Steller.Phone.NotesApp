@@ -289,12 +289,5 @@
   "pin": "Fijar nota",
   "unpin": "Quitar fijación",
   "markAsFavorite": "Marcar como favorita",
-  "removeFavorite": "Quitar de favoritas",
-  "renameFolder": "Renombrar carpeta",
-  "save": "Guardar",
-  "folderRenamed": "La carpeta se renombró a {{folderName}}",
-  "folderAlreadyExists": "La carpeta ya existe",
-  "saveImage": "Guardar imagen",
-  "saveImageSuccess": "Imagen guardada",
-  "saveImageFailed": "No se pudo guardar la imagen"
+  "removeFavorite": "Quitar de favoritas"
 }

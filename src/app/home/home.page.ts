@@ -20,8 +20,6 @@ import {
   ToastController,
 } from '@ionic/angular';
 import { Subscription } from 'rxjs';
-import { App } from '@capacitor/app';
-import type { PluginListenerHandle } from '@capacitor/core';
 
 import { CryptoService } from "../services/crypto.service";
 import { NotesService } from "../services/notes.service";
@@ -96,7 +94,6 @@ export class HomePage implements AfterViewInit, OnDestroy {
   public allVisibleNotes: any[] = [];
   public favoriteVisibleNotes: any[] = [];
   public activeFilter: 'all' | 'favorites' = 'all';
-  public activeFolderId: string | null = null;
   public activeFolderName: string = '__all__';
   public folderBrowserMode = true;
   public isPagerDragging = false;
@@ -109,10 +106,6 @@ export class HomePage implements AfterViewInit, OnDestroy {
   public headerHasShadow = false;
   public newFolderModalOpen = false;
   public newFolderName = '';
-  public folderModalMode: 'create' | 'rename' = 'create';
-  public folderRenameOriginalName = '';
-  public isEditingFolderTitle = false;
-  public folderTitleDraft = '';
 
   timeout: any;
   isClicked: boolean = false;
@@ -151,9 +144,6 @@ export class HomePage implements AfterViewInit, OnDestroy {
   private pendingCreateFolderOptions?: { keepCurrentView?: boolean; onCreated?: (folderName: string) => Promise<void> | void };
   private activeFolderNameBeforeSearch = '__all__';
   private activeFilterBeforeSearch: 'all' | 'favorites' = 'all';
-  private resumeSyncListener: PluginListenerHandle | null = null;
-  private lastResumeSyncAt = 0;
-  private readonly resumeSyncMinIntervalMs = 10_000;
 
   private readonly boundGlobalTouchEnd = () => {
     if (this.pagerTouchStartX !== null || this.pagerTracking || this.isPagerDragging) {
@@ -192,9 +182,9 @@ export class HomePage implements AfterViewInit, OnDestroy {
 
 
   public get folderVisibleNotes(): any[] {
-    return this.activeFolderName === '__all__' || !this.activeFolderId
+    return this.activeFolderName === '__all__'
       ? this.visibleNotes
-      : this.visibleNotes.filter((note: any) => this.normalizeFolderId((note as any)?.folder_id) === this.activeFolderId);
+      : this.visibleNotes.filter((note: any) => (note?.folder ?? '') === this.activeFolderName);
   }
 
   public folderChipCount(folderName: string): number {
@@ -259,21 +249,6 @@ export class HomePage implements AfterViewInit, OnDestroy {
     return this.allTranslations?.folderEmptyDescription ?? 'Tap + to add your first note here.';
   }
 
-  public get canEditActiveFolderTitle(): boolean {
-    return !this.checkboxOpened && !this.searchMode && !this.folderBrowserMode && this.activeFolderName !== '__all__';
-  }
-
-  public get folderModalTitle(): string {
-    return this.folderModalMode === 'rename'
-      ? (this.allTranslations?.renameFolder ?? 'Rename folder')
-      : (this.allTranslations?.newFolder ?? 'New folder');
-  }
-
-  public get folderModalConfirmLabel(): string {
-    return this.folderModalMode === 'rename'
-      ? (this.allTranslations?.save ?? 'Save')
-      : (this.allTranslations?.create ?? 'Create');
-  }
 
   public shouldShowNoteFolderLabel(note: any): boolean {
     const noteFolder = (note?.folder ?? '').trim();
@@ -346,45 +321,6 @@ export class HomePage implements AfterViewInit, OnDestroy {
     }, delay);
   }
 
-  private async triggerResumeRefresh(): Promise<void> {
-    if (!this.authService.isLoggedIn) return;
-    if (this.pauseSync || this.isSyncing) return;
-    if (this.noteService.shouldAskForPassword()) return;
-
-    const now = Date.now();
-    if (now - this.lastResumeSyncAt < this.resumeSyncMinIntervalMs) {
-      return;
-    }
-
-    this.lastResumeSyncAt = now;
-    this.syncFromServer().then(() => {});
-  }
-
-  private registerResumeRefreshHandler(): void {
-    if (this.resumeSyncListener) {
-      return;
-    }
-
-    App.addListener('appStateChange', ({ isActive }) => {
-      if (!isActive) {
-        return;
-      }
-
-      this.triggerResumeRefresh().then(() => {});
-    }).then((listener) => {
-      this.resumeSyncListener = listener;
-    });
-  }
-
-  private unregisterResumeRefreshHandler(): void {
-    if (!this.resumeSyncListener) {
-      return;
-    }
-
-    this.resumeSyncListener.remove();
-    this.resumeSyncListener = null;
-  }
-
   private registerBackButtonHandler(): void {
     if (this.backButtonSub) {
       this.backButtonSub.unsubscribe();
@@ -437,8 +373,6 @@ export class HomePage implements AfterViewInit, OnDestroy {
       this.backButtonSub = null;
     }
 
-    this.unregisterResumeRefreshHandler();
-
     window.removeEventListener('touchend', this.boundGlobalTouchEnd);
     window.removeEventListener('touchcancel', this.boundGlobalTouchCancel);
   }
@@ -456,9 +390,7 @@ export class HomePage implements AfterViewInit, OnDestroy {
     this.hiddenId = this.route.snapshot.queryParamMap.get('hide_ids');
 
     if (this.dataService.getForceDownloadOnHome() && this.authService.isLoggedIn) {
-      this.waitForSync = false;
-      this.setData(this.noteService.getNotesAppPassword());
-      this.dataService.setForceDownloadOnHome(false);
+      this.waitForSync = true;
     }
 
     if (!this.noteService.appHasPasswordChallenge()) {
@@ -499,7 +431,6 @@ export class HomePage implements AfterViewInit, OnDestroy {
   ionViewDidEnter() {
     this.schedulePressGestureInit();
     this.registerBackButtonHandler();
-    this.registerResumeRefreshHandler();
     window.addEventListener('touchend', this.boundGlobalTouchEnd, { passive: true });
     window.addEventListener('touchcancel', this.boundGlobalTouchCancel, { passive: true });
   }
@@ -521,8 +452,6 @@ export class HomePage implements AfterViewInit, OnDestroy {
       this.backButtonSub.unsubscribe();
       this.backButtonSub = null;
     }
-
-    this.unregisterResumeRefreshHandler();
 
     if (this.pressGestureInitTimer) {
       clearTimeout(this.pressGestureInitTimer);
@@ -861,14 +790,9 @@ export class HomePage implements AfterViewInit, OnDestroy {
 
     this.folders = Array.from(folderMap.values()).sort((a, b) => a.name.localeCompare(b.name));
 
-    if (this.activeFolderName !== '__all__') {
-      const activeFolder = this.folders.find((folder) => this.normalizeFolderId(folder.id) === this.activeFolderId);
-      if (!activeFolder) {
-        this.activeFolderId = null;
-        this.activeFolderName = '__all__';
-      } else {
-        this.activeFolderName = activeFolder.name;
-      }
+    if (this.activeFolderName !== '__all__'
+      && !this.folders.some((folder) => folder.name === this.activeFolderName)) {
+      this.activeFolderName = '__all__';
     }
   }
 
@@ -1180,10 +1104,11 @@ export class HomePage implements AfterViewInit, OnDestroy {
     });
 
     const folderScoped = sorted.filter((note: any) => {
-      if (this.activeFolderName === '__all__' || !this.activeFolderId) {
+      const noteFolder = (note?.folder ?? '').trim();
+      if (this.activeFolderName === '__all__') {
         return true;
       }
-      return this.normalizeFolderId((note as any)?.folder_id) === this.activeFolderId;
+      return noteFolder === this.activeFolderName;
     });
 
     this.allVisibleNotes = folderScoped;
@@ -1513,11 +1438,9 @@ export class HomePage implements AfterViewInit, OnDestroy {
 
 
   public backToFolders(): void {
-    this.cancelFolderTitleEdit();
     this.resetPagerTouch();
     this.resetCheckboxDismissGesture();
     this.folderBrowserMode = true;
-    this.activeFolderId = null;
     this.activeFilter = 'all';
     this.syncVisibleNotesFromActiveFilter();
     this.updatePagerTransform();
@@ -1529,12 +1452,9 @@ export class HomePage implements AfterViewInit, OnDestroy {
   }
 
   public selectFolder(folderName: string): void {
-    this.cancelFolderTitleEdit();
     this.resetPagerTouch();
     this.resetCheckboxDismissGesture();
-    const activeFolder = this.folders.find((folder) => (folder.name ?? '').trim() === (folderName ?? '').trim());
-    this.activeFolderId = this.normalizeFolderId(activeFolder?.id);
-    this.activeFolderName = activeFolder?.name ?? folderName;
+    this.activeFolderName = folderName;
     this.folderBrowserMode = false;
     this.activeFilter = 'all';
     this.refreshVisibleNotes();
@@ -1573,7 +1493,7 @@ export class HomePage implements AfterViewInit, OnDestroy {
       this.noteService.setFolders(rawFolders);
     }
     await this.noteService.flushPersistence();
-    void this.uploadFoldersState();
+    await this.uploadFoldersState();
   }
 
   private upsertFolder(name: string): string {
@@ -1604,141 +1524,6 @@ export class HomePage implements AfterViewInit, OnDestroy {
     this.folders = [...this.folders, { id: crypto?.randomUUID?.() ?? String(Date.now() + Math.random()), name: normalizedName, last_modified: Date.now(), deleted: false }]
       .sort((a, b) => a.name.localeCompare(b.name));
     return normalizedName;
-  }
-
-
-  public startFolderTitleEdit(): void {
-    if (!this.canEditActiveFolderTitle) {
-      return;
-    }
-
-    this.folderTitleDraft = this.activeFolderName;
-    this.isEditingFolderTitle = true;
-    setTimeout(() => {
-      const el = document.querySelector('.folder-title-input input') as HTMLInputElement | null;
-      el?.focus();
-      el?.select();
-    }, 10);
-  }
-
-  public cancelFolderTitleEdit(): void {
-    this.isEditingFolderTitle = false;
-    this.folderTitleDraft = '';
-  }
-
-  public async submitFolderTitleEdit(): Promise<void> {
-    if (!this.isEditingFolderTitle) {
-      return;
-    }
-
-    const currentName = (this.activeFolderName ?? '').trim();
-    const currentFolderId = this.activeFolderId;
-    const nextName = (this.folderTitleDraft ?? '').trim();
-
-    if (!currentName) {
-      this.cancelFolderTitleEdit();
-      return;
-    }
-
-    if (!nextName || nextName.toLowerCase() === currentName.toLowerCase()) {
-      this.cancelFolderTitleEdit();
-      return;
-    }
-
-    const renamed = await this.renameFolder(currentName, nextName);
-    if (renamed) {
-      this.activeFolderName = renamed;
-      this.activeFolderId = currentFolderId;
-    }
-
-    this.cancelFolderTitleEdit();
-  }
-
-  public async promptRenameFolder(folderName: string, slidingItem?: any): Promise<void> {
-    this.clearFolderPressTimer();
-    const normalizedFolder = (folderName ?? '').trim();
-    if (!normalizedFolder) {
-      return;
-    }
-
-    try {
-      await slidingItem?.close?.();
-    } catch {}
-
-    await this.appHaptics.tap();
-    this.folderModalMode = 'rename';
-    this.folderRenameOriginalName = normalizedFolder;
-    this.newFolderName = normalizedFolder;
-    this.pendingCreateFolderOptions = { keepCurrentView: true };
-    this.newFolderModalOpen = true;
-
-    await new Promise<boolean>((resolve) => {
-      this.pendingCreateFolderResolver = resolve;
-    });
-  }
-
-  private async renameFolder(currentName: string, nextName: string): Promise<string> {
-    const normalizedCurrent = (currentName ?? '').trim();
-    const normalizedNext = (nextName ?? '').trim();
-
-    if (!normalizedCurrent || !normalizedNext) {
-      return '';
-    }
-
-    const existingWithNewName = this.folders.find((folder) => (folder.name ?? '').trim().toLowerCase() === normalizedNext.toLowerCase());
-    if (existingWithNewName && (existingWithNewName.name ?? '').trim().toLowerCase() !== normalizedCurrent.toLowerCase()) {
-      const toast = await this.toastController.create({
-        message: this.allTranslations?.folderAlreadyExists ?? 'Folder already exists',
-        duration: 1800,
-        position: 'bottom',
-      });
-      await toast.present();
-      return '';
-    }
-
-    const now = Date.now();
-    let renamedFolderId: string | null = null;
-
-    this.folders = this.folders.map((folder) => {
-      if ((folder.name ?? '').trim().toLowerCase() !== normalizedCurrent.toLowerCase()) {
-        return folder;
-      }
-      renamedFolderId = this.normalizeFolderId(folder.id) ?? (crypto?.randomUUID?.() ?? String(Date.now() + Math.random()));
-      return {
-        ...folder,
-        id: renamedFolderId,
-        name: normalizedNext,
-        last_modified: now,
-        deleted: false,
-      };
-    }).sort((a, b) => a.name.localeCompare(b.name));
-
-    this.notes = this.notes.map((note: any) => {
-      if ((note?.folder ?? '').trim().toLowerCase() !== normalizedCurrent.toLowerCase()) {
-        return note;
-      }
-      this.noteService.markPendingMutation(note.id, 'update', now);
-      return { ...note, folder: normalizedNext, folder_id: renamedFolderId, last_modified: now };
-    });
-
-    this.filteredResults = this.filteredResults === this.notes
-      ? this.notes
-      : this.filteredResults.map((note: any) => ((note?.folder ?? '').trim().toLowerCase() !== normalizedCurrent.toLowerCase())
-        ? note
-        : { ...note, folder: normalizedNext, folder_id: renamedFolderId, last_modified: now });
-
-    this.refreshVisibleNotes();
-    await this.persistNotesState();
-    await this.persistFoldersState();
-
-    const toast = await this.toastController.create({
-      message: (this.allTranslations?.folderRenamed ?? 'Folder renamed to {{folderName}}').replace('{{folderName}}', normalizedNext),
-      duration: 1800,
-      position: 'bottom',
-    });
-    await toast.present();
-
-    return normalizedNext;
   }
 
 
@@ -1853,9 +1638,9 @@ export class HomePage implements AfterViewInit, OnDestroy {
       this.noteService.setFolders(rawFolders);
     }
     await this.noteService.flushPersistence();
-    void this.uploadFoldersState();
+    await this.uploadFoldersState();
 
-    if (this.activeFolderId && this.normalizeFolderId(deletedFolder?.id) === this.activeFolderId) {
+    if (this.activeFolderName === folderName) {
       this.backToFolders();
     } else {
       this.refreshVisibleNotes();
@@ -1892,8 +1677,6 @@ export class HomePage implements AfterViewInit, OnDestroy {
 
   public async promptCreateFolder(options?: { keepCurrentView?: boolean; onCreated?: (folderName: string) => Promise<void> | void }): Promise<void> {
     await this.appHaptics.tap();
-    this.folderModalMode = 'create';
-    this.folderRenameOriginalName = '';
     this.newFolderName = '';
     this.pendingCreateFolderOptions = options;
     this.newFolderModalOpen = true;
@@ -1906,36 +1689,12 @@ export class HomePage implements AfterViewInit, OnDestroy {
   public cancelCreateFolderModal(): void {
     this.newFolderModalOpen = false;
     this.newFolderName = '';
-    this.folderRenameOriginalName = '';
-    this.folderModalMode = 'create';
     this.pendingCreateFolderOptions = undefined;
     this.pendingCreateFolderResolver?.(false);
     this.pendingCreateFolderResolver = null;
   }
 
   public async confirmCreateFolderModal(): Promise<void> {
-    if (this.folderModalMode === 'rename') {
-      const originalFolderName = this.folderRenameOriginalName;
-      const renamedFolder = await this.renameFolder(originalFolderName, this.newFolderName ?? '');
-      if (!renamedFolder) {
-        return;
-      }
-      this.newFolderModalOpen = false;
-      this.newFolderName = '';
-      this.folderRenameOriginalName = '';
-      this.folderModalMode = 'create';
-      if ((this.activeFolderName || '').toLowerCase() === (originalFolderName || '').trim().toLowerCase()) {
-        const renamedFolderEntry = this.folders.find((folder) => (folder.name ?? '').trim().toLowerCase() === renamedFolder.toLowerCase());
-        this.activeFolderName = renamedFolder;
-        this.activeFolderId = this.normalizeFolderId(renamedFolderEntry?.id) ?? this.activeFolderId;
-      }
-      this.pendingCreateFolderOptions = undefined;
-      this.cdr.detectChanges();
-      this.pendingCreateFolderResolver?.(true);
-      this.pendingCreateFolderResolver = null;
-      return;
-    }
-
     const folderName = this.upsertFolder(this.newFolderName ?? '');
     if (!folderName) {
       return;
@@ -1946,8 +1705,6 @@ export class HomePage implements AfterViewInit, OnDestroy {
 
     this.newFolderModalOpen = false;
     this.newFolderName = '';
-    this.folderRenameOriginalName = '';
-    this.folderModalMode = 'create';
     this.pendingCreateFolderOptions = undefined;
 
     if (options?.onCreated) {
@@ -2028,12 +1785,9 @@ export class HomePage implements AfterViewInit, OnDestroy {
         await this.toggleCheckbox();
       }
 
-      const moveMessageTemplate = this.allTranslations?.noteMovedToFolder ?? 'Note moved to {{folderName}}';
-      const moveMessage = moveMessageTemplate.replace('{{folderName}}', targetFolder);
-
       const toast = await this.toastController.create({
         message: movedCount === 1
-          ? moveMessage
+          ? (this.allTranslations?.noteMovedToFolder ?? 'Note moved')
           : (this.allTranslations?.notesMovedToFolder ?? '{{count}} notes moved').replace('{{count}}', String(movedCount)),
         duration: 2200,
         position: 'bottom',
@@ -2110,12 +1864,9 @@ export class HomePage implements AfterViewInit, OnDestroy {
       await this.toggleCheckbox();
     }
 
-    const moveMessageTemplate = this.allTranslations?.noteMovedToFolder ?? 'Note moved to {{folderName}}';
-    const moveMessage = moveMessageTemplate.replace('{{folderName}}', targetFolder);
-
     const toast = await this.toastController.create({
       message: movedCount === 1
-        ? moveMessage
+        ? (this.allTranslations?.noteMovedToFolder ?? 'Note moved')
         : (this.allTranslations?.notesMovedToFolder ?? '{{count}} notes moved').replace('{{count}}', String(movedCount)),
       duration: 2200,
       position: 'bottom',

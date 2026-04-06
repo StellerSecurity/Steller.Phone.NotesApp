@@ -289,12 +289,5 @@
   "pin": "Notiz anheften",
   "unpin": "Anheftung entfernen",
   "markAsFavorite": "Als Favorit markieren",
-  "removeFavorite": "Favorit entfernen",
-  "renameFolder": "Ordner umbenennen",
-  "save": "Speichern",
-  "folderRenamed": "Ordner wurde in {{folderName}} umbenannt",
-  "folderAlreadyExists": "Ordner existiert bereits",
-  "saveImage": "Bild speichern",
-  "saveImageSuccess": "Bild gespeichert",
-  "saveImageFailed": "Bild konnte nicht gespeichert werden"
+  "removeFavorite": "Favorit entfernen"
 }

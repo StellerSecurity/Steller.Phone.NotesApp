@@ -896,8 +896,9 @@ ion-input {
   min-height: 320px;
   border-radius: 28px;
   overflow: hidden;
-  border: 1px solid rgba(231, 233, 242, 0.94);
-  box-shadow: 0 24px 64px rgba(11, 12, 25, 0.20);
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
   background: transparent;
 }
 

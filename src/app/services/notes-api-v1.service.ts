@@ -48,28 +48,21 @@ export class NotesApiV1Service {
     return packCipherBlob(encrypted);
   }
 
-  private async decryptFolderCipherValue(rawName: string, aad: string, fallbackName = ''): Promise<string> {
-    try {
-      return await this.crypto.decryptText(unpackCipherBlob(rawName), aad);
-    } catch {}
-
-    try {
-      const decoded = JSON.parse(atob(rawName));
-      if (decoded?.iv_b64 && decoded?.ct_b64) {
-        return await this.crypto.decryptText(decoded, aad);
-      }
-    } catch {}
-
-    return fallbackName || rawName;
-  }
-
   private async decryptFolderName(folderName: any, folderId: string): Promise<string> {
     const rawName = typeof folderName === 'string' ? folderName.trim() : '';
     if (!rawName) {
       return '';
     }
 
-    return this.decryptFolderCipherValue(rawName, `${folderId}#folder-name`, rawName);
+    if (!this.isCipherBlobString(rawName)) {
+      return rawName;
+    }
+
+    try {
+      return await this.crypto.decryptText(unpackCipherBlob(rawName), `${folderId}#folder-name`);
+    } catch {
+      return rawName;
+    }
   }
 
   private async decryptLegacyNoteFolder(folderName: any, folderId: string, fallbackName = ''): Promise<string> {
@@ -78,7 +71,15 @@ export class NotesApiV1Service {
       return fallbackName;
     }
 
-    return this.decryptFolderCipherValue(rawName, `${folderId}#folder-name`, fallbackName || rawName);
+    if (!this.isCipherBlobString(rawName)) {
+      return rawName;
+    }
+
+    try {
+      return await this.crypto.decryptText(unpackCipherBlob(rawName), `${folderId}#folder-name`);
+    } catch {
+      return fallbackName || rawName;
+    }
   }
 
   // --------------------------------------------------
@@ -188,11 +189,6 @@ export class NotesApiV1Service {
   ): Promise<{ notes: NoteV1[]; folders: Folder[]; has_more?: boolean; watermark?: number }> {
     const TOKEN = await this.secureStorageService.getItem('ssToken');
     const headers = new HttpHeaders().set('Authorization', `Bearer ${TOKEN ?? ''}`);
-
-    const eakB64 = await this.secureStorageService.getItem('ssEakB64');
-    if (eakB64) {
-      await this.crypto.importEAK(eakB64);
-    }
 
     if (!navigator.onLine) {
       return { notes: [], folders: [], has_more: false, watermark: sinceMs || 0 };

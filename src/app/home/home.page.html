@@ -17,26 +17,7 @@
         {{listOfCheckedCheckboxes.length}} {{'notesSelected' | translate}}
       </span>
 
-      <ng-container *ngIf="!checkboxOpened">
-        <button
-          *ngIf="canEditActiveFolderTitle && !isEditingFolderTitle"
-          type="button"
-          class="home-header-title home-folder-title-button"
-          (click)="startFolderTitleEdit()">
-          {{ homeHeaderTitle }}
-        </button>
-
-        <div *ngIf="canEditActiveFolderTitle && isEditingFolderTitle" class="folder-title-input-wrap">
-          <ion-input
-            [(ngModel)]="folderTitleDraft"
-            class="folder-title-input"
-            (ionBlur)="submitFolderTitleEdit()"
-            (keyup.enter)="submitFolderTitleEdit()">
-          </ion-input>
-        </div>
-
-        <span *ngIf="!canEditActiveFolderTitle" class="home-header-title">{{ homeHeaderTitle }}</span>
-      </ng-container>
+      <span *ngIf="!checkboxOpened" class="home-header-title">{{ homeHeaderTitle }}</span>
     </ion-title>
 
     <ion-searchbar
@@ -50,7 +31,7 @@
       animated="true">
     </ion-searchbar>
 
-    <ion-buttons slot="end" style="position: relative; top: 5px;" [class.folder-title-edit-actions-hidden]="isEditingFolderTitle">
+    <ion-buttons slot="end" style="position: relative; top: 5px;">
       <ng-container *ngIf="!searchMode && !checkboxOpened">
         <ion-button
           *ngIf="canSearchNotes"
@@ -261,9 +242,6 @@
             </ion-item>
 
             <ion-item-options side="end">
-              <ion-item-option color="medium" class="folder-rename-option" (click)="promptRenameFolder(folder.name, folderSliding)">
-                <ion-icon name="create-outline"></ion-icon>
-              </ion-item-option>
               <ion-item-option color="danger" (click)="promptDeleteFolder(folder.name, folderSliding)">
                 <ion-icon name="trash-outline"></ion-icon>
               </ion-item-option>
@@ -654,7 +632,7 @@
         <div class="new-folder-sheet-icon">
           <ion-icon name="folder-open-outline"></ion-icon>
         </div>
-        <div class="new-folder-sheet-title">{{ folderModalTitle }}</div>
+        <div class="new-folder-sheet-title">{{ 'newFolder' | translate }}</div>
         <div class="new-folder-sheet-text">{{ 'folderNamePlaceholder' | translate }}</div>
 
         <div class="new-folder-sheet-input-wrap">
@@ -672,7 +650,7 @@
             {{ 'cancel' | translate }}
           </ion-button>
           <ion-button class="new-folder-sheet-create" (click)="confirmCreateFolderModal()">
-            {{ folderModalConfirmLabel }}
+            {{ 'create' | translate }}
           </ion-button>
         </div>
       </div>
