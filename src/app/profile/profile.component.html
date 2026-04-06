@@ -27,7 +27,7 @@
             type="button"
             class="account-visibility-btn"
             (click)="toggleAccountNameVisibility($event)"
-            [attr.aria-label]="showAccountName ? 'Hide account name' : 'Show account name'">
+            [attr.aria-label]="showAccountName ? ('hideAccountName' | translate) : ('showAccountName' | translate)">
             <ion-icon [name]="showAccountName ? 'eye-off-outline' : 'eye-outline'"></ion-icon>
           </button>
         </div>

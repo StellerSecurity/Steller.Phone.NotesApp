@@ -38,6 +38,14 @@ export class NotesService {
     await this.notesStorageService.flush();
   }
 
+  public getFolders() {
+    return this.notesStorageService.getFoldersRaw();
+  }
+
+  public setFolders(data: any) {
+    this.notesStorageService.setFoldersRaw(data);
+  }
+
   public setFailedPasswordAppAttempts(attempts: number) {
     this.notesStorageService.setFailedAttempts(String(Math.max(0, attempts)));
   }

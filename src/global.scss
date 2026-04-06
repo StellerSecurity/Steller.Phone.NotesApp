@@ -813,3 +813,201 @@ ion-input {
   padding-bottom: 8px!important;
   padding-left: 4px!important;
 }
+
+
+.note-actions-popover {
+  --width: 248px;
+  --backdrop-opacity: 0.12;
+}
+
+.note-actions-popover::part(content) {
+  border-radius: 20px;
+  border: 1px solid #ebeaf3;
+  box-shadow: 0 18px 42px rgba(11, 12, 25, 0.16);
+  overflow: hidden;
+}
+
+.note-actions-popover-list {
+  background: #ffffff;
+  padding: 8px;
+}
+
+.note-actions-popover-item {
+  --background: transparent;
+  --color: #0b0c19;
+  --border-radius: 14px;
+  --inner-padding-end: 14px;
+  --inner-padding-start: 2px;
+  --min-height: 46px;
+  margin: 2px 0;
+}
+
+.note-actions-popover-item::part(native) {
+  border-radius: 14px;
+}
+
+.note-actions-popover-item ion-icon {
+  font-size: 20px;
+  color: #62626a;
+}
+
+.note-actions-popover-item ion-label {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.note-actions-popover-item.ion-activated::part(native),
+.note-actions-popover-item:hover::part(native) {
+  background: #f6f7fb;
+}
+
+.note-actions-popover-divider {
+  height: 1px;
+  margin: 6px 8px;
+  background: #ececf4;
+}
+
+.note-actions-popover-item-danger {
+  --color: #d92d20;
+}
+
+.note-actions-popover-item-danger ion-icon,
+.note-actions-popover-item-danger ion-label {
+  color: #d92d20 !important;
+}
+
+
+.new-folder-modal {
+  --width: min(420px, calc(100vw - 28px));
+  --max-width: 420px;
+  --height: 320px;
+  --min-height: 320px;
+  --max-height: 90vh;
+  --backdrop-opacity: 0.22;
+  z-index: 20020 !important;
+}
+
+.new-folder-modal::part(backdrop) {
+  z-index: 20019 !important;
+}
+
+.new-folder-modal::part(content) {
+  z-index: 20020 !important;
+  min-height: 320px;
+  border-radius: 28px;
+  overflow: hidden;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  background: transparent;
+}
+
+.new-folder-modal .ion-page {
+  justify-content: center;
+  min-height: 320px;
+}
+
+.new-folder-modal-content {
+  --background: transparent;
+  min-height: 320px;
+}
+
+.new-folder-modal-content::part(scroll) {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 320px;
+  padding: 18px 14px;
+}
+
+.new-folder-sheet {
+  width: 100%;
+  padding: 24px 20px 20px;
+  border-radius: 28px;
+  background: linear-gradient(180deg, #fcfcff 0%, #f5f6fc 100%);
+}
+
+.new-folder-sheet-icon {
+  width: 54px;
+  height: 54px;
+  border-radius: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 14px;
+  background: linear-gradient(180deg, #ffffff 0%, #f2f4fb 100%);
+  border: 1px solid #e8eaf3;
+  box-shadow: 0 12px 30px rgba(11, 12, 25, 0.08);
+}
+
+.new-folder-sheet-icon ion-icon {
+  font-size: 24px;
+  color: #2761fc;
+}
+
+.new-folder-sheet-title {
+  text-align: center;
+  color: #0b0c19;
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.new-folder-sheet-text {
+  margin-top: 6px;
+  text-align: center;
+  color: #7a7d89;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.new-folder-sheet-input-wrap {
+  margin-top: 18px;
+  padding: 2px;
+  border-radius: 20px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.92) 0%, rgba(240,243,251,0.96) 100%);
+  border: 1px solid #e7e9f2;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.78), 0 12px 28px rgba(11, 12, 25, 0.06);
+}
+
+.new-folder-sheet-input {
+  --background: transparent;
+  --color: #0b0c19;
+  --padding-start: 18px;
+  --padding-end: 18px;
+  --padding-top: 14px;
+  --padding-bottom: 14px;
+  --placeholder-color: #9b9fac;
+  margin-bottom: 0 !important;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.new-folder-sheet-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.new-folder-sheet-actions ion-button {
+  height: 50px;
+  margin: 0;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.new-folder-sheet-cancel {
+  --background: #ffffff;
+  --color: #0b0c19;
+  --border-radius: 18px;
+  --box-shadow: 0 10px 24px rgba(11, 12, 25, 0.05);
+  border: 1px solid #e7e9f2;
+}
+
+.new-folder-sheet-create {
+  --background: linear-gradient(180deg, #3f6cff 0%, #275df6 100%);
+  --color: #ffffff;
+  --border-radius: 18px;
+  --box-shadow: 0 14px 30px rgba(39, 97, 252, 0.28);
+}

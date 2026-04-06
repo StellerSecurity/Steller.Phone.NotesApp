@@ -112,36 +112,345 @@ ion-icon.lock-icon {
   border: none !important;
 }
 
-.editable-title {
+.editable-title-button {
+  width: 100%;
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  padding: 8px 10px;
+  margin: 0;
+  border: 0;
+  background: transparent;
+  color: #0B0C19;
+  font-family: 'Poppins';
+  font-size: 18px;
   font-weight: 500;
-  padding: 8px 12px;
-  cursor: pointer;
-  border-radius: 6px;
-  transition: background-color 0.2s;
+  line-height: 1.2;
+  text-align: left;
+  cursor: text;
+  border-radius: 12px;
+  transition: background-color 180ms ease, color 180ms ease;
 }
 
-.editable-title:hover {
-  background-color: rgba(0, 0, 0, 0.05);
+.editable-title-button:hover {
+  background-color: rgba(11, 12, 25, 0.04);
+}
+
+.note-toolbar {
+  --min-height: 60px;
+  --padding-start: 8px;
+  --padding-end: 8px;
+}
+
+.note-toolbar-inner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 56px;
+}
+
+.note-toolbar-left {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+}
+
+.note-toolbar-center {
+  min-width: 0;
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+}
+
+.title-shell {
+  width: 100%;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+}
+
+.title-shell-editing {
+  flex: 1 1 auto;
 }
 
 .editable-title-input-wrapper {
+  width: 100%;
+  min-height: 40px;
   display: flex;
   align-items: center;
-  height: 100%;
-  padding: 0 12px;
-  background-color: transparent;
+  padding: 0 10px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.78);
+  border: 1px solid rgba(233, 234, 242, 0.96);
+  box-shadow: 0 10px 30px rgba(11, 12, 25, 0.06);
 }
 
 .editable-title-input {
-  font-weight: 500;
   width: 100%;
+  font-weight: 500;
+  font-size: 18px;
   border: none;
   background: transparent;
-  --padding-start: 0px;
-  --padding-end: 0px;
+  --padding-start: 0;
+  --padding-end: 0;
   --background: transparent;
   --placeholder-color: #888;
-  --highlight-color-focused: #007bff;
-  --color: #333;
+  --highlight-color-focused: transparent;
+  --color: #0B0C19;
   margin-bottom: 0;
+}
+
+.editable-title-input::part(native) {
+  text-align: left;
+}
+
+.note-folder-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px 0;
+  color: #62626A;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.note-actions-bar {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: 4px;
+  transform-origin: right center;
+  transition: max-width 240ms cubic-bezier(0.22, 1, 0.36, 1), opacity 180ms ease, transform 240ms cubic-bezier(0.22, 1, 0.36, 1), margin 240ms cubic-bezier(0.22, 1, 0.36, 1);
+  max-width: 160px;
+  overflow: hidden;
+}
+
+.note-actions-bar.hidden,
+.note-toolbar.title-focus-mode .note-actions-bar {
+  max-width: 0;
+  opacity: 0;
+  transform: translateX(10px) scale(0.96);
+  pointer-events: none;
+  margin-left: 0;
+}
+
+.note-action-button {
+  width: 42px;
+  height: 42px;
+  min-width: 42px;
+  min-height: 42px;
+  margin: 0;
+  --padding-start: 0;
+  --padding-end: 0;
+  --background: #ffffff;
+  --border-radius: 999px;
+  --box-shadow: 0 6px 18px rgba(11, 12, 25, 0.06);
+  border: 1px solid #e9eaf2;
+  border-radius: 999px;
+}
+
+.note-action-button::part(native) {
+  width: 42px;
+  height: 42px;
+  padding: 0;
+  border-radius: 999px;
+}
+
+.note-action-button ion-icon {
+  font-size: 20px;
+  color: #0b0c19;
+}
+
+.editable-title-button {
+  min-height: 34px;
+  padding: 4px 10px;
+  line-height: 1.1;
+}
+
+.editable-title-input-wrapper {
+  min-height: 34px;
+  padding: 0 10px;
+}
+
+.editable-title-input {
+  --padding-top: 0;
+  --padding-bottom: 0;
+  --padding-left: 0;
+  font-size: 13px;
+  height: 34px;
+  margin-bottom: 0;
+}
+
+.editable-title-input::part(native) {
+  --padding-top: 0;
+  --padding-bottom: 0;
+  --padding-left: 0;
+  font-size: 13px;
+  height: 34px;
+  margin-bottom: 0;
+}
+
+ion-input {
+  --padding-top: 10px;
+  --padding-bottom: 10px;
+}
+
+.folder-picker-content {
+  --background: linear-gradient(180deg, #f8f8fc 0%, #f3f4fb 100%);
+}
+
+.folder-picker-content::part(scroll) {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+}
+
+.folder-picker-sheet {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+  max-height: 100%;
+  padding: 8px 16px calc(20px + env(safe-area-inset-bottom));
+  box-sizing: border-box;
+}
+
+.folder-picker-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.folder-picker-title {
+  color: #0b0c19;
+  font-family: 'Poppins';
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.folder-picker-new-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 14px;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.9);
+  color: #2761fc;
+  font-family: 'Poppins';
+  font-size: 13px;
+  font-weight: 600;
+  box-shadow: 0 8px 24px rgba(11, 12, 25, 0.06);
+}
+
+.folder-picker-new-button ion-icon {
+  font-size: 18px;
+}
+
+.folder-picker-list {
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
+  gap: 10px;
+  overflow-y: auto;
+  padding-right: 4px;
+  margin-right: -4px;
+  padding-bottom: 10px;
+}
+
+.folder-picker-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 14px 16px;
+  border: 1px solid rgba(228, 230, 240, 0.95);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 8px 24px rgba(11, 12, 25, 0.04);
+  text-align: left;
+}
+
+.folder-picker-item-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.folder-picker-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 38px;
+}
+
+.folder-picker-icon ion-icon {
+  font-size: 20px;
+}
+
+.folder-picker-icon-all {
+  background: rgba(39, 97, 252, 0.12);
+  color: #2761fc;
+}
+
+.folder-picker-icon-folder {
+  background: rgba(244, 180, 0, 0.14);
+  color: #a46a00;
+}
+
+.folder-picker-name {
+  color: #0b0c19;
+  font-family: 'Poppins';
+  font-size: 15px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.folder-picker-check {
+  color: #2761fc;
+  font-size: 20px;
+  flex: 0 0 auto;
+}
+
+.folder-picker-item.selected {
+  border-color: rgba(39, 97, 252, 0.28);
+  box-shadow: 0 12px 30px rgba(39, 97, 252, 0.12);
+}
+
+.folder-picker-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 12px;
+  padding-top: 12px;
+  position: sticky;
+  bottom: 0;
+  background: linear-gradient(180deg, rgba(243, 244, 251, 0) 0%, rgba(243, 244, 251, 0.92) 18%, #f3f4fb 100%);
+  backdrop-filter: blur(8px);
+}
+
+.folder-picker-actions ion-button {
+  flex: 1 1 0;
+  margin: 0;
+  height: 48px;
+}
+
+.folder-picker-cancel {
+  --background: rgba(255, 255, 255, 0.92);
+  --color: #0b0c19;
+  --box-shadow: 0 8px 24px rgba(11, 12, 25, 0.05);
+}
+
+.folder-picker-confirm {
+  --background: #2761fc;
+  --color: #ffffff;
+  --box-shadow: 0 12px 28px rgba(39, 97, 252, 0.28);
 }

@@ -137,6 +137,7 @@ export class LoginComponent implements OnInit {
 
       const merged = Array.from(map.values()).filter((n: any) => !n.deleted);
       const mergedJson = JSON.stringify(merged);
+      const foldersJson = JSON.stringify(Array.isArray(res?.folders) ? res.folders : []);
 
       if (this.notesService.appHasPasswordChallenge()) {
         const encryptedNotesSave = this.cryptoService.encrypt(
@@ -144,8 +145,14 @@ export class LoginComponent implements OnInit {
           this.notesService.getNotesAppPassword(),
         );
         this.notesService.setNotes(encryptedNotesSave);
+        const encryptedFoldersSave = this.cryptoService.encrypt(
+          foldersJson,
+          this.notesService.getNotesAppPassword(),
+        );
+        this.notesService.setFolders(encryptedFoldersSave);
       } else {
         this.notesService.setNotes(mergedJson);
+        this.notesService.setFolders(foldersJson);
       }
 
       this.notesService.setDecryptedNotes(mergedJson);
