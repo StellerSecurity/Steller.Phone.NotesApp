@@ -29,6 +29,12 @@ export class RichTextEditorComponent implements OnInit, OnDestroy {
   private resizeListener: (() => void) | null = null;
   private clickOutsideListener: (() => void) | null = null;
   private editorImageClickListener: (() => void) | null = null;
+  private editorImageTouchStartListener: (() => void) | null = null;
+  private editorImageTouchEndListener: (() => void) | null = null;
+  private editorImageTouchMoveListener: (() => void) | null = null;
+  private editorImageContextMenuListener: (() => void) | null = null;
+  private imageLongPressTimer: ReturnType<typeof setTimeout> | null = null;
+  private suppressNextImageClick = false;
 
   readonly headerOptions: HeaderOption[] = [
     { value: 'false', label: 'standard' },
@@ -79,6 +85,23 @@ export class RichTextEditorComponent implements OnInit, OnDestroy {
       this.editorImageClickListener();
       this.editorImageClickListener = null;
     }
+    if (this.editorImageTouchStartListener) {
+      this.editorImageTouchStartListener();
+      this.editorImageTouchStartListener = null;
+    }
+    if (this.editorImageTouchEndListener) {
+      this.editorImageTouchEndListener();
+      this.editorImageTouchEndListener = null;
+    }
+    if (this.editorImageTouchMoveListener) {
+      this.editorImageTouchMoveListener();
+      this.editorImageTouchMoveListener = null;
+    }
+    if (this.editorImageContextMenuListener) {
+      this.editorImageContextMenuListener();
+      this.editorImageContextMenuListener = null;
+    }
+    this.clearImageLongPressTimer();
   }
 
   onEditorCreated(quillInstance: any) {
@@ -88,6 +111,23 @@ export class RichTextEditorComponent implements OnInit, OnDestroy {
       this.editorImageClickListener();
       this.editorImageClickListener = null;
     }
+    if (this.editorImageTouchStartListener) {
+      this.editorImageTouchStartListener();
+      this.editorImageTouchStartListener = null;
+    }
+    if (this.editorImageTouchEndListener) {
+      this.editorImageTouchEndListener();
+      this.editorImageTouchEndListener = null;
+    }
+    if (this.editorImageTouchMoveListener) {
+      this.editorImageTouchMoveListener();
+      this.editorImageTouchMoveListener = null;
+    }
+    if (this.editorImageContextMenuListener) {
+      this.editorImageContextMenuListener();
+      this.editorImageContextMenuListener = null;
+    }
+    this.clearImageLongPressTimer();
 
     if (this.quill?.root) {
       this.editorImageClickListener = this.renderer.listen(this.quill.root, 'click', (event: Event) => {
@@ -98,8 +138,56 @@ export class RichTextEditorComponent implements OnInit, OnDestroy {
           return;
         }
 
+        if (this.suppressNextImageClick) {
+          this.suppressNextImageClick = false;
+          event.preventDefault();
+          event.stopPropagation();
+          return;
+        }
+
         event.preventDefault();
         event.stopPropagation();
+        this.imagePreviewRequested.emit(imageElement.src);
+      });
+
+      this.editorImageTouchStartListener = this.renderer.listen(this.quill.root, 'touchstart', (event: TouchEvent) => {
+        const target = event.target as HTMLElement | null;
+        const imageElement = target?.closest('img') as HTMLImageElement | null;
+
+        this.clearImageLongPressTimer();
+
+        if (!imageElement?.src) {
+          return;
+        }
+
+        this.imageLongPressTimer = setTimeout(() => {
+          this.suppressNextImageClick = true;
+          event.preventDefault();
+          event.stopPropagation();
+          this.imagePreviewRequested.emit(imageElement.src);
+          this.clearImageLongPressTimer();
+        }, 420);
+      });
+
+      this.editorImageTouchEndListener = this.renderer.listen(this.quill.root, 'touchend', () => {
+        this.clearImageLongPressTimer();
+      });
+
+      this.editorImageTouchMoveListener = this.renderer.listen(this.quill.root, 'touchmove', () => {
+        this.clearImageLongPressTimer();
+      });
+
+      this.editorImageContextMenuListener = this.renderer.listen(this.quill.root, 'contextmenu', (event: Event) => {
+        const target = event.target as HTMLElement | null;
+        const imageElement = target?.closest('img') as HTMLImageElement | null;
+
+        if (!imageElement?.src) {
+          return;
+        }
+
+        event.preventDefault();
+        event.stopPropagation();
+        this.suppressNextImageClick = true;
         this.imagePreviewRequested.emit(imageElement.src);
       });
     }
@@ -114,6 +202,13 @@ export class RichTextEditorComponent implements OnInit, OnDestroy {
           }
         }, 300);
       });
+  }
+
+  private clearImageLongPressTimer(): void {
+    if (this.imageLongPressTimer) {
+      clearTimeout(this.imageLongPressTimer);
+      this.imageLongPressTimer = null;
+    }
   }
 
   onContentChange(content: string) {

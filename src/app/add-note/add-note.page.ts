@@ -424,6 +424,8 @@ export class AddNotePage implements OnDestroy {
         await this.writeImageToLocalFile(this.imagePreviewSrc);
       }
 
+      this.closeImagePreview();
+
       const toast = await this.toastController.create({
         message: this.allTranslations?.saveImageSuccess ?? 'Image saved',
         duration: 2200,

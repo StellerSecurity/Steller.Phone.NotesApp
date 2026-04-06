@@ -189,6 +189,11 @@ export class NotesApiV1Service {
     const TOKEN = await this.secureStorageService.getItem('ssToken');
     const headers = new HttpHeaders().set('Authorization', `Bearer ${TOKEN ?? ''}`);
 
+    const eakB64 = await this.secureStorageService.getItem('ssEakB64');
+    if (eakB64) {
+      await this.crypto.importEAK(eakB64);
+    }
+
     if (!navigator.onLine) {
       return { notes: [], folders: [], has_more: false, watermark: sinceMs || 0 };
     }

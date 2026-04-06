@@ -221,5 +221,9 @@ quill-editor {
   ::ng-deep .ql-editor img {
     cursor: zoom-in;
     border-radius: 14px;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+    touch-action: manipulation;
   }
 }

@@ -96,6 +96,7 @@ export class HomePage implements AfterViewInit, OnDestroy {
   public allVisibleNotes: any[] = [];
   public favoriteVisibleNotes: any[] = [];
   public activeFilter: 'all' | 'favorites' = 'all';
+  public activeFolderId: string | null = null;
   public activeFolderName: string = '__all__';
   public folderBrowserMode = true;
   public isPagerDragging = false;
@@ -191,9 +192,9 @@ export class HomePage implements AfterViewInit, OnDestroy {
 
 
   public get folderVisibleNotes(): any[] {
-    return this.activeFolderName === '__all__'
+    return this.activeFolderName === '__all__' || !this.activeFolderId
       ? this.visibleNotes
-      : this.visibleNotes.filter((note: any) => (note?.folder ?? '') === this.activeFolderName);
+      : this.visibleNotes.filter((note: any) => this.normalizeFolderId((note as any)?.folder_id) === this.activeFolderId);
   }
 
   public folderChipCount(folderName: string): number {
@@ -858,9 +859,14 @@ export class HomePage implements AfterViewInit, OnDestroy {
 
     this.folders = Array.from(folderMap.values()).sort((a, b) => a.name.localeCompare(b.name));
 
-    if (this.activeFolderName !== '__all__'
-      && !this.folders.some((folder) => folder.name === this.activeFolderName)) {
-      this.activeFolderName = '__all__';
+    if (this.activeFolderName !== '__all__') {
+      const activeFolder = this.folders.find((folder) => this.normalizeFolderId(folder.id) === this.activeFolderId);
+      if (!activeFolder) {
+        this.activeFolderId = null;
+        this.activeFolderName = '__all__';
+      } else {
+        this.activeFolderName = activeFolder.name;
+      }
     }
   }
 
@@ -1172,11 +1178,10 @@ export class HomePage implements AfterViewInit, OnDestroy {
     });
 
     const folderScoped = sorted.filter((note: any) => {
-      const noteFolder = (note?.folder ?? '').trim();
-      if (this.activeFolderName === '__all__') {
+      if (this.activeFolderName === '__all__' || !this.activeFolderId) {
         return true;
       }
-      return noteFolder === this.activeFolderName;
+      return this.normalizeFolderId((note as any)?.folder_id) === this.activeFolderId;
     });
 
     this.allVisibleNotes = folderScoped;
@@ -1510,6 +1515,7 @@ export class HomePage implements AfterViewInit, OnDestroy {
     this.resetPagerTouch();
     this.resetCheckboxDismissGesture();
     this.folderBrowserMode = true;
+    this.activeFolderId = null;
     this.activeFilter = 'all';
     this.syncVisibleNotesFromActiveFilter();
     this.updatePagerTransform();
@@ -1524,7 +1530,9 @@ export class HomePage implements AfterViewInit, OnDestroy {
     this.cancelFolderTitleEdit();
     this.resetPagerTouch();
     this.resetCheckboxDismissGesture();
-    this.activeFolderName = folderName;
+    const activeFolder = this.folders.find((folder) => (folder.name ?? '').trim() === (folderName ?? '').trim());
+    this.activeFolderId = this.normalizeFolderId(activeFolder?.id);
+    this.activeFolderName = activeFolder?.name ?? folderName;
     this.folderBrowserMode = false;
     this.activeFilter = 'all';
     this.refreshVisibleNotes();
@@ -1622,6 +1630,7 @@ export class HomePage implements AfterViewInit, OnDestroy {
     }
 
     const currentName = (this.activeFolderName ?? '').trim();
+    const currentFolderId = this.activeFolderId;
     const nextName = (this.folderTitleDraft ?? '').trim();
 
     if (!currentName) {
@@ -1637,6 +1646,7 @@ export class HomePage implements AfterViewInit, OnDestroy {
     const renamed = await this.renameFolder(currentName, nextName);
     if (renamed) {
       this.activeFolderName = renamed;
+      this.activeFolderId = currentFolderId;
     }
 
     this.cancelFolderTitleEdit();
@@ -1843,7 +1853,7 @@ export class HomePage implements AfterViewInit, OnDestroy {
     await this.noteService.flushPersistence();
     void this.uploadFoldersState();
 
-    if (this.activeFolderName === folderName) {
+    if (this.activeFolderId && this.normalizeFolderId(deletedFolder?.id) === this.activeFolderId) {
       this.backToFolders();
     } else {
       this.refreshVisibleNotes();
@@ -1912,8 +1922,10 @@ export class HomePage implements AfterViewInit, OnDestroy {
       this.newFolderName = '';
       this.folderRenameOriginalName = '';
       this.folderModalMode = 'create';
-      if (this.activeFolderName.toLowerCase() === (originalFolderName || '').trim().toLowerCase()) {
+      if ((this.activeFolderName || '').toLowerCase() === (originalFolderName || '').trim().toLowerCase()) {
+        const renamedFolderEntry = this.folders.find((folder) => (folder.name ?? '').trim().toLowerCase() === renamedFolder.toLowerCase());
         this.activeFolderName = renamedFolder;
+        this.activeFolderId = this.normalizeFolderId(renamedFolderEntry?.id) ?? this.activeFolderId;
       }
       this.pendingCreateFolderOptions = undefined;
       this.cdr.detectChanges();
