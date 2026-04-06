@@ -708,14 +708,52 @@ export class HomePage implements AfterViewInit, OnDestroy {
     this.resetPagerTouch();
   }
 
-  private loadFolders(password: string = ''): void {
-    let parsedFolders: Folder[] = [];
+  private normalizeFolderId(folderId: any): string | null {
+    return typeof folderId === 'string' && folderId.trim().length > 0 ? folderId.trim() : null;
+  }
+
+  private getStoredFolders(password: string = ''): Folder[] {
     try {
       const rawFolders = this.noteService.getFolders();
       const decodedFolders = this.noteService.appHasPasswordChallenge()
-        ? this.cryptoService.decrypt(rawFolders, password)
+        ? this.cryptoService.decrypt(rawFolders, password || this.noteService.getNotesAppPassword())
         : rawFolders;
-      parsedFolders = decodedFolders ? JSON.parse(decodedFolders) : [];
+      const parsedFolders = decodedFolders ? JSON.parse(decodedFolders) : [];
+      if (!Array.isArray(parsedFolders)) {
+        return [];
+      }
+      return parsedFolders
+        .map((folder: any) => ({
+          id: this.normalizeFolderId(folder?.id) ?? (crypto?.randomUUID?.() ?? String(Date.now() + Math.random())),
+          name: (folder?.name ?? '').trim(),
+          last_modified: Number(folder?.last_modified ?? Date.now()),
+          deleted: !!folder?.deleted,
+        }))
+        .filter((folder: Folder) => folder.name.length > 0 || folder.deleted);
+    } catch {
+      return [];
+    }
+  }
+
+  private async uploadFoldersState(): Promise<void> {
+    if (!this.authService.isLoggedIn) {
+      return;
+    }
+    await this.notesApiServiceV1.upload(0, [], undefined, this.getStoredFolders(this.noteService.getNotesAppPassword()));
+  }
+
+  private resolveFolderIdByName(name: string): string | null {
+    const normalizedName = (name ?? '').trim().toLowerCase();
+    if (!normalizedName) {
+      return null;
+    }
+    return this.folders.find((folder) => (folder.name ?? '').trim().toLowerCase() === normalizedName)?.id ?? null;
+  }
+
+  private loadFolders(password: string = ''): void {
+    let parsedFolders: Folder[] = [];
+    try {
+      parsedFolders = this.getStoredFolders(password);
     } catch {
       parsedFolders = [];
     }
@@ -724,12 +762,14 @@ export class HomePage implements AfterViewInit, OnDestroy {
 
     for (const folder of parsedFolders ?? []) {
       const name = (folder?.name ?? '').trim();
-      if (!name) {
+      if (!name || folder.deleted) {
         continue;
       }
       folderMap.set(name.toLowerCase(), {
+        id: folder.id,
         name,
         last_modified: folder?.last_modified ?? Date.now(),
+        deleted: false,
       });
     }
 
@@ -740,8 +780,10 @@ export class HomePage implements AfterViewInit, OnDestroy {
       }
       if (!folderMap.has(name.toLowerCase())) {
         folderMap.set(name.toLowerCase(), {
+          id: this.normalizeFolderId((note as any)?.folder_id) ?? (crypto?.randomUUID?.() ?? String(Date.now() + Math.random())),
           name,
           last_modified: note?.last_modified ?? Date.now(),
+          deleted: false,
         });
       }
     }
@@ -765,6 +807,7 @@ export class HomePage implements AfterViewInit, OnDestroy {
       favorite: !!note?.favorite,
       pinned: !!note?.pinned,
       folder: (note?.folder ?? '').trim(),
+      folder_id: this.normalizeFolderId((note as any)?.folder_id),
     }));
     this.loadFolders(password);
     this.filteredResults = this.notes;
@@ -867,14 +910,41 @@ export class HomePage implements AfterViewInit, OnDestroy {
       this.filteredResults = merged;
       this.refreshVisibleNotes();
 
+      const serverFolders = Array.isArray((res as any)?.folders) ? (res as any).folders : [];
+      const localFolders = this.getStoredFolders(this.noteService.getNotesAppPassword());
+      const folderMap = new Map<string, any>();
+      for (const folder of localFolders) {
+        const key = this.normalizeFolderId((folder as any)?.id) ?? `name:${(folder?.name ?? '').trim().toLowerCase()}`;
+        folderMap.set(key, folder);
+      }
+      for (const folder of serverFolders) {
+        const normalizedFolder = {
+          id: this.normalizeFolderId((folder as any)?.id) ?? (crypto?.randomUUID?.() ?? String(Date.now() + Math.random())),
+          name: (folder?.name ?? '').trim(),
+          last_modified: Number(folder?.last_modified ?? 0),
+          deleted: !!folder?.deleted,
+        };
+        const key = normalizedFolder.id as string;
+        const localFolder = folderMap.get(key);
+        if (!localFolder || normalizedFolder.last_modified >= Number(localFolder?.last_modified ?? 0)) {
+          folderMap.set(key, normalizedFolder);
+        }
+      }
+
       if (this.noteService.appHasPasswordChallenge()) {
         const encryptedNotesSave = this.cryptoService.encrypt(
           JSON.stringify(merged),
           this.noteService.getNotesAppPassword()
         );
         this.noteService.setNotes(encryptedNotesSave);
+        const encryptedFoldersSave = this.cryptoService.encrypt(
+          JSON.stringify(Array.from(folderMap.values())),
+          this.noteService.getNotesAppPassword()
+        );
+        this.noteService.setFolders(encryptedFoldersSave);
       } else {
         this.noteService.setNotes(JSON.stringify(merged));
+        this.noteService.setFolders(JSON.stringify(Array.from(folderMap.values())));
       }
 
       await this.noteService.flushPersistence();
@@ -1306,6 +1376,10 @@ export class HomePage implements AfterViewInit, OnDestroy {
     }
     this.noteService.setDecryptedNotes(JSON.stringify(this.notes));
     await this.noteService.flushPersistence();
+
+    if (this.authService.isLoggedIn) {
+      this.notesApiServiceV1.upload(0, this.notes, undefined, this.getStoredFolders(this.noteService.getNotesAppPassword())).then(() => {});
+    }
   }
 
   public async togglePinnedFromHome(event: Event, noteId: string) {
@@ -1391,7 +1465,27 @@ export class HomePage implements AfterViewInit, OnDestroy {
   }
 
   private async persistFoldersState(): Promise<void> {
-    const rawFolders = JSON.stringify(this.folders);
+    const storedMap = new Map<string, Folder>();
+    for (const folder of this.getStoredFolders(this.noteService.getNotesAppPassword())) {
+      const key = this.normalizeFolderId(folder.id) ?? `name:${(folder.name ?? '').trim().toLowerCase()}`;
+      storedMap.set(key, folder);
+    }
+
+    for (const folder of this.folders) {
+      const normalizedName = (folder?.name ?? '').trim();
+      if (!normalizedName) {
+        continue;
+      }
+      const normalizedFolder: Folder = {
+        id: this.normalizeFolderId(folder.id) ?? (crypto?.randomUUID?.() ?? String(Date.now() + Math.random())),
+        name: normalizedName,
+        last_modified: Number(folder?.last_modified ?? Date.now()),
+        deleted: !!folder?.deleted,
+      };
+      storedMap.set(normalizedFolder.id as string, normalizedFolder);
+    }
+
+    const rawFolders = JSON.stringify(Array.from(storedMap.values()));
     if (this.noteService.appHasPasswordChallenge()) {
       const encryptedFolders = this.cryptoService.encrypt(rawFolders, this.noteService.getNotesAppPassword());
       this.noteService.setFolders(encryptedFolders);
@@ -1399,6 +1493,7 @@ export class HomePage implements AfterViewInit, OnDestroy {
       this.noteService.setFolders(rawFolders);
     }
     await this.noteService.flushPersistence();
+    await this.uploadFoldersState();
   }
 
   private upsertFolder(name: string): string {
@@ -1409,10 +1504,24 @@ export class HomePage implements AfterViewInit, OnDestroy {
 
     const existing = this.folders.find((folder) => folder.name.toLowerCase() === normalizedName.toLowerCase());
     if (existing) {
+      existing.deleted = false;
+      existing.last_modified = Date.now();
+      if (!existing.id) {
+        existing.id = crypto?.randomUUID?.() ?? String(Date.now() + Math.random());
+      }
       return existing.name;
     }
 
-    this.folders = [...this.folders, { name: normalizedName, last_modified: Date.now() }]
+    const storedFolders = this.getStoredFolders(this.noteService.getNotesAppPassword());
+    const deletedMatch = storedFolders.find((folder) => (folder.name ?? '').toLowerCase() == normalizedName.toLowerCase());
+    if (deletedMatch) {
+      deletedMatch.deleted = false;
+      deletedMatch.last_modified = Date.now();
+      this.folders = [...this.folders, deletedMatch].sort((a, b) => a.name.localeCompare(b.name));
+      return deletedMatch.name;
+    }
+
+    this.folders = [...this.folders, { id: crypto?.randomUUID?.() ?? String(Date.now() + Math.random()), name: normalizedName, last_modified: Date.now(), deleted: false }]
       .sort((a, b) => a.name.localeCompare(b.name));
     return normalizedName;
   }
@@ -1510,8 +1619,26 @@ export class HomePage implements AfterViewInit, OnDestroy {
     this.pendingDeletedNotes = deletedNotes;
     this.pendingDeletedIds = deletedNotes.map((note: any) => note.id);
 
+    const deletedFolder = this.folders.find((folder) => folder.name === folderName);
     this.folders = this.folders.filter((folder) => folder.name !== folderName);
-    await this.persistFoldersState();
+
+    const storedFolders = this.getStoredFolders(this.noteService.getNotesAppPassword()).filter((folder) => (folder.name ?? '').toLowerCase() !== folderName.toLowerCase());
+    storedFolders.push({
+      id: this.normalizeFolderId(deletedFolder?.id) ?? (crypto?.randomUUID?.() ?? String(Date.now() + Math.random())),
+      name: folderName,
+      last_modified: now,
+      deleted: true,
+    });
+
+    const rawFolders = JSON.stringify(storedFolders);
+    if (this.noteService.appHasPasswordChallenge()) {
+      const encryptedFolders = this.cryptoService.encrypt(rawFolders, this.noteService.getNotesAppPassword());
+      this.noteService.setFolders(encryptedFolders);
+    } else {
+      this.noteService.setFolders(rawFolders);
+    }
+    await this.noteService.flushPersistence();
+    await this.uploadFoldersState();
 
     if (this.activeFolderName === folderName) {
       this.backToFolders();
@@ -1530,7 +1657,7 @@ export class HomePage implements AfterViewInit, OnDestroy {
           handler: () => {
             this.appHaptics.tap();
             this.restorePendingDeletedNotes();
-            this.folders = [...this.folders, { name: folderName, last_modified: now }]
+            this.folders = [...this.folders, { id: deletedFolder?.id ?? (crypto?.randomUUID?.() ?? String(Date.now() + Math.random())), name: folderName, last_modified: now, deleted: false }]
               .sort((a, b) => a.name.localeCompare(b.name));
             this.persistFoldersState().then(() => {});
             this.refreshVisibleNotes();
@@ -1629,6 +1756,7 @@ export class HomePage implements AfterViewInit, OnDestroy {
 
     const applyFolderMove = async (selectedFolder: string): Promise<void> => {
       const targetFolder = selectedFolder === '__all__' ? '' : this.upsertFolder(selectedFolder ?? '');
+      const targetFolderId = targetFolder ? this.resolveFolderIdByName(targetFolder) : null;
       const selectedIds = new Set(this.listOfCheckedCheckboxes);
       const movedCount = selectedIds.size;
       const now = Date.now();
@@ -1638,14 +1766,14 @@ export class HomePage implements AfterViewInit, OnDestroy {
           return note;
         }
         this.noteService.markPendingMutation(note.id, 'update', now);
-        return { ...note, folder: targetFolder, last_modified: now };
+        return { ...note, folder: targetFolder, folder_id: targetFolderId, last_modified: now };
       });
 
       this.filteredResults = this.search_query.length > 0 ? this.filteredResults.map((note: any) => {
         if (!selectedIds.has(note.id)) {
           return note;
         }
-        return { ...note, folder: targetFolder, last_modified: now };
+        return { ...note, folder: targetFolder, folder_id: targetFolderId, last_modified: now };
       }) : this.notes;
 
       await this.persistNotesState();
@@ -1703,6 +1831,7 @@ export class HomePage implements AfterViewInit, OnDestroy {
   private async applyNewFolderMoveSelection(folderName: string): Promise<void> {
     await this.appHaptics.tap();
     const targetFolder = this.upsertFolder(folderName);
+    const targetFolderId = targetFolder ? this.resolveFolderIdByName(targetFolder) : null;
     if (!targetFolder) {
       return;
     }
@@ -1716,14 +1845,14 @@ export class HomePage implements AfterViewInit, OnDestroy {
         return note;
       }
       this.noteService.markPendingMutation(note.id, 'update', now);
-      return { ...note, folder: targetFolder, last_modified: now };
+      return { ...note, folder: targetFolder, folder_id: targetFolderId, last_modified: now };
     });
 
     this.filteredResults = this.search_query.length > 0 ? this.filteredResults.map((note: any) => {
       if (!selectedIds.has(note.id)) {
         return note;
       }
-      return { ...note, folder: targetFolder, last_modified: now };
+      return { ...note, folder: targetFolder, folder_id: targetFolderId, last_modified: now };
     }) : this.notes;
 
     await this.persistNotesState();

@@ -138,6 +138,13 @@ export class AddNotePage implements OnDestroy {
       } catch (error) {
         this.notes = [];
       }
+      this.notes = (this.notes ?? []).map((note: NoteV1) => ({
+        ...note,
+        folder: (note?.folder ?? '').trim(),
+        folder_id: this.normalizeFolderId((note as any)?.folder_id),
+        favorite: !!note?.favorite,
+        pinned: !!note?.pinned,
+      }));
 
       this.notes_id = params.get('id');
       this.currentNote = null;
@@ -169,6 +176,7 @@ export class AddNotePage implements OnDestroy {
       this.currentNote.favorite = !!this.currentNote.favorite;
       this.currentNote.pinned = !!this.currentNote.pinned;
       this.currentNote.folder = (this.currentNote.folder ?? '').trim();
+      this.currentNote.folder_id = this.normalizeFolderId(this.currentNote.folder_id);
 
       if (this.currentNote.protected) {
         this.note_locked = true;
@@ -200,6 +208,7 @@ export class AddNotePage implements OnDestroy {
   }
 
   private createDraftNote(folder = ''): NoteV1 {
+    const folderEntry = this.findFolderByName(folder);
     return {
       id: this.notes_id as string,
       text: this.note_text ?? '',
@@ -208,6 +217,7 @@ export class AddNotePage implements OnDestroy {
       favorite: false,
       pinned: false,
       folder,
+      folder_id: folderEntry?.id ?? null,
       last_modified: Date.now(),
       auto_wipe: true,
     };
@@ -329,23 +339,76 @@ export class AddNotePage implements OnDestroy {
     await this.deleteNote();
   }
 
-  private loadFolders(): void {
+  private normalizeFolderId(folderId: any): string | null {
+    return typeof folderId === 'string' && folderId.trim().length > 0 ? folderId.trim() : null;
+  }
+
+  private findFolderByName(name: string): Folder | undefined {
+    const normalizedName = (name ?? '').trim().toLowerCase();
+    if (!normalizedName) {
+      return undefined;
+    }
+
+    return this.folders.find((folder) => !folder?.deleted && (folder.name ?? '').trim().toLowerCase() === normalizedName);
+  }
+
+  private getStoredFolders(): Folder[] {
     try {
       const rawFolders = this.notesService.getFolders();
       const decodedFolders = this.notesService.appHasPasswordChallenge()
         ? this.cryptoService.decrypt(rawFolders, this.notesService.getNotesAppPassword())
         : rawFolders;
       const parsedFolders = decodedFolders ? JSON.parse(decodedFolders) : [];
+
+      if (!Array.isArray(parsedFolders)) {
+        return [];
+      }
+
+      return parsedFolders
+        .map((folder: any) => ({
+          id: this.normalizeFolderId(folder?.id) ?? uuidv4(),
+          name: (folder?.name ?? '').trim(),
+          last_modified: Number(folder?.last_modified ?? Date.now()),
+          deleted: !!folder?.deleted,
+        }))
+        .filter((folder: Folder) => folder.name.length > 0 || folder.deleted);
+    } catch {
+      return [];
+    }
+  }
+
+  private async uploadFoldersState(): Promise<void> {
+    if (!this.authService.isLoggedIn) {
+      return;
+    }
+
+    await this.notesApiV1Service.upload(0, [], undefined, this.getStoredFolders());
+  }
+
+  private loadFolders(): void {
+    try {
+      const storedFolders = this.getStoredFolders();
       const folderMap = new Map<string, Folder>();
-      for (const folder of parsedFolders ?? []) {
+      for (const folder of storedFolders ?? []) {
+        if (folder.deleted) continue;
         const name = (folder?.name ?? '').trim();
         if (!name) continue;
-        folderMap.set(name.toLowerCase(), { name, last_modified: folder?.last_modified ?? Date.now() });
+        folderMap.set(name.toLowerCase(), {
+          id: folder.id,
+          name,
+          last_modified: folder?.last_modified ?? Date.now(),
+          deleted: false,
+        });
       }
       for (const note of this.notes ?? []) {
         const name = (note?.folder ?? '').trim();
         if (!name || folderMap.has(name.toLowerCase())) continue;
-        folderMap.set(name.toLowerCase(), { name, last_modified: note?.last_modified ?? Date.now() });
+        folderMap.set(name.toLowerCase(), {
+          id: this.normalizeFolderId((note as any)?.folder_id) ?? uuidv4(),
+          name,
+          last_modified: note?.last_modified ?? Date.now(),
+          deleted: false,
+        });
       }
       this.folders = Array.from(folderMap.values()).sort((a, b) => a.name.localeCompare(b.name));
     } catch {
@@ -354,7 +417,25 @@ export class AddNotePage implements OnDestroy {
   }
 
   private async persistFoldersState(): Promise<void> {
-    const rawFolders = JSON.stringify(this.folders);
+    const storedMap = new Map<string, Folder>();
+    for (const folder of this.getStoredFolders()) {
+      const key = this.normalizeFolderId(folder.id) ?? `name:${(folder.name ?? '').trim().toLowerCase()}`;
+      storedMap.set(key, folder);
+    }
+
+    for (const folder of this.folders) {
+      const normalizedName = (folder?.name ?? '').trim();
+      if (!normalizedName) continue;
+      const normalizedFolder: Folder = {
+        id: this.normalizeFolderId(folder.id) ?? uuidv4(),
+        name: normalizedName,
+        last_modified: Number(folder?.last_modified ?? Date.now()),
+        deleted: !!folder?.deleted,
+      };
+      storedMap.set(normalizedFolder.id as string, normalizedFolder);
+    }
+
+    const rawFolders = JSON.stringify(Array.from(storedMap.values()));
     if (this.notesService.appHasPasswordChallenge()) {
       const encryptedFolders = this.cryptoService.encrypt(rawFolders, this.notesService.getNotesAppPassword());
       this.notesService.setFolders(encryptedFolders);
@@ -362,6 +443,7 @@ export class AddNotePage implements OnDestroy {
       this.notesService.setFolders(rawFolders);
     }
     await this.notesService.flushPersistence();
+    await this.uploadFoldersState();
   }
 
   private upsertFolder(name: string): string {
@@ -369,13 +451,22 @@ export class AddNotePage implements OnDestroy {
     if (!normalizedName) {
       return '';
     }
-    const existing = this.folders.find((folder) => folder.name.toLowerCase() === normalizedName.toLowerCase());
+    const existing = this.folders.find((folder) => (folder.name ?? '').toLowerCase() === normalizedName.toLowerCase());
     if (existing) {
+      if (!existing.id) {
+        existing.id = uuidv4();
+      }
+      existing.deleted = false;
+      existing.last_modified = Date.now();
       return existing.name;
     }
-    this.folders = [...this.folders, { name: normalizedName, last_modified: Date.now() }]
+    this.folders = [...this.folders, { id: uuidv4(), name: normalizedName, last_modified: Date.now(), deleted: false }]
       .sort((a, b) => a.name.localeCompare(b.name));
     return normalizedName;
+  }
+
+  private resolveFolderIdByName(name: string): string | null {
+    return this.findFolderByName(name)?.id ?? null;
   }
 
   private blurFocusedElement(): void {
@@ -453,6 +544,7 @@ export class AddNotePage implements OnDestroy {
         favorite: false,
         pinned: false,
         folder: folderName,
+        folder_id: this.resolveFolderIdByName(folderName),
         last_modified: Date.now(),
         auto_wipe: true
       };
@@ -460,12 +552,14 @@ export class AddNotePage implements OnDestroy {
 
     if (this.currentNote) {
       this.currentNote.folder = folderName;
+      this.currentNote.folder_id = this.resolveFolderIdByName(folderName);
       this.currentNote.last_modified = Date.now();
     }
 
     for (let i = 0; i < this.notes.length; i++) {
       if (this.notes[i].id === this.notes_id) {
         this.notes[i].folder = folderName;
+        this.notes[i].folder_id = this.resolveFolderIdByName(folderName);
         this.notes[i].last_modified = Date.now();
         break;
       }
@@ -522,6 +616,7 @@ export class AddNotePage implements OnDestroy {
         favorite: nextFavorite,
         pinned: false,
         folder: '',
+        folder_id: null,
         last_modified: now,
         auto_wipe: true,
       };
@@ -570,6 +665,7 @@ export class AddNotePage implements OnDestroy {
         favorite: false,
         pinned: nextPinned,
         folder: '',
+        folder_id: null,
         last_modified: now,
         auto_wipe: true,
       };
@@ -1023,6 +1119,7 @@ export class AddNotePage implements OnDestroy {
           this.currentNote.last_modified = note.last_modified;
           this.currentNote.title = note.title;
           this.currentNote.folder = (note.folder ?? '').trim();
+          this.currentNote.folder_id = this.normalizeFolderId((note as any).folder_id);
 
           this.note_title = note.title;
           this.note_text = note.text;
@@ -1035,6 +1132,7 @@ export class AddNotePage implements OnDestroy {
                 favorite: !!note.favorite,
                 pinned: !!note.pinned,
                 folder: (note.folder ?? '').trim(),
+                folder_id: this.normalizeFolderId((note as any).folder_id),
               };
               break;
             }
@@ -1105,6 +1203,7 @@ export class AddNotePage implements OnDestroy {
       favorite: favoriteNote,
       pinned: pinnedNote,
       folder: this.currentNote?.folder ?? '',
+      folder_id: this.normalizeFolderId(this.currentNote?.folder_id),
       auto_wipe: true,
     };
 
@@ -1160,11 +1259,12 @@ export class AddNotePage implements OnDestroy {
     }
 
     const notesToSend = this.notes;
+    const foldersToSend = this.getStoredFolders();
 
     this.saveTimeout = window.setTimeout(() => {
       (async () => {
         if (serverSync && this.authService.isLoggedIn) {
-          this.notesApiV1Service.upload(0, notesToSend).then(() => {});
+          this.notesApiV1Service.upload(0, notesToSend, undefined, foldersToSend).then(() => {});
           if (this.liveNoteTimer == null) {
             this.startLiveNotePolling();
           }

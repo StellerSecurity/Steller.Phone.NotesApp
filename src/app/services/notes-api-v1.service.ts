@@ -3,6 +3,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { NoteV1 } from "../models/NoteV1";
+import { Folder } from "../models/Folder";
 
 import { CryptoKeyService } from "./crypto-key.service";
 import { SecureStorageService } from "./secure-storage.service";
@@ -10,7 +11,7 @@ import { OutboxOp } from "../models/Sync";
 import { OutboxStorage } from "./outbox-storage.service";
 
 // ✅ Shared crypto helpers from NPM (wire format)
-import { packCipherBlob } from '@stellarsecurity/stellar-crypto';
+import { packCipherBlob, unpackCipherBlob } from '@stellarsecurity/stellar-crypto';
 import { buildApiUrl, notes } from '../constants/api/product.api';
 import { normalizeNoteSyncFlags, normalizeNoteSyncFlagsList } from '../utils/note-sync-normalize.util';
 
@@ -28,13 +29,66 @@ export class NotesApiV1Service {
     private outbox: OutboxStorage,
   ) {}
 
+
+  private normalizeFolderId(folderId: any): string | null {
+    return typeof folderId === 'string' && folderId.trim().length > 0 ? folderId.trim() : null;
+  }
+
+  private isCipherBlobString(value: any): boolean {
+    return typeof value === 'string' && value.includes(':') && value.split(':').length >= 3;
+  }
+
+  private async encryptFolderName(folderName: string, folderId: string): Promise<string> {
+    const normalizedName = typeof folderName === 'string' ? folderName.trim() : '';
+    if (!normalizedName) {
+      return '';
+    }
+
+    const encrypted = await this.crypto.encryptText(normalizedName, `${folderId}#folder-name`);
+    return packCipherBlob(encrypted);
+  }
+
+  private async decryptFolderCipherValue(rawName: string, aad: string, fallbackName = ''): Promise<string> {
+    try {
+      return await this.crypto.decryptText(unpackCipherBlob(rawName), aad);
+    } catch {}
+
+    try {
+      const decoded = JSON.parse(atob(rawName));
+      if (decoded?.iv_b64 && decoded?.ct_b64) {
+        return await this.crypto.decryptText(decoded, aad);
+      }
+    } catch {}
+
+    return fallbackName || rawName;
+  }
+
+  private async decryptFolderName(folderName: any, folderId: string): Promise<string> {
+    const rawName = typeof folderName === 'string' ? folderName.trim() : '';
+    if (!rawName) {
+      return '';
+    }
+
+    return this.decryptFolderCipherValue(rawName, `${folderId}#folder-name`, rawName);
+  }
+
+  private async decryptLegacyNoteFolder(folderName: any, folderId: string, fallbackName = ''): Promise<string> {
+    const rawName = typeof folderName === 'string' ? folderName.trim() : '';
+    if (!rawName) {
+      return fallbackName;
+    }
+
+    return this.decryptFolderCipherValue(rawName, `${folderId}#folder-name`, fallbackName || rawName);
+  }
+
   // --------------------------------------------------
   // PUBLIC: upload
   // --------------------------------------------------
   async upload(
     sinceMs: number,
     notes: ReadonlyArray<NoteV1>,
-    opId?: string
+    opId?: string,
+    folders: ReadonlyArray<Folder> = []
   ): Promise<object> {
     const TOKEN = await this.secureStorageService.getItem("ssToken");
     const headers = new HttpHeaders().set('Authorization', `Bearer ${TOKEN ?? ''}`);
@@ -45,18 +99,47 @@ export class NotesApiV1Service {
       await this.crypto.importEAK(eakB64);
     }
 
-    // 2) Encrypt each note body + title via CryptoKeyService (MK in RAM)
+    const normalizedFolders = (Array.isArray(folders) ? folders : []).map((folder: any) => ({
+      id: this.normalizeFolderId(folder?.id) ?? (crypto?.randomUUID?.() ?? String(Date.now() + Math.random())),
+      name: typeof folder?.name === 'string' ? folder.name.trim() : '',
+      last_modified: Number(folder?.last_modified ?? Date.now()),
+      deleted: !!folder?.deleted,
+    })).filter((folder: any) => folder.name || folder.deleted);
+
+    const folderIdByName = new Map<string, string>();
+    for (const folder of normalizedFolders) {
+      const normalizedName = (folder?.name ?? '').trim().toLowerCase();
+      if (normalizedName) {
+        folderIdByName.set(normalizedName, folder.id);
+      }
+    }
+
+    const encryptedFolders: Folder[] = [];
+    for (const folder of normalizedFolders) {
+      encryptedFolders.push({
+        ...folder,
+        name: folder.deleted ? '' : await this.encryptFolderName(folder.name, folder.id),
+      });
+    }
+
+    // 2) Encrypt each note body + title + folder metadata via CryptoKeyService (MK in RAM)
     const encryptedNotes: NoteV1[] = [];
     for (const rawNote of normalizeNoteSyncFlagsList(notes)) {
       const n = normalizeNoteSyncFlags(rawNote);
       const encText  = await this.crypto.encryptText(n.text  ?? '', n.id);
       const encTitle = await this.crypto.encryptText(n.title ?? '', n.id + '#title');
+      const normalizedFolderName = (n.folder ?? '').trim();
+      const normalizedFolderId = this.normalizeFolderId((n as any)?.folder_id)
+        ?? (normalizedFolderName ? (folderIdByName.get(normalizedFolderName.toLowerCase()) ?? null) : null);
 
-      // 3) Pack IV||CT med NPM helper (wire format til backend)
       encryptedNotes.push({
         ...n,
         text: packCipherBlob(encText),
         title: packCipherBlob(encTitle),
+        folder: normalizedFolderName && normalizedFolderId
+          ? await this.encryptFolderName(normalizedFolderName, normalizedFolderId)
+          : '',
+        folder_id: normalizedFolderId,
       });
     }
 
@@ -64,6 +147,7 @@ export class NotesApiV1Service {
       op_id: opId ?? crypto?.randomUUID?.() ?? String(Date.now()),
       since: sinceMs || 0,
       notes: encryptedNotes,
+      folders: encryptedFolders,
     } as any;
 
     // Offline → queue i Outbox
@@ -101,25 +185,67 @@ export class NotesApiV1Service {
   async download(
     sinceMs: number,
     limit = 1000
-  ): Promise<{ notes: NoteV1[]; has_more?: boolean; watermark?: number }> {
+  ): Promise<{ notes: NoteV1[]; folders: Folder[]; has_more?: boolean; watermark?: number }> {
     const TOKEN = await this.secureStorageService.getItem('ssToken');
     const headers = new HttpHeaders().set('Authorization', `Bearer ${TOKEN ?? ''}`);
 
     if (!navigator.onLine) {
-      return { notes: [], has_more: false, watermark: sinceMs || 0 };
+      return { notes: [], folders: [], has_more: false, watermark: sinceMs || 0 };
     }
 
     const response = await firstValueFrom(
-      this.http.post<{ notes: NoteV1[]; has_more?: boolean; watermark?: number }>(
+      this.http.post<{ notes: NoteV1[]; folders?: Folder[]; has_more?: boolean; watermark?: number }>(
         `${this.base}/download`,
         { since: sinceMs || 0, limit },
         { headers }
       )
     );
 
+    const decryptedFolders: Folder[] = [];
+    for (const folder of Array.isArray(response?.folders) ? response.folders : []) {
+      const folderId = this.normalizeFolderId((folder as any)?.id) ?? '';
+      const decryptedName = folder.deleted
+        ? ''
+        : await this.decryptFolderName(folder?.name, folderId);
+
+      if (!folderId && !decryptedName) {
+        continue;
+      }
+
+      decryptedFolders.push({
+        id: folderId,
+        name: decryptedName,
+        last_modified: Number(folder?.last_modified ?? 0),
+        deleted: !!folder?.deleted,
+      });
+    }
+
+    const folderNameById = new Map<string, string>();
+    for (const folder of decryptedFolders) {
+      const folderId = this.normalizeFolderId(folder.id);
+      if (folderId && !folder.deleted) {
+        folderNameById.set(folderId, folder.name ?? '');
+      }
+    }
+
+    const decryptedNotes: NoteV1[] = [];
+    for (const rawNote of normalizeNoteSyncFlagsList(response?.notes)) {
+      const note = normalizeNoteSyncFlags(rawNote);
+      const noteFolderId = this.normalizeFolderId((note as any)?.folder_id);
+      const resolvedFolderName = noteFolderId ? (folderNameById.get(noteFolderId) ?? '') : '';
+      const decryptedFolderName = await this.decryptLegacyNoteFolder(note?.folder, noteFolderId ?? `${note.id}#folder`, resolvedFolderName);
+
+      decryptedNotes.push({
+        ...note,
+        folder: decryptedFolderName || resolvedFolderName || '',
+        folder_id: noteFolderId,
+      });
+    }
+
     return {
       ...response,
-      notes: normalizeNoteSyncFlagsList(response?.notes),
+      notes: decryptedNotes,
+      folders: decryptedFolders,
     };
   }
 

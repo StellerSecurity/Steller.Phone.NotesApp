@@ -7,6 +7,7 @@ export function normalizeNoteSyncFlags<T extends Partial<NoteV1>>(note: T | null
     favorite: !!source.favorite,
     pinned: !!source.pinned,
     folder: typeof source.folder === 'string' ? source.folder.trim() : (source.folder ?? ''),
+    folder_id: typeof (source as any).folder_id === 'string' && (source as any).folder_id.trim() ? (source as any).folder_id.trim() : null,
   } as T;
 }
 
