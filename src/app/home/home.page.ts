@@ -456,7 +456,9 @@ export class HomePage implements AfterViewInit, OnDestroy {
     this.hiddenId = this.route.snapshot.queryParamMap.get('hide_ids');
 
     if (this.dataService.getForceDownloadOnHome() && this.authService.isLoggedIn) {
-      this.waitForSync = true;
+      this.waitForSync = false;
+      this.setData(this.noteService.getNotesAppPassword());
+      this.dataService.setForceDownloadOnHome(false);
     }
 
     if (!this.noteService.appHasPasswordChallenge()) {

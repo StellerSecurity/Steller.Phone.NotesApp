@@ -852,6 +852,18 @@ export class AddNotePage implements OnDestroy {
     this.allTranslations = this.translatorService.allTranslations;
     this.loadFolders();
 
+    if (this.currentNote && (this.currentNote.folder ?? '').trim() && !this.currentNote.folder_id) {
+      const resolvedFolderId = this.resolveFolderIdByName(this.currentNote.folder ?? '');      if (resolvedFolderId) {
+        this.currentNote.folder_id = resolvedFolderId;
+        for (let i = 0; i < this.notes.length; i++) {
+          if (this.notes[i].id === this.currentNote.id) {
+            this.notes[i].folder_id = resolvedFolderId;
+            break;
+          }
+        }
+      }
+    }
+
     try {
       if (!this.notesService.appHasPasswordChallenge()) {
         const eakB64 = await this.secureStorageService.getItem('ssEakB64');
@@ -871,6 +883,7 @@ export class AddNotePage implements OnDestroy {
   }
 
   ionViewWillLeave() {
+    this.dataService.setForceDownloadOnHome(true);
     this.closeMoreMenu();
     this.closeImagePreview();
     this.forceSaveNow();
@@ -1404,6 +1417,7 @@ export class AddNotePage implements OnDestroy {
   }
 
   public back() {
+    this.dataService.setForceDownloadOnHome(true);
     this.forceSaveNow();
     this.navController.back();
   }
