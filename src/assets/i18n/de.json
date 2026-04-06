@@ -272,7 +272,7 @@
   "create": "Erstellen",
   "deleteFolder": "Ordner löschen",
   "deleteFolderDescription": "Möchtest du den Ordner \"{{ folder }}\" und alle {{ count }} darin enthaltenen Notizen wirklich löschen?",
-  "noteMovedToFolder": "Notiz verschoben",
+  "noteMovedToFolder": "Notiz wurde nach {{folderName}} verschoben",
   "notesMovedToFolder": "{{count}} Notizen verschoben",
   "folderCreated": "Ordner erstellt",
   "folderEmptyTitle": "Noch keine Notizen in diesem Ordner",
@@ -285,5 +285,9 @@
   "hideAccountName": "Kontonamen ausblenden",
   "signInWithYourStellarId": "Mit deiner Stellar ID anmelden.",
   "username": "Benutzername",
-  "signInUpper": "Anmelden"
+  "signInUpper": "Anmelden",
+  "pin": "Notiz anheften",
+  "unpin": "Anheftung entfernen",
+  "markAsFavorite": "Als Favorit markieren",
+  "removeFavorite": "Favorit entfernen"
 }

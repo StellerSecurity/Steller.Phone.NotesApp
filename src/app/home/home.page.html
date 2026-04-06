@@ -620,6 +620,44 @@
   </ng-container>
 </ion-content>
 
+<ion-modal
+  [isOpen]="newFolderModalOpen"
+  cssClass="new-folder-modal"
+  [backdropDismiss]="true"
+  [showBackdrop]="true"
+  (didDismiss)="cancelCreateFolderModal()">
+  <ng-template>
+    <ion-content class="new-folder-modal-content">
+      <div class="new-folder-sheet">
+        <div class="new-folder-sheet-icon">
+          <ion-icon name="folder-open-outline"></ion-icon>
+        </div>
+        <div class="new-folder-sheet-title">{{ 'newFolder' | translate }}</div>
+        <div class="new-folder-sheet-text">{{ 'folderNamePlaceholder' | translate }}</div>
+
+        <div class="new-folder-sheet-input-wrap">
+          <ion-input
+            [(ngModel)]="newFolderName"
+            [placeholder]="allTranslations?.folderNamePlaceholder ?? ('folderNamePlaceholder' | translate)"
+            class="new-folder-sheet-input"
+            (keyup.enter)="confirmCreateFolderModal()"
+            autofocus="true">
+          </ion-input>
+        </div>
+
+        <div class="new-folder-sheet-actions">
+          <ion-button fill="clear" class="new-folder-sheet-cancel" (click)="cancelCreateFolderModal()">
+            {{ 'cancel' | translate }}
+          </ion-button>
+          <ion-button class="new-folder-sheet-create" (click)="confirmCreateFolderModal()">
+            {{ 'create' | translate }}
+          </ion-button>
+        </div>
+      </div>
+    </ion-content>
+  </ng-template>
+</ion-modal>
+
 <ion-toolbar slot="fixed" class="toolbar-bottom" *ngIf="checkboxOpened && visibleNotes.length > 0">
   <ion-button
     color="primary"

@@ -1,67 +1,198 @@
 <ion-header [translucent]="true" class="header-border-bottom-0 no-border">
-  <ion-toolbar>
-    <div *ngIf="!note_locked">
-      <ng-container *ngIf="!isEditingTitle; else editing">
-        <ion-title class="editable-title" (click)="enableEditingTitle()">
-          {{ note_title || 'Untitled Note' }}
-        </ion-title>
-      </ng-container>
-      <ng-template #editing>
-        <ion-title class="editable-title-input-wrapper">
-          <ion-input
-            #titleInput
-            [(ngModel)]="note_title"
-            (ionInput)="noteTitleChange($event)"
-            (blur)="isEditingTitle = false"
-            (keyup.enter)="isEditingTitle = false"
-            placeholder="{{ 'enterTitle' | translate }}"
-            class="editable-title-input"
-          ></ion-input>
-        </ion-title>
-      </ng-template>
+  <ion-toolbar class="note-toolbar" [class.title-focus-mode]="isEditingTitle">
+    <div class="note-toolbar-inner">
+      <div class="note-toolbar-left">
+        <ion-buttons>
+          <ion-back-button
+            defaultHref="/"
+            class="custom-back-button"
+            text="">
+            <ion-icon slot="icon-only" style="display: none;"></ion-icon>
+          </ion-back-button>
+        </ion-buttons>
+      </div>
+
+      <div class="note-toolbar-center" *ngIf="!note_locked">
+        <div class="title-shell" [class.title-shell-editing]="isEditingTitle">
+          <ng-container *ngIf="!isEditingTitle; else editing">
+            <button type="button" class="editable-title-button" (click)="enableEditingTitle()">
+              {{ note_title || 'Untitled Note' }}
+            </button>
+          </ng-container>
+          <ng-template #editing>
+            <div class="editable-title-input-wrapper">
+              <ion-input
+                #titleInput
+                [(ngModel)]="note_title"
+                (ionInput)="noteTitleChange($event)"
+                (ionBlur)="onTitleBlur()"
+                (keyup.enter)="onTitleSubmit()"
+                placeholder="{{ 'enterTitle' | translate }}"
+                class="editable-title-input"
+              ></ion-input>
+            </div>
+          </ng-template>
+        </div>
+      </div>
+
+      <ion-buttons *ngIf="!note_locked" class="note-actions-bar" [class.hidden]="isEditingTitle">
+        <ion-button class="note-action-button" fill="clear" (click)="openLockModal()">
+          <img *ngIf="!note_locked" src="./assets/lock-open.png" width="24" height="24">
+          <img *ngIf="note_locked" src="./assets/lock-close.png" width="24" height="24">
+        </ion-button>
+        <ion-button class="note-action-button" fill="clear" (click)="chooseFolder()">
+          <ion-icon name="folder-open-outline"></ion-icon>
+        </ion-button>
+        <ion-button class="note-action-button" fill="clear" (click)="toggleMoreMenu($event)">
+          <ion-icon name="ellipsis-horizontal"></ion-icon>
+        </ion-button>
+      </ion-buttons>
     </div>
-    <ion-buttons slot="start">
-      <ion-back-button
-        defaultHref="/"
-        class="custom-back-button"
-        text="">
-        <ion-icon slot="icon-only" style="display: none;"></ion-icon>
-      </ion-back-button>
-    </ion-buttons>
-    <ion-buttons slot="end" *ngIf="!note_locked">
-      <ion-button (click)="togglePinned()">
-        <ion-icon
-          [name]="isPinned() ? 'bookmark' : 'bookmark-outline'"
-          [style.color]="isPinned() ? '#2761FC' : '#62626A'">
-        </ion-icon>
-      </ion-button>
-      <ion-button (click)="toggleFavorite()">
-        <ion-icon
-          [name]="isFavorite() ? 'star' : 'star-outline'"
-          [style.color]="isFavorite() ? '#F4B400' : '#62626A'">
-        </ion-icon>
-      </ion-button>
-      <ion-button (click)="openLockModal()">
-        <img *ngIf="!note_locked" src="./assets/lock-open.png" width="24" height="24">
-        <img *ngIf="note_locked" src="./assets/lock-close.png" width="24" height="24">
-      </ion-button>
-      <ion-button (click)="chooseFolder()">
-        <ion-icon name="folder-open-outline"></ion-icon>
-      </ion-button>
-      <ion-button (click)="shareStellarSecret()">
-        <img src="./assets/note-share-icon.png" width="18" height="18">
-      </ion-button>
-      <ion-button (click)="deleteNote()">
-        <ion-icon name="trash-outline"></ion-icon>
-      </ion-button>
-    </ion-buttons>
+
+    <ion-popover
+      [isOpen]="moreMenuOpen"
+      [event]="moreMenuEvent"
+      cssClass="note-actions-popover"
+      side="bottom"
+      alignment="end"
+      (didDismiss)="closeMoreMenu()">
+      <ng-template>
+        <ion-list lines="none" class="note-actions-popover-list">
+          <ion-item button detail="false" class="note-actions-popover-item" (click)="handleTogglePinned()">
+            <ion-icon
+              slot="start"
+              [name]="isPinned() ? 'bookmark' : 'bookmark-outline'"
+              [style.color]="isPinned() ? '#2761FC' : '#62626A'"></ion-icon>
+            <ion-label>{{ (isPinned() ? 'unpin' : 'pin') | translate }}</ion-label>
+          </ion-item>
+          <ion-item button detail="false" class="note-actions-popover-item" (click)="handleToggleFavorite()">
+            <ion-icon
+              slot="start"
+              [name]="isFavorite() ? 'star' : 'star-outline'"
+              [style.color]="isFavorite() ? '#F4B400' : '#62626A'"></ion-icon>
+            <ion-label>{{ (isFavorite() ? 'removeFavorite' : 'markAsFavorite') | translate }}</ion-label>
+          </ion-item>
+          <ion-item button detail="false" class="note-actions-popover-item" (click)="handleShare()">
+            <ion-icon slot="start" name="share-social-outline"></ion-icon>
+            <ion-label>{{ 'share' | translate }}</ion-label>
+          </ion-item>
+          <div class="note-actions-popover-divider"></div>
+          <ion-item button detail="false" class="note-actions-popover-item note-actions-popover-item-danger" (click)="handleDelete()">
+            <ion-icon slot="start" name="trash-outline"></ion-icon>
+            <ion-label>{{ 'delete' | translate }}</ion-label>
+          </ion-item>
+        </ion-list>
+      </ng-template>
+    </ion-popover>
+
   </ion-toolbar>
 </ion-header>
+    <ion-modal
+      [isOpen]="folderPickerOpen"
+      cssClass="folder-picker-modal"
+      [initialBreakpoint]="0.55"
+      [breakpoints]="[0, 0.55, 0.8]"
+      handle="true"
+      (didDismiss)="closeFolderPicker()">
+      <ng-template>
+        <ion-content class="folder-picker-content">
+          <div class="folder-picker-sheet">
+            <div class="folder-picker-header">
+              <div class="folder-picker-title">{{ 'moveToFolder' | translate }}</div>
+              <button type="button" class="folder-picker-new-button" (click)="createFolderFromPicker()">
+                <ion-icon name="add-circle-outline"></ion-icon>
+                <span>{{ 'newFolder' | translate }}</span>
+              </button>
+            </div>
+
+            <div class="folder-picker-list">
+              <button
+                type="button"
+                class="folder-picker-item"
+                [class.selected]="folderPickerSelection === '__all__'"
+                (click)="folderPickerSelection = '__all__'">
+                <div class="folder-picker-item-left">
+                  <span class="folder-picker-icon folder-picker-icon-all">
+                    <ion-icon name="albums-outline"></ion-icon>
+                  </span>
+                  <span class="folder-picker-name">{{ 'allNotes' | translate }}</span>
+                </div>
+                <ion-icon *ngIf="folderPickerSelection === '__all__'" name="checkmark" class="folder-picker-check"></ion-icon>
+              </button>
+
+              <button
+                type="button"
+                class="folder-picker-item"
+                *ngFor="let folder of folders"
+                [class.selected]="folderPickerSelection === folder.name"
+                (click)="folderPickerSelection = folder.name">
+                <div class="folder-picker-item-left">
+                  <span class="folder-picker-icon folder-picker-icon-folder">
+                    <ion-icon name="folder-outline"></ion-icon>
+                  </span>
+                  <span class="folder-picker-name">{{ folder.name }}</span>
+                </div>
+                <ion-icon *ngIf="folderPickerSelection === folder.name" name="checkmark" class="folder-picker-check"></ion-icon>
+              </button>
+            </div>
+
+            <div class="folder-picker-actions">
+              <ion-button fill="clear" class="folder-picker-cancel" (click)="closeFolderPicker()">
+                {{ 'cancel' | translate }}
+              </ion-button>
+              <ion-button class="folder-picker-confirm" (click)="confirmFolderPickerMove()">
+                {{ 'move' | translate }}
+              </ion-button>
+            </div>
+          </div>
+        </ion-content>
+      </ng-template>
+    </ion-modal>
+
+    <ion-modal
+      [isOpen]="newFolderModalOpen"
+      cssClass="new-folder-modal"
+      [backdropDismiss]="true"
+      [showBackdrop]="true"
+      (didDismiss)="closeNewFolderModalFromDismiss()">
+      <ng-template>
+        <ion-content class="new-folder-modal-content">
+          <div class="new-folder-sheet">
+            <div class="new-folder-sheet-icon">
+              <ion-icon name="folder-open-outline"></ion-icon>
+            </div>
+            <div class="new-folder-sheet-title">{{ 'newFolder' | translate }}</div>
+            <div class="new-folder-sheet-text">{{ 'folderNamePlaceholder' | translate }}</div>
+
+            <div class="new-folder-sheet-input-wrap">
+              <ion-input
+                [(ngModel)]="newFolderName"
+                [placeholder]="allTranslations?.folderNamePlaceholder ?? ('folderNamePlaceholder' | translate)"
+                class="new-folder-sheet-input"
+                (keyup.enter)="confirmNewFolderModal()"
+                autofocus="true">
+              </ion-input>
+            </div>
+
+            <div class="new-folder-sheet-actions">
+              <ion-button fill="clear" class="new-folder-sheet-cancel" (click)="cancelNewFolderModal()">
+                {{ 'cancel' | translate }}
+              </ion-button>
+              <ion-button class="new-folder-sheet-create" (click)="confirmNewFolderModal()">
+                {{ 'create' | translate }}
+              </ion-button>
+            </div>
+          </div>
+        </ion-content>
+      </ng-template>
+    </ion-modal>
+
+
 <ion-content
   [fullscreen]="true"
   (ionScrollStart)="pauseLiveSync()"
   (ionScrollEnd)="resumeLiveSync()">
-  <ion-modal #modal trigger="open-modal">
+  <ion-modal #lockModal>
     <ng-template>
       <ion-header>
         <ion-toolbar>

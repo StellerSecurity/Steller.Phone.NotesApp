@@ -272,7 +272,7 @@
   "create": "Aanmaken",
   "deleteFolder": "Map verwijderen",
   "deleteFolderDescription": "Weet je zeker dat je de map \"{{ folder }}\" en alle {{ count }} notities daarin wilt verwijderen?",
-  "noteMovedToFolder": "Notitie verplaatst",
+  "noteMovedToFolder": "Notitie verplaatst naar {{folderName}}",
   "notesMovedToFolder": "{{count}} notities verplaatst",
   "folderCreated": "Map aangemaakt",
   "folderEmptyTitle": "Nog geen notities in deze map",
@@ -285,5 +285,9 @@
   "hideAccountName": "Accountnaam verbergen",
   "signInWithYourStellarId": "Log in met je Stellar ID.",
   "username": "Gebruikersnaam",
-  "signInUpper": "Inloggen"
+  "signInUpper": "Inloggen",
+  "pin": "Notitie vastzetten",
+  "unpin": "Vastzetten opheffen",
+  "markAsFavorite": "Markeer als favoriet",
+  "removeFavorite": "Favoriet verwijderen"
 }

@@ -272,7 +272,7 @@
   "create": "Crear",
   "deleteFolder": "Eliminar carpeta",
   "deleteFolderDescription": "¿Seguro que quieres eliminar la carpeta \"{{ folder }}\" y las {{ count }} notas que contiene?",
-  "noteMovedToFolder": "Nota movida",
+  "noteMovedToFolder": "La nota se movio a {{folderName}}",
   "notesMovedToFolder": "{{count}} notas movidas",
   "folderCreated": "Carpeta creada",
   "folderEmptyTitle": "Aún no hay notas en esta carpeta",
@@ -285,5 +285,9 @@
   "hideAccountName": "Ocultar nombre de la cuenta",
   "signInWithYourStellarId": "Inicia sesión con tu Stellar ID.",
   "username": "Nombre de usuario",
-  "signInUpper": "Iniciar sesión"
+  "signInUpper": "Iniciar sesión",
+  "pin": "Fijar nota",
+  "unpin": "Quitar fijación",
+  "markAsFavorite": "Marcar como favorita",
+  "removeFavorite": "Quitar de favoritas"
 }

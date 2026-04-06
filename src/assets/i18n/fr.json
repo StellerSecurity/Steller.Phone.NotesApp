@@ -272,7 +272,7 @@
   "create": "Créer",
   "deleteFolder": "Supprimer le dossier",
   "deleteFolderDescription": "Voulez-vous vraiment supprimer le dossier \"{{ folder }}\" et les {{ count }} notes qu’il contient ?",
-  "noteMovedToFolder": "Note déplacée",
+  "noteMovedToFolder": "La note a ete deplacee vers {{folderName}}",
   "notesMovedToFolder": "{{count}} notes déplacées",
   "folderCreated": "Dossier créé",
   "folderEmptyTitle": "Aucune note dans ce dossier pour le moment",
@@ -285,5 +285,9 @@
   "hideAccountName": "Masquer le nom du compte",
   "signInWithYourStellarId": "Connectez-vous avec votre Stellar ID.",
   "username": "Nom d’utilisateur",
-  "signInUpper": "Se connecter"
+  "signInUpper": "Se connecter",
+  "pin": "Épingler la note",
+  "unpin": "Désépingler la note",
+  "markAsFavorite": "Ajouter aux favoris",
+  "removeFavorite": "Retirer des favoris"
 }

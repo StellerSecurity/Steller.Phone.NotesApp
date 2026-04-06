@@ -272,7 +272,7 @@
   "create": "Opret",
   "deleteFolder": "Slet mappe",
   "deleteFolderDescription": "Er du sikker på, at du vil slette mappen \"{{ folder }}\" og alle {{ count }} noter i den?",
-  "noteMovedToFolder": "Noten blev flyttet",
+  "noteMovedToFolder": "Noten er flyttet til {{folderName}}",
   "notesMovedToFolder": "{{count}} noter blev flyttet",
   "folderCreated": "Mappe oprettet",
   "folderEmptyTitle": "Ingen noter i denne mappe endnu",
@@ -285,5 +285,9 @@
   "hideAccountName": "Skjul kontonavn",
   "signInWithYourStellarId": "Log ind med dit Stellar ID.",
   "username": "Brugernavn",
-  "signInUpper": "Log ind"
+  "signInUpper": "Log ind",
+  "pin": "Fastgør note",
+  "unpin": "Fjern fastgørelse",
+  "markAsFavorite": "Gør til favorit",
+  "removeFavorite": "Fjern favorit"
 }

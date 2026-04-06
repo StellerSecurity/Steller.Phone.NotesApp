@@ -272,7 +272,7 @@
   "create": "Skapa",
   "deleteFolder": "Ta bort mapp",
   "deleteFolderDescription": "Är du säker på att du vill ta bort mappen \"{{ folder }}\" och alla {{ count }} anteckningar i den?",
-  "noteMovedToFolder": "Anteckning flyttad",
+  "noteMovedToFolder": "Anteckningen flyttades till {{folderName}}",
   "notesMovedToFolder": "{{count}} anteckningar flyttade",
   "folderCreated": "Mapp skapad",
   "folderEmptyTitle": "Inga anteckningar i den här mappen ännu",
@@ -285,5 +285,9 @@
   "hideAccountName": "Dölj kontonamn",
   "signInWithYourStellarId": "Logga in med ditt Stellar ID.",
   "username": "Användarnamn",
-  "signInUpper": "Logga in"
+  "signInUpper": "Logga in",
+  "pin": "Fäst anteckning",
+  "unpin": "Ta bort fästning",
+  "markAsFavorite": "Markera som favorit",
+  "removeFavorite": "Ta bort favorit"
 }

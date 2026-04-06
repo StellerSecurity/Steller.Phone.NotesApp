@@ -652,3 +652,18 @@ ion-header.header-shadow {
 .folder-list ion-item,.folder-browser-list ion-item {
   --padding-start: 15px !important;
 }
+
+.new-folder-modal .new-folder-sheet-actions .new-folder-sheet-cancel {
+  --background: #ffffff !important;
+  --color: #0b0c19 !important;
+  --border-radius: 18px !important;
+  --box-shadow: 0 10px 24px rgba(11, 12, 25, 0.05) !important;
+  border: 1px solid #e7e9f2;
+}
+
+.new-folder-modal .new-folder-sheet-actions .new-folder-sheet-create {
+  --background: linear-gradient(180deg, #3f6cff 0%, #275df6 100%) !important;
+  --color: #ffffff !important;
+  --border-radius: 18px !important;
+  --box-shadow: 0 14px 30px rgba(39, 97, 252, 0.28) !important;
+}

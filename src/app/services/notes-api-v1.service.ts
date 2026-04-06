@@ -12,6 +12,7 @@ import { OutboxStorage } from "./outbox-storage.service";
 // ✅ Shared crypto helpers from NPM (wire format)
 import { packCipherBlob } from '@stellarsecurity/stellar-crypto';
 import { buildApiUrl, notes } from '../constants/api/product.api';
+import { normalizeNoteSyncFlags, normalizeNoteSyncFlagsList } from '../utils/note-sync-normalize.util';
 
 @Injectable({ providedIn: 'root' })
 export class NotesApiV1Service {
@@ -46,7 +47,8 @@ export class NotesApiV1Service {
 
     // 2) Encrypt each note body + title via CryptoKeyService (MK in RAM)
     const encryptedNotes: NoteV1[] = [];
-    for (const n of notes) {
+    for (const rawNote of normalizeNoteSyncFlagsList(notes)) {
+      const n = normalizeNoteSyncFlags(rawNote);
       const encText  = await this.crypto.encryptText(n.text  ?? '', n.id);
       const encTitle = await this.crypto.encryptText(n.title ?? '', n.id + '#title');
 
@@ -107,13 +109,18 @@ export class NotesApiV1Service {
       return { notes: [], has_more: false, watermark: sinceMs || 0 };
     }
 
-    return firstValueFrom(
+    const response = await firstValueFrom(
       this.http.post<{ notes: NoteV1[]; has_more?: boolean; watermark?: number }>(
         `${this.base}/download`,
         { since: sinceMs || 0, limit },
         { headers }
       )
     );
+
+    return {
+      ...response,
+      notes: normalizeNoteSyncFlagsList(response?.notes),
+    };
   }
 
   // --------------------------------------------------
@@ -127,9 +134,11 @@ export class NotesApiV1Service {
       throw new Error('offline');
     }
 
-    return firstValueFrom(
+    const note = await firstValueFrom(
       this.http.post<NoteV1>(`${this.base}/find`, { id }, { headers })
     );
+
+    return normalizeNoteSyncFlags(note);
   }
 
   // --------------------------------------------------

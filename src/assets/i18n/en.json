@@ -272,7 +272,7 @@
   "create": "Create",
   "deleteFolder": "Delete folder",
   "deleteFolderDescription": "Are you sure you want to delete the folder \"{{ folder }}\" and all {{ count }} notes inside it?",
-  "noteMovedToFolder": "Note moved",
+  "noteMovedToFolder": "Note moved to {{folderName}}",
   "notesMovedToFolder": "{{count}} notes moved",
   "folderCreated": "Folder created",
   "folderEmptyTitle": "No notes in this folder yet",
@@ -285,5 +285,9 @@
   "hideAccountName": "Hide account name",
   "signInWithYourStellarId": "Sign in with your Stellar ID.",
   "username": "Username",
-  "signInUpper": "Sign In"
+  "signInUpper": "Sign In",
+  "pin": "Pin note",
+  "unpin": "Unpin note",
+  "markAsFavorite": "Favorite note",
+  "removeFavorite": "Remove favorite"
 }

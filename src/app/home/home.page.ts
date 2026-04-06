@@ -104,6 +104,8 @@ export class HomePage implements AfterViewInit, OnDestroy {
   public waitForSync = false;
   public searchMode = false;
   public headerHasShadow = false;
+  public newFolderModalOpen = false;
+  public newFolderName = '';
 
   timeout: any;
   isClicked: boolean = false;
@@ -138,6 +140,8 @@ export class HomePage implements AfterViewInit, OnDestroy {
   public initialHomeLoadFinished = false;
 
   private folderBrowserModeBeforeSearch = true;
+  private pendingCreateFolderResolver: ((value: boolean) => void) | null = null;
+  private pendingCreateFolderOptions?: { keepCurrentView?: boolean; onCreated?: (folderName: string) => Promise<void> | void };
   private activeFolderNameBeforeSearch = '__all__';
   private activeFilterBeforeSearch: 'all' | 'favorites' = 'all';
 
@@ -1546,45 +1550,53 @@ export class HomePage implements AfterViewInit, OnDestroy {
 
   public async promptCreateFolder(options?: { keepCurrentView?: boolean; onCreated?: (folderName: string) => Promise<void> | void }): Promise<void> {
     await this.appHaptics.tap();
-    const alert = await this.alertController.create({
-      header: this.allTranslations?.newFolder ?? 'New folder',
-      inputs: [
-        {
-          name: 'folderName',
-          type: 'text',
-          placeholder: this.allTranslations?.folderNamePlaceholder ?? 'Folder name',
-        },
-      ],
-      buttons: [
-        { text: this.allTranslations?.cancel ?? 'Cancel', role: 'cancel' },
-        {
-          text: this.allTranslations?.create ?? 'Create',
-          handler: async (data) => {
-            const folderName = this.upsertFolder(data?.folderName ?? '');
-            if (!folderName) {
-              return false;
-            }
-            await this.persistFoldersState();
-            if (options?.onCreated) {
-              await options.onCreated(folderName);
-            } else {
-              const toast = await this.toastController.create({
-                message: this.allTranslations?.folderCreated ?? 'Folder created',
-                duration: 1800,
-                position: 'bottom',
-              });
-              await toast.present();
-              if (!options?.keepCurrentView) {
-                this.selectFolder(folderName);
-              }
-            }
-            this.cdr.detectChanges();
-            return true;
-          },
-        },
-      ],
+    this.newFolderName = '';
+    this.pendingCreateFolderOptions = options;
+    this.newFolderModalOpen = true;
+
+    await new Promise<boolean>((resolve) => {
+      this.pendingCreateFolderResolver = resolve;
     });
-    await alert.present();
+  }
+
+  public cancelCreateFolderModal(): void {
+    this.newFolderModalOpen = false;
+    this.newFolderName = '';
+    this.pendingCreateFolderOptions = undefined;
+    this.pendingCreateFolderResolver?.(false);
+    this.pendingCreateFolderResolver = null;
+  }
+
+  public async confirmCreateFolderModal(): Promise<void> {
+    const folderName = this.upsertFolder(this.newFolderName ?? '');
+    if (!folderName) {
+      return;
+    }
+
+    const options = this.pendingCreateFolderOptions;
+    await this.persistFoldersState();
+
+    this.newFolderModalOpen = false;
+    this.newFolderName = '';
+    this.pendingCreateFolderOptions = undefined;
+
+    if (options?.onCreated) {
+      await options.onCreated(folderName);
+    } else {
+      const toast = await this.toastController.create({
+        message: this.allTranslations?.folderCreated ?? 'Folder created',
+        duration: 1800,
+        position: 'bottom',
+      });
+      await toast.present();
+      if (!options?.keepCurrentView) {
+        this.selectFolder(folderName);
+      }
+    }
+
+    this.cdr.detectChanges();
+    this.pendingCreateFolderResolver?.(true);
+    this.pendingCreateFolderResolver = null;
   }
 
   public async moveSelectedNotesToFolder(): Promise<void> {
