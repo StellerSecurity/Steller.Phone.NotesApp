@@ -4,14 +4,17 @@ ion-footer,
 ion-toolbar {
   --ion-background-color: #F6F6FD;
 }
+
 .footer {
   font-size: 14px;
   text-align: center;
 }
+
 .footer a {
   font-weight: bold;
   cursor: pointer;
 }
+
 .account-menu-content {
   .account-name-card {
     border-radius: 16px;
@@ -19,17 +22,20 @@ ion-toolbar {
     margin-bottom: 16px;
     background: #fff !important;
     --ion-background-color: #fff;
+
     .label-title {
       font-size: 12px;
       color: #62626A;
       margin-bottom: 6px;
     }
+
     .account-name-row {
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 12px;
     }
+
     .account-name {
       margin-top: 4px;
       font-size: 14px;
@@ -42,6 +48,7 @@ ion-toolbar {
       flex: 1;
       letter-spacing: 0.01em;
     }
+
     .account-visibility-btn {
       display: inline-flex;
       align-items: center;
@@ -55,28 +62,33 @@ ion-toolbar {
       color: #62626A;
       cursor: pointer;
       padding: 0;
+
       ion-icon {
         width: 20px;
         height: 20px;
       }
     }
   }
+
   .login-profile-box {
     border-radius: 16px;
     padding: 16px;
     margin-bottom: 16px;
     background: #fff !important;
     --ion-background-color: #fff;
+
     .login-title {
       font-size: 16px;
       font-weight: 600;
       color: #0B0C19;
     }
+
     .login-sub-title {
       margin-top: 4px;
       font-size: 12px;
       color: #62626A;
     }
+
     .login-button {
       --border-radius: 32px;
       border-radius: 32px;
@@ -93,6 +105,7 @@ ion-toolbar {
       box-shadow: none !important;
     }
   }
+
   .action-item {
     border-radius: 16px;
     background: #fff;
@@ -101,11 +114,13 @@ ion-toolbar {
     --ion-background-color: #fff;
     display: flex;
     align-items: center;
+
     ion-icon {
       color: #666;
       width: 24px;
       height: 24px;
     }
+
     ion-label {
       color: #62626A;
       font-size: 14px;
@@ -113,14 +128,17 @@ ion-toolbar {
       font-weight: 600;
     }
   }
+
   .action-item-danger {
     ion-icon {
       color: #c62828;
     }
+
     ion-label {
       color: #c62828;
     }
   }
+
   .action-item-logout {
     border-top: 1px solid #EAEAF0 !important;
     background: #F6F6FD;
@@ -129,11 +147,13 @@ ion-toolbar {
     --ion-background-color: #F6F6FD;
     display: flex;
     align-items: center;
+
     ion-icon {
       color: #666;
       width: 24px;
       height: 24px;
     }
+
     ion-label {
       color: #62626A;
       font-size: 14px;
@@ -141,11 +161,31 @@ ion-toolbar {
       font-weight: 600;
     }
   }
-  .login-profile-box {
-    border-radius: 16px;
-    background: #fff;
+
+  .app-branding {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-top: 8px;
     padding: 16px;
-    margin-bottom: 16px;
+    background: #fff;
+    border-radius: 16px;
     --ion-background-color: #fff;
+  }
+
+  .app-branding-logo {
+    width: 32px;
+    height: 32px;
+    object-fit: contain;
+    flex-shrink: 0;
+    border-radius: 20px;
+  }
+
+  .app-branding-text {
+    font-size: 15px;
+    font-weight: 700;
+    color: #0B0C19;
+    line-height: 1.2;
+    letter-spacing: -0.01em;
   }
 }

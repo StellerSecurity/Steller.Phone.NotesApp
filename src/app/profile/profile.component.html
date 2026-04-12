@@ -13,6 +13,7 @@
     </ion-title>
   </ion-toolbar>
 </ion-header>
+
 <ion-content [fullscreen]="true" class="ion-padding">
   <div class="account-menu-content" *ngIf="!isLoading">
     <!-- Account Name Card -->
@@ -33,11 +34,14 @@
         </div>
       </div>
     </div>
+
     <ng-template #loginBlock>
       <div class="login-profile-box">
         <div class="login-title">{{'logInToYourStellarId' | translate}}</div>
         <div class="login-sub-title">{{'signInToSyncNotes' | translate}}</div>
-        <ion-button expand="block" class="login-button" (click)="goToLogin()">{{'login' | translate}}</ion-button>
+        <ion-button expand="block" class="login-button" (click)="goToLogin()">
+          {{'login' | translate}}
+        </ion-button>
         <br>
         <div class="footer">
           <span class="label-beforee-link">{{'dontHaveStellarIdQuestion' | translate}} </span>
@@ -45,17 +49,30 @@
         </div>
       </div>
     </ng-template>
+
     <div (click)="goToSettings()" class="action-item">
       <ion-icon name="options-outline" slot="start"></ion-icon>
       <ion-label>{{'settings' | translate}}</ion-label>
     </div>
+
     <div (click)="goToAbout()" class="action-item">
       <ion-icon name="information-circle-outline" slot="start"></ion-icon>
       <ion-label>{{'about' | translate}}</ion-label>
     </div>
+
     <div *ngIf="isLoggedIn" (click)="confirmLogout()" class="action-item-logout">
       <ion-icon name="log-out-outline" slot="start"></ion-icon>
       <ion-label>{{'logout' | translate}}</ion-label>
+    </div>
+
+    <div class="app-branding" align="center">
+      <img
+        src="assets/note-logo.png"
+        alt="Stellar Private Notes logo"
+        class="app-branding-logo">
+      <div class="app-branding-text">
+        Stellar Private Notes
+      </div>
     </div>
   </div>
 </ion-content>
