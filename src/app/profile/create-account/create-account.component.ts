@@ -77,6 +77,33 @@ export class CreateAccountComponent implements OnInit {
     this.showPassword = !this.showPassword;
   }
 
+  private normalizeFolderId(folderId: any): string | null {
+    if (folderId === null || folderId === undefined) {
+      return null;
+    }
+
+    const normalized = String(folderId).trim();
+    return normalized.length ? normalized : null;
+  }
+
+  private async decryptFolderNameWithMK(mkRaw: Uint8Array, rawName: string, folderId: string | null): Promise<string> {
+    const trimmed = (rawName ?? '').trim();
+    if (!trimmed || !folderId) {
+      return trimmed;
+    }
+
+    try {
+      const blobName = unpackCipherBlob(trimmed);
+      return await decryptTextWithMK(mkRaw, {
+        ...blobName,
+        v: 1,
+        aad_b64: btoa(folderId + '#folder-name'),
+      });
+    } catch (err) {
+      return trimmed;
+    }
+  }
+
   private b64ToBytes(b64: string): Uint8Array {
     const bin = atob(b64);
     const out = new Uint8Array(bin.length);
@@ -149,8 +176,30 @@ export class CreateAccountComponent implements OnInit {
       }
 
       const merged = Array.from(map.values()).filter((n: any) => !n.deleted);
+      const decryptedFolders = [];
+      const folderNameById = new Map<string, string>();
+      for (const folder of (Array.isArray(res?.folders) ? res.folders : [])) {
+        const normalizedFolderId = this.normalizeFolderId((folder as any)?.id)
+          ?? (crypto?.randomUUID?.() ?? String(Date.now() + Math.random()));
+        const decryptedName = await this.decryptFolderNameWithMK(mkRaw, (folder?.name ?? '').trim(), normalizedFolderId);
+        const normalizedFolder = {
+          ...folder,
+          id: normalizedFolderId,
+          name: decryptedName,
+        };
+        decryptedFolders.push(normalizedFolder);
+        if (!normalizedFolder.deleted) {
+          folderNameById.set(normalizedFolderId, decryptedName);
+        }
+      }
+      for (const note of merged) {
+        const noteFolderId = this.normalizeFolderId((note as any)?.folder_id);
+        (note as any).folder_id = noteFolderId;
+        (note as any).folder = noteFolderId ? (folderNameById.get(noteFolderId) ?? '') : '';
+      }
+
       const mergedJson = JSON.stringify(merged);
-      const foldersJson = JSON.stringify(Array.isArray(res?.folders) ? res.folders : []);
+      const foldersJson = JSON.stringify(decryptedFolders);
 
       if (this.notesService.appHasPasswordChallenge()) {
         const encryptedNotesSave = this.cryptoService.encrypt(

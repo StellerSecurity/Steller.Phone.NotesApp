@@ -708,6 +708,24 @@ export class HomePage implements AfterViewInit, OnDestroy {
     this.resetPagerTouch();
   }
 
+  private async decryptFolderNameWithMK(rawName: string, folderId: string | null): Promise<string> {
+    const trimmed = (rawName ?? '').trim();
+    if (!trimmed || !this.mkRaw || !folderId) {
+      return trimmed;
+    }
+
+    try {
+      const blobName = unpackCipherBlob(trimmed);
+      return await decryptTextWithMK(this.mkRaw, {
+        ...blobName,
+        v: 1,
+        aad_b64: btoa(folderId + '#folder-name'),
+      });
+    } catch (err) {
+      return trimmed;
+    }
+  }
+
   private normalizeFolderId(folderId: any): string | null {
     return typeof folderId === 'string' && folderId.trim().length > 0 ? folderId.trim() : null;
   }
@@ -906,9 +924,6 @@ export class HomePage implements AfterViewInit, OnDestroy {
       }
 
       const merged = Array.from(map.values()).filter((n: any) => !n.deleted);
-      this.notes = merged;
-      this.filteredResults = merged;
-      this.refreshVisibleNotes();
 
       const serverFolders = Array.isArray((res as any)?.folders) ? (res as any).folders : [];
       const localFolders = this.getStoredFolders(this.noteService.getNotesAppPassword());
@@ -918,9 +933,11 @@ export class HomePage implements AfterViewInit, OnDestroy {
         folderMap.set(key, folder);
       }
       for (const folder of serverFolders) {
+        const normalizedFolderId = this.normalizeFolderId((folder as any)?.id)
+          ?? (crypto?.randomUUID?.() ?? String(Date.now() + Math.random()));
         const normalizedFolder = {
-          id: this.normalizeFolderId((folder as any)?.id) ?? (crypto?.randomUUID?.() ?? String(Date.now() + Math.random())),
-          name: (folder?.name ?? '').trim(),
+          id: normalizedFolderId,
+          name: await this.decryptFolderNameWithMK((folder?.name ?? '').trim(), normalizedFolderId),
           last_modified: Number(folder?.last_modified ?? 0),
           deleted: !!folder?.deleted,
         };
@@ -931,6 +948,22 @@ export class HomePage implements AfterViewInit, OnDestroy {
         }
       }
 
+      const resolvedFolders = Array.from(folderMap.values());
+      const folderNameById = new Map<string, string>(
+        resolvedFolders
+          .filter((folder: any) => !folder?.deleted)
+          .map((folder: any) => [String(folder.id), String(folder.name ?? '')])
+      );
+      for (const note of merged) {
+        const noteFolderId = this.normalizeFolderId((note as any)?.folder_id);
+        (note as any).folder_id = noteFolderId;
+        (note as any).folder = noteFolderId ? (folderNameById.get(noteFolderId) ?? '') : '';
+      }
+
+      this.notes = merged;
+      this.filteredResults = merged;
+      this.refreshVisibleNotes();
+
       if (this.noteService.appHasPasswordChallenge()) {
         const encryptedNotesSave = this.cryptoService.encrypt(
           JSON.stringify(merged),
@@ -938,13 +971,13 @@ export class HomePage implements AfterViewInit, OnDestroy {
         );
         this.noteService.setNotes(encryptedNotesSave);
         const encryptedFoldersSave = this.cryptoService.encrypt(
-          JSON.stringify(Array.from(folderMap.values())),
+          JSON.stringify(resolvedFolders),
           this.noteService.getNotesAppPassword()
         );
         this.noteService.setFolders(encryptedFoldersSave);
       } else {
         this.noteService.setNotes(JSON.stringify(merged));
-        this.noteService.setFolders(JSON.stringify(Array.from(folderMap.values())));
+        this.noteService.setFolders(JSON.stringify(resolvedFolders));
       }
 
       await this.noteService.flushPersistence();
