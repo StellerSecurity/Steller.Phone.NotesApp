@@ -17,7 +17,27 @@
         {{listOfCheckedCheckboxes.length}} {{'notesSelected' | translate}}
       </span>
 
-      <span *ngIf="!checkboxOpened" class="home-header-title">{{ homeHeaderTitle }}</span>
+      <ng-container *ngIf="!checkboxOpened">
+        <ng-container *ngIf="isRenamingSelectedFolder; else staticHomeHeaderTitle">
+          <input
+            class="home-header-title home-header-title-input"
+            type="text"
+            [(ngModel)]="renamingFolderDraft"
+            (click)="$event.stopPropagation()"
+            (blur)="commitRenameSelectedFolder()"
+            (keydown)="handleRenameSelectedFolderKeydown($event)"
+            autofocus />
+        </ng-container>
+        <ng-template #staticHomeHeaderTitle>
+          <span
+            *ngIf="activeFolderName !== '__all__' && !folderBrowserMode; else plainHomeHeaderTitle"
+            class="home-header-title home-header-title-clickable"
+            (click)="startRenameSelectedFolder()">{{ homeHeaderTitle }}</span>
+          <ng-template #plainHomeHeaderTitle>
+            <span class="home-header-title">{{ homeHeaderTitle }}</span>
+          </ng-template>
+        </ng-template>
+      </ng-container>
     </ion-title>
 
     <ion-searchbar
@@ -242,6 +262,9 @@
             </ion-item>
 
             <ion-item-options side="end">
+              <ion-item-option class="folder-option-rename" (click)="promptRenameFolder(folder, folderSliding)">
+                <ion-icon name="pencil-outline"></ion-icon>
+              </ion-item-option>
               <ion-item-option color="danger" (click)="promptDeleteFolder(folder.name, folderSliding)">
                 <ion-icon name="trash-outline"></ion-icon>
               </ion-item-option>
@@ -422,8 +445,19 @@
 
         <div
           *ngIf="!note.pinned && (i === 0 || notes[i - 1]?.pinned)"
-          style="padding: 8px 16px 6px; color: #62626A; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em;">
-          {{ selectedFolderDisplayName }}
+          style="padding: 8px 16px 6px; color: #62626A; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em;"
+          (click)="activeFolderName !== '__all__' ? startRenameSelectedFolder() : null">
+          <ng-container *ngIf="!isRenamingSelectedFolder; else renameFolderTitleTemplate">{{ selectedFolderDisplayName }}</ng-container>
+          <ng-template #renameFolderTitleTemplate>
+            <input
+              class="folder-title-rename-input"
+              type="text"
+              [(ngModel)]="renamingFolderDraft"
+              (click)="$event.stopPropagation()"
+              (blur)="commitRenameSelectedFolder()"
+              (keydown)="handleRenameSelectedFolderKeydown($event)"
+              autofocus />
+          </ng-template>
         </div>
 
         <ion-item

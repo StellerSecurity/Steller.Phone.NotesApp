@@ -106,6 +106,8 @@ export class HomePage implements AfterViewInit, OnDestroy {
   public headerHasShadow = false;
   public newFolderModalOpen = false;
   public newFolderName = '';
+  public renamingFolderName: string | null = null;
+  public renamingFolderDraft = '';
 
   timeout: any;
   isClicked: boolean = false;
@@ -195,6 +197,10 @@ export class HomePage implements AfterViewInit, OnDestroy {
     return this.activeFolderName === '__all__'
       ? (this.allTranslations?.allNotes ?? 'All')
       : this.activeFolderName;
+  }
+
+  public get isRenamingSelectedFolder(): boolean {
+    return !!this.renamingFolderName && this.renamingFolderName === this.activeFolderName && this.activeFolderName !== '__all__';
   }
 
   public get homeHeaderTitle(): string {
@@ -708,24 +714,6 @@ export class HomePage implements AfterViewInit, OnDestroy {
     this.resetPagerTouch();
   }
 
-  private async decryptFolderNameWithMK(rawName: string, folderId: string | null): Promise<string> {
-    const trimmed = (rawName ?? '').trim();
-    if (!trimmed || !this.mkRaw || !folderId) {
-      return trimmed;
-    }
-
-    try {
-      const blobName = unpackCipherBlob(trimmed);
-      return await decryptTextWithMK(this.mkRaw, {
-        ...blobName,
-        v: 1,
-        aad_b64: btoa(folderId + '#folder-name'),
-      });
-    } catch (err) {
-      return trimmed;
-    }
-  }
-
   private normalizeFolderId(folderId: any): string | null {
     return typeof folderId === 'string' && folderId.trim().length > 0 ? folderId.trim() : null;
   }
@@ -814,6 +802,45 @@ export class HomePage implements AfterViewInit, OnDestroy {
     }
   }
 
+
+  private async decryptFolderNameWithMK(rawName: string, folderId: string | null | undefined): Promise<string> {
+    const normalizedRaw = (rawName ?? '').trim();
+    const normalizedFolderId = this.normalizeFolderId(folderId);
+    if (!normalizedRaw || !normalizedFolderId || !this.mkRaw) {
+      return normalizedRaw;
+    }
+
+    try {
+      const blobName = unpackCipherBlob(normalizedRaw);
+      return await decryptTextWithMK(this.mkRaw, {
+        ...blobName,
+        v: 1,
+        aad_b64: btoa(normalizedFolderId + '#folder-name'),
+      });
+    } catch {
+      return normalizedRaw;
+    }
+  }
+
+  private async decryptServerFolders(serverFolders: any[]): Promise<Map<string, string>> {
+    const folderNameById = new Map<string, string>();
+
+    for (const folder of serverFolders ?? []) {
+      const folderId = this.normalizeFolderId((folder as any)?.id);
+      if (!folderId) {
+        continue;
+      }
+
+      const decryptedName = folder?.deleted
+        ? ''
+        : await this.decryptFolderNameWithMK((folder?.name ?? '').trim(), folderId);
+
+      folderNameById.set(folderId, decryptedName);
+    }
+
+    return folderNameById;
+  }
+
   private setData(password: string = ""): boolean {
     const { parsed } = setDecryptedNotesAndParse(this.noteService, this.cryptoService, password);
     if (!parsed && this.noteService.appHasPasswordChallenge()) {
@@ -863,6 +890,8 @@ export class HomePage implements AfterViewInit, OnDestroy {
       const res = await this.notesApiServiceV1.download(0);
 
       const serverNotes = res?.notes ?? [];
+      const serverFolders = Array.isArray((res as any)?.folders) ? (res as any).folders : [];
+      const decryptedFolderNameById = await this.decryptServerFolders(serverFolders);
       const map = new Map<string, any>((this.notes ?? []).map((n: any) => [n.id, n]));
 
       for (const s of serverNotes) {
@@ -910,6 +939,10 @@ export class HomePage implements AfterViewInit, OnDestroy {
           s.title = '';
         }
 
+        const noteFolderId = this.normalizeFolderId((s as any)?.folder_id);
+        s.folder_id = noteFolderId;
+        s.folder = noteFolderId ? (decryptedFolderNameById.get(noteFolderId) ?? '') : '';
+
         if (!local) {
           map.set(s.id, s);
           this.noteService.reconcileServerConfirmation(s);
@@ -924,8 +957,10 @@ export class HomePage implements AfterViewInit, OnDestroy {
       }
 
       const merged = Array.from(map.values()).filter((n: any) => !n.deleted);
+      this.notes = merged;
+      this.filteredResults = merged;
+      this.refreshVisibleNotes();
 
-      const serverFolders = Array.isArray((res as any)?.folders) ? (res as any).folders : [];
       const localFolders = this.getStoredFolders(this.noteService.getNotesAppPassword());
       const folderMap = new Map<string, any>();
       for (const folder of localFolders) {
@@ -933,11 +968,10 @@ export class HomePage implements AfterViewInit, OnDestroy {
         folderMap.set(key, folder);
       }
       for (const folder of serverFolders) {
-        const normalizedFolderId = this.normalizeFolderId((folder as any)?.id)
-          ?? (crypto?.randomUUID?.() ?? String(Date.now() + Math.random()));
+        const normalizedFolderId = this.normalizeFolderId((folder as any)?.id) ?? (crypto?.randomUUID?.() ?? String(Date.now() + Math.random()));
         const normalizedFolder = {
           id: normalizedFolderId,
-          name: await this.decryptFolderNameWithMK((folder?.name ?? '').trim(), normalizedFolderId),
+          name: folder?.deleted ? '' : (decryptedFolderNameById.get(normalizedFolderId) ?? '').trim(),
           last_modified: Number(folder?.last_modified ?? 0),
           deleted: !!folder?.deleted,
         };
@@ -948,22 +982,6 @@ export class HomePage implements AfterViewInit, OnDestroy {
         }
       }
 
-      const resolvedFolders = Array.from(folderMap.values());
-      const folderNameById = new Map<string, string>(
-        resolvedFolders
-          .filter((folder: any) => !folder?.deleted)
-          .map((folder: any) => [String(folder.id), String(folder.name ?? '')])
-      );
-      for (const note of merged) {
-        const noteFolderId = this.normalizeFolderId((note as any)?.folder_id);
-        (note as any).folder_id = noteFolderId;
-        (note as any).folder = noteFolderId ? (folderNameById.get(noteFolderId) ?? '') : '';
-      }
-
-      this.notes = merged;
-      this.filteredResults = merged;
-      this.refreshVisibleNotes();
-
       if (this.noteService.appHasPasswordChallenge()) {
         const encryptedNotesSave = this.cryptoService.encrypt(
           JSON.stringify(merged),
@@ -971,13 +989,13 @@ export class HomePage implements AfterViewInit, OnDestroy {
         );
         this.noteService.setNotes(encryptedNotesSave);
         const encryptedFoldersSave = this.cryptoService.encrypt(
-          JSON.stringify(resolvedFolders),
+          JSON.stringify(Array.from(folderMap.values())),
           this.noteService.getNotesAppPassword()
         );
         this.noteService.setFolders(encryptedFoldersSave);
       } else {
         this.noteService.setNotes(JSON.stringify(merged));
-        this.noteService.setFolders(JSON.stringify(resolvedFolders));
+        this.noteService.setFolders(JSON.stringify(Array.from(folderMap.values())));
       }
 
       await this.noteService.flushPersistence();
@@ -1495,6 +1513,144 @@ export class HomePage implements AfterViewInit, OnDestroy {
     requestAnimationFrame(() => {
       this.content?.scrollToTop(200);
     });
+  }
+
+  public startRenameSelectedFolder(): void {
+    if (this.folderBrowserMode || this.activeFolderName === '__all__') {
+      return;
+    }
+
+    this.renamingFolderName = this.activeFolderName;
+    this.renamingFolderDraft = this.activeFolderName;
+  }
+
+  public cancelRenameSelectedFolder(): void {
+    this.renamingFolderName = null;
+    this.renamingFolderDraft = '';
+  }
+
+  public async handleRenameSelectedFolderKeydown(event: KeyboardEvent): Promise<void> {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      await this.commitRenameSelectedFolder();
+      return;
+    }
+
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      this.cancelRenameSelectedFolder();
+    }
+  }
+
+  public async commitRenameSelectedFolder(): Promise<void> {
+    const oldName = (this.renamingFolderName ?? '').trim();
+    const newName = (this.renamingFolderDraft ?? '').trim();
+
+    if (!oldName) {
+      this.cancelRenameSelectedFolder();
+      return;
+    }
+
+    await this.renameFolderOptimistic(oldName, newName);
+    this.cancelRenameSelectedFolder();
+  }
+
+  private async renameFolderOptimistic(oldName: string, newName: string): Promise<void> {
+    const normalizedOld = (oldName ?? '').trim();
+    const normalizedNew = (newName ?? '').trim();
+
+    if (!normalizedOld) {
+      return;
+    }
+
+    if (!normalizedNew || normalizedOld === normalizedNew) {
+      return;
+    }
+
+    const duplicate = this.folders.find((folder) => folder.name.toLowerCase() === normalizedNew.toLowerCase() && folder.name !== normalizedOld);
+    if (duplicate) {
+      const toast = await this.toastController.create({
+        message: this.allTranslations?.folderAlreadyExists ?? 'Folder already exists',
+        duration: 1800,
+        position: 'bottom',
+      });
+      await toast.present();
+      return;
+    }
+
+    const now = Date.now();
+    const targetFolder = this.folders.find((folder) => folder.name === normalizedOld);
+    if (!targetFolder) {
+      return;
+    }
+
+    targetFolder.name = normalizedNew;
+    targetFolder.last_modified = now;
+    targetFolder.deleted = false;
+
+    this.folders = [...this.folders].sort((a, b) => a.name.localeCompare(b.name));
+    this.notes = this.notes.map((note: any) => {
+      if ((note?.folder ?? '').trim() !== normalizedOld) {
+        return note;
+      }
+      this.noteService.markPendingMutation(note.id, 'update', now);
+      return { ...note, folder: normalizedNew, folder_id: this.normalizeFolderId(targetFolder.id), last_modified: now };
+    });
+    this.filteredResults = this.filteredResults.map((note: any) => {
+      if ((note?.folder ?? '').trim() !== normalizedOld) {
+        return note;
+      }
+      return { ...note, folder: normalizedNew, folder_id: this.normalizeFolderId(targetFolder.id), last_modified: now };
+    });
+
+    if (this.activeFolderName === normalizedOld) {
+      this.activeFolderName = normalizedNew;
+    }
+
+    this.refreshVisibleNotes();
+    this.cdr.detectChanges();
+
+    void this.persistNotesState().catch(() => {});
+    void this.persistFoldersState().catch(() => {});
+  }
+
+  public async promptRenameFolder(folder: Folder, slidingItem?: any): Promise<void> {
+    const currentName = (folder?.name ?? '').trim();
+    if (!currentName) {
+      return;
+    }
+
+    await this.appHaptics.tap();
+
+    const alert = await this.alertController.create({
+      header: this.allTranslations?.renameFolder ?? 'Rename folder',
+      inputs: [
+        {
+          name: 'name',
+          type: 'text',
+          value: currentName,
+          placeholder: this.allTranslations?.folderName ?? 'Folder name',
+        },
+      ],
+      buttons: [
+        {
+          text: this.allTranslations?.cancel ?? 'Cancel',
+          role: 'cancel',
+          handler: async () => {
+            try { await slidingItem?.close?.(); } catch {}
+          },
+        },
+        {
+          text: this.allTranslations?.save ?? 'Save',
+          handler: async (data) => {
+            try { await slidingItem?.close?.(); } catch {}
+            await this.renameFolderOptimistic(currentName, data?.name ?? '');
+          },
+        },
+      ],
+    });
+
+    await alert.present();
   }
 
   private async persistFoldersState(): Promise<void> {

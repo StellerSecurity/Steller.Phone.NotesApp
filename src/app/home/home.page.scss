@@ -180,7 +180,6 @@ span.uuid {
 
 .ion-color-danger {
   --border-radius: 250px;
-  background-color: #fff;
 }
 
 ion-button,
@@ -634,18 +633,58 @@ ion-header.header-shadow {
   padding: 4px 10px;
 }
 
+
+.home-header-title-clickable {
+  cursor: text;
+}
+
+.home-header-title-input {
+  width: 100%;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  padding: 0;
+  margin: 0;
+  text-align: inherit;
+}
+
+.folder-browser-list ion-item-option[color='danger'] {
+  --background: var(--ion-color-danger, #eb445a);
+  --color: var(--ion-color-danger-contrast, #ffffff);
+  background: var(--ion-color-danger, #eb445a);
+  color: var(--ion-color-danger-contrast, #ffffff);
+}
+
 .folder-browser-list ion-item-option {
   --border-radius: 12px;
-  --background: var(--ion-color-danger, #eb445a);
-  --color: #ffffff;
-  background: var(--ion-color-danger, #eb445a);
-  color: #ffffff;
   border-radius: 12px;
   min-width: 72px;
 }
 
 .folder-browser-list ion-item-option ion-icon {
-  color: #ffffff;
+  color: inherit;
+}
+
+.folder-browser-list .folder-option-rename {
+  --background: #ffffff;
+  --color: #0b0c19;
+  background: #ffffff;
+  color: #0b0c19;
+  border: 1px solid #e7e9f2;
+  box-shadow: 0 8px 20px rgba(11, 12, 25, 0.06);
+}
+
+.folder-title-rename-input {
+  width: 100%;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  padding: 0;
+  margin: 0;
 }
 
 
