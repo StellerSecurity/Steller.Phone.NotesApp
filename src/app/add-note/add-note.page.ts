@@ -511,11 +511,12 @@ export class AddNotePage implements OnDestroy {
       return;
     }
 
-    await this.persistFoldersState();
     this.newFolderModalOpen = false;
     this.newFolderName = '';
     this.pendingNewFolderResolver?.(folderName);
     this.pendingNewFolderResolver = null;
+
+    void this.persistFoldersState().catch(() => {});
   }
 
   public async chooseFolder(): Promise<void> {
@@ -565,7 +566,6 @@ export class AddNotePage implements OnDestroy {
       }
     }
 
-    await this.persistFoldersState();
     this.folderPickerOpen = false;
     this.save(null);
 
@@ -577,6 +577,8 @@ export class AddNotePage implements OnDestroy {
       position: 'bottom',
     });
     await toast.present();
+
+    void this.persistFoldersState().catch(() => {});
   }
 
   public async createFolderFromPicker(): Promise<void> {

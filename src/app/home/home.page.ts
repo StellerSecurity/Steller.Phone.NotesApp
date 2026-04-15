@@ -1967,8 +1967,6 @@ export class HomePage implements AfterViewInit, OnDestroy {
         return { ...note, folder: targetFolder, folder_id: targetFolderId, last_modified: now };
       }) : this.notes;
 
-      await this.persistNotesState();
-      await this.persistFoldersState();
       this.refreshVisibleNotes();
 
       if (this.checkboxOpened) {
@@ -1984,6 +1982,9 @@ export class HomePage implements AfterViewInit, OnDestroy {
         position: 'bottom',
       });
       await toast.present();
+
+      void this.persistNotesState().catch(() => {});
+      void this.persistFoldersState().catch(() => {});
     };
 
     const alert = await this.alertController.create({
@@ -2046,8 +2047,6 @@ export class HomePage implements AfterViewInit, OnDestroy {
       return { ...note, folder: targetFolder, folder_id: targetFolderId, last_modified: now };
     }) : this.notes;
 
-    await this.persistNotesState();
-    await this.persistFoldersState();
     this.refreshVisibleNotes();
 
     if (this.checkboxOpened) {
@@ -2063,6 +2062,9 @@ export class HomePage implements AfterViewInit, OnDestroy {
       position: 'bottom',
     });
     await toast.present();
+
+    void this.persistNotesState().catch(() => {});
+    void this.persistFoldersState().catch(() => {});
   }
 
   public settings() {
