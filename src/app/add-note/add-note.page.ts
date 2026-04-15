@@ -377,6 +377,40 @@ export class AddNotePage implements OnDestroy {
     }
   }
 
+  private async writeFoldersStateLocally(): Promise<void> {
+    const storedMap = new Map<string, Folder>();
+
+    for (const folder of this.getStoredFolders()) {
+      const key = this.normalizeFolderId(folder.id) ?? `name:${(folder.name ?? '').trim().toLowerCase()}`;
+      storedMap.set(key, folder);
+    }
+
+    for (const folder of this.folders) {
+      const normalizedName = (folder?.name ?? '').trim();
+      if (!normalizedName) continue;
+
+      const normalizedFolder: Folder = {
+        id: this.normalizeFolderId(folder.id) ?? uuidv4(),
+        name: normalizedName,
+        last_modified: Number(folder?.last_modified ?? Date.now()),
+        deleted: !!folder?.deleted,
+      };
+
+      storedMap.set(normalizedFolder.id as string, normalizedFolder);
+    }
+
+    const rawFolders = JSON.stringify(Array.from(storedMap.values()));
+
+    if (this.notesService.appHasPasswordChallenge()) {
+      const encryptedFolders = this.cryptoService.encrypt(rawFolders, this.notesService.getNotesAppPassword());
+      this.notesService.setFolders(encryptedFolders);
+    } else {
+      this.notesService.setFolders(rawFolders);
+    }
+
+    await this.notesService.flushPersistence();
+  }
+
   private async uploadFoldersState(): Promise<void> {
     if (!this.authService.isLoggedIn) {
       return;
@@ -389,6 +423,7 @@ export class AddNotePage implements OnDestroy {
     try {
       const storedFolders = this.getStoredFolders();
       const folderMap = new Map<string, Folder>();
+
       for (const folder of storedFolders ?? []) {
         if (folder.deleted) continue;
         const name = (folder?.name ?? '').trim();
@@ -400,6 +435,7 @@ export class AddNotePage implements OnDestroy {
           deleted: false,
         });
       }
+
       for (const note of this.notes ?? []) {
         const name = (note?.folder ?? '').trim();
         if (!name || folderMap.has(name.toLowerCase())) continue;
@@ -410,6 +446,7 @@ export class AddNotePage implements OnDestroy {
           deleted: false,
         });
       }
+
       this.folders = Array.from(folderMap.values()).sort((a, b) => a.name.localeCompare(b.name));
     } catch {
       this.folders = [];
@@ -417,32 +454,7 @@ export class AddNotePage implements OnDestroy {
   }
 
   private async persistFoldersState(): Promise<void> {
-    const storedMap = new Map<string, Folder>();
-    for (const folder of this.getStoredFolders()) {
-      const key = this.normalizeFolderId(folder.id) ?? `name:${(folder.name ?? '').trim().toLowerCase()}`;
-      storedMap.set(key, folder);
-    }
-
-    for (const folder of this.folders) {
-      const normalizedName = (folder?.name ?? '').trim();
-      if (!normalizedName) continue;
-      const normalizedFolder: Folder = {
-        id: this.normalizeFolderId(folder.id) ?? uuidv4(),
-        name: normalizedName,
-        last_modified: Number(folder?.last_modified ?? Date.now()),
-        deleted: !!folder?.deleted,
-      };
-      storedMap.set(normalizedFolder.id as string, normalizedFolder);
-    }
-
-    const rawFolders = JSON.stringify(Array.from(storedMap.values()));
-    if (this.notesService.appHasPasswordChallenge()) {
-      const encryptedFolders = this.cryptoService.encrypt(rawFolders, this.notesService.getNotesAppPassword());
-      this.notesService.setFolders(encryptedFolders);
-    } else {
-      this.notesService.setFolders(rawFolders);
-    }
-    await this.notesService.flushPersistence();
+    await this.writeFoldersStateLocally();
     await this.uploadFoldersState();
   }
 
@@ -451,6 +463,7 @@ export class AddNotePage implements OnDestroy {
     if (!normalizedName) {
       return '';
     }
+
     const existing = this.folders.find((folder) => (folder.name ?? '').toLowerCase() === normalizedName.toLowerCase());
     if (existing) {
       if (!existing.id) {
@@ -460,8 +473,10 @@ export class AddNotePage implements OnDestroy {
       existing.last_modified = Date.now();
       return existing.name;
     }
+
     this.folders = [...this.folders, { id: uuidv4(), name: normalizedName, last_modified: Date.now(), deleted: false }]
       .sort((a, b) => a.name.localeCompare(b.name));
+
     return normalizedName;
   }
 
@@ -511,12 +526,14 @@ export class AddNotePage implements OnDestroy {
       return;
     }
 
+    await this.writeFoldersStateLocally();
+
     this.newFolderModalOpen = false;
     this.newFolderName = '';
     this.pendingNewFolderResolver?.(folderName);
     this.pendingNewFolderResolver = null;
 
-    void this.persistFoldersState().catch(() => {});
+    void this.uploadFoldersState().catch(() => {});
   }
 
   public async chooseFolder(): Promise<void> {
@@ -534,7 +551,11 @@ export class AddNotePage implements OnDestroy {
     const folderName = this.folderPickerSelection === '__all__'
       ? ''
       : this.upsertFolder(this.folderPickerSelection ?? '');
+    const resolvedFolderId = this.resolveFolderIdByName(folderName);
     const movedToLabel = folderName || this.allTranslations?.allNotes || 'All';
+    const now = Date.now();
+
+    await this.writeFoldersStateLocally();
 
     if (!this.currentNote && this.notes_id) {
       this.currentNote = {
@@ -545,23 +566,23 @@ export class AddNotePage implements OnDestroy {
         favorite: false,
         pinned: false,
         folder: folderName,
-        folder_id: this.resolveFolderIdByName(folderName),
-        last_modified: Date.now(),
+        folder_id: resolvedFolderId,
+        last_modified: now,
         auto_wipe: true
       };
     }
 
     if (this.currentNote) {
       this.currentNote.folder = folderName;
-      this.currentNote.folder_id = this.resolveFolderIdByName(folderName);
-      this.currentNote.last_modified = Date.now();
+      this.currentNote.folder_id = resolvedFolderId;
+      this.currentNote.last_modified = now;
     }
 
     for (let i = 0; i < this.notes.length; i++) {
       if (this.notes[i].id === this.notes_id) {
         this.notes[i].folder = folderName;
-        this.notes[i].folder_id = this.resolveFolderIdByName(folderName);
-        this.notes[i].last_modified = Date.now();
+        this.notes[i].folder_id = resolvedFolderId;
+        this.notes[i].last_modified = now;
         break;
       }
     }
@@ -578,7 +599,7 @@ export class AddNotePage implements OnDestroy {
     });
     await toast.present();
 
-    void this.persistFoldersState().catch(() => {});
+    void this.uploadFoldersState().catch(() => {});
   }
 
   public async createFolderFromPicker(): Promise<void> {
