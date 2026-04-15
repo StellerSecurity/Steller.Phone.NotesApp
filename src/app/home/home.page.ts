@@ -1890,11 +1890,14 @@ export class HomePage implements AfterViewInit, OnDestroy {
     }
 
     const options = this.pendingCreateFolderOptions;
-    await this.persistFoldersState();
 
     this.newFolderModalOpen = false;
     this.newFolderName = '';
     this.pendingCreateFolderOptions = undefined;
+
+    this.cdr.detectChanges();
+    this.pendingCreateFolderResolver?.(true);
+    this.pendingCreateFolderResolver = null;
 
     if (options?.onCreated) {
       await options.onCreated(folderName);
@@ -1905,14 +1908,13 @@ export class HomePage implements AfterViewInit, OnDestroy {
         position: 'bottom',
       });
       await toast.present();
+
       if (!options?.keepCurrentView) {
         this.selectFolder(folderName);
       }
     }
 
-    this.cdr.detectChanges();
-    this.pendingCreateFolderResolver?.(true);
-    this.pendingCreateFolderResolver = null;
+    void this.persistFoldersState().catch(() => {});
   }
 
   public async moveSelectedNotesToFolder(): Promise<void> {
