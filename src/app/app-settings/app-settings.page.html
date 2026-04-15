@@ -287,10 +287,10 @@
       </div>
     </div>
   </ion-item>
-  <div *ngIf="authService.isLoggedIn" class="settings-section-label settings-section-label--danger">
+  <div *ngIf="isLoggedIn" class="settings-section-label settings-section-label--danger">
     {{ 'accountSection' | translate }}
   </div>
-  <ion-item *ngIf="authService.isLoggedIn" (click)="goToDeleteAccount()">
+  <ion-item *ngIf="isLoggedIn" (click)="goToDeleteAccount()">
     <div class="setting-row">
       <div class="setting-text">
         <div class="setting-title setting-title--danger">{{ 'deleteAccount' | translate }}</div>

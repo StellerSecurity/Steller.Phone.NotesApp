@@ -43,6 +43,7 @@ export class AppSettingsPage implements AfterViewInit {
   public isSavingPassword = false;
   public selectedLanguage = 'system';
   public languageOptions = this.translatorService.getSupportedLanguageOptions();
+  public isLoggedIn = false;
 
   @ViewChild(IonModal) modal: IonModal;
   @ViewChild('autoLockSelect') autoLockSelect!: IonSelect;
@@ -65,6 +66,8 @@ export class AppSettingsPage implements AfterViewInit {
   ) {}
 
   async ionViewWillEnter(): Promise<void> {
+    await this.authService.initializeAuthState();
+    this.isLoggedIn = this.authService.isLoggedIn;
     this.allTranslations = this.translatorService.allTranslations ?? {};
     this.appLockTimeoutMinutes = this.noteService.getAppLockTimeoutMinutes() || 60;
     this.appWipeAfterDays = this.noteService.getAppWipeAfterDays();
