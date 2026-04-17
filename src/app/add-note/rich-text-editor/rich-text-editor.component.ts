@@ -3,6 +3,11 @@ import {
   Inject, PLATFORM_ID, OnInit, OnDestroy, ViewChild, ElementRef
 } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
+import { ToastController } from '@ionic/angular';
+import { Capacitor } from '@capacitor/core';
+import { Filesystem, Directory } from '@capacitor/filesystem';
+import { TranslatorService } from '../../services/translator.service';
+import { AppHapticsService } from '../../services/app-haptics.service';
 
 interface HeaderOption {
   value: string;
@@ -18,15 +23,31 @@ export class RichTextEditorComponent implements OnInit, OnDestroy {
   @ViewChild('headerSelect') headerSelectRef!: ElementRef<HTMLSelectElement>;
   @ViewChild('headerPill') headerPillRef!: ElementRef;
   @ViewChild('toolbar') toolbarRef!: ElementRef;
+  @ViewChild('viewerViewport') viewerViewportRef?: ElementRef<HTMLDivElement>;
+  @ViewChild('viewerImage') viewerImageRef?: ElementRef<HTMLImageElement>;
 
   @Input() note_text: string = '';
   @Output() noteChange = new EventEmitter<string>();
 
   quill: any;
+  allTranslations: any;
+  imageViewerOpen = false;
+  viewerImageSrc = '';
   private isDropdownOpen = false;
   private dropdownElement: HTMLElement | null = null;
   private resizeListener: (() => void) | null = null;
   private clickOutsideListener: (() => void) | null = null;
+  private editorImageClickUnlisten: (() => void) | null = null;
+  private viewerPointers = new Map<number, { x: number; y: number }>();
+  private lastTapAt = 0;
+  private pinchStartDistance: number | null = null;
+  private pinchStartScale = 1;
+  private panStartPointer: { x: number; y: number } | null = null;
+  private panStartTranslate = { x: 0, y: 0 };
+
+  viewerScale = 1;
+  viewerTranslateX = 0;
+  viewerTranslateY = 0;
 
   readonly headerOptions: HeaderOption[] = [
     { value: 'false', label: 'standard' },
@@ -55,10 +76,14 @@ export class RichTextEditorComponent implements OnInit, OnDestroy {
 
   constructor(
     private renderer: Renderer2,
+    private toastController: ToastController,
+    private translatorService: TranslatorService,
+    private appHaptics: AppHapticsService,
     @Inject(PLATFORM_ID) private platformId: Object
   ) {}
 
   ngOnInit() {
+    this.allTranslations = this.translatorService.allTranslations;
     if (isPlatformBrowser(this.platformId)) {
       this.resizeListener = this.renderer.listen('window', 'resize', () => {
         if (this.isDropdownOpen) {
@@ -73,21 +98,24 @@ export class RichTextEditorComponent implements OnInit, OnDestroy {
     if (this.resizeListener) {
       this.resizeListener();
     }
+    if (this.editorImageClickUnlisten) {
+      this.editorImageClickUnlisten();
+      this.editorImageClickUnlisten = null;
+    }
   }
 
   onEditorCreated(quillInstance: any) {
     this.quill = quillInstance;
+    this.bindImageClickHandler();
 
-      // Wait for DOM + Ionic rendering
-      requestAnimationFrame(() => {
-        setTimeout(() => {
-          const length = this.quill.getLength();
-          // this.quill.setSelection(length, 0);
-          if(length == 1) {
-            this.quill.focus();
-          }
-        }, 300);
-      });
+    requestAnimationFrame(() => {
+      setTimeout(() => {
+        const length = this.quill.getLength();
+        if (length === 1) {
+          this.quill.focus();
+        }
+      }, 300);
+    });
   }
 
   onContentChange(content: string) {
@@ -100,7 +128,7 @@ export class RichTextEditorComponent implements OnInit, OnDestroy {
     const value = select.value;
 
     if (this.quill) {
-      const headerValue = value === 'false' ? false : parseInt(value);
+      const headerValue = value === 'false' ? false : parseInt(value, 10);
       this.quill.format('header', headerValue);
     }
   }
@@ -123,33 +151,368 @@ export class RichTextEditorComponent implements OnInit, OnDestroy {
     }
   }
 
+  openImageViewer(src: string) {
+    if (!src) {
+      return;
+    }
+    this.resetViewerTransform();
+    this.viewerImageSrc = src;
+    this.imageViewerOpen = true;
+  }
+
+  closeImageViewer() {
+    this.imageViewerOpen = false;
+    this.viewerImageSrc = '';
+    this.resetViewerTransform();
+  }
+
+
+
+  onViewerPointerDown(event: PointerEvent) {
+    if (!this.imageViewerOpen) {
+      return;
+    }
+
+    const now = Date.now();
+    if (now - this.lastTapAt < 260) {
+      this.toggleViewerZoom(event.clientX, event.clientY);
+      this.lastTapAt = 0;
+    } else {
+      this.lastTapAt = now;
+    }
+
+    this.viewerPointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+
+    if (this.viewerPointers.size === 1 && this.viewerScale > 1) {
+      this.panStartPointer = { x: event.clientX, y: event.clientY };
+      this.panStartTranslate = { x: this.viewerTranslateX, y: this.viewerTranslateY };
+    }
+
+    if (this.viewerPointers.size === 2) {
+      const [first, second] = Array.from(this.viewerPointers.values());
+      this.pinchStartDistance = this.getDistance(first, second);
+      this.pinchStartScale = this.viewerScale;
+      this.panStartPointer = null;
+    }
+  }
+
+  onViewerPointerMove(event: PointerEvent) {
+    if (!this.viewerPointers.has(event.pointerId)) {
+      return;
+    }
+
+    this.viewerPointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+
+    if (this.viewerPointers.size === 2 && this.pinchStartDistance) {
+      const [first, second] = Array.from(this.viewerPointers.values());
+      const nextDistance = this.getDistance(first, second);
+      if (nextDistance > 0) {
+        this.viewerScale = this.clampScale(this.pinchStartScale * (nextDistance / this.pinchStartDistance));
+        this.constrainViewerTranslation();
+      }
+      return;
+    }
+
+    if (this.viewerPointers.size === 1 && this.panStartPointer && this.viewerScale > 1) {
+      const deltaX = event.clientX - this.panStartPointer.x;
+      const deltaY = event.clientY - this.panStartPointer.y;
+      this.viewerTranslateX = this.panStartTranslate.x + deltaX;
+      this.viewerTranslateY = this.panStartTranslate.y + deltaY;
+      this.constrainViewerTranslation();
+    }
+  }
+
+  onViewerPointerUp(event: PointerEvent) {
+    this.viewerPointers.delete(event.pointerId);
+
+    if (this.viewerPointers.size < 2) {
+      this.pinchStartDistance = null;
+    }
+
+    if (this.viewerPointers.size === 1) {
+      const [remaining] = Array.from(this.viewerPointers.values());
+      this.panStartPointer = { x: remaining.x, y: remaining.y };
+      this.panStartTranslate = { x: this.viewerTranslateX, y: this.viewerTranslateY };
+    } else {
+      this.panStartPointer = null;
+    }
+
+    if (this.viewerScale <= 1) {
+      this.resetViewerTransform();
+    }
+  }
+
+  onViewerWheel(event: WheelEvent) {
+    event.preventDefault();
+
+    const delta = event.deltaY < 0 ? 0.16 : -0.16;
+    const nextScale = this.clampScale(this.viewerScale + delta);
+
+    if (nextScale === 1) {
+      this.resetViewerTransform();
+      return;
+    }
+
+    this.viewerScale = nextScale;
+    this.constrainViewerTranslation();
+  }
+
+  getViewerTransform(): string {
+    return `translate3d(${this.viewerTranslateX}px, ${this.viewerTranslateY}px, 0) scale(${this.viewerScale})`;
+  }
+
+  private toggleViewerZoom(originX?: number, originY?: number) {
+    if (this.viewerScale > 1) {
+      this.resetViewerTransform();
+      return;
+    }
+
+    this.viewerScale = 2;
+    this.centerZoomAroundPoint(originX, originY);
+    this.constrainViewerTranslation();
+  }
+
+  private resetViewerTransform() {
+    this.viewerPointers.clear();
+    this.viewerScale = 1;
+    this.viewerTranslateX = 0;
+    this.viewerTranslateY = 0;
+    this.pinchStartDistance = null;
+    this.panStartPointer = null;
+    this.panStartTranslate = { x: 0, y: 0 };
+  }
+
+  private centerZoomAroundPoint(originX?: number, originY?: number) {
+    const viewport = this.viewerViewportRef?.nativeElement;
+    if (!viewport || originX == null || originY == null) {
+      return;
+    }
+
+    const rect = viewport.getBoundingClientRect();
+    const offsetX = originX - (rect.left + rect.width / 2);
+    const offsetY = originY - (rect.top + rect.height / 2);
+    this.viewerTranslateX = -offsetX * 0.6;
+    this.viewerTranslateY = -offsetY * 0.6;
+  }
+
+  private constrainViewerTranslation() {
+    if (this.viewerScale <= 1) {
+      this.viewerTranslateX = 0;
+      this.viewerTranslateY = 0;
+      return;
+    }
+
+    const viewport = this.viewerViewportRef?.nativeElement;
+    const image = this.viewerImageRef?.nativeElement;
+
+    if (!viewport || !image) {
+      return;
+    }
+
+    const maxOffsetX = Math.max(0, ((image.clientWidth * this.viewerScale) - viewport.clientWidth) / 2);
+    const maxOffsetY = Math.max(0, ((image.clientHeight * this.viewerScale) - viewport.clientHeight) / 2);
+
+    this.viewerTranslateX = Math.min(maxOffsetX, Math.max(-maxOffsetX, this.viewerTranslateX));
+    this.viewerTranslateY = Math.min(maxOffsetY, Math.max(-maxOffsetY, this.viewerTranslateY));
+  }
+
+  private clampScale(scale: number): number {
+    return Math.min(4, Math.max(1, Number(scale.toFixed(3))));
+  }
+
+  private getDistance(first: { x: number; y: number }, second: { x: number; y: number }): number {
+    const deltaX = second.x - first.x;
+    const deltaY = second.y - first.y;
+    return Math.hypot(deltaX, deltaY);
+  }
+
+  async saveViewerImage() {
+    if (!this.viewerImageSrc) {
+      return;
+    }
+
+    await this.appHaptics.tap();
+
+    const extension = this.getImageExtension(this.viewerImageSrc);
+    const fileName = `stellar-note-image-${Date.now()}.${extension}`;
+
+    try {
+      const platform = Capacitor.getPlatform();
+
+      if (platform === 'android' || platform === 'ios') {
+        await this.requestFilesystemPermissions();
+
+        const base64Data = await this.toBase64Payload(this.viewerImageSrc);
+        const galleryDirectory = this.getGalleryDirectory(platform);
+        const relativePath = this.getGalleryRelativePath(platform, fileName);
+
+        await Filesystem.writeFile({
+          path: relativePath,
+          data: base64Data,
+          directory: galleryDirectory,
+          recursive: true,
+        });
+      } else {
+        const anchor = document.createElement('a');
+        anchor.href = this.viewerImageSrc;
+        anchor.download = fileName;
+        anchor.rel = 'noopener';
+        document.body.appendChild(anchor);
+        anchor.click();
+        document.body.removeChild(anchor);
+      }
+
+      await this.appHaptics.success();
+      await this.presentToast(this.getSavedToastMessage(platform));
+    } catch (error) {
+      console.error('Failed to save note image', error);
+      await this.appHaptics.error();
+      await this.presentToast(
+        this.translatorService.allTranslations?.operationFailed ?? 'Operation failed.'
+      );
+    }
+  }
+
+
+
+  private async requestFilesystemPermissions(): Promise<void> {
+    const requestPermissions = (Filesystem as any)?.requestPermissions;
+    if (typeof requestPermissions !== 'function') {
+      return;
+    }
+
+    try {
+      await requestPermissions.call(Filesystem);
+    } catch (error) {
+      console.warn('Filesystem permission request failed', error);
+    }
+  }
+
+  private getGalleryDirectory(platform: string): Directory {
+    if (platform === 'android') {
+      return ((Directory as any).ExternalStorage ?? (Directory as any).External ?? Directory.Documents) as Directory;
+    }
+
+    return (((Directory as any).External ?? Directory.Documents) as Directory);
+  }
+
+  private getGalleryRelativePath(platform: string, fileName: string): string {
+    if (platform === 'android') {
+      return `Pictures/Stellar Notes/${fileName}`;
+    }
+
+    return `Stellar Notes/${fileName}`;
+  }
+
+  private getSavedToastMessage(platform: string): string {
+    if (platform === 'android') {
+      return 'Saved to your gallery.';
+    }
+
+    if (platform === 'ios') {
+      return 'Saved on your device.';
+    }
+
+    return 'Downloaded image.';
+  }
+
+  private getImageExtension(src: string): string {
+    const normalizedSrc = src.toLowerCase();
+
+    if (normalizedSrc.startsWith('data:image/jpeg') || normalizedSrc.startsWith('data:image/jpg') || normalizedSrc.includes('.jpg') || normalizedSrc.includes('.jpeg')) {
+      return 'jpg';
+    }
+
+    if (normalizedSrc.startsWith('data:image/webp') || normalizedSrc.includes('.webp')) {
+      return 'webp';
+    }
+
+    if (normalizedSrc.startsWith('data:image/gif') || normalizedSrc.includes('.gif')) {
+      return 'gif';
+    }
+
+    return 'png';
+  }
+
+  private bindImageClickHandler() {
+    if (!this.quill?.root) {
+      return;
+    }
+
+    if (this.editorImageClickUnlisten) {
+      this.editorImageClickUnlisten();
+      this.editorImageClickUnlisten = null;
+    }
+
+    this.editorImageClickUnlisten = this.renderer.listen(this.quill.root, 'click', (event: Event) => {
+      const target = event.target as HTMLElement | null;
+      if (!target || target.tagName !== 'IMG') {
+        return;
+      }
+
+      event.preventDefault();
+      event.stopPropagation();
+
+      const src = (target as HTMLImageElement).currentSrc || (target as HTMLImageElement).src;
+      if (!src) {
+        return;
+      }
+
+      this.openImageViewer(src);
+    });
+  }
+
+  private async toBase64Payload(src: string): Promise<string> {
+    if (src.startsWith('data:')) {
+      return src.split(',')[1] ?? '';
+    }
+
+    const response = await fetch(src);
+    const blob = await response.blob();
+
+    return await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const result = typeof reader.result === 'string' ? reader.result : '';
+        const base64 = result.split(',')[1] ?? '';
+        resolve(base64);
+      };
+      reader.onerror = () => reject(reader.error);
+      reader.readAsDataURL(blob);
+    });
+  }
+
+  private async presentToast(message: string) {
+    const toast = await this.toastController.create({
+      message,
+      duration: 2200,
+      position: 'bottom',
+    });
+    await toast.present();
+  }
+
   private openDropdown() {
     if (!this.headerPillRef?.nativeElement) return;
 
-    // Close any existing dropdown first
     if (this.isDropdownOpen) {
       this.closeDropdown();
     }
 
     this.isDropdownOpen = true;
 
-    // Create dropdown
     this.dropdownElement = this.renderer.createElement('div');
     this.renderer.addClass(this.dropdownElement, 'custom-header-dropdown');
 
-    // Add options
     this.headerOptions.forEach(option => {
       const optionElement = this.renderer.createElement('div');
       this.renderer.addClass(optionElement, 'dropdown-item');
       this.renderer.setProperty(optionElement, 'textContent', option.label);
       this.renderer.setAttribute(optionElement, 'data-value', option.value);
 
-      // Highlight selected option
       if (this.headerSelectRef?.nativeElement?.value === option.value) {
         this.renderer.addClass(optionElement, 'selected');
       }
 
-      // Add click handler with immediate stopPropagation
       this.renderer.listen(optionElement, 'click', (e: Event) => {
         e.preventDefault();
         e.stopPropagation();
@@ -158,7 +521,6 @@ export class RichTextEditorComponent implements OnInit, OnDestroy {
         this.selectOption(option.value);
       });
 
-      // Add hover effect for desktop
       this.renderer.listen(optionElement, 'mouseenter', () => {
         this.renderer.addClass(optionElement, 'hover');
       });
@@ -170,36 +532,24 @@ export class RichTextEditorComponent implements OnInit, OnDestroy {
       this.renderer.appendChild(this.dropdownElement, optionElement);
     });
 
-    // Position the dropdown
     this.positionDropdown();
-
-    // Add to body
     this.renderer.appendChild(document.body, this.dropdownElement);
-
-    // Add class to body
     this.renderer.addClass(document.body, 'dropdown-open');
 
-    // Setup click outside listener
     setTimeout(() => {
-      // Remove any existing listener first
       if (this.clickOutsideListener) {
         this.clickOutsideListener();
         this.clickOutsideListener = null;
       }
 
       const unlisten = this.renderer.listen('document', 'click', (event: MouseEvent) => {
-        // Don't close if dropdown is not open
         if (!this.isDropdownOpen) return;
 
         const target = event.target as HTMLElement;
         const trigger = this.headerPillRef?.nativeElement?.querySelector('.header-trigger');
         const dropdown = this.dropdownElement;
 
-        // Check if click is outside both trigger and dropdown
-        if (dropdown &&
-            !dropdown.contains(target) &&
-            trigger &&
-            !trigger.contains(target)) {
+        if (dropdown && !dropdown.contains(target) && trigger && !trigger.contains(target)) {
           this.closeDropdown();
         }
       });
@@ -220,51 +570,42 @@ export class RichTextEditorComponent implements OnInit, OnDestroy {
     const dropdownHeight = 250;
     const dropdownWidth = 140;
 
-    // Calculate position
-    let topPosition = triggerRect.bottom + 4;
+    let topPosition: number | 'auto' = triggerRect.bottom + 4;
     let leftPosition = triggerRect.left;
 
-    // Check if dropdown would go off screen horizontally
     if (leftPosition + dropdownWidth > viewportWidth - 16) {
       leftPosition = viewportWidth - dropdownWidth - 16;
     }
     leftPosition = Math.max(16, leftPosition);
 
-    // Check if dropdown would go off screen vertically
-    let bottomPosition = 'auto';
-    if (topPosition + dropdownHeight > viewportHeight) {
+    let bottomPosition: string | 'auto' = 'auto';
+    if (typeof topPosition === 'number' && topPosition + dropdownHeight > viewportHeight) {
       topPosition = 'auto';
-      bottomPosition = viewportHeight - triggerRect.top + 4 + 'px';
+      bottomPosition = `${viewportHeight - triggerRect.top + 4}px`;
     }
 
-    // Apply styles
     this.renderer.setStyle(this.dropdownElement, 'position', 'fixed');
-    this.renderer.setStyle(this.dropdownElement, 'top', topPosition !== 'auto' ? topPosition + 'px' : 'auto');
+    this.renderer.setStyle(this.dropdownElement, 'top', topPosition !== 'auto' ? `${topPosition}px` : 'auto');
     this.renderer.setStyle(this.dropdownElement, 'bottom', bottomPosition !== 'auto' ? bottomPosition : 'auto');
-    this.renderer.setStyle(this.dropdownElement, 'left', leftPosition + 'px');
-    this.renderer.setStyle(this.dropdownElement, 'min-width', dropdownWidth + 'px');
+    this.renderer.setStyle(this.dropdownElement, 'left', `${leftPosition}px`);
+    this.renderer.setStyle(this.dropdownElement, 'min-width', `${dropdownWidth}px`);
   }
 
   private selectOption(value: string) {
-    // Immediately close dropdown first (before any other operations)
     this.closeDropdown();
 
-    // Then update select element
     if (this.headerSelectRef?.nativeElement) {
       this.headerSelectRef.nativeElement.value = value;
 
-      // Trigger Quill format
       if (this.quill) {
-        const headerValue = value === 'false' ? false : parseInt(value);
+        const headerValue = value === 'false' ? false : parseInt(value, 10);
         this.quill.format('header', headerValue);
 
-        // Keep focus on editor
         setTimeout(() => {
           this.quill.focus();
         }, 50);
       }
 
-      // Trigger change event
       this.onHeaderChange(new Event('change'));
     }
   }
@@ -274,24 +615,20 @@ export class RichTextEditorComponent implements OnInit, OnDestroy {
 
     this.isDropdownOpen = false;
 
-    // Remove dropdown element immediately
     if (this.dropdownElement) {
-      // Remove all children first to prevent memory leaks
       while (this.dropdownElement.firstChild) {
-        this.dropdownElement.removeChild(this.dropdownElement.firstChild);
+        this.renderer.removeChild(this.dropdownElement, this.dropdownElement.firstChild);
       }
 
-      // Remove from DOM
       if (this.dropdownElement.parentNode) {
-        this.dropdownElement.parentNode.removeChild(this.dropdownElement);
+        this.renderer.removeChild(document.body, this.dropdownElement);
       }
+
       this.dropdownElement = null;
     }
 
-    // Remove body class
     this.renderer.removeClass(document.body, 'dropdown-open');
 
-    // Remove click outside listener
     if (this.clickOutsideListener) {
       this.clickOutsideListener();
       this.clickOutsideListener = null;
