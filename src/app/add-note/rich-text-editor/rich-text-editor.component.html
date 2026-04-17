@@ -23,7 +23,6 @@
     </div>
 
     <div class="header-pill" #headerPill>
-      <!-- Hidden select for Quill (always present but invisible) -->
       <select
         class="ql-header hidden-select"
         #headerSelect
@@ -37,7 +36,6 @@
         <option value="6">{{'richTextHeading6' | translate}}</option>
       </select>
 
-      <!-- Visible trigger for all platforms -->
       <button
         type="button"
         class="header-trigger"
@@ -54,7 +52,6 @@
     </button>
   </div>
 
-  <!-- Editor -->
   <quill-editor
     [(ngModel)]="note_text"
     (ngModelChange)="onContentChange($event)"
@@ -63,3 +60,48 @@
     placeholder="{{'enterYourNoteHere' | translate}}">
   </quill-editor>
 </div>
+
+<ion-modal
+  [isOpen]="imageViewerOpen"
+  cssClass="note-image-viewer-modal"
+  [backdropDismiss]="true"
+  [showBackdrop]="true"
+  (didDismiss)="closeImageViewer()">
+  <ng-template>
+    <ion-content class="image-viewer-content">
+      <div class="image-viewer-shell">
+        <div class="image-viewer-header">
+          <ion-button fill="clear" class="image-viewer-close" (click)="closeImageViewer()">
+            <ion-icon name="close"></ion-icon>
+          </ion-button>
+
+          <ion-button class="image-viewer-save" (click)="saveViewerImage()">
+            <ion-icon name="download-outline" slot="start"></ion-icon>
+            {{ allTranslations?.save ?? ('save' | translate) }}
+          </ion-button>
+        </div>
+
+        <div class="image-viewer-body" (click)="closeImageViewer()">
+          <div
+            class="image-viewer-viewport"
+            #viewerViewport
+            (click)="$event.stopPropagation()"
+            (wheel)="onViewerWheel($event)"
+            (pointerdown)="onViewerPointerDown($event)"
+            (pointermove)="onViewerPointerMove($event)"
+            (pointerup)="onViewerPointerUp($event)"
+            (pointercancel)="onViewerPointerUp($event)"
+            (pointerleave)="onViewerPointerUp($event)">
+            <img
+              *ngIf="viewerImageSrc"
+              #viewerImage
+              [src]="viewerImageSrc"
+              alt="Note image"
+              class="image-viewer-preview"
+              [style.transform]="getViewerTransform()" />
+          </div>
+        </div>
+      </div>
+    </ion-content>
+  </ng-template>
+</ion-modal>

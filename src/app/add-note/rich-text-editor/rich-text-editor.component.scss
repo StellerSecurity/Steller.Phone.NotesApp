@@ -1,5 +1,4 @@
 .editor-wrapper {
-  // position: relative;
   min-height: 100%;
   display: flex;
   flex-direction: column;
@@ -51,16 +50,11 @@
   display: flex;
   border: 1px solid #EAEAF0;
   border-radius: 46px;
-  // overflow: hidden;
 
   button {
     border: none;
     border-radius: 46px;
     min-width: 40px;
-
-    &:first-child {
-      // border-right: 1px solid #EAEAF0;
-    }
   }
 }
 
@@ -90,8 +84,7 @@
     align-items: center;
     justify-content: space-between;
     gap: 8px;
-    background: white!important;
-    // border: 1px solid #EAEAF0;
+    background: white !important;
     border-radius: 40px;
     padding: 0 12px 0 16px;
     font-size: 14px;
@@ -118,11 +111,6 @@
       background: transparent;
       border-color: transparent;
     }
-
-    &:active {
-      // background: #EAEAF0;
-      // transform: scale(0.98);
-    }
   }
 }
 
@@ -131,17 +119,11 @@ quill-editor {
   width: 100%;
   border: 0;
 
-  /* ❌ REMOVE flex layout */
-  /* flex: 1; */
-  /* display: flex; */
-  /* flex-direction: column; */
-
   ::ng-deep .ql-container {
     border-radius: 0 0 24px 24px;
     border: none !important;
     font-size: 16px;
     font-family: inherit;
-
     height: auto !important;
     overflow: visible !important;
   }
@@ -150,8 +132,7 @@ quill-editor {
     min-height: 200px;
     padding: 16px;
     line-height: 1.6;
-
-    height: 100%!important;
+    height: 100% !important;
     overflow: visible !important;
 
     &:focus {
@@ -163,10 +144,16 @@ quill-editor {
       left: 16px;
       right: 16px;
     }
+
+    img {
+      cursor: zoom-in;
+      max-width: 100%;
+      height: auto;
+      border-radius: 12px;
+    }
   }
 }
 
-// Custom dropdown styles
 .custom-header-dropdown {
   position: fixed;
   max-height: 250px;
@@ -174,10 +161,10 @@ quill-editor {
   -webkit-overflow-scrolling: touch;
   z-index: 2147483647;
   padding: 4px 0;
-  border: 0!important;
-  border-radius: 16px!important;
-  background-color: #F6F6FD!important;
-  box-shadow: 1px 4px 16px 0 rgba(0, 0, 0, 0.12)!important;
+  border: 0 !important;
+  border-radius: 16px !important;
+  background-color: #F6F6FD !important;
+  box-shadow: 1px 4px 16px 0 rgba(0, 0, 0, 0.12) !important;
 
   .dropdown-item {
     padding: 10px 12px;
@@ -203,15 +190,89 @@ quill-editor {
     }
 
     &:not(:last-child) {
-      border-bottom: 1px solid #F0F0F3!important;
+      border-bottom: 1px solid #F0F0F3 !important;
     }
   }
 }
 
-// Prevent body scrolling when dropdown is open
 :host-context(body.dropdown-open) {
   ion-content {
     --overflow: hidden;
     touch-action: none;
   }
+}
+
+:host ::ng-deep .note-image-viewer-modal {
+  --width: 100%;
+  --height: 100%;
+  --border-radius: 0;
+  --background: rgba(11, 12, 25, 0.96);
+}
+
+.image-viewer-content {
+  --background: rgba(11, 12, 25, 0.96);
+}
+
+.image-viewer-shell {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.image-viewer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: max(env(safe-area-inset-top), 16px) 16px 12px;
+}
+
+.image-viewer-close {
+  --color: #ffffff;
+  --background: rgba(255, 255, 255, 0.08);
+  --border-radius: 999px;
+}
+
+.image-viewer-save {
+  --background: #ffffff;
+  --color: #0B0C19;
+  --border-radius: 999px;
+  font-weight: 600;
+}
+
+.image-viewer-body {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.image-viewer-preview {
+  max-width: 100%;
+  max-height: calc(100vh - 120px);
+  object-fit: contain;
+  border-radius: 18px;
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.35);
+}
+
+
+.image-viewer-viewport {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  touch-action: none;
+  user-select: none;
+}
+
+.image-viewer-preview {
+  transform-origin: center center;
+  transition: transform 0.08s ease-out;
+  will-change: transform;
+  user-select: none;
+  -webkit-user-drag: none;
+  touch-action: none;
 }
