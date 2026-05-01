@@ -20,6 +20,8 @@ import {
   ToastController,
 } from '@ionic/angular';
 import { Subscription } from 'rxjs';
+import { App } from '@capacitor/app';
+import type { PluginListenerHandle } from '@capacitor/core';
 
 import { CryptoService } from "../services/crypto.service";
 import { NotesService } from "../services/notes.service";
@@ -66,6 +68,7 @@ export class HomePage implements AfterViewInit, OnDestroy {
   private static readonly CHECKBOX_DISMISS_EDGE_PX = 120;
   private static readonly CHECKBOX_DISMISS_TRIGGER_PX = 56;
   private static readonly CHECKBOX_DISMISS_DIRECTION_RATIO = 1.2;
+  private static readonly RESUME_SYNC_COOLDOWN_MS = 2000;
 
   @ViewChild(IonModal) modal: IonModal;
   @ViewChild('searchbar') searchbar: IonSearchbar;
@@ -81,6 +84,9 @@ export class HomePage implements AfterViewInit, OnDestroy {
   private pressGestureInitTimer: any = null;
   private longPressElementsChangesSub: Subscription | null = null;
   private backButtonSub: any = null;
+  private appResumeListener: PluginListenerHandle | null = null;
+  private resumeSyncInFlight = false;
+  private lastResumeSyncAt = 0;
 
   public should_display = true;
   public checkboxOpened = false;
@@ -358,6 +364,59 @@ export class HomePage implements AfterViewInit, OnDestroy {
     this.schedulePressGestureInit();
   }
 
+  private removeResumeSyncListener(): void {
+    if (this.appResumeListener) {
+      this.appResumeListener.remove();
+      this.appResumeListener = null;
+    }
+  }
+
+  private async installResumeSyncListener(): Promise<void> {
+    if (this.appResumeListener) {
+      return;
+    }
+
+    this.appResumeListener = await App.addListener('appStateChange', async ({ isActive }) => {
+      if (!isActive) {
+        return;
+      }
+
+      await this.syncFromServerOnResume();
+    });
+  }
+
+  private async syncFromServerOnResume(): Promise<void> {
+    if (!this.authService.isLoggedIn) {
+      return;
+    }
+
+    if (this.pauseSync) {
+      return;
+    }
+
+    if (this.noteService.shouldAskForPassword()) {
+      return;
+    }
+
+    if (this.resumeSyncInFlight) {
+      return;
+    }
+
+    const now = Date.now();
+    if (now - this.lastResumeSyncAt < HomePage.RESUME_SYNC_COOLDOWN_MS) {
+      return;
+    }
+
+    this.resumeSyncInFlight = true;
+    this.lastResumeSyncAt = now;
+
+    try {
+      await this.syncFromServer();
+    } finally {
+      this.resumeSyncInFlight = false;
+    }
+  }
+
   ngOnDestroy(): void {
     if (this.pressGestureInitTimer) {
       clearTimeout(this.pressGestureInitTimer);
@@ -378,6 +437,8 @@ export class HomePage implements AfterViewInit, OnDestroy {
       this.backButtonSub.unsubscribe();
       this.backButtonSub = null;
     }
+
+    this.removeResumeSyncListener();
 
     window.removeEventListener('touchend', this.boundGlobalTouchEnd);
     window.removeEventListener('touchcancel', this.boundGlobalTouchCancel);
@@ -437,6 +498,7 @@ export class HomePage implements AfterViewInit, OnDestroy {
   ionViewDidEnter() {
     this.schedulePressGestureInit();
     this.registerBackButtonHandler();
+    this.installResumeSyncListener().then(() => {});
     window.addEventListener('touchend', this.boundGlobalTouchEnd, { passive: true });
     window.addEventListener('touchcancel', this.boundGlobalTouchCancel, { passive: true });
   }
@@ -458,6 +520,8 @@ export class HomePage implements AfterViewInit, OnDestroy {
       this.backButtonSub.unsubscribe();
       this.backButtonSub = null;
     }
+
+    this.removeResumeSyncListener();
 
     if (this.pressGestureInitTimer) {
       clearTimeout(this.pressGestureInitTimer);
