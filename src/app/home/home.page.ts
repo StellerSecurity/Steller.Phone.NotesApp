@@ -45,6 +45,7 @@ import {
 import { CryptoKeyService } from '../services/crypto-key.service';
 import { ScrollService } from '../services/scroll.service';
 import { Folder } from '../models/Folder';
+import { App } from '@capacitor/app';
 
 @Component({
   selector: 'app-home',
@@ -81,6 +82,7 @@ export class HomePage implements AfterViewInit, OnDestroy {
   private pressGestureInitTimer: any = null;
   private longPressElementsChangesSub: Subscription | null = null;
   private backButtonSub: any = null;
+  private appStateListener: any = null;
 
   public should_display = true;
   public checkboxOpened = false;
@@ -379,6 +381,11 @@ export class HomePage implements AfterViewInit, OnDestroy {
       this.backButtonSub = null;
     }
 
+    if (this.appStateListener) {
+      this.appStateListener.remove();
+      this.appStateListener = null;
+    }
+
     window.removeEventListener('touchend', this.boundGlobalTouchEnd);
     window.removeEventListener('touchcancel', this.boundGlobalTouchCancel);
   }
@@ -435,6 +442,13 @@ export class HomePage implements AfterViewInit, OnDestroy {
   }
 
   ionViewDidEnter() {
+    // Resync notes when app comes back to foreground
+    this.appStateListener = App.addListener('appStateChange', ({ isActive }: { isActive: boolean }) => {
+      if (isActive && !this.pauseSync && this.authService.isLoggedIn) {
+        this.waitForSync = true;
+        this.syncFromServer().then(() => {});
+      }
+    });
     this.schedulePressGestureInit();
     this.registerBackButtonHandler();
     window.addEventListener('touchend', this.boundGlobalTouchEnd, { passive: true });
