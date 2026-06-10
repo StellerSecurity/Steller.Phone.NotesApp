@@ -46,6 +46,8 @@ import { CryptoKeyService } from '../services/crypto-key.service';
 import { ScrollService } from '../services/scroll.service';
 import { Folder } from '../models/Folder';
 import { App } from '@capacitor/app';
+import { Preferences } from '@capacitor/preferences';
+import { BiometricUnlockService } from '../services/biometric-unlock.service';
 
 @Component({
   selector: 'app-home',
@@ -107,6 +109,10 @@ export class HomePage implements AfterViewInit, OnDestroy {
   public searchMode = false;
   public headerHasShadow = false;
   public newFolderModalOpen = false;
+  public showSyncEnabledCard = false;
+  public showDesktopAfterSyncCard = false;
+  public biometricUnlockAvailable = false;
+  public biometricUnlockEnabled = false;
   public newFolderName = '';
   public renamingFolderName: string | null = null;
   public renamingFolderDraft = '';
@@ -116,6 +122,8 @@ export class HomePage implements AfterViewInit, OnDestroy {
   allTranslations: any;
 
   private mkRaw: Uint8Array | null = null;
+  private readonly postLoginSyncCardKey = 'stellar_notes_show_sync_enabled_card';
+  private readonly desktopAfterSyncCardDismissedKey = 'stellar_notes_desktop_after_sync_card_dismissed';
 
   private syncTimer: any = null;
   private pendingDeletedNotes: any[] = [];
@@ -182,6 +190,7 @@ export class HomePage implements AfterViewInit, OnDestroy {
     private scrollService: ScrollService,
     private appHaptics: AppHapticsService,
     private platform: Platform,
+    private biometricUnlockService: BiometricUnlockService,
   ) {}
 
 
@@ -415,6 +424,8 @@ export class HomePage implements AfterViewInit, OnDestroy {
 
     this.allTranslations = this.translatorService.allTranslations;
     this.timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    await this.refreshHomeNoticeCards();
+    await this.refreshBiometricUnlockState();
 
     if (this.noteService.shouldAskForPassword()) {
       this.should_display = false;
@@ -426,6 +437,76 @@ export class HomePage implements AfterViewInit, OnDestroy {
       this.initialHomeLoadFinished = true;
       this.syncFromServer().then(() => {});
     }
+  }
+
+  private async refreshHomeNoticeCards(): Promise<void> {
+    const syncCard = await Preferences.get({ key: this.postLoginSyncCardKey });
+    const desktopDismissed = await Preferences.get({ key: this.desktopAfterSyncCardDismissedKey });
+    this.showSyncEnabledCard = syncCard.value === '1' && this.authService.isLoggedIn;
+    this.showDesktopAfterSyncCard = desktopDismissed.value !== '1' && this.authService.isLoggedIn;
+  }
+
+  public async dismissSyncEnabledCard(): Promise<void> {
+    await this.appHaptics.tap();
+    await Preferences.remove({ key: this.postLoginSyncCardKey });
+    this.showSyncEnabledCard = false;
+  }
+
+  public async dismissDesktopAfterSyncCard(): Promise<void> {
+    await this.appHaptics.tap();
+    await Preferences.set({ key: this.desktopAfterSyncCardDismissedKey, value: '1' });
+    this.showDesktopAfterSyncCard = false;
+  }
+
+  public openDesktopDownload(url: string): void {
+    this.appHaptics.tap();
+    window.open(url, '_blank', 'noopener,noreferrer');
+  }
+
+  public async refreshBiometricUnlockState(): Promise<void> {
+    const availability = await this.biometricUnlockService.isAvailable();
+    this.biometricUnlockAvailable = availability.available;
+    this.biometricUnlockEnabled = await this.biometricUnlockService.isEnabled();
+  }
+
+
+  private getBiometricPromptLabels() {
+    return {
+      reason: this.allTranslations?.biometricPromptReason ?? 'Unlock Stellar Private Notes',
+      title: this.allTranslations?.biometricPromptTitle ?? 'Unlock Notes',
+      subtitle: this.allTranslations?.biometricPromptSubtitle ?? 'Use your device biometrics to unlock your private notes.',
+      description: this.allTranslations?.biometricPromptDescription ?? 'Your notes remain encrypted on this device.',
+      negativeButtonText: this.allTranslations?.usePassword ?? 'Use Password',
+    };
+  }
+
+  public async unlockNotesAppWithBiometrics(): Promise<void> {
+    const lockoutRemaining = this.noteService.getAppUnlockLockoutRemainingMs();
+    if (lockoutRemaining > 0) {
+      const toast = await this.toastController.create({
+        message: this.formatLockoutMessage(lockoutRemaining),
+        duration: 3000,
+        position: 'bottom',
+      });
+      await this.appHaptics.warning();
+      await toast.present();
+      return;
+    }
+
+    const biometricPassword = await this.biometricUnlockService.unlockWithBiometrics(this.getBiometricPromptLabels());
+
+    if (!biometricPassword) {
+      const toast = await this.toastController.create({
+        message: this.allTranslations?.biometricUnlockFailedMessage ?? 'Biometric unlock failed. Use your password instead.',
+        duration: 3000,
+        position: 'bottom',
+      });
+      await this.appHaptics.warning();
+      await toast.present();
+      return;
+    }
+
+    await this.unlockNotesAppWithPassword(biometricPassword, true);
   }
 
   private async restoreScrollOnce() {
@@ -1019,6 +1100,7 @@ export class HomePage implements AfterViewInit, OnDestroy {
       this.isSyncing = false;
       this.waitForSync = false;
       this.dataService.setForceDownloadOnHome(false);
+      await this.refreshHomeNoticeCards();
     }
   }
 
@@ -1041,6 +1123,10 @@ export class HomePage implements AfterViewInit, OnDestroy {
   }
 
   public async unlockNotesApp() {
+    await this.unlockNotesAppWithPassword(this.input_password_app_unlock, false);
+  }
+
+  private async unlockNotesAppWithPassword(password: string, fromBiometric: boolean) {
     const lockoutRemaining = this.noteService.getAppUnlockLockoutRemainingMs();
     if (lockoutRemaining > 0) {
       const toast = await this.toastController.create({
@@ -1054,7 +1140,7 @@ export class HomePage implements AfterViewInit, OnDestroy {
       return;
     }
 
-    if (this.input_password_app_unlock.length == 0) {
+    if (!password || password.length === 0) {
       const toast = await this.toastController.create({
         message: this.allTranslations?.pleaseEnterYourPasswordMessage ?? 'Please enter your password.',
         duration: 3000,
@@ -1068,12 +1154,12 @@ export class HomePage implements AfterViewInit, OnDestroy {
     try {
       this.should_display = true;
 
-      this.noteService.setNotesAppPassword(this.input_password_app_unlock);
-      this.setData(this.input_password_app_unlock);
+      this.noteService.setNotesAppPassword(password);
+      this.setData(password);
 
       let eakB64 = await this.secureStorageService.getItem('ssEakB64_Encrypted');
       if (eakB64) {
-        eakB64 = this.cryptoService.decrypt(eakB64, this.input_password_app_unlock) as string;
+        eakB64 = this.cryptoService.decrypt(eakB64, password) as string;
         this.mkRaw = this.b64ToBytes(eakB64);
 
         await this.crypto.importEAK(eakB64);
@@ -1085,7 +1171,7 @@ export class HomePage implements AfterViewInit, OnDestroy {
 
       this.appProtectorService.init();
 
-      this.input_password_app_unlock = "";
+      this.input_password_app_unlock = '';
 
       this.syncFromServer().then(() => {});
 
@@ -1094,24 +1180,26 @@ export class HomePage implements AfterViewInit, OnDestroy {
         this.schedulePressGestureInit();
       }, HomePage.DETECT_CHANGES_DELAY_MS);
 
-      await this.appHaptics.success();
+      await (fromBiometric ? this.appHaptics.success() : this.appHaptics.success());
       return;
     } catch (e: any) {
-      const lockoutMs = this.noteService.registerFailedAppUnlockAttempt();
+      const lockoutMs = fromBiometric ? 0 : this.noteService.registerFailedAppUnlockAttempt();
       await this.noteService.flushPersistence();
 
       const toast = await this.toastController.create({
         message:
           lockoutMs > 0
             ? this.formatLockoutMessage(lockoutMs)
-            : this.allTranslations.passwordIsNotCorrectTryAgain,
+            : fromBiometric
+              ? (this.allTranslations?.biometricUnlockFailedMessage ?? 'Biometric unlock failed. Use your password instead.')
+              : this.allTranslations.passwordIsNotCorrectTryAgain,
         duration: 3000,
         position: 'bottom',
       });
 
       this.noteService.clearSensitiveRuntimeState();
       this.should_display = false;
-      this.input_password_app_unlock = "";
+      this.input_password_app_unlock = '';
 
       await this.appHaptics.error();
       await toast.present();

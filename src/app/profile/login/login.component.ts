@@ -22,6 +22,7 @@ import {
 import { CryptoKeyService } from '../../services/crypto-key.service';
 import { AppHapticsService } from '../../services/app-haptics.service';
 import { TranslatorService } from '../../services/translator.service';
+import { Preferences } from '@capacitor/preferences';
 
 @Component({
   selector: 'app-login',
@@ -291,6 +292,7 @@ export class LoginComponent implements OnInit {
 
         await this.syncNotesAfterLogin(eakB64);
         await this.authService.initializeAuthState();
+        await Preferences.set({ key: 'stellar_notes_show_sync_enabled_card', value: '1' });
         await this.appHaptics.success();
         await this.router.navigate(['/']);
         return;

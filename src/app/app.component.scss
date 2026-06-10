@@ -36,7 +36,7 @@
 
   h2 {
     margin: 0;
-    color: #0B0C19;
+    color: var(--stellar-text);
     font-family: 'Poppins';
     font-size: 20px;
     font-weight: 600;
@@ -44,10 +44,29 @@
 
   p {
     margin: 0;
-    color: #62626A;
+    color: var(--stellar-muted);
     font-family: 'Poppins';
     font-size: 14px;
     line-height: 1.5;
   }
 }
 
+
+:host-context(.stellar-dark-theme) {
+  .privacy-shield {
+    background: var(--stellar-background);
+  }
+
+  .privacy-shield-card {
+    background: var(--stellar-surface);
+    box-shadow: var(--stellar-shadow);
+  }
+
+  .privacy-shield-card h2 {
+    color: var(--stellar-text);
+  }
+
+  .privacy-shield-card p {
+    color: var(--stellar-muted);
+  }
+}

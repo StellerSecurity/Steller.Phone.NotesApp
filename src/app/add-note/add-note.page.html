@@ -62,14 +62,14 @@
             <ion-icon
               slot="start"
               [name]="isPinned() ? 'bookmark' : 'bookmark-outline'"
-              [style.color]="isPinned() ? '#2761FC' : '#62626A'"></ion-icon>
+              [style.color]="isPinned() ? '#2761FC' : 'var(--stellar-muted)'"></ion-icon>
             <ion-label>{{ (isPinned() ? 'unpin' : 'pin') | translate }}</ion-label>
           </ion-item>
           <ion-item button detail="false" class="note-actions-popover-item" (click)="handleToggleFavorite()">
             <ion-icon
               slot="start"
               [name]="isFavorite() ? 'star' : 'star-outline'"
-              [style.color]="isFavorite() ? '#F4B400' : '#62626A'"></ion-icon>
+              [style.color]="isFavorite() ? '#F4B400' : 'var(--stellar-muted)'"></ion-icon>
             <ion-label>{{ (isFavorite() ? 'removeFavorite' : 'markAsFavorite') | translate }}</ion-label>
           </ion-item>
           <ion-item button detail="false" class="note-actions-popover-item" (click)="handleShare()">
@@ -198,14 +198,14 @@
         <ion-toolbar>
           <ion-buttons slot="start">
             <ion-button (click)="dismissModal()">
-              <ion-icon name="close" style="color: #62626A; font-size: 18px;"></ion-icon>
+              <ion-icon name="close" style="color: var(--stellar-muted); font-size: 18px;"></ion-icon>
             </ion-button>
           </ion-buttons>
           <ion-title>{{ 'lockNote' | translate }}</ion-title>
         </ion-toolbar>
       </ion-header>
       <ion-content class="ion-padding">
-        <h2 style="font-size: 16px; color: #0B0C19; font-family: 'Poppins'; font-weight: 600;">
+        <h2 style="font-size: 16px; color: var(--stellar-text); font-family: 'Poppins'; font-weight: 600;">
           {{ 'lockNoteWithPassword' | translate }}
         </h2>
         <p *ngIf="note_locked">
@@ -262,7 +262,7 @@
             </ul>
           </div>
           <password-strength-meter [password]="notes_password_input"></password-strength-meter>
-          <h4 style="color: #0B0C19; font-size: 12px; font-weight: 400; font-family: 'Poppins';">
+          <h4 style="color: var(--stellar-text); font-size: 12px; font-weight: 400; font-family: 'Poppins';">
             {{ 'itsBetterToHave' | translate }}
           </h4>
           <ul class="pass-list">

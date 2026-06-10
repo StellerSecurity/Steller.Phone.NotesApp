@@ -157,6 +157,24 @@
       </div>
     </div>
   </ion-item>
+  <ion-item *ngIf="password_enabled" (click)="toggleBiometricUnlockFromRow()" [class.setting-item-disabled]="!biometricUnlockAvailable">
+    <div class="setting-row setting-row--top">
+      <div class="setting-text">
+        <div class="setting-title">{{ 'biometricUnlock' | translate }}</div>
+        <div class="setting-helper-text">
+          {{ biometricUnlockAvailable ? ('biometricUnlockDescription' | translate) : ('biometricUnlockUnavailable' | translate) }}
+        </div>
+      </div>
+      <div class="setting-control setting-control--toggle">
+        <ion-toggle
+          [disabled]="!biometricUnlockAvailable"
+          [(ngModel)]="biometricUnlockEnabled"
+          (ionChange)="biometricUnlockChange()"
+          (click)="$event.stopPropagation()">
+        </ion-toggle>
+      </div>
+    </div>
+  </ion-item>
   <ion-item *ngIf="password_enabled" (click)="openWipeSelect()">
     <div class="setting-row">
       <div class="setting-text">
@@ -239,6 +257,31 @@
 
 
 
+  <ion-item (click)="openAppearanceSelect()">
+    <div class="setting-row">
+      <div class="setting-text">
+        <div class="setting-title">{{ 'appearance' | translate }}</div>
+        <div class="setting-helper-text">
+          {{ 'appearanceDescription' | translate }}
+        </div>
+      </div>
+      <div class="setting-control">
+        <ion-select
+          #appearanceSelect
+          interface="action-sheet"
+          [(ngModel)]="appearanceMode"
+          (ionChange)="saveAppearance()"
+          (click)="$event.stopPropagation()">
+          <ion-select-option
+            *ngFor="let option of appearanceOptions"
+            [value]="option.value">
+            {{ getAppearanceLabel(option) }}
+          </ion-select-option>
+        </ion-select>
+      </div>
+    </div>
+  </ion-item>
+
   <ion-item (click)="openClipboardSelect()">
     <div class="setting-row">
       <div class="setting-text">
@@ -263,6 +306,53 @@
       </div>
     </div>
   </ion-item>
+  <ion-item (click)="openDesktopDownloads()">
+    <div class="setting-row setting-row--top">
+      <div class="setting-text">
+        <div class="setting-title">{{ 'desktopApps' | translate }}</div>
+        <div class="setting-helper-text">
+          {{ 'desktopAppsDescription' | translate }}
+        </div>
+      </div>
+      <div class="setting-control setting-control--icon">
+        <ion-icon name="desktop-outline"></ion-icon>
+      </div>
+    </div>
+  </ion-item>
+
+  <div class="settings-section-label">{{ 'appsByStellar' | translate }}</div>
+  <div class="stellar-apps-card">
+    <button
+      type="button"
+      class="stellar-app-row"
+      (click)="openStellarAppDownloads('vpn')">
+      <div class="stellar-app-icon">
+        <ion-icon name="shield-checkmark-outline"></ion-icon>
+      </div>
+      <div class="stellar-app-copy">
+        <div class="stellar-app-title">{{ 'stellarVpn' | translate }}</div>
+        <div class="stellar-app-description">{{ 'stellarVpnDescription' | translate }}</div>
+        <div class="stellar-app-platforms">{{ 'stellarVpnPlatforms' | translate }}</div>
+      </div>
+      <ion-icon class="stellar-app-chevron" name="chevron-forward-outline"></ion-icon>
+    </button>
+
+    <button
+      type="button"
+      class="stellar-app-row"
+      (click)="openStellarAppDownloads('antivirus')">
+      <div class="stellar-app-icon">
+        <ion-icon name="shield-outline"></ion-icon>
+      </div>
+      <div class="stellar-app-copy">
+        <div class="stellar-app-title">{{ 'stellarAntivirus' | translate }}</div>
+        <div class="stellar-app-description">{{ 'stellarAntivirusDescription' | translate }}</div>
+        <div class="stellar-app-platforms">{{ 'stellarAntivirusPlatforms' | translate }}</div>
+      </div>
+      <ion-icon class="stellar-app-chevron" name="chevron-forward-outline"></ion-icon>
+    </button>
+  </div>
+
   <ion-item (click)="openLanguageSelect()">
     <div class="setting-row">
       <div class="setting-text">

@@ -70,3 +70,46 @@
 }
 
 
+
+:root {
+  --stellar-primary: #2761FC;
+  --stellar-primary-soft: #F4F6FB;
+  --stellar-background: #F6F6FD;
+  --stellar-surface: #FFFFFF;
+  --stellar-surface-elevated: #FFFFFF;
+  --stellar-text: #0B0C19;
+  --stellar-muted: #62626A;
+  --stellar-muted-2: #7B7B88;
+  --stellar-border: #EAEAF0;
+  --stellar-danger: #E10000;
+  --stellar-shadow: 0 6px 24px rgba(20, 24, 40, 0.05);
+}
+
+html.stellar-dark-theme {
+  color-scheme: dark;
+  --stellar-primary: #6F8DFF;
+  --stellar-primary-soft: rgba(111, 141, 255, 0.14);
+  --stellar-background: #0B1020;
+  --stellar-surface: #151B2D;
+  --stellar-surface-elevated: #1B2237;
+  --stellar-text: #F4F7FF;
+  --stellar-muted: #A7AFBF;
+  --stellar-muted-2: #8993A8;
+  --stellar-border: rgba(255, 255, 255, 0.09);
+  --stellar-danger: #FF6B7A;
+  --stellar-shadow: 0 12px 34px rgba(0, 0, 0, 0.34);
+
+  --ion-background-color: var(--stellar-background);
+  --ion-text-color: var(--stellar-text);
+  --ion-toolbar-background: var(--stellar-background);
+  --ion-item-background: var(--stellar-surface);
+  --ion-card-background: var(--stellar-surface);
+  --ion-color-primary: #6F8DFF;
+  --ion-color-primary-rgb: 111, 141, 255;
+  --ion-color-primary-contrast: #ffffff;
+  --ion-color-primary-shade: #627ce0;
+  --ion-color-primary-tint: #7e98ff;
+  --ion-color-medium: #A7AFBF;
+  --ion-color-light: #1B2237;
+  --ion-color-light-contrast: #F4F7FF;
+}

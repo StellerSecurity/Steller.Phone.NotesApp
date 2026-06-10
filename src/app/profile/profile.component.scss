@@ -25,7 +25,7 @@ ion-toolbar {
 
     .label-title {
       font-size: 12px;
-      color: #62626A;
+      color: var(--stellar-muted);
       margin-bottom: 6px;
     }
 
@@ -40,7 +40,7 @@ ion-toolbar {
       margin-top: 4px;
       font-size: 14px;
       font-weight: 600;
-      color: #0B0C19;
+      color: var(--stellar-text);
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
@@ -59,7 +59,7 @@ ion-toolbar {
       border: none;
       border-radius: 12px;
       background: #F4F6FB;
-      color: #62626A;
+      color: var(--stellar-muted);
       cursor: pointer;
       padding: 0;
 
@@ -80,13 +80,13 @@ ion-toolbar {
     .login-title {
       font-size: 16px;
       font-weight: 600;
-      color: #0B0C19;
+      color: var(--stellar-text);
     }
 
     .login-sub-title {
       margin-top: 4px;
       font-size: 12px;
-      color: #62626A;
+      color: var(--stellar-muted);
     }
 
     .login-button {
@@ -122,10 +122,97 @@ ion-toolbar {
     }
 
     ion-label {
-      color: #62626A;
+      color: var(--stellar-muted);
       font-size: 14px;
       margin-left: 16px;
       font-weight: 600;
+    }
+  }
+
+  .desktop-notes-card {
+    border-radius: 20px;
+    background: #fff;
+    padding: 16px;
+    margin-bottom: 16px;
+    --ion-background-color: #fff;
+  }
+
+  .desktop-notes-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .desktop-notes-icon {
+    width: 42px;
+    height: 42px;
+    min-width: 42px;
+    border-radius: 14px;
+    background: #F4F6FB;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    ion-icon {
+      width: 22px;
+      height: 22px;
+      color: #2761FC;
+    }
+  }
+
+  .desktop-notes-copy {
+    min-width: 0;
+    flex: 1;
+  }
+
+  .desktop-notes-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--stellar-text);
+    line-height: 1.25;
+    letter-spacing: -0.01em;
+  }
+
+  .desktop-notes-subtitle {
+    margin-top: 4px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--stellar-muted);
+    line-height: 1.35;
+  }
+
+  .desktop-platforms {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-top: 14px;
+  }
+
+  .desktop-platform-button {
+    height: 40px;
+    border: none;
+    border-radius: 999px;
+    background: #F4F6FB;
+    color: var(--stellar-text);
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    padding: 0 12px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+
+    ion-icon {
+      font-size: 16px;
+      color: #2761FC;
+      flex-shrink: 0;
+    }
+
+    span {
+      display: inline-block;
+      line-height: 1;
     }
   }
 
@@ -155,7 +242,7 @@ ion-toolbar {
     }
 
     ion-label {
-      color: #62626A;
+      color: var(--stellar-muted);
       font-size: 14px;
       margin-left: 16px;
       font-weight: 600;
@@ -184,8 +271,69 @@ ion-toolbar {
   .app-branding-text {
     font-size: 15px;
     font-weight: 700;
-    color: #0B0C19;
+    color: var(--stellar-text);
     line-height: 1.2;
     letter-spacing: -0.01em;
+  }
+}
+
+:host-context(.stellar-dark-theme) {
+  ion-content,
+  ion-header,
+  ion-footer,
+  ion-toolbar {
+    --ion-background-color: var(--stellar-background);
+    --background: var(--stellar-background);
+  }
+
+  .account-menu-content {
+    .account-name-card,
+    .login-profile-box,
+    .action-item,
+    .desktop-notes-card,
+    .app-branding {
+      background: var(--stellar-surface) !important;
+      --ion-background-color: var(--stellar-surface);
+      box-shadow: var(--stellar-shadow);
+    }
+
+    .account-name,
+    .login-title,
+    .desktop-notes-title,
+    .desktop-platform-button,
+    .app-branding-text {
+      color: var(--stellar-text);
+    }
+
+    .label-title,
+    .login-sub-title,
+    .action-item ion-label,
+    .desktop-notes-subtitle,
+    .action-item-logout ion-label,
+    .account-visibility-btn {
+      color: var(--stellar-muted);
+    }
+
+    .action-item ion-icon,
+    .action-item-logout ion-icon {
+      color: var(--stellar-muted);
+    }
+
+    .account-visibility-btn,
+    .desktop-notes-icon,
+    .desktop-platform-button {
+      background: var(--stellar-surface-elevated);
+    }
+
+    .desktop-notes-icon ion-icon,
+    .desktop-platform-button ion-icon {
+      color: var(--stellar-primary);
+    }
+
+    .action-item-logout {
+      background: var(--stellar-background);
+      --ion-background-color: var(--stellar-background);
+      border-top-color: var(--stellar-border) !important;
+    }
   }
 }

@@ -235,7 +235,7 @@ quill-editor {
 
 .image-viewer-save {
   --background: #ffffff;
-  --color: #0B0C19;
+  --color: var(--stellar-text);
   --border-radius: 999px;
   font-weight: 600;
 }
@@ -275,4 +275,62 @@ quill-editor {
   user-select: none;
   -webkit-user-drag: none;
   touch-action: none;
+}
+
+:host-context(.stellar-dark-theme) {
+  .editor-wrapper,
+  .toolbar,
+  quill-editor {
+    background: var(--stellar-surface);
+    color: var(--stellar-text);
+    box-shadow: var(--stellar-shadow);
+  }
+
+  .toolbar {
+    border-bottom-color: var(--stellar-border) !important;
+  }
+
+  .toolbar button:active,
+  .toolbar button.ql-active,
+  .header-trigger,
+  .list-group {
+    background: var(--stellar-surface-elevated) !important;
+    border-color: var(--stellar-border);
+    color: var(--stellar-text);
+  }
+
+  .divider {
+    background: var(--stellar-border);
+  }
+
+  .dropdown-arrow,
+  .custom-header-dropdown .dropdown-item {
+    color: var(--stellar-muted);
+  }
+
+  .custom-header-dropdown {
+    background-color: var(--stellar-surface-elevated) !important;
+    box-shadow: var(--stellar-shadow) !important;
+  }
+
+  .custom-header-dropdown .dropdown-item:hover,
+  .custom-header-dropdown .dropdown-item.hover,
+  .custom-header-dropdown .dropdown-item.selected {
+    background-color: var(--stellar-primary-soft);
+    color: var(--stellar-primary);
+  }
+
+  .custom-header-dropdown .dropdown-item:not(:last-child) {
+    border-bottom-color: var(--stellar-border) !important;
+  }
+
+  quill-editor ::ng-deep .ql-container,
+  quill-editor ::ng-deep .ql-editor {
+    background: var(--stellar-surface);
+    color: var(--stellar-text);
+  }
+
+  quill-editor ::ng-deep .ql-editor.ql-blank::before {
+    color: var(--stellar-muted-2);
+  }
 }

@@ -153,6 +153,16 @@ npx cap open ios
 
 From there, use Android Studio / Xcode to build and sign your apps.
 
+### 5. Desktop (Electron/Tauri/Capacitor Desktop)
+
+We also offer the app for desktop computers. If you want users to know it exists for desktop, mention it here and provide packaging options:
+
+- Electron: Build the web app (`ng build` or `ionic build`) and point an Electron BrowserWindow to the `dist/` output.
+- Tauri: Use Tauri to wrap the `dist/` output and build lightweight installers.
+- Capacitor Desktop: Add a desktop target (e.g., community Electron plugin) and run `npx cap sync`.
+
+Tip: As a quick alternative, the app can be used as a PWA on desktop browsers. After building, serve `dist/` and use the browser's "Install App" option.
+
 ---
 
 ## 🔑 Authentication & Tokens

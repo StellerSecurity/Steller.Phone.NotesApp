@@ -11,7 +11,7 @@ ion-toolbar {
 }
 
 ion-title {
-  color: #0b0c19;
+  color: var(--stellar-text);
   font-size: 15px;
   font-weight: 600;
   font-family: "Poppins";
@@ -20,7 +20,7 @@ ion-title {
 }
 
 ion-back-button {
-  color: #62626a;
+  color: var(--stellar-muted);
   font-size: 20px;
 }
 
@@ -78,7 +78,7 @@ ion-select {
 }
 
 .section-title {
-  color: #0b0c19;
+  color: var(--stellar-text);
   font-weight: 600;
   font-family: "Poppins";
   font-size: 16px;
@@ -102,7 +102,7 @@ ion-select {
 }
 
 .setting-title {
-  color: #0b0c19;
+  color: var(--stellar-text);
   font-family: "Poppins";
   font-size: 14px;
   font-weight: 600;
@@ -120,7 +120,7 @@ ion-select {
 }
 
 .setting-helper-text {
-  color: #7b7b88;
+  color: var(--stellar-muted-2);
   font-size: 11px;
   font-family: "Poppins";
   font-weight: 400;
@@ -129,7 +129,7 @@ ion-select {
 }
 
 .setting-status span {
-  color: #62626a;
+  color: var(--stellar-muted);
   font-size: 13px;
   font-family: "Poppins";
   font-weight: 500;
@@ -170,7 +170,7 @@ ion-select {
 }
 
 .setting-control--icon ion-icon {
-  color: #62626a;
+  color: var(--stellar-muted);
   font-size: 22px;
 }
 
@@ -184,7 +184,7 @@ ion-select {
     z-index: 9;
     transform: translateY(-50%);
     font-size: 20px;
-    color: #62626a;
+    color: var(--stellar-muted);
   }
 }
 
@@ -194,7 +194,7 @@ ion-select {
   margin: 0;
 
   li {
-    color: #62626a;
+    color: var(--stellar-muted);
     font-family: "Poppins";
     font-size: 12px;
     font-weight: 400;
@@ -217,18 +217,18 @@ ion-select {
   font-size: 12px;
   font-family: "Poppins";
   font-weight: 600;
-  color: #0b0c19;
+  color: var(--stellar-text);
 }
 
 .password-helper-text {
-  color: #62626a;
+  color: var(--stellar-muted);
   font-size: 12px;
   font-family: "Poppins";
   margin-bottom: 10px;
 }
 
 .password-helper-title {
-  color: #0b0c19;
+  color: var(--stellar-text);
   font-size: 12px;
   font-weight: 400;
   font-family: "Poppins";
@@ -250,7 +250,7 @@ ion-select {
     flex-direction: column;
 
     h3 {
-      color: #0b0c19;
+      color: var(--stellar-text);
       font-size: 16px;
       font-family: "Poppins";
       font-weight: 600;
@@ -260,7 +260,7 @@ ion-select {
     }
 
     p {
-      color: #62626a;
+      color: var(--stellar-muted);
       font-weight: 400;
       font-family: "Poppins";
       font-size: 14px;
@@ -303,7 +303,7 @@ hr {
 }
 
 .support-title {
-  color: #0b0c19;
+  color: var(--stellar-text);
   font-size: 14px;
   font-family: "Poppins";
   font-weight: 600;
@@ -311,7 +311,7 @@ hr {
 }
 
 .support-text {
-  color: #62626a;
+  color: var(--stellar-muted);
   font-size: 12px;
   font-family: "Poppins";
   font-weight: 400;
@@ -359,7 +359,7 @@ hr {
   line-height: 1.45;
 }
 .settings-section-label {
-  color: #7b7b88;
+  color: var(--stellar-muted-2);
   font-size: 12px;
   font-family: "Poppins";
   font-weight: 700;
@@ -369,4 +369,179 @@ hr {
 }
 .settings-section-label--danger {
   color: #c04a4a;
+}
+
+.setting-item-disabled {
+  opacity: 0.62;
+}
+
+.stellar-apps-card {
+  border-radius: 20px;
+  background: #ffffff;
+  box-shadow: 0 6px 24px rgba(20, 24, 40, 0.05);
+  margin-bottom: 15px;
+  overflow: hidden;
+}
+
+.stellar-app-row {
+  width: 100%;
+  border: none;
+  background: transparent;
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) auto;
+  column-gap: 14px;
+  align-items: center;
+  padding: 16px;
+  text-align: left;
+  cursor: pointer;
+  font-family: "Poppins";
+}
+
+.stellar-app-row + .stellar-app-row {
+  border-top: 1px solid #f0f1f7;
+}
+
+.stellar-app-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 14px;
+  background: #f4f6fb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.stellar-app-icon ion-icon {
+  color: #2761fc;
+  font-size: 21px;
+}
+
+.stellar-app-copy {
+  min-width: 0;
+}
+
+.stellar-app-title {
+  color: var(--stellar-text);
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.stellar-app-description {
+  color: var(--stellar-muted);
+  font-size: 11px;
+  font-weight: 400;
+  line-height: 1.45;
+  margin-top: 3px;
+}
+
+.stellar-app-platforms {
+  color: #2761fc;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.35;
+  margin-top: 5px;
+}
+
+.stellar-app-chevron {
+  color: #a2a4af;
+  font-size: 20px;
+}
+
+:host-context(.stellar-dark-theme) {
+  ion-content,
+  ion-header,
+  ion-footer,
+  ion-toolbar {
+    --ion-background-color: var(--stellar-background);
+    --background: var(--stellar-background);
+  }
+
+  ion-title,
+  .section-title,
+  .setting-title,
+  .pass-note,
+  .password-helper-title,
+  .support-title,
+  .stellar-app-title {
+    color: var(--stellar-text);
+  }
+
+  ion-back-button,
+  .setting-helper-text,
+  .setting-status span,
+  .password-helper-text,
+  .pass-list li,
+  .support-text,
+  .stellar-app-description,
+  .stellar-app-chevron,
+  .setting-control--icon ion-icon,
+  .input-group ion-icon {
+    color: var(--stellar-muted);
+  }
+
+  ion-item,
+  .pass-info-box,
+  .stellar-apps-card {
+    --ion-background-color: var(--stellar-surface);
+    background: var(--stellar-surface);
+    box-shadow: var(--stellar-shadow);
+  }
+
+  ion-input {
+    --background: var(--stellar-surface-elevated);
+    --color: var(--stellar-text);
+    --placeholder-color: var(--stellar-muted-2);
+  }
+
+  ion-select,
+  .setting-status span.enabled,
+  .stellar-app-platforms,
+  .for-help a {
+    color: var(--stellar-primary);
+  }
+
+  .setting-status span::before {
+    background: var(--stellar-border);
+  }
+
+  .setting-status span.enabled::before {
+    background: var(--stellar-primary);
+  }
+
+  .stellar-app-row + .stellar-app-row,
+  hr {
+    border-color: var(--stellar-border);
+  }
+
+  .stellar-app-icon {
+    background: var(--stellar-primary-soft);
+  }
+
+  .stellar-app-icon ion-icon {
+    color: var(--stellar-primary);
+  }
+
+  .app-setting-support {
+    background: linear-gradient(180deg, var(--stellar-surface) 0%, var(--stellar-surface-elevated) 100%);
+    box-shadow: var(--stellar-shadow);
+  }
+
+  .password-warning-box {
+    background: rgba(255, 196, 9, 0.12);
+    border-color: rgba(255, 196, 9, 0.28);
+  }
+
+  .password-warning-text,
+  .password-warning-tips {
+    color: #F7C65F;
+  }
+
+  .setting-title--danger,
+  .setting-control--danger ion-icon,
+  .settings-section-label--danger,
+  .wipe-help--warning,
+  .disable-pass-btn {
+    color: var(--stellar-danger);
+  }
 }

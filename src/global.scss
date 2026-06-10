@@ -294,7 +294,7 @@
 }
 
 .ae-font .ae-picker-options .ae-picker-item.selected {
-  color: black!important;
+  color: var(--stellar-text) !important;
   background-color: #fff4c2;
   font-weight: bold!important;
 }
@@ -339,7 +339,7 @@ ion-item {
 }
 
 .logo-text {
-  color: #0b0c19;
+  color: var(--stellar-text);
   font-weight: 600;
   font-size: 15px;
   font-family: Poppins, sans-serif;
@@ -443,20 +443,20 @@ ion-input {
       position: absolute;
       top: 20px;
       left: 0;
-      --color: #000;
+      --color: var(--stellar-text);
     }
 
     .title {
       font-weight: 700;
       font-size: 20px;
       margin-bottom: 8px;
-      color: #000;
+      color: var(--stellar-text);
       text-align: center;
     }
 
     .subtitle {
       font-size: 14px;
-      color: #62626A;
+      color: var(--stellar-muted);
       margin-bottom: 24px;
       text-align: center;
     }
@@ -514,7 +514,7 @@ ion-input {
       .label-beforee-link {
         font-weight: 400;
         font-size: 12px;
-        color: #0B0C19;
+        color: var(--stellar-text);
       }
 
       a {
@@ -578,7 +578,7 @@ ion-input {
     text-align: center;
     font-size: 14px;
     margin-bottom: 16px;
-    color: #0B0C19;
+    color: var(--stellar-text);
 
     a {
       color: #2761FC;
@@ -834,7 +834,7 @@ ion-input {
 
 .note-actions-popover-item {
   --background: transparent;
-  --color: #0b0c19;
+  --color: var(--stellar-text);
   --border-radius: 14px;
   --inner-padding-end: 14px;
   --inner-padding-start: 2px;
@@ -848,7 +848,7 @@ ion-input {
 
 .note-actions-popover-item ion-icon {
   font-size: 20px;
-  color: #62626a;
+  color: var(--stellar-muted);
 }
 
 .note-actions-popover-item ion-label {
@@ -947,7 +947,7 @@ ion-input {
 
 .new-folder-sheet-title {
   text-align: center;
-  color: #0b0c19;
+  color: var(--stellar-text);
   font-size: 20px;
   font-weight: 600;
   letter-spacing: -0.02em;
@@ -972,7 +972,7 @@ ion-input {
 
 .new-folder-sheet-input {
   --background: transparent;
-  --color: #0b0c19;
+  --color: var(--stellar-text);
   --padding-start: 18px;
   --padding-end: 18px;
   --padding-top: 14px;
@@ -999,7 +999,7 @@ ion-input {
 
 .new-folder-sheet-cancel {
   --background: #ffffff;
-  --color: #0b0c19;
+  --color: var(--stellar-text);
   --border-radius: 18px;
   --box-shadow: 0 10px 24px rgba(11, 12, 25, 0.05);
   border: 1px solid #e7e9f2;
@@ -1010,4 +1010,531 @@ ion-input {
   --color: #ffffff;
   --border-radius: 18px;
   --box-shadow: 0 14px 30px rgba(39, 97, 252, 0.28);
+}
+
+body.stellar-dark-theme {
+  background: var(--stellar-background);
+  color: var(--stellar-text);
+}
+
+.stellar-dark-theme ion-app,
+.stellar-dark-theme ion-content,
+.stellar-dark-theme ion-header,
+.stellar-dark-theme ion-footer,
+.stellar-dark-theme ion-toolbar {
+  --background: var(--stellar-background);
+  --ion-background-color: var(--stellar-background);
+  --color: var(--stellar-text);
+  color: var(--stellar-text);
+}
+
+.stellar-dark-theme ion-title,
+.stellar-dark-theme ion-label,
+.stellar-dark-theme h1,
+.stellar-dark-theme h2,
+.stellar-dark-theme h3,
+.stellar-dark-theme p {
+  color: var(--stellar-text);
+}
+
+.stellar-dark-theme ion-item {
+  --background: var(--stellar-surface);
+  --ion-background-color: var(--stellar-surface);
+  --color: var(--stellar-text);
+  --border-color: var(--stellar-border);
+}
+
+.stellar-dark-theme ion-input,
+.stellar-dark-theme ion-textarea,
+.stellar-dark-theme ion-select {
+  --background: var(--stellar-surface-elevated);
+  --color: var(--stellar-text);
+  --placeholder-color: var(--stellar-muted-2);
+}
+
+.stellar-dark-theme ion-modal {
+  --background: var(--stellar-background);
+}
+
+.stellar-dark-theme ion-action-sheet {
+  --background: var(--stellar-surface);
+  --button-background: var(--stellar-surface);
+  --button-background-selected: var(--stellar-surface-elevated);
+  --button-color: var(--stellar-text);
+  --color: var(--stellar-text);
+}
+
+.stellar-dark-theme .action-sheet-group,
+.stellar-dark-theme .alert-wrapper,
+.stellar-dark-theme .toast-wrapper {
+  background: var(--stellar-surface) !important;
+  color: var(--stellar-text) !important;
+}
+
+.stellar-dark-theme .action-sheet-title,
+.stellar-dark-theme .action-sheet-sub-title,
+.stellar-dark-theme .alert-title,
+.stellar-dark-theme .alert-message,
+.stellar-dark-theme .alert-radio-label,
+.stellar-dark-theme .alert-checkbox-label {
+  color: var(--stellar-text) !important;
+}
+
+.stellar-dark-theme .action-sheet-button,
+.stellar-dark-theme .alert-button {
+  color: var(--stellar-primary) !important;
+}
+
+.stellar-dark-theme .angular-editor-toolbar,
+.stellar-dark-theme .angular-editor-toolbar-set button,
+.stellar-dark-theme .angular-editor .angular-editor-wrapper,
+.stellar-dark-theme .ae-picker-options {
+  background: var(--stellar-surface) !important;
+  color: var(--stellar-text) !important;
+  border-color: var(--stellar-border) !important;
+}
+
+.stellar-dark-theme .angular-editor-button.active,
+.stellar-dark-theme .angular-editor-toolbar-set button:active {
+  background: var(--stellar-surface-elevated) !important;
+  border-color: var(--stellar-border) !important;
+}
+
+body.stellar-dark-theme [style*="color: var(--stellar-text)"],
+body.stellar-dark-theme [style*="color:var(--stellar-text)"],
+body.stellar-dark-theme [style*="color: rgb(11, 12, 25)"] {
+  color: var(--stellar-text) !important;
+}
+
+body.stellar-dark-theme [style*="color: var(--stellar-muted)"],
+body.stellar-dark-theme [style*="color:var(--stellar-muted)"],
+body.stellar-dark-theme [style*="color: rgb(98, 98, 106)"] {
+  color: var(--stellar-muted) !important;
+}
+
+body.stellar-dark-theme [style*="background: #FFFFFF"],
+body.stellar-dark-theme [style*="background:#FFFFFF"],
+body.stellar-dark-theme [style*="background: #fff"],
+body.stellar-dark-theme [style*="background:#fff"],
+body.stellar-dark-theme [style*="background-color: #FFFFFF"],
+body.stellar-dark-theme [style*="background-color:#FFFFFF"],
+body.stellar-dark-theme [style*="background-color: #fff"],
+body.stellar-dark-theme [style*="background-color:#fff"] {
+  background: var(--stellar-surface) !important;
+  background-color: var(--stellar-surface) !important;
+}
+
+body.stellar-dark-theme [style*="background: #EAEAF0"],
+body.stellar-dark-theme [style*="background:#EAEAF0"],
+body.stellar-dark-theme [style*="background-color: #EAEAF0"],
+body.stellar-dark-theme [style*="background-color:#EAEAF0"] {
+  background: var(--stellar-surface-elevated) !important;
+  background-color: var(--stellar-surface-elevated) !important;
+}
+
+.stellar-dark-theme .confirmation-modal,
+.stellar-dark-theme .delete-modal,
+.stellar-dark-theme .resetpass-modal,
+.stellar-dark-theme .share-secret-modal,
+.stellar-dark-theme .modal-content,
+.stellar-dark-theme .auth-card,
+.stellar-dark-theme .login-card {
+  background: var(--stellar-surface) !important;
+  color: var(--stellar-text) !important;
+}
+
+/* Dark-mode text safety net: keeps legacy hardcoded title/label styles readable on dark surfaces. */
+body.stellar-dark-theme ion-title,
+body.stellar-dark-theme h1,
+body.stellar-dark-theme h2,
+body.stellar-dark-theme h3,
+body.stellar-dark-theme h4,
+body.stellar-dark-theme h5,
+body.stellar-dark-theme h6,
+body.stellar-dark-theme .title,
+body.stellar-dark-theme .section-title,
+body.stellar-dark-theme .setting-title,
+body.stellar-dark-theme .note-txt-title,
+body.stellar-dark-theme .desktop-notes-title,
+body.stellar-dark-theme .stellar-app-title,
+body.stellar-dark-theme .password-helper-title,
+body.stellar-dark-theme .support-title,
+body.stellar-dark-theme .login-title,
+body.stellar-dark-theme .account-name,
+body.stellar-dark-theme .app-branding-text,
+body.stellar-dark-theme .new-folder-sheet-title,
+body.stellar-dark-theme .delete-warning-title,
+body.stellar-dark-theme .folder-picker-title,
+body.stellar-dark-theme .folder-picker-name,
+body.stellar-dark-theme .editable-title-button,
+body.stellar-dark-theme .pass-note,
+body.stellar-dark-theme .logo-text {
+  color: var(--stellar-text) !important;
+  --color: var(--stellar-text) !important;
+}
+
+body.stellar-dark-theme p,
+body.stellar-dark-theme .subtitle,
+body.stellar-dark-theme .section-subtitle,
+body.stellar-dark-theme .setting-helper-text,
+body.stellar-dark-theme .desktop-notes-subtitle,
+body.stellar-dark-theme .stellar-app-description,
+body.stellar-dark-theme .new-folder-sheet-text,
+body.stellar-dark-theme .password-helper-text,
+body.stellar-dark-theme .support-text,
+body.stellar-dark-theme .pass-list li,
+body.stellar-dark-theme .note-txt,
+body.stellar-dark-theme .uuid,
+body.stellar-dark-theme .label-title,
+body.stellar-dark-theme .login-sub-title {
+  color: var(--stellar-muted) !important;
+}
+
+body.stellar-dark-theme ion-card,
+body.stellar-dark-theme .form-card,
+body.stellar-dark-theme .new-folder-sheet-card,
+body.stellar-dark-theme .note-actions-popover-list {
+  background: var(--stellar-surface) !important;
+  color: var(--stellar-text) !important;
+}
+
+body.stellar-dark-theme .new-folder-sheet-input,
+body.stellar-dark-theme .note-actions-popover-item,
+body.stellar-dark-theme .back-button {
+  --color: var(--stellar-text) !important;
+  color: var(--stellar-text) !important;
+}
+
+/* Stellar dark theme overlay fixes. Keep this global because Ionic overlays are mounted outside routed component scopes. */
+html.stellar-dark-theme,
+body.stellar-dark-theme {
+  background: var(--stellar-background) !important;
+  color: var(--stellar-text) !important;
+}
+
+body.stellar-dark-theme .app-lock-modal,
+body.stellar-dark-theme ion-modal.app-lock-modal {
+  --background: var(--stellar-background) !important;
+  --ion-background-color: var(--stellar-background) !important;
+  background: var(--stellar-background) !important;
+  color: var(--stellar-text) !important;
+}
+
+body.stellar-dark-theme .app-lock-modal::part(content) {
+  background: var(--stellar-background) !important;
+  color: var(--stellar-text) !important;
+}
+
+body.stellar-dark-theme .app-lock-content,
+body.stellar-dark-theme .app-lock-footer {
+  --background: var(--stellar-background) !important;
+  --ion-background-color: var(--stellar-background) !important;
+  background: var(--stellar-background) !important;
+  color: var(--stellar-text) !important;
+}
+
+body.stellar-dark-theme .app-lock-shell {
+  background: var(--stellar-background) !important;
+  color: var(--stellar-text) !important;
+}
+
+body.stellar-dark-theme .app-lock-brand-name,
+body.stellar-dark-theme .app-lock-title {
+  color: var(--stellar-text) !important;
+}
+
+body.stellar-dark-theme .app-lock-description {
+  color: var(--stellar-muted) !important;
+}
+
+body.stellar-dark-theme .app-lock-icon {
+  background: var(--stellar-surface) !important;
+  box-shadow: var(--stellar-shadow) !important;
+}
+
+body.stellar-dark-theme .app-lock-trust-line {
+  background: var(--stellar-primary-soft) !important;
+  color: var(--stellar-primary) !important;
+}
+
+body.stellar-dark-theme .app-lock-input-group,
+body.stellar-dark-theme .input-group.app-lock-input-group {
+  background: var(--stellar-surface-elevated) !important;
+  border-color: var(--stellar-border) !important;
+  color: var(--stellar-text) !important;
+}
+
+body.stellar-dark-theme .app-lock-input-group ion-input {
+  --background: transparent !important;
+  --color: var(--stellar-text) !important;
+  --placeholder-color: var(--stellar-muted-2) !important;
+  color: var(--stellar-text) !important;
+}
+
+body.stellar-dark-theme .app-lock-input-group ion-icon {
+  color: var(--stellar-muted) !important;
+}
+
+body.stellar-dark-theme .app-lock-secondary-button {
+  background: var(--stellar-surface) !important;
+  color: var(--stellar-primary) !important;
+  border: 1px solid var(--stellar-border) !important;
+}
+
+body.stellar-dark-theme .app-lock-reset-button {
+  color: var(--stellar-danger) !important;
+}
+
+body.stellar-dark-theme .home-notice-card,
+body.stellar-dark-theme .account-name-card,
+body.stellar-dark-theme .login-profile-box,
+body.stellar-dark-theme .action-item,
+body.stellar-dark-theme .desktop-notes-card,
+body.stellar-dark-theme .stellar-apps-card,
+body.stellar-dark-theme .settings-security-card,
+body.stellar-dark-theme .setting-row,
+body.stellar-dark-theme .danger-zone-card,
+body.stellar-dark-theme .note-card,
+body.stellar-dark-theme ion-item {
+  background: var(--stellar-surface) !important;
+  --background: var(--stellar-surface) !important;
+  --ion-background-color: var(--stellar-surface) !important;
+  color: var(--stellar-text) !important;
+  border-color: var(--stellar-border) !important;
+}
+
+body.stellar-dark-theme .home-notice-card--success,
+body.stellar-dark-theme .settings-security-card,
+body.stellar-dark-theme .about-hero-card {
+  background: linear-gradient(180deg, var(--stellar-surface) 0%, var(--stellar-surface-elevated) 100%) !important;
+}
+
+body.stellar-dark-theme .home-notice-close,
+body.stellar-dark-theme .home-notice-platforms button,
+body.stellar-dark-theme .desktop-platform-button,
+body.stellar-dark-theme .desktop-notes-icon,
+body.stellar-dark-theme .stellar-app-icon,
+body.stellar-dark-theme .setting-icon,
+body.stellar-dark-theme .folder-browser-empty-icon,
+body.stellar-dark-theme .folder-option-rename,
+body.stellar-dark-theme .new-folder-sheet-cancel {
+  background: var(--stellar-surface-elevated) !important;
+  --background: var(--stellar-surface-elevated) !important;
+  color: var(--stellar-text) !important;
+  border-color: var(--stellar-border) !important;
+}
+
+body.stellar-dark-theme .home-notice-title,
+body.stellar-dark-theme .desktop-notes-title,
+body.stellar-dark-theme .stellar-app-title,
+body.stellar-dark-theme .setting-row-title,
+body.stellar-dark-theme .setting-title,
+body.stellar-dark-theme .folder-browser-empty-title,
+body.stellar-dark-theme .folder-row-label,
+body.stellar-dark-theme .note-txt-title,
+body.stellar-dark-theme .note-title,
+body.stellar-dark-theme .about-title,
+body.stellar-dark-theme .about-feature-title,
+body.stellar-dark-theme .delete-account-title,
+body.stellar-dark-theme .privacy-shield-card h2 {
+  color: var(--stellar-text) !important;
+}
+
+body.stellar-dark-theme .home-notice-text,
+body.stellar-dark-theme .desktop-notes-subtitle,
+body.stellar-dark-theme .stellar-app-description,
+body.stellar-dark-theme .setting-row-subtitle,
+body.stellar-dark-theme .setting-subtitle,
+body.stellar-dark-theme .folder-browser-empty-text,
+body.stellar-dark-theme .note-txt,
+body.stellar-dark-theme .about-description,
+body.stellar-dark-theme .about-feature-text,
+body.stellar-dark-theme .delete-account-text,
+body.stellar-dark-theme .privacy-shield-card p {
+  color: var(--stellar-muted) !important;
+}
+
+body.stellar-dark-theme .new-folder-modal,
+body.stellar-dark-theme .folder-picker-modal,
+body.stellar-dark-theme .confirmation-popup,
+body.stellar-dark-theme .delete-note-modal,
+body.stellar-dark-theme .delete-folder-modal,
+body.stellar-dark-theme .resetpass-modal,
+body.stellar-dark-theme .note-locked-modal,
+body.stellar-dark-theme .share-secret-modal {
+  --background: var(--stellar-background) !important;
+  background: var(--stellar-background) !important;
+  color: var(--stellar-text) !important;
+}
+
+body.stellar-dark-theme .modal-wrapper,
+body.stellar-dark-theme .ion-page,
+body.stellar-dark-theme ion-popover::part(content),
+body.stellar-dark-theme ion-alert::part(content),
+body.stellar-dark-theme ion-action-sheet::part(content) {
+  background: var(--stellar-surface) !important;
+  color: var(--stellar-text) !important;
+}
+
+/* Final dark-mode precedence pass for routed pages and the unlock overlay. */
+body.stellar-dark-theme .ion-page {
+  background: var(--stellar-background) !important;
+  color: var(--stellar-text) !important;
+}
+
+body.stellar-dark-theme ion-modal.app-lock-modal,
+body.stellar-dark-theme ion-modal.app-lock-modal::part(content),
+body.stellar-dark-theme ion-modal.app-lock-modal .ion-page,
+body.stellar-dark-theme ion-modal.app-lock-modal .app-lock-content,
+body.stellar-dark-theme ion-modal.app-lock-modal .app-lock-footer,
+body.stellar-dark-theme ion-modal.app-lock-modal .app-lock-shell {
+  --background: var(--stellar-background) !important;
+  --ion-background-color: var(--stellar-background) !important;
+  background: var(--stellar-background) !important;
+  color: var(--stellar-text) !important;
+}
+
+body.stellar-dark-theme ion-modal.app-lock-modal .app-lock-brand-name,
+body.stellar-dark-theme ion-modal.app-lock-modal .app-lock-title {
+  color: var(--stellar-text) !important;
+}
+
+body.stellar-dark-theme ion-modal.app-lock-modal .app-lock-description {
+  color: var(--stellar-muted) !important;
+}
+
+body.stellar-dark-theme ion-modal.app-lock-modal .app-lock-icon,
+body.stellar-dark-theme ion-modal.app-lock-modal .app-lock-secondary-button {
+  background: var(--stellar-surface) !important;
+  color: var(--stellar-primary) !important;
+  border-color: var(--stellar-border) !important;
+}
+
+body.stellar-dark-theme ion-modal.app-lock-modal .app-lock-input-group {
+  background: var(--stellar-surface-elevated) !important;
+  border-color: var(--stellar-border) !important;
+}
+
+/* A-Z dark-mode QA pass: header icons, segmented filters, refresher, skeletons and legacy light surfaces. */
+body.stellar-dark-theme ion-toolbar ion-button,
+body.stellar-dark-theme ion-toolbar ion-button::part(native),
+body.stellar-dark-theme ion-toolbar ion-icon,
+body.stellar-dark-theme ion-toolbar .cancel-btn,
+body.stellar-dark-theme ion-toolbar .home-header-icon-button,
+body.stellar-dark-theme ion-toolbar .home-header-icon-button ion-icon,
+body.stellar-dark-theme .custom-back-button,
+body.stellar-dark-theme ion-back-button,
+body.stellar-dark-theme ion-back-button::part(icon),
+body.stellar-dark-theme ion-back-button::part(text) {
+  --color: var(--stellar-text) !important;
+  color: var(--stellar-text) !important;
+  fill: var(--stellar-text) !important;
+  stroke: var(--stellar-text) !important;
+}
+
+body.stellar-dark-theme ion-toolbar img,
+body.stellar-dark-theme ion-header img {
+  filter: brightness(0) invert(1) !important;
+  opacity: 0.96;
+}
+
+body.stellar-dark-theme ion-toolbar img.app-branding-logo,
+body.stellar-dark-theme ion-toolbar img.app-lock-logo,
+body.stellar-dark-theme ion-header img.app-branding-logo,
+body.stellar-dark-theme ion-header img.app-lock-logo,
+body.stellar-dark-theme ion-header img[src*="note-logo"],
+body.stellar-dark-theme ion-toolbar img[src*="note-logo"] {
+  filter: none !important;
+}
+
+body.stellar-dark-theme .favorites-filter {
+  background: rgba(27, 34, 55, 0.74) !important;
+  border: 1px solid var(--stellar-border) !important;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.28) !important;
+}
+
+body.stellar-dark-theme .favorites-filter ion-segment,
+body.stellar-dark-theme .favorites-filter ion-segment-button {
+  --background: transparent !important;
+  --color: var(--stellar-muted) !important;
+  --color-checked: var(--stellar-text) !important;
+  color: var(--stellar-muted) !important;
+}
+
+body.stellar-dark-theme .favorites-filter ion-segment-button.segment-button-checked,
+body.stellar-dark-theme .favorites-filter ion-segment-button[aria-selected="true"] {
+  --color: var(--stellar-text) !important;
+  color: var(--stellar-text) !important;
+}
+
+body.stellar-dark-theme .favorites-filter ion-segment-button::part(native) {
+  color: inherit !important;
+}
+
+body.stellar-dark-theme .favorites-filter-line {
+  background: linear-gradient(90deg, #6F8DFF 0%, #8EA3FF 100%) !important;
+  box-shadow: 0 0 18px rgba(111, 141, 255, 0.34) !important;
+}
+
+body.stellar-dark-theme ion-refresher,
+body.stellar-dark-theme ion-refresher-content {
+  --color: var(--stellar-primary) !important;
+  --pulling-icon-color: var(--stellar-primary) !important;
+  --refreshing-spinner-color: var(--stellar-primary) !important;
+  color: var(--stellar-primary) !important;
+}
+
+body.stellar-dark-theme ion-skeleton-text,
+body.stellar-dark-theme .home-skeleton ion-skeleton-text {
+  --background: rgba(255, 255, 255, 0.08) !important;
+  --background-rgb: 255, 255, 255 !important;
+  opacity: 1 !important;
+}
+
+body.stellar-dark-theme .home-skeleton-card {
+  background: var(--stellar-surface) !important;
+  border: 1px solid var(--stellar-border) !important;
+}
+
+body.stellar-dark-theme .home-skeleton-segment ion-skeleton-text {
+  --background: rgba(255, 255, 255, 0.10) !important;
+}
+
+body.stellar-dark-theme .toolbar-bottom,
+body.stellar-dark-theme .new-folder-sheet,
+body.stellar-dark-theme .new-folder-sheet-input-wrap,
+body.stellar-dark-theme .folder-picker-sheet,
+body.stellar-dark-theme .sheet,
+body.stellar-dark-theme .card,
+body.stellar-dark-theme .modal-card {
+  background: var(--stellar-surface) !important;
+  background-color: var(--stellar-surface) !important;
+  color: var(--stellar-text) !important;
+  border-color: var(--stellar-border) !important;
+}
+
+body.stellar-dark-theme ion-input,
+body.stellar-dark-theme ion-modal ion-input,
+body.stellar-dark-theme .new-folder-sheet-input {
+  --background: var(--stellar-surface-elevated) !important;
+  --color: var(--stellar-text) !important;
+  --placeholder-color: var(--stellar-muted-2) !important;
+}
+
+body.stellar-dark-theme .delete-btn {
+  background: var(--stellar-surface-elevated) !important;
+  color: var(--stellar-danger) !important;
+}
+
+body.stellar-dark-theme .folder-row-chevron,
+body.stellar-dark-theme ion-item ion-icon,
+body.stellar-dark-theme .input-group ion-icon {
+  color: var(--stellar-muted) !important;
+}
+
+body.stellar-dark-theme .folder-row-icon-all,
+body.stellar-dark-theme .folder-row-icon-folder,
+body.stellar-dark-theme .folder-row-icon-unfiled {
+  background: var(--stellar-primary-soft) !important;
+  color: var(--stellar-primary) !important;
 }
