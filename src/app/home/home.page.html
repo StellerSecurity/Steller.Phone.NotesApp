@@ -91,86 +91,68 @@
   </ion-progress-bar>
 </ion-header>
 
-<ion-modal trigger="app-ask-password" [isOpen]="!should_display">
+<ion-modal trigger="app-ask-password" [isOpen]="!should_display" class="app-lock-modal">
   <ng-template>
-    <ion-content class="ion-padding">
-      <div align="center">
-        <div class="logo-container app-ask-password-logo-container">
-          <img class="logo-img" src="./assets/note-logo.png" alt="">
-          <div class="logo-text">{{'appNameStellarPrivateNotes' | translate}}</div>
+    <ion-content class="app-lock-content ion-padding">
+      <div class="app-lock-shell">
+        <div class="app-lock-brand">
+          <img class="app-lock-logo" src="./assets/note-logo.png" alt="">
+          <div class="app-lock-brand-name">{{ 'appNameStellarPrivateNotes' | translate }}</div>
         </div>
+
+        <div class="app-lock-icon">
+          <img src="assets/icon-lock.svg" alt="">
+        </div>
+
+        <div class="app-lock-title">
+          {{ 'appIsLocked' | translate }}
+        </div>
+
+        <p class="app-lock-description">
+          {{ 'enterYourPasswordToGetAccessToYourNotes' | translate }}
+        </p>
+
+        <div class="app-lock-trust-line">
+          <ion-icon name="shield-checkmark-outline"></ion-icon>
+          <span>{{ 'yourNotesAreEncryptedOnThisDevice' | translate }}</span>
+        </div>
+
+        <div class="input-group app-lock-input-group">
+          <ion-input
+            type="{{ showPassword ? 'text' : 'password' }}"
+            placeholder="{{ 'enterYourPassword' | translate }}"
+            (keyup)="ionInputAppUnlockInput($event)"
+            [(ngModel)]="input_password_app_unlock"
+            autofocus="true">
+          </ion-input>
+
+          <ion-icon
+            slot="end"
+            [name]="showPassword ? 'eye-off' : 'eye'"
+            (click)="togglePasswordVisibility()">
+          </ion-icon>
+        </div>
+
+        <button type="button" class="app-lock-primary-button" (click)="unlockNotesApp()">
+          {{ 'unlock' | translate }}
+        </button>
+
+        <button
+          *ngIf="biometricUnlockAvailable && biometricUnlockEnabled"
+          type="button"
+          class="app-lock-secondary-button"
+          (click)="unlockNotesAppWithBiometrics()">
+          <ion-icon name="finger-print-outline"></ion-icon>
+          <span>{{ 'unlockWithBiometrics' | translate }}</span>
+        </button>
       </div>
-
-      <br><br><br>
-
-      <div align="center">
-        <img src="assets/icon-lock.svg">
-      </div>
-
-      <br><br>
-
-      <div style="text-align: center;
-                  font-family: Poppins;
-                  font-size: 20px;
-                  font-style: normal;
-                  font-weight: 700;
-                  line-height: 150%;">
-        {{'appIsLocked' | translate}}
-      </div>
-
-      <p style="text-align: center;
-                color: #62626A;
-                font-family: Poppins;
-                font-size: 14px;
-                font-style: normal;
-                font-weight: 400;
-                line-height: 150%;">
-        {{'enterYourPasswordToGetAccessToYourNotes' | translate}}
-      </p>
-
-      <div class="input-group" style="position: relative;">
-        <ion-input
-          type="{{ showPassword ? 'text' : 'password' }}"
-          placeholder="{{'enterYourPassword' | translate}}"
-          (keyup)="ionInputAppUnlockInput($event)"
-          [(ngModel)]="input_password_app_unlock"
-          autofocus="true">
-        </ion-input>
-
-        <ion-icon
-          slot="end"
-          [name]="showPassword ? 'eye-off' : 'eye'"
-          (click)="togglePasswordVisibility()">
-        </ion-icon>
-      </div>
-
-      <span style="display: flex;
-                   padding: 14px 24px;
-                   justify-content: center;
-                   align-items: center;
-                   gap: 10px;
-                   align-self: stretch;
-                   background: #2761FC;
-                   color: #fff;
-                   border-radius: 250px"
-            (click)="unlockNotesApp()">
-        {{'unlock' | translate}}
-      </span>
-
-      <br><br>
     </ion-content>
 
-    <ion-footer style="--ion-background-color: #F6F6FD; padding: 20px; position: relative; top: -30px; background: #F6F6FD; box-shadow: none;">
-      <div align="center">
-        <span
-          style="font-family: Poppins; text-align: center; font-size: 14px; color: #E10000; font-style: normal; font-weight: 600; line-height: 150%;"
-          (click)="resetPassword()">
-          <img src="assets/tabler-icon-restore.svg">
-          <span style="position: relative; top: -6px; left: 10px">
-            {{'resetPassword' | translate}}
-          </span>
-        </span>
-      </div>
+    <ion-footer class="app-lock-footer">
+      <button type="button" class="app-lock-reset-button" (click)="resetPassword()">
+        <img src="assets/tabler-icon-restore.svg" alt="">
+        <span>{{ 'resetPassword' | translate }}</span>
+      </button>
     </ion-footer>
   </ng-template>
 </ion-modal>
@@ -221,6 +203,47 @@
   </div>
 
   <ng-container *ngIf="!shouldShowHomeSkeleton">
+    <div class="home-notice-stack" *ngIf="!checkboxOpened && !searchMode && (showSyncEnabledCard || showDesktopAfterSyncCard)">
+      <div class="home-notice-card home-notice-card--success" *ngIf="showSyncEnabledCard">
+        <div class="home-notice-icon">
+          <ion-icon name="cloud-done-outline"></ion-icon>
+        </div>
+        <div class="home-notice-copy">
+          <div class="home-notice-title">{{ 'syncEnabled' | translate }}</div>
+          <div class="home-notice-text">{{ 'syncEnabledDescription' | translate }}</div>
+        </div>
+        <button type="button" class="home-notice-close" (click)="dismissSyncEnabledCard()">
+          <ion-icon name="close-outline"></ion-icon>
+        </button>
+      </div>
+
+      <div class="home-notice-card" *ngIf="showDesktopAfterSyncCard">
+        <div class="home-notice-icon">
+          <ion-icon name="desktop-outline"></ion-icon>
+        </div>
+        <div class="home-notice-copy">
+          <div class="home-notice-title">{{ 'useNotesOnYourComputer' | translate }}</div>
+          <div class="home-notice-text">{{ 'downloadForWindowsMacOrLinux' | translate }}</div>
+          <div class="home-notice-platforms">
+            <button type="button" (click)="openDesktopDownload('https://stellarsecurity.com/download/platform/windows?top=notes')">
+              <ion-icon name="logo-windows"></ion-icon>
+              <span>Windows</span>
+            </button>
+            <button type="button" (click)="openDesktopDownload('https://stellarsecurity.com/download/platform/mac?top=notes')">
+              <ion-icon name="logo-apple"></ion-icon>
+              <span>macOS</span>
+            </button>
+            <button type="button" (click)="openDesktopDownload('https://stellarsecurity.com/download/platform/linux?top=notes')">
+              <ion-icon name="terminal-outline"></ion-icon>
+              <span>Linux</span>
+            </button>
+          </div>
+        </div>
+        <button type="button" class="home-notice-close" (click)="dismissDesktopAfterSyncCard()">
+          <ion-icon name="close-outline"></ion-icon>
+        </button>
+      </div>
+    </div>
     <div
       *ngIf="checkboxOpened"
       class="checkbox-dismiss-edge"

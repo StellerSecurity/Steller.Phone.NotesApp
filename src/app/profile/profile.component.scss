@@ -129,6 +129,93 @@ ion-toolbar {
     }
   }
 
+  .desktop-notes-card {
+    border-radius: 20px;
+    background: #fff;
+    padding: 16px;
+    margin-bottom: 16px;
+    --ion-background-color: #fff;
+  }
+
+  .desktop-notes-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .desktop-notes-icon {
+    width: 42px;
+    height: 42px;
+    min-width: 42px;
+    border-radius: 14px;
+    background: #F4F6FB;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    ion-icon {
+      width: 22px;
+      height: 22px;
+      color: #2761FC;
+    }
+  }
+
+  .desktop-notes-copy {
+    min-width: 0;
+    flex: 1;
+  }
+
+  .desktop-notes-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: #0B0C19;
+    line-height: 1.25;
+    letter-spacing: -0.01em;
+  }
+
+  .desktop-notes-subtitle {
+    margin-top: 4px;
+    font-size: 12px;
+    font-weight: 500;
+    color: #62626A;
+    line-height: 1.35;
+  }
+
+  .desktop-platforms {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-top: 14px;
+  }
+
+  .desktop-platform-button {
+    height: 40px;
+    border: none;
+    border-radius: 999px;
+    background: #F4F6FB;
+    color: #0B0C19;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    padding: 0 12px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+
+    ion-icon {
+      font-size: 16px;
+      color: #2761FC;
+      flex-shrink: 0;
+    }
+
+    span {
+      display: inline-block;
+      line-height: 1;
+    }
+  }
+
   .action-item-danger {
     ion-icon {
       color: #c62828;

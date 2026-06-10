@@ -16,7 +16,6 @@
 
 <ion-content [fullscreen]="true" class="ion-padding">
   <div class="account-menu-content" *ngIf="!isLoading">
-    <!-- Account Name Card -->
     <div *ngIf="isLoggedIn; else loginBlock">
       <div class="account-name-card">
         <div class="label-title">{{'accountName' | translate}}</div>
@@ -58,6 +57,49 @@
     <div (click)="goToAbout()" class="action-item">
       <ion-icon name="information-circle-outline" slot="start"></ion-icon>
       <ion-label>{{'about' | translate}}</ion-label>
+    </div>
+
+    <div class="desktop-notes-card">
+      <div class="desktop-notes-header">
+        <div class="desktop-notes-icon">
+          <ion-icon name="desktop-outline"></ion-icon>
+        </div>
+
+        <div class="desktop-notes-copy">
+          <div class="desktop-notes-title">
+            {{ 'getNotesForDesktop' | translate }}
+          </div>
+          <div class="desktop-notes-subtitle">
+            {{ 'desktopAppsDescription' | translate }}
+          </div>
+        </div>
+      </div>
+
+      <div class="desktop-platforms">
+        <button
+          type="button"
+          class="desktop-platform-button"
+          (click)="openDesktopNotes($event, desktopDownloadUrls.windows)">
+          <ion-icon name="logo-windows"></ion-icon>
+          <span>Windows</span>
+        </button>
+
+        <button
+          type="button"
+          class="desktop-platform-button"
+          (click)="openDesktopNotes($event, desktopDownloadUrls.mac)">
+          <ion-icon name="logo-apple"></ion-icon>
+          <span>macOS</span>
+        </button>
+
+        <button
+          type="button"
+          class="desktop-platform-button"
+          (click)="openDesktopNotes($event, desktopDownloadUrls.linux)">
+          <ion-icon name="logo-tux"></ion-icon>
+          <span>Linux</span>
+        </button>
+      </div>
     </div>
 
     <div *ngIf="isLoggedIn" (click)="confirmLogout()" class="action-item-logout">

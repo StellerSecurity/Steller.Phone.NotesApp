@@ -1,5 +1,5 @@
 import { AfterViewInit, Component, ViewChild } from '@angular/core';
-import { AlertController, IonModal, IonSelect, ModalController, ToastController } from "@ionic/angular";
+import { ActionSheetController, AlertController, IonModal, IonSelect, ModalController, ToastController } from "@ionic/angular";
 import { Router } from '@angular/router';
 import { NotesService } from "../services/notes.service";
 import { CryptoService } from "../services/crypto.service";
@@ -10,6 +10,7 @@ import { evaluatePasswordStrength, getWeakPasswordEducationKeys, isPasswordAccep
 import { ScreenshotProtectionService } from '../services/screenshot-protection.service';
 import { AppHapticsService } from '../services/app-haptics.service';
 import { AuthService } from '../services/auth.service';
+import { BiometricUnlockService } from '../services/biometric-unlock.service';
 
 @Component({
   selector: 'app-app-settings',
@@ -44,6 +45,74 @@ export class AppSettingsPage implements AfterViewInit {
   public selectedLanguage = 'system';
   public languageOptions = this.translatorService.getSupportedLanguageOptions();
   public isLoggedIn = false;
+  public biometricUnlockAvailable = false;
+  public biometricUnlockEnabled = false;
+
+  public readonly desktopDownloadUrls = {
+    windows: 'https://stellarsecurity.com/download/platform/windows?top=notes',
+    linux: 'https://stellarsecurity.com/download/platform/linux?top=notes',
+    mac: 'https://stellarsecurity.com/download/platform/mac?top=notes',
+  };
+
+  public readonly stellarApps = {
+    vpn: {
+      downloadTitleKey: 'downloadStellarVpn',
+      descriptionKey: 'stellarVpnDescription',
+      platforms: [
+        {
+          labelKey: 'downloadForIos',
+          icon: 'logo-apple',
+          url: 'https://stellarsecurity.com/download/platform/ios?top=vpn',
+        },
+        {
+          labelKey: 'downloadForAndroid',
+          icon: 'logo-android',
+          url: 'https://stellarsecurity.com/download/platform/android?top=vpn',
+        },
+        {
+          labelKey: 'downloadForMacos',
+          icon: 'logo-apple',
+          url: 'https://stellarsecurity.com/download/platform/mac?top=vpn',
+        },
+        {
+          labelKey: 'downloadForWindows',
+          icon: 'logo-windows',
+          url: 'https://stellarsecurity.com/download/platform/windows?top=vpn',
+        },
+        {
+          labelKey: 'downloadForLinux',
+          icon: 'terminal-outline',
+          url: 'https://stellarsecurity.com/download/platform/linux?top=vpn',
+        },
+      ],
+    },
+    antivirus: {
+      downloadTitleKey: 'downloadStellarAntivirus',
+      descriptionKey: 'stellarAntivirusDescription',
+      platforms: [
+        {
+          labelKey: 'downloadForAndroid',
+          icon: 'logo-android',
+          url: 'https://stellarsecurity.com/download/platform/android?top=antivirus',
+        },
+        {
+          labelKey: 'downloadForMacos',
+          icon: 'logo-apple',
+          url: 'https://stellarsecurity.com/download/platform/mac?top=antivirus',
+        },
+        {
+          labelKey: 'downloadForWindows',
+          icon: 'logo-windows',
+          url: 'https://stellarsecurity.com/download/platform/windows?top=antivirus',
+        },
+        {
+          labelKey: 'downloadForLinux',
+          icon: 'terminal-outline',
+          url: 'https://stellarsecurity.com/download/platform/linux?top=antivirus',
+        },
+      ],
+    },
+  } as const;
 
   @ViewChild(IonModal) modal: IonModal;
   @ViewChild('autoLockSelect') autoLockSelect!: IonSelect;
@@ -63,6 +132,8 @@ export class AppSettingsPage implements AfterViewInit {
     private appHaptics: AppHapticsService,
     public authService: AuthService,
     private router: Router,
+    private biometricUnlockService: BiometricUnlockService,
+    private actionSheetController: ActionSheetController,
   ) {}
 
   async ionViewWillEnter(): Promise<void> {
@@ -77,6 +148,7 @@ export class AppSettingsPage implements AfterViewInit {
     this.hapticsEnabled = await this.appHaptics.isEnabled();
     this.selectedLanguage = await this.translatorService.getLanguagePreference();
     this.languageOptions = this.translatorService.getSupportedLanguageOptions();
+    await this.refreshBiometricState();
   }
 
   ionViewDidEnter() {
@@ -93,6 +165,7 @@ export class AppSettingsPage implements AfterViewInit {
     this.appWipeAfterDays = this.noteService.getAppWipeAfterDays();
     this.clipboardAutoClearSeconds = this.noteService.getClipboardAutoClearSeconds();
     this.privacyModeEnabled = this.noteService.isPrivacyModeEnabled();
+    this.refreshBiometricState().then(() => {});
   }
 
   cancel() {
@@ -191,6 +264,7 @@ export class AppSettingsPage implements AfterViewInit {
       this.noteService.recordSuccessfulAppUnlock();
       await this.noteService.flushPersistence();
       await this.screenshotProtectionService.applyCurrentSetting(true);
+      await this.biometricUnlockService.refreshStoredPassword(this.notesAppPassword);
       this.password_enabled = true;
       this.appPasswordChallenge = true;
       this.resetPasswordFormState();
@@ -246,6 +320,8 @@ export class AppSettingsPage implements AfterViewInit {
             this.noteService.clearAppUnlockFailures();
             this.noteService.setNotesAppPassword('');
             this.noteService.setAppPasswordChallengeEnabled(false);
+            await this.biometricUnlockService.setEnabled(false);
+            this.biometricUnlockEnabled = false;
             await this.noteService.flushPersistence();
             await this.screenshotProtectionService.applyCurrentSetting(false);
             this.password_enabled = false;
@@ -482,6 +558,147 @@ export class AppSettingsPage implements AfterViewInit {
   public async toggleScreenshotProtectionFromRow() {
     this.screenshotProtectionEnabled = !this.screenshotProtectionEnabled;
     await this.screenshotProtectionChange();
+  }
+
+
+  private async refreshBiometricState(): Promise<void> {
+    const availability = await this.biometricUnlockService.isAvailable();
+    this.biometricUnlockAvailable = availability.available;
+    this.biometricUnlockEnabled = await this.biometricUnlockService.isEnabled();
+
+    if (!this.biometricUnlockAvailable && this.biometricUnlockEnabled) {
+      await this.biometricUnlockService.setEnabled(false);
+      this.biometricUnlockEnabled = false;
+    }
+  }
+
+
+  private getBiometricPromptLabels() {
+    return {
+      reason: this.allTranslations?.biometricPromptReason ?? 'Unlock Stellar Private Notes',
+      title: this.allTranslations?.biometricPromptTitle ?? 'Unlock Notes',
+      subtitle: this.allTranslations?.biometricPromptSubtitle ?? 'Use your device biometrics to unlock your private notes.',
+      description: this.allTranslations?.biometricPromptDescription ?? 'Your notes remain encrypted on this device.',
+      negativeButtonText: this.allTranslations?.usePassword ?? 'Use Password',
+    };
+  }
+
+  public async biometricUnlockChange() {
+    await this.appHaptics.selectionChanged();
+
+    if (!this.password_enabled) {
+      this.biometricUnlockEnabled = false;
+      return;
+    }
+
+    if (this.biometricUnlockEnabled) {
+      const password = this.noteService.getNotesAppPassword();
+
+      if (!password) {
+        this.biometricUnlockEnabled = false;
+        const toast = await this.toastController.create({
+          message: this.allTranslations?.unlockAppBeforeEnablingBiometrics ?? 'Unlock the app with your password before enabling biometrics.',
+          duration: 3000,
+          position: 'bottom',
+        });
+        await this.appHaptics.warning();
+        await toast.present();
+        return;
+      }
+
+      const enabled = await this.biometricUnlockService.enableWithPassword(password, this.getBiometricPromptLabels());
+      this.biometricUnlockEnabled = enabled;
+
+      const toast = await this.toastController.create({
+        message: enabled
+          ? (this.allTranslations?.biometricUnlockEnabledMessage ?? 'Biometric unlock is enabled.')
+          : (this.allTranslations?.biometricUnlockUnavailableMessage ?? 'Biometric unlock is not available on this device.'),
+        duration: 3000,
+        position: 'bottom',
+      });
+      await (enabled ? this.appHaptics.success() : this.appHaptics.warning());
+      await toast.present();
+      return;
+    }
+
+    await this.biometricUnlockService.setEnabled(false);
+    this.biometricUnlockEnabled = false;
+  }
+
+  public async toggleBiometricUnlockFromRow() {
+    if (!this.biometricUnlockAvailable) {
+      const toast = await this.toastController.create({
+        message: this.allTranslations?.biometricUnlockUnavailableMessage ?? 'Biometric unlock is not available on this device.',
+        duration: 3000,
+        position: 'bottom',
+      });
+      await this.appHaptics.warning();
+      await toast.present();
+      return;
+    }
+
+    this.biometricUnlockEnabled = !this.biometricUnlockEnabled;
+    await this.biometricUnlockChange();
+  }
+
+  public async openDesktopDownloads() {
+    await this.appHaptics.tap();
+
+    const actionSheet = await this.actionSheetController.create({
+      header: this.allTranslations?.getNotesForDesktop ?? 'Get Notes for desktop',
+      subHeader: this.allTranslations?.desktopAppsDescription ?? 'Available for Windows, macOS and Linux.',
+      buttons: [
+        {
+          text: this.allTranslations?.downloadForWindows ?? 'Download for Windows',
+          icon: 'logo-windows',
+          handler: () => this.openExternalUrl(this.desktopDownloadUrls.windows),
+        },
+        {
+          text: this.allTranslations?.downloadForMacos ?? 'Download for macOS',
+          icon: 'logo-apple',
+          handler: () => this.openExternalUrl(this.desktopDownloadUrls.mac),
+        },
+        {
+          text: this.allTranslations?.downloadForLinux ?? 'Download for Linux',
+          icon: 'terminal-outline',
+          handler: () => this.openExternalUrl(this.desktopDownloadUrls.linux),
+        },
+        {
+          text: this.allTranslations?.cancel ?? 'Cancel',
+          role: 'cancel',
+        },
+      ],
+    });
+
+    await actionSheet.present();
+  }
+
+  public async openStellarAppDownloads(product: 'vpn' | 'antivirus') {
+    await this.appHaptics.tap();
+
+    const app = this.stellarApps[product];
+    const actionSheet = await this.actionSheetController.create({
+      header: this.allTranslations?.[app.downloadTitleKey] ?? app.downloadTitleKey,
+      subHeader: this.allTranslations?.[app.descriptionKey] ?? app.descriptionKey,
+      buttons: [
+        ...app.platforms.map((platform) => ({
+          text: this.allTranslations?.[platform.labelKey] ?? platform.labelKey,
+          icon: platform.icon,
+          handler: () => this.openExternalUrl(platform.url),
+        })),
+        {
+          text: this.allTranslations?.cancel ?? 'Cancel',
+          role: 'cancel',
+        },
+      ],
+    });
+
+    await actionSheet.present();
+  }
+
+  private openExternalUrl(url: string) {
+    this.appHaptics.tap();
+    window.open(url, '_blank', 'noopener,noreferrer');
   }
 
   public goToDeleteAccount() {
