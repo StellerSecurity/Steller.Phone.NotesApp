@@ -24,3 +24,15 @@
   margin: 4px 0;
   line-height: 1.45;
 }
+
+:host-context(.stellar-dark-theme) {
+  .password-warning-box {
+    background: rgba(255, 196, 9, 0.12);
+    border-color: rgba(255, 196, 9, 0.28);
+  }
+
+  .password-warning-text,
+  .password-warning-tips {
+    color: #F7C65F;
+  }
+}

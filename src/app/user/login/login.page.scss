@@ -18,7 +18,7 @@ ion-title {
   font-size: 18px;
   font-family: 'Poppins';
   font-weight: 400;
-  color: #0B0C19;
+  color: var(--stellar-text);
 }
 
 .header-md {
@@ -47,7 +47,7 @@ ion-button.p {
 
 ion-input {
   --background: #EAEAF0;
-  --color: #62626A;
+  --color: var(--stellar-muted);
   --padding-bottom: 16px;
   --padding-end: 24px;
   --padding-start: 24px;
@@ -74,7 +74,7 @@ ion-icon.lock-icon {
     z-index: 9;
     transform: translateY(-50%);
     font-size: 20px;
-    color: #62626A;
+    color: var(--stellar-muted);
   }
 }
 .pass-list {
@@ -82,7 +82,7 @@ ion-icon.lock-icon {
   list-style: none;
   margin: 0;
   li {
-    color: #62626A;
+    color: var(--stellar-muted);
     font-family: 'Poppins';
     font-size: 12px;
     font-weight: 400;
@@ -95,7 +95,7 @@ ion-icon.lock-icon {
   }
 }
 .pass-note {
-  font-size: 12px; font-family: 'Poppins'; font-weight: 600; color: #0B0C19;
+  font-size: 12px; font-family: 'Poppins'; font-weight: 600; color: var(--stellar-text);
 }
 .pass-info-box {
   background-color: #FFFFFF;
@@ -112,3 +112,38 @@ ion-icon.lock-icon {
   border: none !important;
 }
 
+
+:host-context(.stellar-dark-theme) {
+  ion-content,
+  ion-header,
+  ion-footer,
+  ion-toolbar {
+    --ion-background-color: var(--stellar-background);
+    --background: var(--stellar-background);
+    background: var(--stellar-background);
+    color: var(--stellar-text);
+  }
+
+  ion-textarea,
+  .pass-info-box {
+    background: var(--stellar-surface);
+    background-color: var(--stellar-surface);
+    color: var(--stellar-text);
+  }
+
+  ion-input {
+    --background: var(--stellar-surface-elevated);
+    --color: var(--stellar-text);
+    --placeholder-color: var(--stellar-muted-2);
+  }
+
+  ion-title,
+  .pass-note {
+    color: var(--stellar-text);
+  }
+
+  .pass-list li,
+  .input-group ion-icon {
+    color: var(--stellar-muted);
+  }
+}

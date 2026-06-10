@@ -1,6 +1,5 @@
 import { Component, NgZone } from '@angular/core';
 import { TranslatorService } from './services/translator.service';
-import { StatusBar, Style } from '@capacitor/status-bar';
 import { Storage as IonicStorage } from '@ionic/storage-angular';
 import { SyncWorkerService } from './services/sync-worker.service';
 import { NotesService } from './services/notes.service';
@@ -8,6 +7,7 @@ import { Keyboard, KeyboardResize } from '@capacitor/keyboard';
 import { Capacitor } from '@capacitor/core';
 import { App } from '@capacitor/app';
 import { ScreenshotProtectionService } from './services/screenshot-protection.service';
+import { ThemeService } from './services/theme.service';
 @Component({
   selector: 'app-root',
   templateUrl: 'app.component.html',
@@ -21,13 +21,13 @@ export class AppComponent {
     private syncWorker: SyncWorkerService,
     private noteService: NotesService,
     private zone: NgZone,
-    private screenshotProtectionService: ScreenshotProtectionService
+    private screenshotProtectionService: ScreenshotProtectionService,
+    private themeService: ThemeService
   ) {
     this.syncWorker.init();
     this.installPrivacyShield();
     void this.screenshotProtectionService.applyCurrentSetting(this.noteService.appHasPasswordChallenge());
-    StatusBar.setBackgroundColor({ color: '#F6F6FD' }).then(() => {});
-    StatusBar.setStyle({ style: Style.Light }).then(() => {});
+    void this.themeService.initialize();
     if (typeof navigator !== 'undefined') {
       this.initializeTranslations();
     }

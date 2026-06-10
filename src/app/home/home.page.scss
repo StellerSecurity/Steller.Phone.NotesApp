@@ -47,13 +47,13 @@ ion-item {
       width: 100%;
 
       .note-txt {
-        color: #0B0C19;
+        color: var(--stellar-text);
         font-size: 12px;
         font-family: 'Poppins';
       }
 
       .note-txt-title {
-        color: #0B0C19;
+        color: var(--stellar-text);
         font-size: 14px;
         font-family: 'Poppins';
         font-weight: 600;
@@ -88,7 +88,7 @@ ion-item p {
   font-style: normal;
   font-family: Poppins;
   font-weight: 600;
-  color: #0B0C19;
+  color: var(--stellar-text);
 }
 
 ion-item .date {
@@ -110,7 +110,7 @@ ion-item ion-note {
 
   span {
     font-size: 12px;
-    color: #62626A;
+    color: var(--stellar-muted);
   }
 }
 
@@ -242,7 +242,7 @@ ion-modal {
     z-index: 9;
     transform: translateY(-50%);
     font-size: 20px;
-    color: #62626A;
+    color: var(--stellar-muted);
   }
 }
 
@@ -441,7 +441,7 @@ ion-header.header-shadow {
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: #62626A;
+  color: var(--stellar-muted);
 }
 
 .folders-chip-row {
@@ -485,7 +485,7 @@ ion-header.header-shadow {
 
 .home-header-title {
   display: inline-block;
-  color: #0B0C19;
+  color: var(--stellar-text);
   font-size: 20px;
   font-weight: 700;
   letter-spacing: -0.02em;
@@ -511,7 +511,7 @@ ion-header.header-shadow {
 
 .folder-browser-section-label {
   padding: 0 4px 10px;
-  color: #62626A;
+  color: var(--stellar-muted);
   font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.04em;
@@ -530,7 +530,7 @@ ion-header.header-shadow {
 
 .folder-browser-list ion-label.folder-row-label {
   margin: 0;
-  color: #0B0C19;
+  color: var(--stellar-text);
   font-size: 15px;
   font-weight: 600;
 }
@@ -605,14 +605,14 @@ ion-header.header-shadow {
 }
 
 .folder-browser-empty-title {
-  color: #0B0C19;
+  color: var(--stellar-text);
   font-size: 16px;
   font-weight: 600;
   margin-bottom: 6px;
 }
 
 .folder-browser-empty-text {
-  color: #62626A;
+  color: var(--stellar-muted);
   font-size: 14px;
   line-height: 1.5;
 }
@@ -669,9 +669,9 @@ ion-header.header-shadow {
 
 .folder-browser-list .folder-option-rename {
   --background: #ffffff;
-  --color: #0b0c19;
+  --color: var(--stellar-text);
   background: #ffffff;
-  color: #0b0c19;
+  color: var(--stellar-text);
   border: 1px solid #e7e9f2;
   box-shadow: 0 8px 20px rgba(11, 12, 25, 0.06);
 }
@@ -694,7 +694,7 @@ ion-header.header-shadow {
 
 .new-folder-modal .new-folder-sheet-actions .new-folder-sheet-cancel {
   --background: #ffffff !important;
-  --color: #0b0c19 !important;
+  --color: var(--stellar-text) !important;
   --border-radius: 18px !important;
   --box-shadow: 0 10px 24px rgba(11, 12, 25, 0.05) !important;
   border: 1px solid #e7e9f2;
@@ -739,7 +739,7 @@ ion-header.header-shadow {
 }
 
 .app-lock-brand-name {
-  color: #0B0C19;
+  color: var(--stellar-text);
   font-family: "Poppins";
   font-size: 14px;
   font-weight: 700;
@@ -764,7 +764,7 @@ ion-header.header-shadow {
 }
 
 .app-lock-title {
-  color: #0B0C19;
+  color: var(--stellar-text);
   font-family: "Poppins";
   font-size: 24px;
   font-weight: 700;
@@ -774,7 +774,7 @@ ion-header.header-shadow {
 }
 
 .app-lock-description {
-  color: #62626A;
+  color: var(--stellar-muted);
   font-family: "Poppins";
   font-size: 14px;
   font-weight: 400;
@@ -915,7 +915,7 @@ ion-header.header-shadow {
 }
 
 .home-notice-title {
-  color: #0B0C19;
+  color: var(--stellar-text);
   font-family: "Poppins";
   font-size: 14px;
   font-weight: 700;
@@ -924,7 +924,7 @@ ion-header.header-shadow {
 }
 
 .home-notice-text {
-  color: #62626A;
+  color: var(--stellar-muted);
   font-family: "Poppins";
   font-size: 12px;
   font-weight: 500;
@@ -941,7 +941,7 @@ ion-header.header-shadow {
   border: 0;
   border-radius: 50%;
   background: #F4F6FB !important;
-  color: #62626A;
+  color: var(--stellar-muted);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -963,7 +963,7 @@ ion-header.header-shadow {
   border: 0;
   border-radius: 999px;
   background: #F4F6FB !important;
-  color: #0B0C19;
+  color: var(--stellar-text);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -976,4 +976,209 @@ ion-header.header-shadow {
 .home-notice-platforms ion-icon {
   color: #2761FC;
   font-size: 15px;
+}
+
+:host-context(.stellar-dark-theme) {
+  ion-content,
+  ion-header,
+  ion-footer,
+  ion-toolbar,
+  .toolbar-bottom {
+    --ion-background-color: var(--stellar-background);
+    --background: var(--stellar-background);
+    background: var(--stellar-background);
+  }
+
+  ion-item {
+    --ion-background-color: var(--stellar-surface);
+    background: var(--stellar-surface);
+    box-shadow: var(--stellar-shadow);
+  }
+
+  ion-item .box-item-main .ion-text-wrap .note-txt,
+  ion-item .box-item-main .ion-text-wrap .note-txt-title,
+  ion-item p,
+  ion-footer ion-title {
+    color: var(--stellar-text);
+  }
+
+  ion-item ion-note span,
+  span.uuid,
+  .input-group ion-icon {
+    color: var(--stellar-muted);
+  }
+
+  ion-input,
+  ion-modal ion-input {
+    --background: var(--stellar-surface-elevated);
+    --color: var(--stellar-text);
+    --placeholder-color: var(--stellar-muted-2);
+  }
+
+  .delete-btn {
+    background-color: var(--stellar-surface);
+    color: var(--stellar-danger);
+  }
+}
+
+:host-context(.stellar-dark-theme) {
+  .app-lock-modal,
+  .app-lock-content,
+  .app-lock-footer {
+    --background: var(--stellar-background) !important;
+    --ion-background-color: var(--stellar-background) !important;
+    background: var(--stellar-background) !important;
+    color: var(--stellar-text) !important;
+  }
+
+  .app-lock-shell {
+    background: var(--stellar-background) !important;
+    color: var(--stellar-text) !important;
+  }
+
+  .app-lock-brand-name,
+  .app-lock-title {
+    color: var(--stellar-text) !important;
+  }
+
+  .app-lock-description {
+    color: var(--stellar-muted) !important;
+  }
+
+  .app-lock-icon {
+    background: var(--stellar-surface) !important;
+    box-shadow: var(--stellar-shadow) !important;
+  }
+
+  .app-lock-trust-line {
+    background: var(--stellar-primary-soft) !important;
+    color: var(--stellar-primary) !important;
+  }
+
+  .app-lock-input-group {
+    background: var(--stellar-surface-elevated) !important;
+    border-color: var(--stellar-border) !important;
+  }
+
+  .app-lock-input-group ion-input {
+    --background: transparent !important;
+    --color: var(--stellar-text) !important;
+    --placeholder-color: var(--stellar-muted-2) !important;
+  }
+
+  .app-lock-input-group ion-icon {
+    color: var(--stellar-muted) !important;
+  }
+
+  .app-lock-secondary-button {
+    background: var(--stellar-surface) !important;
+    color: var(--stellar-primary) !important;
+    border: 1px solid var(--stellar-border) !important;
+  }
+
+  .app-lock-reset-button {
+    color: var(--stellar-danger) !important;
+  }
+}
+
+/* Dark-mode refinement pass for Home header controls, filter tabs, refresh and skeleton loading. */
+.home-header-icon-button {
+  --padding-start: 8px;
+  --padding-end: 8px;
+  --color: var(--stellar-text);
+  color: var(--stellar-text);
+
+  ion-icon {
+    width: 24px;
+    height: 24px;
+    font-size: 24px;
+    color: var(--stellar-text);
+  }
+}
+
+.home-profile-button {
+  padding-right: 15px;
+
+  ion-icon {
+    width: 27px;
+    height: 27px;
+    font-size: 27px;
+  }
+}
+
+.selected-close-icon {
+  position: relative;
+  top: 5px;
+  font-size: 24px;
+  color: var(--stellar-text);
+}
+
+ion-refresher-content {
+  --color: var(--stellar-primary);
+  --pulling-icon-color: var(--stellar-primary);
+  --refreshing-spinner-color: var(--stellar-primary);
+  color: var(--stellar-primary);
+}
+
+:host-context(body.stellar-dark-theme) ion-header.header-shadow {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.32) !important;
+  -webkit-box-shadow: 0 8px 24px rgba(0, 0, 0, 0.32) !important;
+}
+
+:host-context(body.stellar-dark-theme) .home-header-icon-button {
+  --color: var(--stellar-text) !important;
+  color: var(--stellar-text) !important;
+
+  ion-icon {
+    color: var(--stellar-text) !important;
+  }
+}
+
+:host-context(body.stellar-dark-theme) .favorites-filter {
+  background: rgba(27, 34, 55, 0.72);
+  border: 1px solid var(--stellar-border);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.28);
+}
+
+:host-context(body.stellar-dark-theme) .favorites-filter ion-segment-button {
+  --color: var(--stellar-muted);
+  --color-checked: var(--stellar-text);
+  color: var(--stellar-muted);
+}
+
+:host-context(body.stellar-dark-theme) .favorites-filter ion-segment-button.segment-button-checked,
+:host-context(body.stellar-dark-theme) .favorites-filter ion-segment-button.ion-activated {
+  color: var(--stellar-text);
+}
+
+:host-context(body.stellar-dark-theme) .favorites-filter ion-segment-button::part(native) {
+  color: inherit;
+}
+
+:host-context(body.stellar-dark-theme) .favorites-filter-line {
+  background: linear-gradient(90deg, #6F8DFF 0%, #8EA3FF 100%);
+  box-shadow: 0 0 18px rgba(111, 141, 255, 0.34);
+}
+
+:host-context(body.stellar-dark-theme) .home-skeleton-card {
+  background: var(--stellar-surface);
+  border: 1px solid var(--stellar-border);
+}
+
+:host-context(body.stellar-dark-theme) .home-skeleton ion-skeleton-text {
+  --background: rgba(255, 255, 255, 0.08);
+  --background-rgb: 255, 255, 255;
+  opacity: 1;
+}
+
+:host-context(body.stellar-dark-theme) .home-skeleton-segment ion-skeleton-text {
+  --background: rgba(255, 255, 255, 0.10);
+}
+
+:host-context(body.stellar-dark-theme) ion-refresher,
+:host-context(body.stellar-dark-theme) ion-refresher-content {
+  --color: var(--stellar-primary);
+  --pulling-icon-color: var(--stellar-primary);
+  --refreshing-spinner-color: var(--stellar-primary);
+  color: var(--stellar-primary);
 }

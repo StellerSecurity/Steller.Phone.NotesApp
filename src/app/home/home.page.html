@@ -11,9 +11,7 @@
       <span *ngIf="checkboxOpened"
             (click)="toggleCheckbox()"
             style="display:flex; align-items:center;">
-        <img src="assets/tabler-icon-x.svg"
-             style="position: relative; top: 5px;"
-             class="margin-right-top">
+        <ion-icon name="close-outline" class="margin-right-top selected-close-icon"></ion-icon>
         {{listOfCheckedCheckboxes.length}} {{'notesSelected' | translate}}
       </span>
 
@@ -56,28 +54,30 @@
         <ion-button
           *ngIf="canSearchNotes"
           fill="clear"
+          class="home-header-icon-button"
           (click)="enterSearchMode()">
-          <ion-icon name="search-outline" style="font-size: 24px;"></ion-icon>
+          <ion-icon name="search-outline"></ion-icon>
         </ion-button>
 
         <ion-button
           *ngIf="canSelectNotesFromCurrentView"
           fill="clear"
+          class="home-header-icon-button"
           (click)="toggleCheckbox()">
-          <img src="assets/tabler-icon-square-check.svg">
+          <ion-icon name="checkbox-outline"></ion-icon>
         </ion-button>
 
         <ion-button
           fill="clear"
-          style="padding-right: 15px"
+          class="home-header-icon-button home-profile-button"
           (click)="goToProfile()">
-          <img src="assets/user-circle.png" width="24px" height="24px">
+          <ion-icon name="person-circle-outline"></ion-icon>
         </ion-button>
       </ng-container>
 
       <ng-container *ngIf="searchMode">
-        <ion-button fill="clear" (click)="exitSearchMode()">
-          <ion-icon name="close-outline" style="font-size: 30px;"></ion-icon>
+        <ion-button fill="clear" class="home-header-icon-button" (click)="exitSearchMode()">
+          <ion-icon name="close-outline"></ion-icon>
         </ion-button>
       </ng-container>
     </ion-buttons>
@@ -348,7 +348,7 @@
                 <img src="assets/tabler-icon-notes.svg" />
               </span>
               <br>
-              <span style="color: #0B0C19;
+              <span style="color: var(--stellar-text);
                            text-align: center;
                            font-family: Poppins;
                            font-size: 16px;
@@ -359,7 +359,7 @@
               </span>
               <br>
               <span style="overflow: hidden;
-                           color: #62626A;
+                           color: var(--stellar-muted);
                            text-align: center;
                            text-overflow: ellipsis;
                            font-family: Poppins;
@@ -391,7 +391,7 @@
                 <img src="assets/tabler-icon-notes.svg" />
               </span>
               <br>
-              <span style="color: #0B0C19;
+              <span style="color: var(--stellar-text);
                            text-align: center;
                            font-family: Poppins;
                            font-size: 16px;
@@ -402,7 +402,7 @@
               </span>
               <br>
               <span style="overflow: hidden;
-                           color: #62626A;
+                           color: var(--stellar-muted);
                            text-align: center;
                            text-overflow: ellipsis;
                            font-family: Poppins;
@@ -432,7 +432,7 @@
                 <ion-icon name="star-outline" style="font-size: 30px; color: #8B8D98;"></ion-icon>
               </span>
               <br>
-              <span style="color: #0B0C19;
+              <span style="color: var(--stellar-text);
                            text-align: center;
                            font-family: Poppins;
                            font-size: 16px;
@@ -443,7 +443,7 @@
               </span>
               <br>
               <span style="overflow: hidden;
-                           color: #62626A;
+                           color: var(--stellar-muted);
                            text-align: center;
                            text-overflow: ellipsis;
                            font-family: Poppins;
@@ -462,13 +462,13 @@
       <ng-container *ngFor="let note of notes; let i = index; trackBy: trackByNoteId">
         <div
           *ngIf="note.pinned && (i === 0 || !notes[i - 1]?.pinned)"
-          style="padding: 8px 16px 6px; color: #62626A; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em;">
+          style="padding: 8px 16px 6px; color: var(--stellar-muted); font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em;">
           {{ 'pinned' | translate }}
         </div>
 
         <div
           *ngIf="!note.pinned && (i === 0 || notes[i - 1]?.pinned)"
-          style="padding: 8px 16px 6px; color: #62626A; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em;"
+          style="padding: 8px 16px 6px; color: var(--stellar-muted); font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em;"
           (click)="activeFolderName !== '__all__' ? startRenameSelectedFolder() : null">
           <ng-container *ngIf="!isRenamingSelectedFolder; else renameFolderTitleTemplate">{{ selectedFolderDisplayName }}</ng-container>
           <ng-template #renameFolderTitleTemplate>
@@ -602,7 +602,7 @@
                 <ion-icon name="folder-open-outline" style="font-size: 30px; color: #8B8D98;"></ion-icon>
               </span>
               <br>
-              <span style="color: #0B0C19;
+              <span style="color: var(--stellar-text);
                            text-align: center;
                            font-family: Poppins;
                            font-size: 16px;
@@ -613,7 +613,7 @@
               </span>
               <br>
               <span style="overflow: hidden;
-                           color: #62626A;
+                           color: var(--stellar-muted);
                            text-align: center;
                            text-overflow: ellipsis;
                            font-family: Poppins;
@@ -643,7 +643,7 @@
                 <ion-icon name="star-outline" style="font-size: 30px; color: #8B8D98;"></ion-icon>
               </span>
               <br>
-              <span style="color: #0B0C19;
+              <span style="color: var(--stellar-text);
                            text-align: center;
                            font-family: Poppins;
                            font-size: 16px;
@@ -654,7 +654,7 @@
               </span>
               <br>
               <span style="overflow: hidden;
-                           color: #62626A;
+                           color: var(--stellar-muted);
                            text-align: center;
                            text-overflow: ellipsis;
                            font-family: Poppins;

@@ -257,6 +257,31 @@
 
 
 
+  <ion-item (click)="openAppearanceSelect()">
+    <div class="setting-row">
+      <div class="setting-text">
+        <div class="setting-title">{{ 'appearance' | translate }}</div>
+        <div class="setting-helper-text">
+          {{ 'appearanceDescription' | translate }}
+        </div>
+      </div>
+      <div class="setting-control">
+        <ion-select
+          #appearanceSelect
+          interface="action-sheet"
+          [(ngModel)]="appearanceMode"
+          (ionChange)="saveAppearance()"
+          (click)="$event.stopPropagation()">
+          <ion-select-option
+            *ngFor="let option of appearanceOptions"
+            [value]="option.value">
+            {{ getAppearanceLabel(option) }}
+          </ion-select-option>
+        </ion-select>
+      </div>
+    </div>
+  </ion-item>
+
   <ion-item (click)="openClipboardSelect()">
     <div class="setting-row">
       <div class="setting-text">

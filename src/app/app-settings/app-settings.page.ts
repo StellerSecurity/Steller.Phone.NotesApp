@@ -11,6 +11,7 @@ import { ScreenshotProtectionService } from '../services/screenshot-protection.s
 import { AppHapticsService } from '../services/app-haptics.service';
 import { AuthService } from '../services/auth.service';
 import { BiometricUnlockService } from '../services/biometric-unlock.service';
+import { AppearanceMode, ThemeService } from '../services/theme.service';
 
 @Component({
   selector: 'app-app-settings',
@@ -44,6 +45,8 @@ export class AppSettingsPage implements AfterViewInit {
   public isSavingPassword = false;
   public selectedLanguage = 'system';
   public languageOptions = this.translatorService.getSupportedLanguageOptions();
+  public appearanceMode: AppearanceMode = 'system';
+  public appearanceOptions = this.themeService.getAppearanceOptions();
   public isLoggedIn = false;
   public biometricUnlockAvailable = false;
   public biometricUnlockEnabled = false;
@@ -118,6 +121,7 @@ export class AppSettingsPage implements AfterViewInit {
   @ViewChild('autoLockSelect') autoLockSelect!: IonSelect;
   @ViewChild('wipeSelect') wipeSelect!: IonSelect;
   @ViewChild('clipboardSelect') clipboardSelect!: IonSelect;
+  @ViewChild('appearanceSelect') appearanceSelect!: IonSelect;
   @ViewChild('languageSelect') languageSelect!: IonSelect;
 
   constructor(
@@ -134,6 +138,7 @@ export class AppSettingsPage implements AfterViewInit {
     private router: Router,
     private biometricUnlockService: BiometricUnlockService,
     private actionSheetController: ActionSheetController,
+    private themeService: ThemeService,
   ) {}
 
   async ionViewWillEnter(): Promise<void> {
@@ -148,6 +153,8 @@ export class AppSettingsPage implements AfterViewInit {
     this.hapticsEnabled = await this.appHaptics.isEnabled();
     this.selectedLanguage = await this.translatorService.getLanguagePreference();
     this.languageOptions = this.translatorService.getSupportedLanguageOptions();
+    this.appearanceMode = await this.themeService.getAppearanceMode();
+    this.appearanceOptions = this.themeService.getAppearanceOptions();
     await this.refreshBiometricState();
   }
 
@@ -165,6 +172,7 @@ export class AppSettingsPage implements AfterViewInit {
     this.appWipeAfterDays = this.noteService.getAppWipeAfterDays();
     this.clipboardAutoClearSeconds = this.noteService.getClipboardAutoClearSeconds();
     this.privacyModeEnabled = this.noteService.isPrivacyModeEnabled();
+    this.themeService.getAppearanceMode().then((mode) => { this.appearanceMode = mode; });
     this.refreshBiometricState().then(() => {});
   }
 
@@ -523,6 +531,15 @@ export class AppSettingsPage implements AfterViewInit {
     this.languageOptions = this.translatorService.getSupportedLanguageOptions();
   }
 
+  public async saveAppearance() {
+    await this.appHaptics.selectionChanged();
+    await this.themeService.setAppearanceMode(this.appearanceMode);
+  }
+
+  public getAppearanceLabel(option: { value: AppearanceMode; labelKey: string }): string {
+    return this.allTranslations?.[option.labelKey] ?? option.value;
+  }
+
   public getLanguageLabel(option: { value: string; label?: string; labelKey?: string }): string {
     if (option.label) {
       return option.label;
@@ -548,6 +565,11 @@ export class AppSettingsPage implements AfterViewInit {
   public openClipboardSelect() {
     this.appHaptics.tap();
     this.clipboardSelect?.open();
+  }
+
+  public openAppearanceSelect() {
+    this.appHaptics.tap();
+    this.appearanceSelect?.open();
   }
 
   public openLanguageSelect() {

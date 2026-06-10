@@ -34,7 +34,7 @@
             z-index: 9;
             transform: translateY(-50%);
             font-size: 20px;
-            color: #62626A;
+            color: var(--stellar-muted);
         }
     }
 
@@ -43,7 +43,7 @@
         font-size: 14px;
         font-weight: 400;
         font-family: 'Poppins';
-        color: #62626A;
+        color: var(--stellar-muted);
         text-align: center;
         line-height: 1.5;
     }
@@ -52,7 +52,7 @@
         font-size: 20px;
         font-weight: 600;
         font-family: 'Poppins';
-        color: #0B0C19;
+        color: var(--stellar-text);
         text-align: center;
         margin: 0;
     }
@@ -108,6 +108,46 @@
     }
 
     .transparent-btn.blue-btn {
-        color: #62626A;
+        color: var(--stellar-muted);
     }
+}
+:host-context(.stellar-dark-theme) {
+  .confirmation-modal {
+    background: var(--stellar-surface);
+    color: var(--stellar-text);
+  }
+
+  .confirmation-modal ion-input {
+    --background: var(--stellar-surface-elevated);
+    --color: var(--stellar-text);
+    --placeholder-color: var(--stellar-muted-2);
+  }
+
+  .confirmation-modal h2 {
+    color: var(--stellar-text);
+  }
+
+  .confirmation-modal p,
+  .confirmation-modal .input-group ion-icon,
+  .confirmation-modal .transparent-btn.blue-btn {
+    color: var(--stellar-muted);
+  }
+
+  .confirmation-modal .blue-btn {
+    color: var(--stellar-primary);
+  }
+
+  .confirmation-modal .danger-btn.blue-btn {
+    color: var(--stellar-danger);
+  }
+
+  .confirmation-modal .warning-box {
+    background: rgba(255, 107, 122, 0.12);
+    border-color: rgba(255, 107, 122, 0.26);
+  }
+
+  .confirmation-modal .warning-box strong,
+  .confirmation-modal .warning-box p {
+    color: #FF9AA5;
+  }
 }

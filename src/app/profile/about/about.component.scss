@@ -66,7 +66,7 @@ ion-toolbar {
 .about-title {
   position: relative;
   z-index: 1;
-  color: #0B0C19;
+  color: var(--stellar-text);
   font-size: 24px;
   line-height: 1.15;
   font-weight: 700;
@@ -77,7 +77,7 @@ ion-toolbar {
 .about-description {
   position: relative;
   z-index: 1;
-  color: #62626A;
+  color: var(--stellar-muted);
   font-size: 15px;
   line-height: 1.65;
   margin: 0 auto 14px;
@@ -103,7 +103,7 @@ ion-toolbar {
   border: none;
   border-radius: 999px;
   padding: 12px 16px;
-  background: #0B0C19;
+  background: var(--stellar-text);
   color: #FFFFFF;
   font-size: 14px;
   font-weight: 600;
@@ -166,4 +166,51 @@ ion-toolbar {
   color: #A0A3B1;
   width: 18px;
   height: 18px;
+}
+
+:host-context(.stellar-dark-theme) {
+  ion-content,
+  ion-header,
+  ion-footer,
+  ion-toolbar {
+    --ion-background-color: var(--stellar-background);
+    --background: var(--stellar-background);
+    background: var(--stellar-background);
+    color: var(--stellar-text);
+  }
+
+  .about-hero-card,
+  .action-item {
+    background: linear-gradient(180deg, var(--stellar-surface) 0%, var(--stellar-surface-elevated) 100%);
+    border-color: var(--stellar-border);
+    box-shadow: var(--stellar-shadow);
+  }
+
+  .about-title,
+  .action-item ion-label {
+    color: var(--stellar-text);
+  }
+
+  .about-description,
+  .about-credit,
+  .about-section-label,
+  .action-item-arrow {
+    color: var(--stellar-muted);
+  }
+
+  .about-eyebrow,
+  .action-item-icon ion-icon {
+    color: var(--stellar-primary);
+  }
+
+  .action-item-icon {
+    background: var(--stellar-primary-soft);
+  }
+
+  .about-source-link {
+    background: var(--stellar-surface-elevated);
+    color: var(--stellar-text);
+    border: 1px solid var(--stellar-border);
+    box-shadow: var(--stellar-shadow);
+  }
 }

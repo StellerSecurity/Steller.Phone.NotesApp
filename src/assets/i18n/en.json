@@ -324,5 +324,10 @@
   "downloadStellarVpn": "Download Stellar VPN",
   "downloadStellarAntivirus": "Download Stellar Antivirus",
   "downloadForIos": "Download for iOS",
-  "downloadForAndroid": "Download for Android"
+  "downloadForAndroid": "Download for Android",
+  "appearance": "Appearance",
+  "appearanceDescription": "Choose light, dark, or follow your device setting.",
+  "appearanceSystem": "Use device setting",
+  "appearanceLight": "Light",
+  "appearanceDark": "Dark"
 }
