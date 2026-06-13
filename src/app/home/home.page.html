@@ -225,15 +225,15 @@
           <div class="home-notice-title">{{ 'useNotesOnYourComputer' | translate }}</div>
           <div class="home-notice-text">{{ 'downloadForWindowsMacOrLinux' | translate }}</div>
           <div class="home-notice-platforms">
-            <button type="button" (click)="openDesktopDownload('https://stellarsecurity.com/download/platform/windows?top=notes')">
+            <button type="button" class="home-notice-platform-button" (click)="openDesktopDownload('https://stellarsecurity.com/download/platform/windows?top=notes')">
               <ion-icon name="logo-windows"></ion-icon>
               <span>Windows</span>
             </button>
-            <button type="button" (click)="openDesktopDownload('https://stellarsecurity.com/download/platform/mac?top=notes')">
+            <button type="button" class="home-notice-platform-button" (click)="openDesktopDownload('https://stellarsecurity.com/download/platform/mac?top=notes')">
               <ion-icon name="logo-apple"></ion-icon>
               <span>macOS</span>
             </button>
-            <button type="button" (click)="openDesktopDownload('https://stellarsecurity.com/download/platform/linux?top=notes')">
+            <button type="button" class="home-notice-platform-button" (click)="openDesktopDownload('https://stellarsecurity.com/download/platform/linux?top=notes')">
               <ion-icon name="terminal-outline"></ion-icon>
               <span>Linux</span>
             </button>
@@ -485,7 +485,7 @@
 
         <ion-item
           lines="none"
-          (click)="$event.stopPropagation(); openOrCheckbox(note.id)"
+          (click)="openOrCheckbox($event, note.id)"
           [detail]="false"
           class="long-press-target"
           #longPressElements
@@ -493,7 +493,8 @@
           <div class="box-item-main">
             <ion-checkbox
               *ngIf="checkboxOpened"
-              (click)="$event.stopPropagation(); selectNote($event, note.id)"
+              class="note-selection-checkbox"
+              (click)="selectNote($event, note.id)"
               justify="center"
               style="margin-right: 7px"
               size="small"
@@ -569,14 +570,14 @@
           [class.is-dragging]="isPagerDragging"
           [style.transform]="pagerTransform">
           <section class="home-page-pane">
-            <ion-list>
+            <ion-list class="notes-card-list">
               <ng-container *ngTemplateOutlet="notesListTemplate; context: { $implicit: allVisibleNotes }"></ng-container>
             </ion-list>
           </section>
 
           <section class="home-page-pane">
             <ng-container *ngIf="favoriteVisibleNotes.length > 0; else favoritesEmptyStateTemplate">
-              <ion-list>
+              <ion-list class="notes-card-list">
                 <ng-container *ngTemplateOutlet="notesListTemplate; context: { $implicit: favoriteVisibleNotes }"></ng-container>
               </ion-list>
             </ng-container>
@@ -668,7 +669,7 @@
         </ion-row>
       </ion-grid>
 
-      <ion-list *ngIf="visibleNotes.length > 0">
+      <ion-list class="notes-card-list" *ngIf="visibleNotes.length > 0">
         <ng-container *ngTemplateOutlet="notesListTemplate; context: { $implicit: visibleNotes }"></ng-container>
       </ion-list>
     </ng-template>

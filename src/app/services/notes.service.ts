@@ -210,7 +210,7 @@ export class NotesService {
   public getAppLockTimeoutMinutes(): number {
     const raw = this.notesStorageService.getAppLockTimeoutMinutes();
     const parsed = Number(raw);
-    const allowed = [1, 5, 15, 30, 60];
+    const allowed = [1, 5, 15, 30, 60, 120];
 
     if (!Number.isFinite(parsed) || !allowed.includes(parsed)) {
       return 60;

@@ -1143,6 +1143,30 @@ body.stellar-dark-theme [style*="background-color:#EAEAF0"] {
   color: var(--stellar-text) !important;
 }
 
+
+.stellar-dark-theme ion-searchbar {
+  --background: rgba(21, 27, 45, 0.98) !important;
+  --color: var(--stellar-text) !important;
+  --placeholder-color: #C3CAD8 !important;
+  --icon-color: var(--stellar-text) !important;
+  --clear-button-color: var(--stellar-text) !important;
+}
+
+.stellar-dark-theme ion-searchbar::part(native),
+.stellar-dark-theme ion-searchbar::part(input) {
+  color: var(--stellar-text) !important;
+}
+
+.stellar-dark-theme ion-searchbar::part(placeholder) {
+  color: #C3CAD8 !important;
+  opacity: 1 !important;
+}
+
+.stellar-dark-theme ion-searchbar::part(input)::placeholder {
+  color: #C3CAD8 !important;
+  opacity: 1 !important;
+}
+
 /* Dark-mode text safety net: keeps legacy hardcoded title/label styles readable on dark surfaces. */
 body.stellar-dark-theme ion-title,
 body.stellar-dark-theme h1,
@@ -1203,6 +1227,54 @@ body.stellar-dark-theme .note-actions-popover-item,
 body.stellar-dark-theme .back-button {
   --color: var(--stellar-text) !important;
   color: var(--stellar-text) !important;
+}
+
+
+body.stellar-dark-theme .note-actions-popover::part(content) {
+  border-color: var(--stellar-border) !important;
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.42) !important;
+  background: var(--stellar-surface) !important;
+}
+
+body.stellar-dark-theme .note-actions-popover-list {
+  background: var(--stellar-surface) !important;
+}
+
+body.stellar-dark-theme .note-actions-popover-item {
+  --background: transparent !important;
+  --color: var(--stellar-text) !important;
+  color: var(--stellar-text) !important;
+}
+
+body.stellar-dark-theme .note-actions-popover-item::part(native) {
+  background: transparent !important;
+  color: var(--stellar-text) !important;
+  border-radius: 14px;
+}
+
+body.stellar-dark-theme .note-actions-popover-item ion-label {
+  color: var(--stellar-text) !important;
+}
+
+body.stellar-dark-theme .note-actions-popover-item ion-icon {
+  color: var(--stellar-muted);
+}
+
+body.stellar-dark-theme .note-actions-popover-item.ion-activated::part(native),
+body.stellar-dark-theme .note-actions-popover-item.ion-focused::part(native),
+body.stellar-dark-theme .note-actions-popover-item:hover::part(native) {
+  background: rgba(255, 255, 255, 0.08) !important;
+}
+
+body.stellar-dark-theme .note-actions-popover-divider {
+  background: var(--stellar-border) !important;
+}
+
+body.stellar-dark-theme .note-actions-popover-item-danger,
+body.stellar-dark-theme .note-actions-popover-item-danger ion-label,
+body.stellar-dark-theme .note-actions-popover-item-danger ion-icon {
+  --color: var(--stellar-danger) !important;
+  color: var(--stellar-danger) !important;
 }
 
 /* Stellar dark theme overlay fixes. Keep this global because Ionic overlays are mounted outside routed component scopes. */
@@ -1537,4 +1609,614 @@ body.stellar-dark-theme .folder-row-icon-folder,
 body.stellar-dark-theme .folder-row-icon-unfiled {
   background: var(--stellar-primary-soft) !important;
   color: var(--stellar-primary) !important;
+}
+
+/* Dark-mode A-Z guard for light pill/button collisions.
+   Kept global because Ionic and Angular can mount overlays/old component styles outside normal scopes. */
+html.stellar-dark-theme body.stellar-dark-theme .home-notice-platforms button,
+html.stellar-dark-theme body.stellar-dark-theme button.home-notice-platform-button,
+html.stellar-dark-theme body.stellar-dark-theme .desktop-platform-button,
+html.stellar-dark-theme body.stellar-dark-theme .account-visibility-btn,
+html.stellar-dark-theme body.stellar-dark-theme .home-notice-close,
+html.stellar-dark-theme body.stellar-dark-theme .new-folder-sheet-cancel,
+html.stellar-dark-theme body.stellar-dark-theme .folder-option-rename {
+  background: var(--stellar-surface-elevated) !important;
+  background-color: var(--stellar-surface-elevated) !important;
+  --background: var(--stellar-surface-elevated) !important;
+  color: var(--stellar-text) !important;
+  --color: var(--stellar-text) !important;
+  border-color: var(--stellar-border) !important;
+}
+
+html.stellar-dark-theme body.stellar-dark-theme .home-notice-platforms button span,
+html.stellar-dark-theme body.stellar-dark-theme .desktop-platform-button span {
+  color: var(--stellar-text) !important;
+}
+
+html.stellar-dark-theme body.stellar-dark-theme .home-notice-platforms button ion-icon,
+html.stellar-dark-theme body.stellar-dark-theme .desktop-platform-button ion-icon,
+html.stellar-dark-theme body.stellar-dark-theme .home-notice-close ion-icon,
+html.stellar-dark-theme body.stellar-dark-theme .account-visibility-btn ion-icon {
+  color: var(--stellar-primary) !important;
+}
+
+html.stellar-dark-theme body.stellar-dark-theme .home-notice-card,
+html.stellar-dark-theme body.stellar-dark-theme .desktop-notes-card,
+html.stellar-dark-theme body.stellar-dark-theme .stellar-apps-card,
+html.stellar-dark-theme body.stellar-dark-theme .settings-security-card,
+html.stellar-dark-theme body.stellar-dark-theme .about-hero-card,
+html.stellar-dark-theme body.stellar-dark-theme .app-lock-shell,
+html.stellar-dark-theme body.stellar-dark-theme .modal-content {
+  background: var(--stellar-surface) !important;
+  background-color: var(--stellar-surface) !important;
+  color: var(--stellar-text) !important;
+}
+
+html.stellar-dark-theme body.stellar-dark-theme .home-notice-card--success,
+html.stellar-dark-theme body.stellar-dark-theme .settings-security-card,
+html.stellar-dark-theme body.stellar-dark-theme .about-hero-card {
+  background: linear-gradient(180deg, var(--stellar-surface) 0%, var(--stellar-surface-elevated) 100%) !important;
+}
+
+html.stellar-dark-theme body.stellar-dark-theme ion-skeleton-text {
+  --background: rgba(255, 255, 255, 0.10) !important;
+  --background-rgb: 255, 255, 255 !important;
+  opacity: 1 !important;
+}
+
+/* Dark-mode checkbox contrast pass.
+   On dark surfaces, unchecked checkboxes must remain visible and checked boxes should read as clean white controls. */
+html.stellar-dark-theme body.stellar-dark-theme ion-checkbox {
+  --checkbox-background: transparent !important;
+  --checkbox-background-checked: #F4F7FF !important;
+  --border-color: rgba(244, 247, 255, 0.82) !important;
+  --border-color-checked: #F4F7FF !important;
+  --checkmark-color: #0B1020 !important;
+  --checkmark-width: 3px !important;
+  color: var(--stellar-text) !important;
+}
+
+html.stellar-dark-theme body.stellar-dark-theme ion-checkbox::part(container) {
+  background: transparent !important;
+  border-color: rgba(244, 247, 255, 0.82) !important;
+  box-shadow: none !important;
+}
+
+html.stellar-dark-theme body.stellar-dark-theme ion-checkbox.checkbox-checked::part(container),
+html.stellar-dark-theme body.stellar-dark-theme ion-checkbox[aria-checked="true"]::part(container) {
+  background: #F4F7FF !important;
+  border-color: #F4F7FF !important;
+}
+
+html.stellar-dark-theme body.stellar-dark-theme ion-checkbox::part(mark) {
+  border-color: #0B1020 !important;
+}
+
+html.stellar-dark-theme body.stellar-dark-theme .alert-checkbox-icon {
+  background: transparent !important;
+  border-color: rgba(244, 247, 255, 0.82) !important;
+}
+
+html.stellar-dark-theme body.stellar-dark-theme .alert-checkbox-icon.alert-checkbox-checked {
+  background: #F4F7FF !important;
+  border-color: #F4F7FF !important;
+}
+
+html.stellar-dark-theme body.stellar-dark-theme .alert-checkbox-icon.alert-checkbox-checked .alert-checkbox-inner {
+  border-color: #0B1020 !important;
+}
+
+/* Dark-mode modal action button contrast fix.
+   Ionic ion-button renders its visible surface inside shadow DOM, so we must style ::part(native) as well as host CSS variables.
+   Secondary/cancel modal actions intentionally keep a light pill for emphasis, but the text must be dark. */
+html.stellar-dark-theme body.stellar-dark-theme ion-modal .new-folder-sheet-cancel,
+html.stellar-dark-theme body.stellar-dark-theme ion-modal .folder-picker-cancel,
+html.stellar-dark-theme body.stellar-dark-theme ion-modal .modal-cancel-button,
+html.stellar-dark-theme body.stellar-dark-theme ion-modal ion-button.new-folder-sheet-cancel,
+html.stellar-dark-theme body.stellar-dark-theme ion-modal ion-button.folder-picker-cancel {
+  --background: #F4F7FF !important;
+  --background-hover: #FFFFFF !important;
+  --background-activated: #E7ECFF !important;
+  --color: #0B1020 !important;
+  --border-color: rgba(244, 247, 255, 0.18) !important;
+  color: #0B1020 !important;
+  opacity: 1 !important;
+}
+
+html.stellar-dark-theme body.stellar-dark-theme ion-modal .new-folder-sheet-cancel::part(native),
+html.stellar-dark-theme body.stellar-dark-theme ion-modal .folder-picker-cancel::part(native),
+html.stellar-dark-theme body.stellar-dark-theme ion-modal .modal-cancel-button::part(native),
+html.stellar-dark-theme body.stellar-dark-theme ion-modal ion-button.new-folder-sheet-cancel::part(native),
+html.stellar-dark-theme body.stellar-dark-theme ion-modal ion-button.folder-picker-cancel::part(native) {
+  background: #F4F7FF !important;
+  color: #0B1020 !important;
+  border-color: rgba(244, 247, 255, 0.18) !important;
+  opacity: 1 !important;
+}
+
+html.stellar-dark-theme body.stellar-dark-theme ion-modal .new-folder-sheet-cancel ion-icon,
+html.stellar-dark-theme body.stellar-dark-theme ion-modal .folder-picker-cancel ion-icon,
+html.stellar-dark-theme body.stellar-dark-theme ion-modal .modal-cancel-button ion-icon {
+  color: #0B1020 !important;
+}
+
+html.stellar-dark-theme body.stellar-dark-theme ion-modal .new-folder-sheet-create,
+html.stellar-dark-theme body.stellar-dark-theme ion-modal .folder-picker-confirm,
+html.stellar-dark-theme body.stellar-dark-theme ion-modal .modal-confirm-button {
+  --background: linear-gradient(180deg, #4D73FF 0%, #2761FC 100%) !important;
+  --color: #FFFFFF !important;
+  color: #FFFFFF !important;
+  opacity: 1 !important;
+}
+
+html.stellar-dark-theme body.stellar-dark-theme ion-modal .new-folder-sheet-create::part(native),
+html.stellar-dark-theme body.stellar-dark-theme ion-modal .folder-picker-confirm::part(native),
+html.stellar-dark-theme body.stellar-dark-theme ion-modal .modal-confirm-button::part(native) {
+  background: linear-gradient(180deg, #4D73FF 0%, #2761FC 100%) !important;
+  color: #FFFFFF !important;
+  opacity: 1 !important;
+}
+
+/* Generic dark-mode guard: any intentionally light secondary button in a dark overlay must keep dark foreground text. */
+html.stellar-dark-theme body.stellar-dark-theme ion-modal ion-button[fill="clear"].new-folder-sheet-cancel,
+html.stellar-dark-theme body.stellar-dark-theme ion-modal ion-button[fill="clear"].folder-picker-cancel,
+html.stellar-dark-theme body.stellar-dark-theme ion-modal ion-button[fill="clear"].modal-cancel-button {
+  --color: #0B1020 !important;
+  color: #0B1020 !important;
+}
+
+
+/* Home note selection checkbox parity.
+   Do not apply a separate selected-card visual language in dark mode. */
+html.stellar-dark-theme body.stellar-dark-theme ion-item.long-press-target ion-checkbox.note-selection-checkbox {
+  --checkbox-background: transparent !important;
+  --checkbox-background-checked: #2152D4 !important;
+  --border-color: rgba(244, 247, 255, 0.46) !important;
+  --border-color-checked: #2152D4 !important;
+  --checkmark-color: #FFFFFF !important;
+  opacity: 1 !important;
+}
+
+html.stellar-dark-theme body.stellar-dark-theme ion-item.long-press-target ion-checkbox.note-selection-checkbox::part(container) {
+  background: transparent !important;
+  border-color: rgba(244, 247, 255, 0.46) !important;
+  box-shadow: none !important;
+}
+
+html.stellar-dark-theme body.stellar-dark-theme ion-item.long-press-target ion-checkbox.note-selection-checkbox.checkbox-checked::part(container),
+html.stellar-dark-theme body.stellar-dark-theme ion-item.long-press-target ion-checkbox.note-selection-checkbox[aria-checked="true"]::part(container) {
+  background: #2152D4 !important;
+  border-color: #2152D4 !important;
+}
+
+html.stellar-dark-theme body.stellar-dark-theme ion-item.long-press-target ion-checkbox.note-selection-checkbox::part(mark) {
+  border-color: #FFFFFF !important;
+}
+
+
+/* Home selection mode: never restyle the note card in dark mode.
+   This guard beats Ionic/global dark-mode rules that can make selected cards look different from light mode. */
+html.stellar-dark-theme body.stellar-dark-theme app-home ion-item.long-press-target,
+html.stellar-dark-theme body.stellar-dark-theme app-home ion-item.long-press-target::part(native) {
+  --background: var(--stellar-surface) !important;
+  --ion-background-color: var(--stellar-surface) !important;
+  background: var(--stellar-surface) !important;
+  border: none !important;
+  border-radius: 12px !important;
+  box-shadow: none !important;
+  outline: none !important;
+  transform: none !important;
+  opacity: 1 !important;
+}
+
+html.stellar-dark-theme body.stellar-dark-theme app-home ion-item.long-press-target .box-item-main {
+  padding: 16px !important;
+  min-height: 70px !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  transform: none !important;
+  opacity: 1 !important;
+}
+
+html.stellar-dark-theme body.stellar-dark-theme app-home ion-item.long-press-target ion-label,
+html.stellar-dark-theme body.stellar-dark-theme app-home ion-item.long-press-target .note-txt,
+html.stellar-dark-theme body.stellar-dark-theme app-home ion-item.long-press-target .note-txt-title,
+html.stellar-dark-theme body.stellar-dark-theme app-home ion-item.long-press-target ion-note {
+  opacity: 1 !important;
+  transform: none !important;
+}
+
+
+/* Home note cards: keep dark-mode structurally identical to light-mode.
+   The list container must be transparent, and the host ion-item must not paint a square background. */
+html.stellar-dark-theme body.stellar-dark-theme app-home ion-list.notes-card-list,
+html.stellar-dark-theme body.stellar-dark-theme app-home .home-page-pane ion-list.notes-card-list {
+  background: transparent !important;
+  --background: transparent !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+html.stellar-dark-theme body.stellar-dark-theme app-home ion-list.notes-card-list ion-item.long-press-target {
+  background: transparent !important;
+  --ion-background-color: transparent !important;
+  --background: var(--stellar-surface) !important;
+  border-radius: 12px !important;
+  margin-bottom: 15px !important;
+  overflow: visible !important;
+  box-shadow: none !important;
+  border: 0 !important;
+}
+
+html.stellar-dark-theme body.stellar-dark-theme app-home ion-list.notes-card-list ion-item.long-press-target::part(native) {
+  background: var(--stellar-surface) !important;
+  color: var(--stellar-text) !important;
+  border-radius: 12px !important;
+  overflow: hidden !important;
+  box-shadow: none !important;
+  border: 0 !important;
+  padding: 0 !important;
+}
+
+html.stellar-dark-theme body.stellar-dark-theme app-home ion-list.notes-card-list ion-item.long-press-target .box-item-main {
+  background: transparent !important;
+}
+
+/* Light-mode safety guard for folder browser.
+   This keeps the original light folder-card design intact when dark mode is not active. */
+html:not(.stellar-dark-theme) body:not(.stellar-dark-theme) app-home .folder-browser-screen {
+  background: transparent !important;
+  color: #0B0C19 !important;
+}
+
+html:not(.stellar-dark-theme) body:not(.stellar-dark-theme) app-home .folder-browser-list {
+  background: transparent !important;
+  --background: transparent !important;
+}
+
+html:not(.stellar-dark-theme) body:not(.stellar-dark-theme) app-home .folder-browser-list ion-item {
+  --background: #FFFFFF !important;
+  --ion-background-color: #FFFFFF !important;
+  --color: #0B0C19 !important;
+  background: #FFFFFF !important;
+  color: #0B0C19 !important;
+  border-radius: 20px !important;
+}
+
+html:not(.stellar-dark-theme) body:not(.stellar-dark-theme) app-home .folder-browser-list ion-item::part(native) {
+  background: #FFFFFF !important;
+  color: #0B0C19 !important;
+  border-radius: 20px !important;
+}
+
+html:not(.stellar-dark-theme) body:not(.stellar-dark-theme) app-home .folder-browser-list ion-label.folder-row-label {
+  color: #0B0C19 !important;
+}
+
+html:not(.stellar-dark-theme) body:not(.stellar-dark-theme) app-home .folder-browser-section-label {
+  color: #62626A !important;
+}
+
+html:not(.stellar-dark-theme) body:not(.stellar-dark-theme) app-home .folder-row-chevron {
+  color: #B4B7C5 !important;
+}
+
+html:not(.stellar-dark-theme) body:not(.stellar-dark-theme) app-home .folder-row-icon-all {
+  background: rgba(39, 97, 252, 0.12) !important;
+  color: #2761FC !important;
+}
+
+html:not(.stellar-dark-theme) body:not(.stellar-dark-theme) app-home .folder-row-icon-folder {
+  background: rgba(76, 175, 80, 0.14) !important;
+  color: #2E7D32 !important;
+}
+
+
+/* Dark-mode folder browser: preserve the original card layout, only recolor it. */
+html.stellar-dark-theme body.stellar-dark-theme app-home .folder-browser-screen {
+  background: transparent !important;
+  color: var(--stellar-text) !important;
+}
+
+html.stellar-dark-theme body.stellar-dark-theme app-home .folder-browser-section-label {
+  color: var(--stellar-muted) !important;
+}
+
+html.stellar-dark-theme body.stellar-dark-theme app-home .folder-browser-list {
+  background: transparent !important;
+  --background: transparent !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+html.stellar-dark-theme body.stellar-dark-theme app-home .folder-browser-list ion-item-sliding {
+  background: transparent !important;
+  margin-bottom: 15px !important;
+  border-radius: 20px !important;
+  overflow: hidden !important;
+}
+
+html.stellar-dark-theme body.stellar-dark-theme app-home .folder-browser-list ion-item {
+  --background: var(--stellar-surface) !important;
+  --ion-background-color: var(--stellar-surface) !important;
+  --color: var(--stellar-text) !important;
+  background: var(--stellar-surface) !important;
+  color: var(--stellar-text) !important;
+  border: 1px solid var(--stellar-border) !important;
+  border-radius: 20px !important;
+  overflow: hidden !important;
+  box-shadow: none !important;
+}
+
+html.stellar-dark-theme body.stellar-dark-theme app-home .folder-browser-list ion-item::part(native) {
+  background: var(--stellar-surface) !important;
+  color: var(--stellar-text) !important;
+  border-radius: 20px !important;
+  box-shadow: none !important;
+}
+
+html.stellar-dark-theme body.stellar-dark-theme app-home .folder-browser-list ion-label.folder-row-label {
+  color: var(--stellar-text) !important;
+}
+
+html.stellar-dark-theme body.stellar-dark-theme app-home .folder-row-chevron {
+  color: var(--stellar-muted) !important;
+}
+
+html.stellar-dark-theme body.stellar-dark-theme app-home .folder-row-icon-all {
+  background: rgba(111, 141, 255, 0.16) !important;
+  color: var(--stellar-primary) !important;
+}
+
+html.stellar-dark-theme body.stellar-dark-theme app-home .folder-row-icon-folder,
+html.stellar-dark-theme body.stellar-dark-theme app-home .folder-row-icon-unfiled {
+  background: rgba(111, 141, 255, 0.12) !important;
+  color: var(--stellar-muted) !important;
+}
+
+/* Dark-mode Move to folder modal: scoped to the modal classes only. */
+html.stellar-dark-theme body.stellar-dark-theme ion-modal.folder-picker-modal,
+html.stellar-dark-theme body.stellar-dark-theme ion-modal.folder-picker-modal::part(content),
+html.stellar-dark-theme body.stellar-dark-theme .folder-picker-modal .ion-page,
+html.stellar-dark-theme body.stellar-dark-theme .folder-picker-content,
+html.stellar-dark-theme body.stellar-dark-theme .folder-picker-content::part(scroll) {
+  --background: linear-gradient(180deg, #0B1020 0%, #11172A 100%) !important;
+  --ion-background-color: transparent !important;
+  background: linear-gradient(180deg, #0B1020 0%, #11172A 100%) !important;
+  color: var(--stellar-text) !important;
+}
+
+html.stellar-dark-theme body.stellar-dark-theme .folder-picker-sheet {
+  background: transparent !important;
+  background-color: transparent !important;
+  box-shadow: none !important;
+}
+
+html.stellar-dark-theme body.stellar-dark-theme .folder-picker-title,
+html.stellar-dark-theme body.stellar-dark-theme .folder-picker-name {
+  color: var(--stellar-text) !important;
+}
+
+html.stellar-dark-theme body.stellar-dark-theme .folder-picker-new-button {
+  background: rgba(255, 255, 255, 0.96) !important;
+  background-color: rgba(255, 255, 255, 0.96) !important;
+  color: #2761FC !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+html.stellar-dark-theme body.stellar-dark-theme .folder-picker-new-button ion-icon,
+html.stellar-dark-theme body.stellar-dark-theme .folder-picker-new-button span {
+  color: #2761FC !important;
+}
+
+html.stellar-dark-theme body.stellar-dark-theme .folder-picker-item {
+  background: var(--stellar-surface) !important;
+  background-color: var(--stellar-surface) !important;
+  color: var(--stellar-text) !important;
+  border: 1px solid var(--stellar-border) !important;
+  box-shadow: none !important;
+}
+
+html.stellar-dark-theme body.stellar-dark-theme .folder-picker-item.selected {
+  background: var(--stellar-surface-elevated) !important;
+  background-color: var(--stellar-surface-elevated) !important;
+  border-color: rgba(111, 141, 255, 0.55) !important;
+  box-shadow: 0 0 0 1px rgba(111, 141, 255, 0.18) !important;
+}
+
+html.stellar-dark-theme body.stellar-dark-theme .folder-picker-icon-all {
+  background: rgba(111, 141, 255, 0.16) !important;
+  color: var(--stellar-primary) !important;
+}
+
+html.stellar-dark-theme body.stellar-dark-theme .folder-picker-icon-folder {
+  background: rgba(247, 198, 95, 0.14) !important;
+  color: #F7C65F !important;
+}
+
+html.stellar-dark-theme body.stellar-dark-theme .folder-picker-check {
+  color: var(--stellar-primary) !important;
+}
+
+html.stellar-dark-theme body.stellar-dark-theme .folder-picker-actions {
+  background: linear-gradient(180deg, rgba(11, 16, 32, 0) 0%, rgba(11, 16, 32, 0.92) 18%, #0B1020 100%) !important;
+}
+
+
+/* Dark-mode fix: app password modal only. Keep scope narrow so other screens stay untouched. */
+html.stellar-dark-theme body ion-modal.app-password-modal,
+html.stellar-dark-theme body ion-modal.app-password-modal::part(content),
+html.stellar-dark-theme body .app-password-modal .ion-page,
+html.stellar-dark-theme body .app-password-modal ion-header,
+html.stellar-dark-theme body .app-password-modal ion-toolbar,
+html.stellar-dark-theme body .app-password-modal ion-content {
+  --background: var(--stellar-background) !important;
+  --ion-background-color: var(--stellar-background) !important;
+  background: var(--stellar-background) !important;
+  color: var(--stellar-text) !important;
+}
+
+html.stellar-dark-theme body .app-password-modal .section-title,
+html.stellar-dark-theme body .app-password-modal .pass-note,
+html.stellar-dark-theme body .app-password-modal .password-helper-title,
+html.stellar-dark-theme body .app-password-modal .enabled-info-box h3 {
+  color: var(--stellar-text) !important;
+}
+
+html.stellar-dark-theme body .app-password-modal .cancel-btn,
+html.stellar-dark-theme body .app-password-modal .input-group ion-icon,
+html.stellar-dark-theme body .app-password-modal .password-helper-text,
+html.stellar-dark-theme body .app-password-modal .pass-list li,
+html.stellar-dark-theme body .app-password-modal .enabled-info-box p {
+  color: var(--stellar-muted) !important;
+}
+
+html.stellar-dark-theme body .app-password-modal .input-group ion-input {
+  --background: var(--stellar-surface-elevated) !important;
+  --color: var(--stellar-text) !important;
+  --placeholder-color: var(--stellar-muted-2) !important;
+  color: var(--stellar-text) !important;
+}
+
+html.stellar-dark-theme body .app-password-modal .pass-info-box,
+html.stellar-dark-theme body .app-password-modal .enabled-info-box {
+  background: var(--stellar-surface) !important;
+  color: var(--stellar-text) !important;
+  border: 1px solid var(--stellar-border) !important;
+  box-shadow: none !important;
+}
+
+html.stellar-dark-theme body .app-password-modal .password-warning-box {
+  background: rgba(255, 196, 9, 0.12) !important;
+  border: 1px solid rgba(255, 196, 9, 0.28) !important;
+}
+
+html.stellar-dark-theme body .app-password-modal .password-warning-text,
+html.stellar-dark-theme body .app-password-modal .password-warning-tips {
+  color: #F7C65F !important;
+}
+
+html.stellar-dark-theme body .app-password-modal hr {
+  border-top: 1px solid var(--stellar-border) !important;
+}
+
+html.stellar-dark-theme body .app-password-modal .disable-pass-btn {
+  color: var(--stellar-danger) !important;
+}
+
+html.stellar-dark-theme body .app-password-modal ion-button {
+  --background: linear-gradient(180deg, #4D73FF 0%, #2761FC 100%) !important;
+  --color: #FFFFFF !important;
+}
+
+html.stellar-dark-theme body .app-password-modal password-strength-meter {
+  display: block;
+  background: transparent !important;
+}
+
+html.stellar-dark-theme body .app-password-modal password-strength-meter * {
+  background-color: transparent;
+}
+
+/* Stellar unlock screen: final dark-mode layout correction.
+   Keep the light-mode geometry intact. Only recolor dark-mode surfaces. */
+html.stellar-dark-theme body.stellar-dark-theme ion-modal.app-lock-modal,
+html.stellar-dark-theme body.stellar-dark-theme ion-modal.app-lock-modal::part(content),
+html.stellar-dark-theme body.stellar-dark-theme ion-modal.app-lock-modal .ion-page,
+html.stellar-dark-theme body.stellar-dark-theme ion-modal.app-lock-modal ion-content.app-lock-content,
+html.stellar-dark-theme body.stellar-dark-theme ion-modal.app-lock-modal ion-content.app-lock-content::part(background),
+html.stellar-dark-theme body.stellar-dark-theme ion-modal.app-lock-modal ion-footer.app-lock-footer {
+  --background: var(--stellar-background) !important;
+  --ion-background-color: var(--stellar-background) !important;
+  background: var(--stellar-background) !important;
+  background-color: var(--stellar-background) !important;
+  color: var(--stellar-text) !important;
+}
+
+html.stellar-dark-theme body.stellar-dark-theme ion-modal.app-lock-modal ion-content.app-lock-content::part(scroll) {
+  background: transparent !important;
+  background-color: transparent !important;
+}
+
+html.stellar-dark-theme body.stellar-dark-theme ion-modal.app-lock-modal .app-lock-shell {
+  background: transparent !important;
+  background-color: transparent !important;
+  box-shadow: none !important;
+  color: var(--stellar-text) !important;
+}
+
+html.stellar-dark-theme body.stellar-dark-theme ion-modal.app-lock-modal .app-lock-brand-name,
+html.stellar-dark-theme body.stellar-dark-theme ion-modal.app-lock-modal .app-lock-title {
+  color: var(--stellar-text) !important;
+}
+
+html.stellar-dark-theme body.stellar-dark-theme ion-modal.app-lock-modal .app-lock-description {
+  color: var(--stellar-muted) !important;
+}
+
+html.stellar-dark-theme body.stellar-dark-theme ion-modal.app-lock-modal .app-lock-icon {
+  background: var(--stellar-surface) !important;
+  background-color: var(--stellar-surface) !important;
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.18) !important;
+  border: 1px solid rgba(255, 255, 255, 0.04) !important;
+}
+
+html.stellar-dark-theme body.stellar-dark-theme ion-modal.app-lock-modal .app-lock-trust-line {
+  background: var(--stellar-primary-soft) !important;
+  color: var(--stellar-primary) !important;
+}
+
+html.stellar-dark-theme body.stellar-dark-theme ion-modal.app-lock-modal .app-lock-trust-line ion-icon,
+html.stellar-dark-theme body.stellar-dark-theme ion-modal.app-lock-modal .app-lock-trust-line span {
+  color: var(--stellar-primary) !important;
+}
+
+html.stellar-dark-theme body.stellar-dark-theme ion-modal.app-lock-modal .input-group.app-lock-input-group {
+  background: transparent !important;
+  background-color: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  margin-bottom: 4px !important;
+}
+
+html.stellar-dark-theme body.stellar-dark-theme ion-modal.app-lock-modal .input-group.app-lock-input-group ion-input {
+  --background: var(--stellar-surface-elevated) !important;
+  --color: var(--stellar-text) !important;
+  --placeholder-color: var(--stellar-muted-2) !important;
+  --border-radius: 250px !important;
+  --padding-start: 18px !important;
+  --padding-end: 56px !important;
+  --padding-top: 15px !important;
+  --padding-bottom: 15px !important;
+  color: var(--stellar-text) !important;
+  margin-bottom: 20px !important;
+}
+
+html.stellar-dark-theme body.stellar-dark-theme ion-modal.app-lock-modal .input-group.app-lock-input-group ion-input::part(native) {
+  border-radius: 250px !important;
+}
+
+html.stellar-dark-theme body.stellar-dark-theme ion-modal.app-lock-modal .input-group.app-lock-input-group ion-icon {
+  color: var(--stellar-muted) !important;
+  right: 20px !important;
+}
+
+html.stellar-dark-theme body.stellar-dark-theme ion-modal.app-lock-modal .app-lock-primary-button {
+  background: #2761FC !important;
+  color: #FFFFFF !important;
+  box-shadow: none !important;
+}
+
+html.stellar-dark-theme body.stellar-dark-theme ion-modal.app-lock-modal .app-lock-secondary-button {
+  background: var(--stellar-surface) !important;
+  background-color: var(--stellar-surface) !important;
+  color: var(--stellar-primary) !important;
+  border: 1px solid var(--stellar-border) !important;
+}
+
+html.stellar-dark-theme body.stellar-dark-theme ion-modal.app-lock-modal .app-lock-reset-button {
+  background: transparent !important;
+  color: var(--stellar-danger) !important;
 }

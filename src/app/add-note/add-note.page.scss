@@ -14,6 +14,26 @@ ion-textarea {
 
 
 
+
+ion-content::part(scroll) {
+  display: flex;
+  flex-direction: column;
+}
+
+ion-content > div[style*="height: 100%"] {
+  flex: 1 1 auto;
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+app-rich-text-editor {
+  flex: 1 1 auto;
+  display: flex;
+  min-height: 100%;
+  height: 100%;
+}
+
 ion-title {
   font-size: 18px;
   font-family: 'Poppins';
@@ -481,7 +501,18 @@ ion-input {
     background: var(--stellar-surface);
     color: var(--stellar-text);
     border-color: var(--stellar-border);
+  }
+
+  .pass-info-box,
+  .folder-picker-item,
+  .folder-picker-new-button,
+  .folder-picker-cancel {
     box-shadow: var(--stellar-shadow);
+  }
+
+  ion-textarea,
+  .editable-title-input-wrapper {
+    box-shadow: none;
   }
 
   ion-input,
@@ -532,4 +563,30 @@ ion-input {
     background: rgba(247, 198, 95, 0.16);
     color: #F7C65F;
   }
+}
+
+:host-context(.stellar-dark-theme) .new-folder-sheet-actions .new-folder-sheet-cancel,
+:host-context(.stellar-dark-theme) .folder-picker-cancel {
+  --background: #F4F7FF !important;
+  --background-hover: #FFFFFF !important;
+  --background-activated: #E7ECFF !important;
+  --color: #0B1020 !important;
+  color: #0B1020 !important;
+  opacity: 1 !important;
+}
+
+:host-context(.stellar-dark-theme) .new-folder-sheet-actions .new-folder-sheet-cancel::part(native),
+:host-context(.stellar-dark-theme) .folder-picker-cancel::part(native) {
+  background: #F4F7FF !important;
+  color: #0B1020 !important;
+  opacity: 1 !important;
+}
+
+:host-context(.stellar-dark-theme) .new-folder-sheet-actions .new-folder-sheet-create,
+:host-context(.stellar-dark-theme) .new-folder-sheet-actions .new-folder-sheet-create::part(native),
+:host-context(.stellar-dark-theme) .folder-picker-confirm,
+:host-context(.stellar-dark-theme) .folder-picker-confirm::part(native) {
+  --color: #FFFFFF !important;
+  color: #FFFFFF !important;
+  opacity: 1 !important;
 }

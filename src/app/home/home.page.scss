@@ -267,9 +267,9 @@ ion-modal {
   position: fixed;
   top: 0;
   left: 0;
-  width: 120px;
+  width: 20px;
   height: 100vh;
-  z-index: 9999;
+  z-index: 2;
   background: transparent;
   touch-action: pan-y;
   pointer-events: auto;
@@ -277,6 +277,11 @@ ion-modal {
 
 ion-searchbar {
   --box-shadow: none;
+  --background: var(--stellar-surface);
+  --color: var(--stellar-text);
+  --placeholder-color: var(--stellar-muted);
+  --icon-color: var(--stellar-text);
+  --clear-button-color: var(--stellar-text);
   box-shadow: none !important;
   margin-top: 8px;
   margin-bottom: -4px;
@@ -991,8 +996,9 @@ ion-header.header-shadow {
 
   ion-item {
     --ion-background-color: var(--stellar-surface);
+    --background: var(--stellar-surface);
     background: var(--stellar-surface);
-    box-shadow: var(--stellar-shadow);
+    box-shadow: none;
   }
 
   ion-item .box-item-main .ion-text-wrap .note-txt,
@@ -1120,6 +1126,31 @@ ion-refresher-content {
   color: var(--stellar-primary);
 }
 
+
+:host-context(body.stellar-dark-theme) ion-searchbar {
+  --background: rgba(21, 27, 45, 0.98) !important;
+  --color: var(--stellar-text) !important;
+  --placeholder-color: #C3CAD8 !important;
+  --icon-color: var(--stellar-text) !important;
+  --clear-button-color: var(--stellar-text) !important;
+  caret-color: var(--stellar-primary);
+}
+
+:host-context(body.stellar-dark-theme) ion-searchbar::part(native),
+:host-context(body.stellar-dark-theme) ion-searchbar::part(input) {
+  color: var(--stellar-text) !important;
+}
+
+:host-context(body.stellar-dark-theme) ion-searchbar::part(placeholder) {
+  color: #C3CAD8 !important;
+  opacity: 1 !important;
+}
+
+:host-context(body.stellar-dark-theme) ion-searchbar::part(input)::placeholder {
+  color: #C3CAD8 !important;
+  opacity: 1 !important;
+}
+
 :host-context(body.stellar-dark-theme) ion-header.header-shadow {
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.32) !important;
   -webkit-box-shadow: 0 8px 24px rgba(0, 0, 0, 0.32) !important;
@@ -1181,4 +1212,289 @@ ion-refresher-content {
   --pulling-icon-color: var(--stellar-primary);
   --refreshing-spinner-color: var(--stellar-primary);
   color: var(--stellar-primary);
+}
+
+/* Dark-mode collision fix: desktop promo buttons must never keep the light pill background. */
+:host-context(.stellar-dark-theme) {
+  .home-notice-card {
+    background: var(--stellar-surface) !important;
+    color: var(--stellar-text) !important;
+    border: 1px solid var(--stellar-border);
+    box-shadow: var(--stellar-shadow);
+  }
+
+  .home-notice-card--success {
+    background: linear-gradient(180deg, var(--stellar-surface) 0%, var(--stellar-surface-elevated) 100%) !important;
+  }
+
+  .home-notice-title {
+    color: var(--stellar-text) !important;
+  }
+
+  .home-notice-text {
+    color: var(--stellar-muted) !important;
+  }
+
+  .home-notice-icon {
+    background: var(--stellar-primary-soft) !important;
+    color: var(--stellar-primary) !important;
+  }
+
+  .home-notice-close,
+  .home-notice-platforms button {
+    background: var(--stellar-surface-elevated) !important;
+    color: var(--stellar-text) !important;
+    border: 1px solid var(--stellar-border) !important;
+    box-shadow: none !important;
+  }
+
+  .home-notice-close ion-icon,
+  .home-notice-platforms button ion-icon {
+    color: var(--stellar-primary) !important;
+  }
+
+  .home-notice-platforms button span {
+    color: var(--stellar-text) !important;
+  }
+
+  .home-notice-platforms button:active {
+    background: rgba(111, 141, 255, 0.18) !important;
+  }
+}
+
+:host-context(.stellar-dark-theme) .new-folder-modal .new-folder-sheet-actions .new-folder-sheet-cancel {
+  --background: #F4F7FF !important;
+  --background-hover: #FFFFFF !important;
+  --background-activated: #E7ECFF !important;
+  --color: #0B1020 !important;
+  color: #0B1020 !important;
+  opacity: 1 !important;
+}
+
+:host-context(.stellar-dark-theme) .new-folder-modal .new-folder-sheet-actions .new-folder-sheet-cancel::part(native) {
+  background: #F4F7FF !important;
+  color: #0B1020 !important;
+  opacity: 1 !important;
+}
+
+:host-context(.stellar-dark-theme) .new-folder-modal .new-folder-sheet-actions .new-folder-sheet-create,
+:host-context(.stellar-dark-theme) .new-folder-modal .new-folder-sheet-actions .new-folder-sheet-create::part(native) {
+  --color: #FFFFFF !important;
+  color: #FFFFFF !important;
+  opacity: 1 !important;
+}
+
+
+.long-press-target ion-checkbox.note-selection-checkbox {
+  position: relative;
+  z-index: 3;
+  pointer-events: auto;
+}
+
+.long-press-target ion-label,
+.long-press-target .box-item-main {
+  pointer-events: auto;
+}
+
+/* Selection mode visual parity.
+   Selection mode must not add a separate visual state to note cards.
+   The card keeps the same structure as normal mode; only the checkbox appears. */
+.long-press-target ion-checkbox.note-selection-checkbox {
+  position: relative;
+  z-index: 3;
+  pointer-events: auto;
+  margin-right: 7px;
+  opacity: 1 !important;
+
+  --size: 24px;
+  --border-width: 1px;
+  --border-radius: 4px;
+  --checkbox-background: transparent;
+  --checkbox-background-checked: #2152D4;
+  --border-color: #C7CBD8;
+  --border-color-checked: #2152D4;
+  --checkmark-color: #FFFFFF;
+  --checkmark-width: 3px;
+}
+
+.long-press-target ion-label,
+.long-press-target .box-item-main {
+  pointer-events: auto;
+  opacity: 1 !important;
+}
+
+:host-context(.stellar-dark-theme) .long-press-target ion-checkbox.note-selection-checkbox {
+  --checkbox-background: transparent !important;
+  --checkbox-background-checked: #2152D4 !important;
+  --border-color: rgba(244, 247, 255, 0.46) !important;
+  --border-color-checked: #2152D4 !important;
+  --checkmark-color: #FFFFFF !important;
+  opacity: 1 !important;
+}
+
+:host-context(.stellar-dark-theme) .long-press-target ion-checkbox.note-selection-checkbox::part(container) {
+  background: transparent !important;
+  border-color: rgba(244, 247, 255, 0.46) !important;
+  box-shadow: none !important;
+}
+
+:host-context(.stellar-dark-theme) .long-press-target ion-checkbox.note-selection-checkbox.checkbox-checked::part(container),
+:host-context(.stellar-dark-theme) .long-press-target ion-checkbox.note-selection-checkbox[aria-checked="true"]::part(container) {
+  background: #2152D4 !important;
+  border-color: #2152D4 !important;
+}
+
+:host-context(.stellar-dark-theme) .long-press-target ion-checkbox.note-selection-checkbox::part(mark) {
+  border-color: #FFFFFF !important;
+}
+
+
+/* Home note-card visual parity.
+   Selection/delete mode must not change the card design.
+   The only visual state in selection mode is the checkbox itself. */
+.long-press-target,
+.long-press-target::part(native) {
+  border-radius: 12px !important;
+  margin-bottom: 15px !important;
+  min-height: 70px !important;
+  transform: none !important;
+  opacity: 1 !important;
+  box-shadow: none !important;
+  border: none !important;
+  outline: none !important;
+}
+
+.long-press-target {
+  --padding-start: 0 !important;
+  --padding-end: 0 !important;
+  --padding-top: 0 !important;
+  --padding-bottom: 0 !important;
+  --min-height: 70px !important;
+  --border-width: 0 !important;
+  --inner-border-width: 0 !important;
+  --border-color: transparent !important;
+  --ripple-color: transparent !important;
+  --background-activated: transparent !important;
+  --background-focused: transparent !important;
+  --background-hover: transparent !important;
+}
+
+.long-press-target .box-item-main {
+  padding: 16px !important;
+  width: 100% !important;
+  min-height: 70px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  box-sizing: border-box !important;
+  transform: none !important;
+  opacity: 1 !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.long-press-target ion-label,
+.long-press-target ion-note,
+.long-press-target .note-txt,
+.long-press-target .note-txt-title {
+  opacity: 1 !important;
+  transform: none !important;
+}
+
+.long-press-target ion-checkbox.note-selection-checkbox {
+  flex: 0 0 auto !important;
+  margin-right: 7px !important;
+}
+
+:host-context(.stellar-dark-theme) .long-press-target,
+:host-context(.stellar-dark-theme) .long-press-target::part(native) {
+  --background: var(--stellar-surface) !important;
+  --ion-background-color: var(--stellar-surface) !important;
+  background: var(--stellar-surface) !important;
+  color: var(--stellar-text) !important;
+  border-radius: 12px !important;
+  margin-bottom: 15px !important;
+  min-height: 70px !important;
+  transform: none !important;
+  opacity: 1 !important;
+  box-shadow: none !important;
+  border: none !important;
+  outline: none !important;
+}
+
+:host-context(.stellar-dark-theme) .long-press-target .box-item-main {
+  padding: 16px !important;
+  min-height: 70px !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  transform: none !important;
+  opacity: 1 !important;
+}
+
+:host-context(.stellar-dark-theme) .long-press-target.item-interactive-disabled,
+:host-context(.stellar-dark-theme) .long-press-target.item-disabled,
+:host-context(.stellar-dark-theme) .long-press-target[disabled] {
+  opacity: 1 !important;
+}
+
+
+/* Note-card parity fix.
+   Ionic ion-list/ion-item backgrounds must not create one large grouped block in dark mode.
+   The ion-list stays transparent; each ion-item renders as its own rounded card via ::part(native). */
+.notes-card-list,
+.home-page-pane ion-list.notes-card-list {
+  background: transparent !important;
+  --background: transparent !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+.notes-card-list ion-item.long-press-target {
+  background: transparent !important;
+  --background: var(--stellar-surface) !important;
+  --ion-background-color: transparent !important;
+  border-radius: 12px !important;
+  margin-bottom: 15px !important;
+  overflow: visible !important;
+  box-shadow: none !important;
+  border: 0 !important;
+}
+
+.notes-card-list ion-item.long-press-target::part(native) {
+  background: var(--stellar-surface) !important;
+  color: var(--stellar-text) !important;
+  border-radius: 12px !important;
+  overflow: hidden !important;
+  box-shadow: none !important;
+  border: 0 !important;
+  padding: 0 !important;
+}
+
+.notes-card-list ion-item.long-press-target .box-item-main {
+  background: transparent !important;
+}
+
+:host-context(.stellar-dark-theme) .notes-card-list,
+:host-context(.stellar-dark-theme) .home-page-pane ion-list.notes-card-list {
+  background: transparent !important;
+  --background: transparent !important;
+}
+
+:host-context(.stellar-dark-theme) .notes-card-list ion-item.long-press-target {
+  background: transparent !important;
+  --ion-background-color: transparent !important;
+  --background: var(--stellar-surface) !important;
+  border-radius: 12px !important;
+  margin-bottom: 15px !important;
+}
+
+:host-context(.stellar-dark-theme) .notes-card-list ion-item.long-press-target::part(native) {
+  background: var(--stellar-surface) !important;
+  color: var(--stellar-text) !important;
+  border-radius: 12px !important;
+  overflow: hidden !important;
+  box-shadow: none !important;
+  border: 0 !important;
 }

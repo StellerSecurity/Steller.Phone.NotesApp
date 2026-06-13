@@ -66,7 +66,7 @@ export class HomePage implements AfterViewInit, OnDestroy {
   private static readonly PAGER_SNAP_VELOCITY = 0.25;
   private static readonly PAGER_EDGE_RESISTANCE = 0.28;
   private static readonly PAGER_DRAG_RATIO = 0.95;
-  private static readonly CHECKBOX_DISMISS_EDGE_PX = 120;
+  private static readonly CHECKBOX_DISMISS_EDGE_PX = 20;
   private static readonly CHECKBOX_DISMISS_TRIGGER_PX = 56;
   private static readonly CHECKBOX_DISMISS_DIRECTION_RATIO = 1.2;
 
@@ -285,19 +285,11 @@ export class HomePage implements AfterViewInit, OnDestroy {
       return false;
     }
 
-    if (this.waitForSync) {
-      return true;
-    }
-
     if (!this.initialHomeLoadFinished) {
       return true;
     }
 
-    if (this.isSyncing && !this.hasAnyRenderedNotes) {
-      return true;
-    }
-
-    return false;
+    return this.waitForSync;
   }
 
   private b64ToBytes(b64: string): Uint8Array {
@@ -523,11 +515,16 @@ export class HomePage implements AfterViewInit, OnDestroy {
   }
 
   ionViewDidEnter() {
-    // Resync notes when app comes back to foreground
+    // Resync notes silently when the app comes back to foreground.
+    // Do not show the Home skeleton here; the existing notes should stay visible.
+    if (this.appStateListener) {
+      this.appStateListener.remove();
+      this.appStateListener = null;
+    }
+
     this.appStateListener = App.addListener('appStateChange', ({ isActive }: { isActive: boolean }) => {
       if (isActive && !this.pauseSync && this.authService.isLoggedIn) {
-        this.waitForSync = true;
-        this.syncFromServer().then(() => {});
+        this.syncFromServer({ silent: true }).then(() => {});
       }
     });
     this.schedulePressGestureInit();
@@ -959,15 +956,19 @@ export class HomePage implements AfterViewInit, OnDestroy {
     return this.authService.isLoggedIn;
   }
 
-  handleRefresh(event: Event) {
-    (event.target as HTMLIonRefresherElement).complete();
+  async handleRefresh(event: Event) {
+    const refresher = event.target as HTMLIonRefresherElement;
 
-    this.waitForSync = true;
     this.dataService.setForceDownloadOnHome(true);
-    this.syncFromServer();
+
+    try {
+      await this.syncFromServer({ silent: true });
+    } finally {
+      refresher.complete();
+    }
   }
 
-  async syncFromServer() {
+  async syncFromServer(options: { silent?: boolean } = {}) {
     if (!this.authService.isLoggedIn) return;
     if (this.pauseSync) return;
 
@@ -979,7 +980,9 @@ export class HomePage implements AfterViewInit, OnDestroy {
       }, 30_000);
     }
 
-    this.isSyncing = true;
+    if (!options.silent) {
+      this.isSyncing = true;
+    }
 
     try {
       const res = await this.notesApiServiceV1.download(0);
@@ -1097,8 +1100,11 @@ export class HomePage implements AfterViewInit, OnDestroy {
       this.setData(this.noteService.getNotesAppPassword());
     } catch (err) {
     } finally {
-      this.isSyncing = false;
-      this.waitForSync = false;
+      if (!options.silent) {
+        this.isSyncing = false;
+        this.waitForSync = false;
+      }
+
       this.dataService.setForceDownloadOnHome(false);
       await this.refreshHomeNoticeCards();
     }
@@ -2177,11 +2183,16 @@ export class HomePage implements AfterViewInit, OnDestroy {
     this.navController.navigateForward('profile').then(r => {});
   }
 
-  public openOrCheckbox(note_id: string) {
-    if (!this.checkboxOpened) {
-      this.appHaptics.tap();
-      this.navController.navigateForward('/note/' + note_id).then(r => {});
+  public openOrCheckbox(event: Event | null, note_id: string) {
+    event?.stopPropagation();
+
+    if (this.checkboxOpened) {
+      this.toggleNoteSelection(note_id);
+      return;
     }
+
+    this.appHaptics.tap();
+    this.navController.navigateForward('/note/' + note_id).then(r => {});
   }
 
   public async deleteSelectedNotes() {
@@ -2306,29 +2317,28 @@ export class HomePage implements AfterViewInit, OnDestroy {
     return await modal.present();
   }
 
-  public selectNote(event: any, note_id: string) {
-    this.appHaptics.selectionChanged();
+  public selectNote(event: Event | null, note_id: string) {
     event?.stopImmediatePropagation();
     event?.preventDefault();
+    this.toggleNoteSelection(note_id);
+  }
 
-    if (this.isClicked) return;
-
-    this.isClicked = true;
-
-    if (!this.listOfCheckedCheckboxes.includes(note_id)) {
-      this.listOfCheckedCheckboxes.push(note_id);
-    } else {
-      for (let i = 0; this.listOfCheckedCheckboxes.length > i; i++) {
-        if (this.listOfCheckedCheckboxes[i] == note_id) {
-          this.listOfCheckedCheckboxes.splice(i, 1);
-        }
-      }
+  private toggleNoteSelection(note_id: string) {
+    if (!this.checkboxOpened) {
+      return;
     }
 
-    setTimeout(() => {
-      this.isClicked = false;
-      this.cdr.detectChanges();
-    });
+    this.appHaptics.selectionChanged();
+
+    const existingIndex = this.listOfCheckedCheckboxes.indexOf(note_id);
+
+    if (existingIndex === -1) {
+      this.listOfCheckedCheckboxes = [...this.listOfCheckedCheckboxes, note_id];
+    } else {
+      this.listOfCheckedCheckboxes = this.listOfCheckedCheckboxes.filter((id: string) => id !== note_id);
+    }
+
+    this.cdr.detectChanges();
   }
 
   public ionInputAppUnlockInput(ev: any) {
