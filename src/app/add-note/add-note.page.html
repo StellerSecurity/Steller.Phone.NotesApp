@@ -290,7 +290,7 @@
       </ion-content>
     </ng-template>
   </ion-modal>
-  <div *ngIf="!note_locked" style="height: 100%;">
+  <div *ngIf="!note_locked" class="note-editor-shell">
     <app-rich-text-editor
       #richTextEditorComponentRef
       [note_text]="note_text"

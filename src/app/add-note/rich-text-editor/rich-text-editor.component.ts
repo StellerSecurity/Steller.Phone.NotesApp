@@ -79,6 +79,7 @@ export class RichTextEditorComponent implements OnInit, OnDestroy {
     private toastController: ToastController,
     private translatorService: TranslatorService,
     private appHaptics: AppHapticsService,
+    private hostRef: ElementRef<HTMLElement>,
     @Inject(PLATFORM_ID) private platformId: Object
   ) {}
 
@@ -109,12 +110,62 @@ export class RichTextEditorComponent implements OnInit, OnDestroy {
     this.bindImageClickHandler();
 
     requestAnimationFrame(() => {
-      setTimeout(() => {
-        const length = this.quill.getLength();
-        if (length === 1) {
-          this.quill.focus();
-        }
-      }, 300);
+      setTimeout(() => this.focusEmptyEditorWithoutScrolling(), 300);
+    });
+  }
+
+  private focusEmptyEditorWithoutScrolling(): void {
+    if (!isPlatformBrowser(this.platformId) || !this.quill) {
+      return;
+    }
+
+    const length = this.quill.getLength?.() ?? 0;
+
+    if (length !== 1) {
+      return;
+    }
+
+    const editorRoot = this.quill.root as HTMLElement | undefined;
+    const ionContent = this.hostRef.nativeElement.closest('ion-content') as any;
+    const documentScrollElement = document.scrollingElement as HTMLElement | null;
+    const savedDocumentScrollTop = documentScrollElement?.scrollTop ?? 0;
+
+    const restoreTop = () => {
+      if (documentScrollElement) {
+        documentScrollElement.scrollTop = savedDocumentScrollTop;
+      }
+
+      if (ionContent?.scrollToTop) {
+        void ionContent.scrollToTop(0);
+      }
+
+      if (ionContent?.getScrollElement) {
+        void ionContent.getScrollElement().then((scrollElement: HTMLElement) => {
+          scrollElement.scrollTop = 0;
+        });
+      }
+    };
+
+    restoreTop();
+
+    try {
+      editorRoot?.focus({ preventScroll: true });
+    } catch {
+      editorRoot?.focus();
+    }
+
+    try {
+      this.quill.setSelection?.(0, 0, 'silent');
+    } catch {
+      // Keep native focus even if Quill selection is not ready yet.
+    }
+
+    restoreTop();
+
+    requestAnimationFrame(() => {
+      restoreTop();
+      setTimeout(restoreTop, 50);
+      setTimeout(restoreTop, 150);
     });
   }
 
@@ -165,8 +216,6 @@ export class RichTextEditorComponent implements OnInit, OnDestroy {
     this.viewerImageSrc = '';
     this.resetViewerTransform();
   }
-
-
 
   onViewerPointerDown(event: PointerEvent) {
     if (!this.imageViewerOpen) {
@@ -372,8 +421,6 @@ export class RichTextEditorComponent implements OnInit, OnDestroy {
       );
     }
   }
-
-
 
   private async requestFilesystemPermissions(): Promise<void> {
     const requestPermissions = (Filesystem as any)?.requestPermissions;
