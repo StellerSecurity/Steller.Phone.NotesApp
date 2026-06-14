@@ -9,6 +9,11 @@ const config: CapacitorConfig = {
     Keyboard: {
       resize: KeyboardResize.None,
       resizeOnFullScreen: true
+    },
+    AppsFlyer: {
+      devKey: "${APPSFLYER_DEV_KEY}",
+      appId: "${IOS_APP_ID}",
+      isDebug: false
     }
   },
   server: {

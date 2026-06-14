@@ -6,6 +6,7 @@ import { Router } from '@angular/router';
 import { TranslatorService } from '../services/translator.service';
 import { AppHapticsService } from '../services/app-haptics.service';
 import { NotesService } from '../services/notes.service';
+import { AppsflyerService } from '../services/appsflyer.service';
 @Component({
   selector: 'app-share-secret-modal',
   templateUrl: './share-secret-modal.component.html',
@@ -31,6 +32,7 @@ export class ShareSecretModalComponent {
     private translatorService: TranslatorService,
     private appHaptics: AppHapticsService,
     private notesService: NotesService,
+    private appsflyer: AppsflyerService,
   ) {}
   ionViewWillEnter() {
     this.step = 1;
@@ -78,6 +80,7 @@ export class ShareSecretModalComponent {
         this.step = 2;
         this.secretUrl = `https://stellarsecret.io/${this.secret_id}`;
         this.expiryText = '';
+        void this.appsflyer.logEvent('stellar_secret_created', { source: 'note_share' });
         await this.appHaptics.success();
       },
       error: async () => {
@@ -103,6 +106,7 @@ export class ShareSecretModalComponent {
           duration: 2500,
           position: 'bottom',
         });
+        void this.appsflyer.logEvent('stellar_secret_burned');
         await this.appHaptics.success();
         await toast.present();
       },
@@ -117,6 +121,9 @@ export class ShareSecretModalComponent {
     try {
       await navigator.clipboard.writeText(this.secretUrl);
       await this.scheduleClipboardClear(this.secretUrl);
+      void this.appsflyer.logEvent('stellar_secret_link_copied', {
+        clipboard_auto_clear_enabled: this.appsflyer.booleanLabel(this.notesService.getClipboardAutoClearSeconds() > 0),
+      });
       const delaySeconds = this.notesService.getClipboardAutoClearSeconds();
       const message =
         delaySeconds > 0
@@ -141,6 +148,7 @@ export class ShareSecretModalComponent {
   }
   async shareLink() {
     await this.appHaptics.tap();
+    void this.appsflyer.logEvent('stellar_secret_link_shared', { method: 'system_share' });
     await Share.share({
       title: this.allTranslations?.shareSecretTitle ?? 'Stellar Secret',
       text: this.allTranslations?.hereIsYourSecretLink ?? 'Here is your secret link',

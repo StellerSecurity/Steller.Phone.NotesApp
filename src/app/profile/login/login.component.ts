@@ -23,6 +23,7 @@ import { CryptoKeyService } from '../../services/crypto-key.service';
 import { AppHapticsService } from '../../services/app-haptics.service';
 import { TranslatorService } from '../../services/translator.service';
 import { Preferences } from '@capacitor/preferences';
+import { AppsflyerService } from '../../services/appsflyer.service';
 
 @Component({
   selector: 'app-login',
@@ -47,6 +48,7 @@ export class LoginComponent implements OnInit {
     private cryptoKeyService: CryptoKeyService,
     private appHaptics: AppHapticsService,
     private translatorService: TranslatorService,
+    private appsflyer: AppsflyerService,
   ) {}
 
   ngOnInit(): void {
@@ -195,6 +197,7 @@ export class LoginComponent implements OnInit {
       this.notesService.setDecryptedNotes(mergedJson);
       await this.notesService.flushPersistence();
     } catch (err) {
+      void this.appsflyer.logEvent('sync_failed', { source: 'login', direction: 'bidirectional', error_type: navigator.onLine ? 'unknown' : 'network' });
       console.error('Post-login notes download failed', err);
     }
   }
@@ -291,6 +294,14 @@ export class LoginComponent implements OnInit {
         }
 
         await this.syncNotesAfterLogin(eakB64);
+        void this.appsflyer.logEvent('login_success', {
+          local_notes_uploaded: this.appsflyer.booleanLabel((notes ?? '').length > 0),
+          app_lock_enabled: this.appsflyer.booleanLabel(this.notesService.appHasPasswordChallenge()),
+        });
+        void this.appsflyer.logEvent('sync_enabled', {
+          source: 'login',
+          had_local_notes: this.appsflyer.booleanLabel((notes ?? '').length > 0),
+        });
         await this.authService.initializeAuthState();
         await Preferences.set({ key: 'stellar_notes_show_sync_enabled_card', value: '1' });
         await this.appHaptics.success();

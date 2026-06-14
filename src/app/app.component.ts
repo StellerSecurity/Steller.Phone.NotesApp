@@ -8,6 +8,7 @@ import { Capacitor } from '@capacitor/core';
 import { App } from '@capacitor/app';
 import { ScreenshotProtectionService } from './services/screenshot-protection.service';
 import { ThemeService } from './services/theme.service';
+import { AppsflyerService } from './services/appsflyer.service';
 @Component({
   selector: 'app-root',
   templateUrl: 'app.component.html',
@@ -22,7 +23,8 @@ export class AppComponent {
     private noteService: NotesService,
     private zone: NgZone,
     private screenshotProtectionService: ScreenshotProtectionService,
-    private themeService: ThemeService
+    private themeService: ThemeService,
+    private appsflyer: AppsflyerService
   ) {
     this.syncWorker.init();
     this.installPrivacyShield();
@@ -31,6 +33,9 @@ export class AppComponent {
     if (typeof navigator !== 'undefined') {
       this.initializeTranslations();
     }
+    // Initialize AppsFlyer on startup (no-op on web or if plugin missing)
+    void this.appsflyer.init();
+    void this.appsflyer.logEventOnce('first_open', { platform: Capacitor.getPlatform() });
   }
   ngOnInit() {
     if (Capacitor.getPlatform() === 'ios') {

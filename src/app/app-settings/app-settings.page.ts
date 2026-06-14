@@ -12,6 +12,7 @@ import { AppHapticsService } from '../services/app-haptics.service';
 import { AuthService } from '../services/auth.service';
 import { BiometricUnlockService } from '../services/biometric-unlock.service';
 import { AppearanceMode, ThemeService } from '../services/theme.service';
+import { AppsflyerService } from '../services/appsflyer.service';
 
 @Component({
   selector: 'app-app-settings',
@@ -139,6 +140,7 @@ export class AppSettingsPage implements AfterViewInit {
     private biometricUnlockService: BiometricUnlockService,
     private actionSheetController: ActionSheetController,
     private themeService: ThemeService,
+    private appsflyer: AppsflyerService,
   ) {}
 
   async ionViewWillEnter(): Promise<void> {
@@ -275,6 +277,9 @@ export class AppSettingsPage implements AfterViewInit {
       await this.biometricUnlockService.refreshStoredPassword(this.notesAppPassword);
       this.password_enabled = true;
       this.appPasswordChallenge = true;
+      void this.appsflyer.logEvent('app_lock_enabled', {
+        screenshot_protection_enabled: this.appsflyer.booleanLabel(this.screenshotProtectionEnabled),
+      });
       this.resetPasswordFormState();
       await this.modal.dismiss();
       await this.appHaptics.success();
@@ -334,6 +339,7 @@ export class AppSettingsPage implements AfterViewInit {
             await this.screenshotProtectionService.applyCurrentSetting(false);
             this.password_enabled = false;
             this.appPasswordChallenge = false;
+            void this.appsflyer.logEvent('app_lock_disabled');
             this.resetPasswordFormState();
             await this.modal.dismiss();
             await this.appHaptics.success();
@@ -404,6 +410,9 @@ export class AppSettingsPage implements AfterViewInit {
     await this.appHaptics.selectionChanged();
     await this.screenshotProtectionService.setEnabled(this.screenshotProtectionEnabled);
     await this.screenshotProtectionService.applyCurrentSetting(this.password_enabled);
+    void this.appsflyer.logEvent('screenshot_protection_changed', {
+      enabled: this.appsflyer.booleanLabel(this.screenshotProtectionEnabled),
+    });
   }
 
   public async hapticsChange() {
@@ -474,6 +483,9 @@ export class AppSettingsPage implements AfterViewInit {
     }
 
     await this.noteService.flushPersistence();
+    void this.appsflyer.logEvent('inactive_wipe_changed', {
+      days_bucket: this.appWipeAfterDays === 0 ? 'off' : String(this.appWipeAfterDays),
+    });
   }
 
   public getAppWipeAfterDaysLabel(days: number): string {
@@ -511,12 +523,18 @@ export class AppSettingsPage implements AfterViewInit {
     this.appHaptics.selectionChanged();
     this.noteService.setClipboardAutoClearSeconds(this.clipboardAutoClearSeconds);
     await this.noteService.flushPersistence();
+    void this.appsflyer.logEvent('clipboard_auto_clear_changed', {
+      seconds_bucket: this.clipboardAutoClearSeconds === 0 ? 'off' : String(this.clipboardAutoClearSeconds),
+    });
   }
 
   public async privacyModeChange() {
     await this.appHaptics.selectionChanged();
     this.noteService.setPrivacyModeEnabled(this.privacyModeEnabled);
     await this.noteService.flushPersistence();
+    void this.appsflyer.logEvent('privacy_mode_changed', {
+      enabled: this.appsflyer.booleanLabel(this.privacyModeEnabled),
+    });
   }
 
   public async togglePrivacyModeFromRow() {
@@ -527,6 +545,7 @@ export class AppSettingsPage implements AfterViewInit {
   public async saveLanguage() {
     await this.appHaptics.selectionChanged();
     await this.translatorService.setLanguage(this.selectedLanguage);
+    void this.appsflyer.logEvent('language_changed', { language: this.selectedLanguage });
     this.allTranslations = this.translatorService.allTranslations ?? {};
     this.languageOptions = this.translatorService.getSupportedLanguageOptions();
   }
@@ -534,6 +553,7 @@ export class AppSettingsPage implements AfterViewInit {
   public async saveAppearance() {
     await this.appHaptics.selectionChanged();
     await this.themeService.setAppearanceMode(this.appearanceMode);
+    void this.appsflyer.logEvent('appearance_changed', { mode: this.appearanceMode });
   }
 
   public getAppearanceLabel(option: { value: AppearanceMode; labelKey: string }): string {
@@ -631,6 +651,10 @@ export class AppSettingsPage implements AfterViewInit {
       const enabled = await this.biometricUnlockService.enableWithPassword(password, this.getBiometricPromptLabels());
       this.biometricUnlockEnabled = enabled;
 
+      if (enabled) {
+        void this.appsflyer.logEvent('biometric_unlock_enabled', { available: 'true' });
+      }
+
       const toast = await this.toastController.create({
         message: enabled
           ? (this.allTranslations?.biometricUnlockEnabledMessage ?? 'Biometric unlock is enabled.')
@@ -645,6 +669,7 @@ export class AppSettingsPage implements AfterViewInit {
 
     await this.biometricUnlockService.setEnabled(false);
     this.biometricUnlockEnabled = false;
+    void this.appsflyer.logEvent('biometric_unlock_disabled');
   }
 
   public async toggleBiometricUnlockFromRow() {

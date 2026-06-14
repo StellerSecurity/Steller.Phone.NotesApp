@@ -151,6 +151,44 @@ npx cap open android
 npx cap open ios
 ```
 
+### AppsFlyer integration
+
+This project is prepared to work with AppsFlyer via the official Capacitor plugin.
+
+1. Install the plugin (in your local environment):
+
+```bash
+npm i appsflyer-capacitor-plugin --save
+npx cap sync
+```
+
+2. Provide your keys. You can set them via environment variables before `npx cap sync` so they propagate into native projects:
+
+- APPSFLYER_DEV_KEY: your AppsFlyer Dev Key
+- IOS_APP_ID: your iOS App Store ID (e.g., 1234567890)
+
+Alternatively, you can open the native projects and configure keys following the plugin’s README.
+
+3. The app calls AppsFlyer init on startup on device. On web or if the plugin is missing, it no-ops. You can also log events via the provided service:
+
+```ts
+constructor(private appsflyer: AppsflyerService) {}
+
+async someAction() {
+  await this.appsflyer.logEvent('note_created', { length: 120 });
+}
+```
+
+4. Build and run:
+
+```bash
+ionic build
+npx cap sync
+npx cap run android --device
+# or
+yarn cap run ios --device
+```
+
 From there, use Android Studio / Xcode to build and sign your apps.
 
 ### 5. Desktop (Electron/Tauri/Capacitor Desktop)

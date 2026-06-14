@@ -48,6 +48,7 @@ import { Folder } from '../models/Folder';
 import { App } from '@capacitor/app';
 import { Preferences } from '@capacitor/preferences';
 import { BiometricUnlockService } from '../services/biometric-unlock.service';
+import { AppsflyerService } from '../services/appsflyer.service';
 
 @Component({
   selector: 'app-home',
@@ -154,6 +155,8 @@ export class HomePage implements AfterViewInit, OnDestroy {
   private folderBrowserModeBeforeSearch = true;
   private pendingCreateFolderResolver: ((value: boolean) => void) | null = null;
   private pendingCreateFolderOptions?: { keepCurrentView?: boolean; onCreated?: (folderName: string) => Promise<void> | void };
+  private lastTrackedSearchQuery = '';
+  private lastSyncAnalyticsAt = 0;
   private activeFolderNameBeforeSearch = '__all__';
   private activeFilterBeforeSearch: 'all' | 'favorites' = 'all';
 
@@ -191,8 +194,29 @@ export class HomePage implements AfterViewInit, OnDestroy {
     private appHaptics: AppHapticsService,
     private platform: Platform,
     private biometricUnlockService: BiometricUnlockService,
+    private appsflyer: AppsflyerService,
   ) {}
 
+
+
+
+  private trackSyncFailed(values: Record<string, string>): void {
+    const now = Date.now();
+    if (now - this.lastSyncAnalyticsAt < 300_000) {
+      return;
+    }
+
+    this.lastSyncAnalyticsAt = now;
+    void this.appsflyer.logEvent('sync_failed', values);
+  }
+
+  private trackNoteMove(source: string, movedCount: number, targetFolder: string): void {
+    void this.appsflyer.logEvent('note_moved_to_folder', {
+      source,
+      count_bucket: this.appsflyer.countBucket(movedCount),
+      target: targetFolder ? 'folder' : 'all_notes',
+    });
+  }
 
   public get folderVisibleNotes(): any[] {
     return this.activeFolderName === '__all__'
@@ -703,6 +727,7 @@ export class HomePage implements AfterViewInit, OnDestroy {
       this.isSearching = false;
       this.filteredResults = this.notes;
       this.refreshVisibleNotes();
+      this.lastTrackedSearchQuery = '';
       return;
     }
 
@@ -1099,6 +1124,11 @@ export class HomePage implements AfterViewInit, OnDestroy {
       await this.noteService.flushPersistence();
       this.setData(this.noteService.getNotesAppPassword());
     } catch (err) {
+      this.trackSyncFailed({
+        source: options.silent ? 'background' : 'home',
+        direction: 'download',
+        error_type: navigator.onLine ? 'unknown' : 'network',
+      });
     } finally {
       if (!options.silent) {
         this.isSyncing = false;
@@ -1186,6 +1216,10 @@ export class HomePage implements AfterViewInit, OnDestroy {
         this.schedulePressGestureInit();
       }, HomePage.DETECT_CHANGES_DELAY_MS);
 
+      if (fromBiometric) {
+        void this.appsflyer.logEvent('biometric_unlock_used', { success: 'true' });
+      }
+
       await (fromBiometric ? this.appHaptics.success() : this.appHaptics.success());
       return;
     } catch (e: any) {
@@ -1202,6 +1236,10 @@ export class HomePage implements AfterViewInit, OnDestroy {
         duration: 3000,
         position: 'bottom',
       });
+
+      if (fromBiometric) {
+        void this.appsflyer.logEvent('biometric_unlock_failed', { success: 'false' });
+      }
 
       this.noteService.clearSensitiveRuntimeState();
       this.should_display = false;
@@ -1493,6 +1531,7 @@ export class HomePage implements AfterViewInit, OnDestroy {
     }
 
     const deletedIds = [...this.pendingDeletedIds];
+    const deletedCount = deletedIds.length;
     this.pendingDeletedNotes = [];
     this.pendingDeletedIds = [];
 
@@ -1513,6 +1552,11 @@ export class HomePage implements AfterViewInit, OnDestroy {
     if (this.authService.isLoggedIn) {
       this.notesApiServiceV1.deleteNotes(deletedIds).then(() => {});
     }
+
+    void this.appsflyer.logEvent('note_deleted', {
+      source: 'bulk',
+      count_bucket: this.appsflyer.countBucket(deletedCount),
+    });
   }
 
   trackByNoteId(index: number, note: any): string {
@@ -2022,6 +2066,7 @@ export class HomePage implements AfterViewInit, OnDestroy {
       }
     }
 
+    void this.appsflyer.logEvent('folder_created', { source: 'home' });
     void this.persistFoldersState().catch(() => {});
   }
 
@@ -2091,6 +2136,7 @@ export class HomePage implements AfterViewInit, OnDestroy {
       });
       await toast.present();
 
+      this.trackNoteMove('home_bulk', movedCount, targetFolder);
       void this.persistNotesState().catch(() => {});
       void this.persistFoldersState().catch(() => {});
     };
@@ -2171,6 +2217,7 @@ export class HomePage implements AfterViewInit, OnDestroy {
     });
     await toast.present();
 
+    this.trackNoteMove('home_bulk', movedCount, targetFolder);
     void this.persistNotesState().catch(() => {});
     void this.persistFoldersState().catch(() => {});
   }

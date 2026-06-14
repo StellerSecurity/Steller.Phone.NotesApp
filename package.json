@@ -44,6 +44,7 @@
     "@zxcvbn-ts/language-en": "^3.0.2",
     "angular-froala-wysiwyg": "^4.2.0",
     "angular-password-strength-meter": "^9.0.1",
+    "appsflyer-capacitor-plugin": "^6.17.8",
     "capacitor-secure-storage-plugin": "^0.12.0",
     "crypto-js": "^4.1.1",
     "ionicons": "^7.0.0",

@@ -27,6 +27,7 @@ import { NoteV1 } from '../models/NoteV1';
 import { Folder } from '../models/Folder';
 import { AuthService } from '../services/auth.service';
 import { AppHapticsService } from '../services/app-haptics.service';
+import { AppsflyerService } from '../services/appsflyer.service';
 import { evaluatePasswordStrength, getWeakPasswordEducationKeys, isPasswordAcceptable, shouldConfirmWeakPassword } from '../utils/password-policy';
 import { unpackCipherBlob, decryptTextWithMK } from '@stellarsecurity/stellar-crypto';
 declare var require: any;
@@ -129,6 +130,7 @@ export class AddNotePage implements OnDestroy {
     private translatorService: TranslatorService,
     private authService: AuthService,
     private appHaptics: AppHapticsService,
+    private appsflyer: AppsflyerService,
   ) {
     this.routeSub = this.activatedRoute.paramMap.subscribe((params: ParamMap) => {
       const decrypted = this.notesService.getDecryptedNotes();
@@ -191,6 +193,14 @@ export class AddNotePage implements OnDestroy {
 
       this.startLiveNotePolling();
     });
+  }
+
+
+  private getNoteAnalyticsValues(): Record<string, string> {
+    return {
+      protected: this.appsflyer.booleanLabel(!!this.currentNote?.protected),
+      has_folder: this.appsflyer.booleanLabel(((this.currentNote?.folder ?? '').trim()).length > 0),
+    };
   }
 
   private getUntitledLabel(): string {
@@ -533,6 +543,7 @@ export class AddNotePage implements OnDestroy {
     this.pendingNewFolderResolver?.(folderName);
     this.pendingNewFolderResolver = null;
 
+    void this.appsflyer.logEvent('folder_created', { source: 'note_editor' });
     void this.uploadFoldersState().catch(() => {});
   }
 
@@ -599,6 +610,11 @@ export class AddNotePage implements OnDestroy {
     });
     await toast.present();
 
+    void this.appsflyer.logEvent('note_moved_to_folder', {
+      source: 'note_editor',
+      count_bucket: '1',
+      target: folderName ? 'folder' : 'all_notes',
+    });
     void this.uploadFoldersState().catch(() => {});
   }
 
@@ -975,6 +991,11 @@ export class AddNotePage implements OnDestroy {
     if (this.authService.isLoggedIn && noteId) {
       this.notesApiV1Service.deleteNotes([noteId]).then(() => {});
     }
+
+    void this.appsflyer.logEvent('note_deleted', {
+      source: 'single_note',
+      count_bucket: '1',
+    });
   }
 
   public async shareStellarSecret() {
@@ -1184,6 +1205,9 @@ export class AddNotePage implements OnDestroy {
     if (this.notes_id === null) return;
     if (this.note_locked) return;
 
+    const wasNewNote = this.newlyCreatedNote;
+    const hasChangesBeforeSave = this.hasMeaningfulChanges();
+
     const plainText = this.note_text ?? '';
     const plainTitle = this.note_title ?? '';
     const textForEncrypt = plainText.length > 0 ? plainText : ' ';
@@ -1254,6 +1278,16 @@ export class AddNotePage implements OnDestroy {
 
     this.currentNote = note;
     this.notesService.markPendingMutation(note.id, 'update', note.last_modified);
+
+    const noteAnalyticsValues = this.getNoteAnalyticsValues();
+    if (wasNewNote && !this.isEffectivelyEmptyNewNote()) {
+      this.newlyCreatedNote = false;
+      void this.appsflyer.logEventOnce('first_note_created', noteAnalyticsValues);
+      void this.appsflyer.logEvent('note_created', noteAnalyticsValues);
+    } else if (!wasNewNote && hasChangesBeforeSave) {
+      void this.appsflyer.logEvent('note_edited', noteAnalyticsValues);
+    }
+
     void this.storeNoteInStorage(true);
   }
 
@@ -1550,6 +1584,8 @@ export class AddNotePage implements OnDestroy {
     this.notes_password_confirm = '';
     this.notes_password_input = '';
 
+    void this.appsflyer.logEvent('protected_note_enabled', this.getNoteAnalyticsValues());
+
     await this.dismissModal();
     await this.appHaptics.success();
   }
@@ -1608,6 +1644,7 @@ export class AddNotePage implements OnDestroy {
             }
 
             await this.storeNoteInStorage(true);
+            void this.appsflyer.logEvent('protected_note_disabled', this.getNoteAnalyticsValues());
             this.captureInitialSnapshot();
             this.lockModal.dismiss();
           },

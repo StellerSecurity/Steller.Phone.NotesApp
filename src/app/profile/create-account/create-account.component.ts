@@ -23,6 +23,7 @@ import {CryptoService} from "../../services/crypto.service";
 import { CryptoKeyService } from '../../services/crypto-key.service';
 import { AppHapticsService } from '../../services/app-haptics.service';
 import { isPasswordAcceptable } from '../../utils/password-policy';
+import { AppsflyerService } from '../../services/appsflyer.service';
 
 @Component({
   selector: 'app-create-account',
@@ -55,7 +56,8 @@ export class CreateAccountComponent implements OnInit {
               private cryptoKeyService: CryptoKeyService,
               private authService: AuthService, private toastMessageService: ToastMessageService,
               private secureStorageService: SecureStorageService,
-              private appHaptics: AppHapticsService) {}
+              private appHaptics: AppHapticsService,
+              private appsflyer: AppsflyerService) {}
 
   ngOnInit(): void {
     this.initCreateUserForm();
@@ -207,6 +209,7 @@ export class CreateAccountComponent implements OnInit {
       this.notesService.setDecryptedNotes(mergedJson);
       await this.notesService.flushPersistence();
     } catch (err) {
+      void this.appsflyer.logEvent('sync_failed', { source: 'register', direction: 'bidirectional', error_type: navigator.onLine ? 'unknown' : 'network' });
       console.error('Post-register notes download failed', err);
     }
   }
@@ -298,6 +301,15 @@ export class CreateAccountComponent implements OnInit {
         }
 
         await this.syncNotesAfterRegister(eakB64);
+        void this.appsflyer.logEvent('af_complete_registration', {
+          registration_method: 'email',
+          local_notes_uploaded: this.appsflyer.booleanLabel((notes ?? '').length > 0),
+          app_lock_enabled: this.appsflyer.booleanLabel(this.notesService.appHasPasswordChallenge()),
+        });
+        void this.appsflyer.logEvent('sync_enabled', {
+          source: 'create_account',
+          had_local_notes: this.appsflyer.booleanLabel((notes ?? '').length > 0),
+        });
         await this.authService.initializeAuthState();
         await this.appHaptics.success();
         await this.router.navigate(['/']);
