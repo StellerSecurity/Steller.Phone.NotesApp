@@ -2219,3 +2219,130 @@ html.stellar-dark-theme body.stellar-dark-theme ion-modal.app-lock-modal .app-lo
   background: transparent !important;
   color: var(--stellar-danger) !important;
 }
+
+
+/* Add-note note lock modal: dark-mode helper box readability. */
+html.stellar-dark-theme body ion-modal.note-lock-modal,
+html.stellar-dark-theme body ion-modal.note-lock-modal::part(content),
+html.stellar-dark-theme body ion-modal.note-lock-modal ion-content.note-lock-content,
+html.stellar-dark-theme body ion-modal.note-lock-modal ion-content.note-lock-content::part(background) {
+  --background: var(--stellar-background) !important;
+  background: var(--stellar-background) !important;
+  color: var(--stellar-text) !important;
+}
+
+html.stellar-dark-theme body ion-modal.note-lock-modal ion-title,
+html.stellar-dark-theme body ion-modal.note-lock-modal .note-lock-content h2,
+html.stellar-dark-theme body ion-modal.note-lock-modal .note-lock-content h4,
+html.stellar-dark-theme body ion-modal.note-lock-modal .note-lock-content .pass-note {
+  color: var(--stellar-text) !important;
+}
+
+html.stellar-dark-theme body ion-modal.note-lock-modal .note-lock-content p,
+html.stellar-dark-theme body ion-modal.note-lock-modal .note-lock-content .pass-list li {
+  color: var(--stellar-muted) !important;
+}
+
+html.stellar-dark-theme body ion-modal.note-lock-modal .note-lock-content .pass-info-box {
+  background: var(--stellar-surface) !important;
+  color: var(--stellar-muted) !important;
+  border: 1px solid var(--stellar-border) !important;
+  box-shadow: none !important;
+}
+
+html.stellar-dark-theme body ion-modal.note-lock-modal .note-lock-content .password-warning-box {
+  background: rgba(255, 196, 9, 0.12) !important;
+  border: 1px solid rgba(255, 196, 9, 0.28) !important;
+}
+
+html.stellar-dark-theme body ion-modal.note-lock-modal .note-lock-content .password-warning-text,
+html.stellar-dark-theme body ion-modal.note-lock-modal .note-lock-content .password-warning-tips {
+  color: #F7C65F !important;
+}
+
+html.stellar-dark-theme body ion-modal.note-lock-modal .note-lock-content ion-input {
+  --background: var(--stellar-surface-elevated) !important;
+  --color: var(--stellar-text) !important;
+  --placeholder-color: var(--stellar-muted-2) !important;
+}
+
+
+/* Add-note move-to-folder modal: footer owns the bottom actions, content owns the scroll. */
+ion-modal.folder-picker-modal {
+  --height: min(82vh, calc(100vh - 28px));
+  --max-height: calc(100vh - 28px);
+  --border-radius: 24px 24px 0 0;
+  align-items: flex-end;
+}
+
+ion-modal.folder-picker-modal::part(content) {
+  height: min(82vh, calc(100vh - 28px));
+  max-height: calc(100vh - 28px);
+  overflow: hidden;
+}
+
+ion-modal.folder-picker-modal .ion-page {
+  display: flex !important;
+  flex-direction: column !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+}
+
+ion-modal.folder-picker-modal .folder-picker-content {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  --overflow: hidden !important;
+}
+
+ion-modal.folder-picker-modal .folder-picker-content::part(scroll) {
+  display: flex !important;
+  flex-direction: column !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+}
+
+ion-modal.folder-picker-modal .folder-picker-sheet {
+  display: flex !important;
+  flex: 1 1 auto !important;
+  flex-direction: column !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  max-height: 100% !important;
+  overflow: hidden !important;
+  padding-bottom: 8px !important;
+}
+
+ion-modal.folder-picker-modal .folder-picker-list {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 16px !important;
+}
+
+ion-modal.folder-picker-modal .folder-picker-footer {
+  flex: 0 0 auto !important;
+  min-height: calc(72px + env(safe-area-inset-bottom)) !important;
+  background: #f3f4fb !important;
+  z-index: 30 !important;
+}
+
+ion-modal.folder-picker-modal .folder-picker-actions {
+  display: flex !important;
+  gap: 12px !important;
+  padding: 12px 16px calc(14px + env(safe-area-inset-bottom)) !important;
+}
+
+ion-modal.folder-picker-modal .folder-picker-actions ion-button {
+  flex: 1 1 0 !important;
+  margin: 0 !important;
+  height: 48px !important;
+}
+
+html.stellar-dark-theme body ion-modal.folder-picker-modal .folder-picker-footer {
+  background: #0B1020 !important;
+}
+

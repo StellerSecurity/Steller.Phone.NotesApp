@@ -2,6 +2,7 @@ import { Component, ViewChild, OnDestroy } from '@angular/core';
 import { ActivatedRoute, ParamMap } from '@angular/router';
 import {
   AlertController,
+  IonContent,
   IonInput,
   IonModal,
   ModalController,
@@ -41,6 +42,7 @@ const CryptoJS = require('crypto-js');
 })
 export class AddNotePage implements OnDestroy {
   @ViewChild('lockModal') lockModal!: IonModal;
+  @ViewChild('noteContent', { static: false }) noteContentRef?: IonContent;
   @ViewChild('titleInput', { static: false }) titleInputRef!: IonInput;
   @ViewChild('richTextEditorComponentRef') richTextEditorComponent!: RichTextEditorComponent;
 
@@ -1028,19 +1030,26 @@ export class AddNotePage implements OnDestroy {
     this.appHaptics.selectionChanged();
     this.closeMoreMenu();
     this.isEditingTitle = true;
-    setTimeout(() => this.titleInputRef?.setFocus(), 60);
+    setTimeout(() => void this.focusTitleInputWithoutScrolling(), 60);
   }
 
   onTitleBlur() {
+    const scrollState = this.captureEditorScrollState();
     this.isEditingTitle = false;
+    this.restoreEditorScrollState(scrollState);
   }
 
   onTitleSubmit() {
+    const scrollState = this.captureEditorScrollState();
     this.isEditingTitle = false;
-    this.titleInputRef?.getInputElement().then((input) => input.blur()).catch(() => {});
+    this.titleInputRef?.getInputElement().then((input) => {
+      input.blur();
+      this.restoreEditorScrollState(scrollState);
+    }).catch(() => this.restoreEditorScrollState(scrollState));
   }
 
   public noteTitleChange(event: any) {
+    const scrollState = this.captureEditorScrollState();
     const newTitle = (event?.detail?.value ?? '').trim();
     this.note_title = newTitle;
 
@@ -1052,6 +1061,85 @@ export class AddNotePage implements OnDestroy {
     }
 
     this.onSave(newTitle, 'note_title');
+    this.restoreEditorScrollState(scrollState);
+  }
+
+  private async focusTitleInputWithoutScrolling(): Promise<void> {
+    const scrollState = await this.captureEditorScrollStateAsync();
+
+    try {
+      const input = await this.titleInputRef?.getInputElement();
+      input?.focus({ preventScroll: true });
+    } catch {
+      try {
+        await this.titleInputRef?.setFocus();
+      } catch {
+        // Ignore focus failures; the scroll restore below still protects the editor position.
+      }
+    }
+
+    this.restoreEditorScrollState(scrollState);
+  }
+
+  private captureEditorScrollState(): { ionTop?: number; editorTop?: number; documentTop?: number } {
+    const editor = this.getQuillEditorElement();
+    const documentScrollElement = typeof document !== 'undefined'
+      ? document.scrollingElement as HTMLElement | null
+      : null;
+
+    return {
+      editorTop: editor?.scrollTop,
+      documentTop: documentScrollElement?.scrollTop,
+    };
+  }
+
+  private async captureEditorScrollStateAsync(): Promise<{ ionTop?: number; editorTop?: number; documentTop?: number }> {
+    const state = this.captureEditorScrollState();
+
+    try {
+      const scrollElement = await this.noteContentRef?.getScrollElement();
+      state.ionTop = scrollElement?.scrollTop;
+    } catch {
+      // Ionic scroll element may not be available during header title transitions.
+    }
+
+    return state;
+  }
+
+  private restoreEditorScrollState(state: { ionTop?: number; editorTop?: number; documentTop?: number }): void {
+    const restore = () => {
+      const editor = this.getQuillEditorElement();
+      if (editor && typeof state.editorTop === 'number') {
+        editor.scrollTop = state.editorTop;
+      }
+
+      if (typeof document !== 'undefined' && typeof state.documentTop === 'number') {
+        const documentScrollElement = document.scrollingElement as HTMLElement | null;
+        if (documentScrollElement) {
+          documentScrollElement.scrollTop = state.documentTop;
+        }
+      }
+
+      if (typeof state.ionTop === 'number') {
+        void this.noteContentRef?.getScrollElement().then((scrollElement) => {
+          scrollElement.scrollTop = state.ionTop as number;
+        }).catch(() => {});
+      }
+    };
+
+    restore();
+    requestAnimationFrame(() => {
+      restore();
+      setTimeout(restore, 50);
+    });
+  }
+
+  private getQuillEditorElement(): HTMLElement | null {
+    if (typeof document === 'undefined') {
+      return null;
+    }
+
+    return document.querySelector('app-add-note app-rich-text-editor .ql-editor') as HTMLElement | null;
   }
 
   togglePasswordVisibility() {

@@ -317,21 +317,28 @@ ion-input {
 
 .folder-picker-content {
   --background: linear-gradient(180deg, #f8f8fc 0%, #f3f4fb 100%);
+  --overflow: hidden;
+  height: 100%;
 }
 
 .folder-picker-content::part(scroll) {
   display: flex;
   flex-direction: column;
-  min-height: 100%;
+  height: 100%;
+  min-height: 0;
+  max-height: 100%;
+  overflow: hidden;
 }
 
 .folder-picker-sheet {
   display: flex;
   flex-direction: column;
-  min-height: 100%;
+  height: 100%;
+  min-height: 0;
   max-height: 100%;
-  padding: 8px 16px calc(20px + env(safe-area-inset-bottom));
+  padding: 8px 16px 8px;
   box-sizing: border-box;
+  overflow: hidden;
 }
 
 .folder-picker-header {
@@ -370,10 +377,13 @@ ion-input {
 
 .folder-picker-list {
   display: flex;
+  flex: 1 1 auto;
   min-height: 0;
   flex-direction: column;
   gap: 10px;
   overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
   padding-right: 4px;
   margin-right: -4px;
   padding-bottom: 10px;
@@ -444,14 +454,17 @@ ion-input {
   box-shadow: 0 12px 30px rgba(39, 97, 252, 0.12);
 }
 
+.folder-picker-footer {
+  flex: 0 0 auto;
+  background: #f3f4fb;
+  box-shadow: 0 -10px 24px rgba(11, 12, 25, 0.04);
+}
+
 .folder-picker-actions {
   display: flex;
   gap: 12px;
-  margin-top: 12px;
-  padding-top: 12px;
-  position: sticky;
-  bottom: 0;
-  background: linear-gradient(180deg, rgba(243, 244, 251, 0) 0%, rgba(243, 244, 251, 0.92) 18%, #f3f4fb 100%);
+  padding: 12px 16px calc(14px + env(safe-area-inset-bottom));
+  background: linear-gradient(180deg, rgba(243, 244, 251, 0.88) 0%, #f3f4fb 100%);
   backdrop-filter: blur(8px);
 }
 
@@ -548,8 +561,13 @@ ion-input {
     --background: linear-gradient(180deg, #0B1020 0%, #11172A 100%);
   }
 
+  .folder-picker-footer {
+    background: #0B1020;
+    box-shadow: 0 -10px 24px rgba(0, 0, 0, 0.22);
+  }
+
   .folder-picker-actions {
-    background: linear-gradient(180deg, rgba(11, 16, 32, 0) 0%, rgba(11, 16, 32, 0.92) 18%, #0B1020 100%);
+    background: linear-gradient(180deg, rgba(11, 16, 32, 0.88) 0%, #0B1020 100%);
   }
 
   .folder-picker-icon-all {
@@ -587,4 +605,47 @@ ion-input {
   --color: #FFFFFF !important;
   color: #FFFFFF !important;
   opacity: 1 !important;
+}
+
+
+/* Note lock modal dark-mode fix. Scoped to this modal only. */
+:host-context(.stellar-dark-theme) .note-lock-content,
+:host-context(.stellar-dark-theme) .note-lock-content::part(background) {
+  --background: var(--stellar-background);
+  background: var(--stellar-background);
+  color: var(--stellar-text);
+}
+
+:host-context(.stellar-dark-theme) .note-lock-content h2,
+:host-context(.stellar-dark-theme) .note-lock-content h4,
+:host-context(.stellar-dark-theme) .note-lock-content .pass-note {
+  color: var(--stellar-text) !important;
+}
+
+:host-context(.stellar-dark-theme) .note-lock-content p,
+:host-context(.stellar-dark-theme) .note-lock-content .pass-list li {
+  color: var(--stellar-muted) !important;
+}
+
+:host-context(.stellar-dark-theme) .note-lock-content .pass-info-box {
+  background: var(--stellar-surface) !important;
+  color: var(--stellar-muted) !important;
+  border: 1px solid var(--stellar-border);
+  box-shadow: none;
+}
+
+:host-context(.stellar-dark-theme) .note-lock-content .password-warning-box {
+  background: rgba(255, 196, 9, 0.12) !important;
+  border-color: rgba(255, 196, 9, 0.28) !important;
+}
+
+:host-context(.stellar-dark-theme) .note-lock-content .password-warning-text,
+:host-context(.stellar-dark-theme) .note-lock-content .password-warning-tips {
+  color: #F7C65F !important;
+}
+
+:host-context(.stellar-dark-theme) .note-lock-content ion-input {
+  --background: var(--stellar-surface-elevated);
+  --color: var(--stellar-text);
+  --placeholder-color: var(--stellar-muted-2);
 }
