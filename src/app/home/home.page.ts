@@ -11,6 +11,7 @@ import {
 import {
   GestureController,
   IonContent,
+  IonInput,
   IonModal,
   IonSearchbar,
   AlertController,
@@ -73,6 +74,7 @@ export class HomePage implements AfterViewInit, OnDestroy {
 
   @ViewChild(IonModal) modal: IonModal;
   @ViewChild('searchbar') searchbar: IonSearchbar;
+  @ViewChild('newFolderNameInput', { static: false }) newFolderNameInputRef?: IonInput;
   @ViewChild('pagerShell', { read: ElementRef }) pagerShell?: ElementRef<HTMLElement>;
   @ViewChildren('longPressElements', { read: ElementRef }) longPressElements: QueryList<ElementRef>;
   @ViewChild(IonContent, { static: false }) content!: IonContent;
@@ -2025,6 +2027,24 @@ export class HomePage implements AfterViewInit, OnDestroy {
     await new Promise<boolean>((resolve) => {
       this.pendingCreateFolderResolver = resolve;
     });
+  }
+
+
+  public async focusNewFolderNameInput(): Promise<void> {
+    for (let attempt = 0; attempt < 6; attempt++) {
+      await new Promise((resolve) => window.setTimeout(resolve, attempt === 0 ? 80 : 60));
+
+      if (!this.newFolderModalOpen || !this.newFolderNameInputRef) {
+        continue;
+      }
+
+      try {
+        await this.newFolderNameInputRef.setFocus();
+        return;
+      } catch {
+        // Ionic may need one extra frame while the overlay is finishing presentation.
+      }
+    }
   }
 
   public cancelCreateFolderModal(): void {

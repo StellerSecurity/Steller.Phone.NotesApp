@@ -153,7 +153,8 @@
       cssClass="new-folder-modal"
       [backdropDismiss]="true"
       [showBackdrop]="true"
-      (didDismiss)="closeNewFolderModalFromDismiss()">
+      (didDismiss)="closeNewFolderModalFromDismiss()"
+      (didPresent)="focusNewFolderNameInput()">
       <ng-template>
         <ion-content class="new-folder-modal-content">
           <div class="new-folder-sheet">
@@ -165,6 +166,7 @@
 
             <div class="new-folder-sheet-input-wrap">
               <ion-input
+                #newFolderNameInput
                 [(ngModel)]="newFolderName"
                 [placeholder]="allTranslations?.folderNamePlaceholder ?? ('folderNamePlaceholder' | translate)"
                 class="new-folder-sheet-input"

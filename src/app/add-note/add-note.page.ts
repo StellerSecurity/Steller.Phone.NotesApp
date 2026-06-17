@@ -44,6 +44,7 @@ export class AddNotePage implements OnDestroy {
   @ViewChild('lockModal') lockModal!: IonModal;
   @ViewChild('noteContent', { static: false }) noteContentRef?: IonContent;
   @ViewChild('titleInput', { static: false }) titleInputRef!: IonInput;
+  @ViewChild('newFolderNameInput', { static: false }) newFolderNameInputRef?: IonInput;
   @ViewChild('richTextEditorComponentRef') richTextEditorComponent!: RichTextEditorComponent;
 
   public notes_password_input = '';
@@ -512,10 +513,30 @@ export class AddNotePage implements OnDestroy {
     this.blurFocusedElement();
     await this.waitForOverlayTransition(40);
     this.newFolderModalOpen = true;
+    window.setTimeout(() => {
+      void this.focusNewFolderNameInput();
+    }, 120);
 
     return new Promise((resolve) => {
       this.pendingNewFolderResolver = resolve;
     });
+  }
+
+  public async focusNewFolderNameInput(): Promise<void> {
+    for (let attempt = 0; attempt < 6; attempt++) {
+      await new Promise((resolve) => window.setTimeout(resolve, attempt === 0 ? 80 : 60));
+
+      if (!this.newFolderModalOpen || !this.newFolderNameInputRef) {
+        continue;
+      }
+
+      try {
+        await this.newFolderNameInputRef.setFocus();
+        return;
+      } catch {
+        // Ionic may need one extra frame while the overlay is finishing presentation.
+      }
+    }
   }
 
   public closeNewFolderModalFromDismiss(): void {
