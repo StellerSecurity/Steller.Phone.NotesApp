@@ -2149,8 +2149,10 @@ export class HomePage implements AfterViewInit, OnDestroy {
 
       const toast = await this.toastController.create({
         message: movedCount === 1
-          ? (this.allTranslations?.noteMovedToFolder ?? 'Note moved')
-          : (this.allTranslations?.notesMovedToFolder ?? '{{count}} notes moved').replace('{{count}}', String(movedCount)),
+          ? (this.allTranslations?.noteMovedToFolder ?? 'Note moved to {{folderName}}')
+            .replace('{{folderName}}', targetFolder || (this.allTranslations?.allNotes ?? 'All'))
+          : (this.allTranslations?.notesMovedToFolder ?? '{{count}} notes moved')
+            .replace('{{count}}', String(movedCount)),
         duration: 2200,
         position: 'bottom',
       });
@@ -2230,8 +2232,10 @@ export class HomePage implements AfterViewInit, OnDestroy {
 
     const toast = await this.toastController.create({
       message: movedCount === 1
-        ? (this.allTranslations?.noteMovedToFolder ?? 'Note moved')
-        : (this.allTranslations?.notesMovedToFolder ?? '{{count}} notes moved').replace('{{count}}', String(movedCount)),
+        ? (this.allTranslations?.noteMovedToFolder ?? 'Note moved to {{folderName}}')
+          .replace('{{folderName}}', targetFolder || (this.allTranslations?.allNotes ?? 'All'))
+        : (this.allTranslations?.notesMovedToFolder ?? '{{count}} notes moved')
+          .replace('{{count}}', String(movedCount)),
       duration: 2200,
       position: 'bottom',
     });
