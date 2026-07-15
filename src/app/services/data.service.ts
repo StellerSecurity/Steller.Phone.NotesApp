@@ -3,6 +3,7 @@ import { SecureStorageService } from "./secure-storage.service";
 import { Preferences } from '@capacitor/preferences';
 import { NotesStorageService } from './notes-storage.service';
 import { Filesystem, Directory } from '@capacitor/filesystem';
+import { BackgroundNotesSyncService } from './background-notes-sync.service';
 
 @Injectable({
   providedIn: 'root'
@@ -16,7 +17,8 @@ export class DataService {
 
   constructor(
     private secureStorageService: SecureStorageService,
-    private notesStorageService: NotesStorageService
+    private notesStorageService: NotesStorageService,
+    private backgroundSync: BackgroundNotesSyncService
   ) { }
 
   public setForceDownloadOnHome(forceDownloadOnHome: boolean) {
@@ -148,6 +150,8 @@ export class DataService {
       try {
         await this.notesStorageService.flush();
         await this.secureStorageService.clear();
+        await this.backgroundSync.replaceQueue([]);
+        await this.backgroundSync.clearDownloaded();
         await this.notesStorageService.clearManagedData();
         await this.clearLegacyNoteUnlockState();
         await this.clearBrowserStorage();

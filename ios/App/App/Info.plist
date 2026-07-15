@@ -30,6 +30,15 @@
 	<string>Allow saving images to your photo library when needed.</string>
 	<key>UIKeyboardDisplayRequiresUserAction</key>
 	<false/>
+	<key>BGTaskSchedulerPermittedIdentifiers</key>
+	<array>
+		<string>steller.phone.notesapp.background-sync</string>
+	</array>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>fetch</string>
+		<string>processing</string>
+	</array>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>

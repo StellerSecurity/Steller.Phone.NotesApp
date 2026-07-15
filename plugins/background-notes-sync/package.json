@@ -1,0 +1,36 @@
+{
+  "name": "@stellar/background-notes-sync",
+  "version": "1.0.0",
+  "description": "Native background upload and download synchronization for Stellar Private Notes",
+  "main": "dist/plugin.cjs",
+  "module": "dist/plugin.mjs",
+  "types": "dist/index.d.ts",
+  "type": "module",
+  "files": [
+    "android/src/main/",
+    "android/build.gradle",
+    "dist/",
+    "ios/Sources/",
+    "Package.swift",
+    "StellarBackgroundNotesSync.podspec"
+  ],
+  "author": "Stellar Security",
+  "license": "UNLICENSED",
+  "keywords": [
+    "capacitor",
+    "plugin",
+    "background-sync"
+  ],
+  "peerDependencies": {
+    "@capacitor/core": ">=7.0.0",
+    "capacitor-secure-storage-plugin": ">=0.12.0"
+  },
+  "capacitor": {
+    "ios": {
+      "src": "ios"
+    },
+    "android": {
+      "src": "android"
+    }
+  }
+}

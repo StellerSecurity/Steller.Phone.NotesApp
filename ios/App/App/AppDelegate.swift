@@ -1,5 +1,6 @@
 import UIKit
 import Capacitor
+import StellarBackgroundNotesSync
 
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate {
@@ -8,6 +9,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     private let privacyOverlayTag = 948271
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
+        BackgroundNotesSyncProcessor.register()
         return true
     }
 
