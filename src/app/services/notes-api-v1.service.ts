@@ -14,6 +14,7 @@ import { OutboxStorage } from "./outbox-storage.service";
 import { packCipherBlob, unpackCipherBlob } from '@stellarsecurity/stellar-crypto';
 import { buildApiUrl, notes } from '../constants/api/product.api';
 import { normalizeNoteSyncFlags, normalizeNoteSyncFlagsList } from '../utils/note-sync-normalize.util';
+import { BackgroundNotesSyncService } from './background-notes-sync.service';
 
 @Injectable({ providedIn: 'root' })
 export class NotesApiV1Service {
@@ -27,6 +28,7 @@ export class NotesApiV1Service {
     private secureStorageService: SecureStorageService,
     private crypto: CryptoKeyService,
     private outbox: OutboxStorage,
+    private backgroundSync: BackgroundNotesSyncService,
   ) {}
 
 
@@ -151,15 +153,16 @@ export class NotesApiV1Service {
       folders: encryptedFolders,
     } as any;
 
-    // Offline → queue i Outbox
+    // Persist first so suspending or killing the WebView cannot lose this mutation.
+    await this.outbox.enqueue(<OutboxOp><unknown>{
+      opId: payload.op_id,
+      type: 'upload',
+      payload,
+      attempt: 0,
+      nextAt: Date.now(),
+    });
+
     if (!navigator.onLine) {
-      await this.outbox.enqueue(<OutboxOp><unknown>{
-        opId: payload.op_id,
-        type: 'upload',
-        payload,
-        attempt: 0,
-        nextAt: Date.now(),
-      });
       return { queued: true, reason: 'offline' };
     }
 
@@ -167,15 +170,9 @@ export class NotesApiV1Service {
       const res = await firstValueFrom(
         this.http.post<object>(`${this.base}upload`, payload, { headers })
       );
+      await this.outbox.drop([payload.op_id]);
       return res;
     } catch (e) {
-      await this.outbox.enqueue(<OutboxOp>{
-        opId: payload.op_id,
-        type: 'upload',
-        payload,
-        attempt: 0,
-        nextAt: Date.now(),
-      });
       return { queued: true, reason: 'network_error' };
     }
   }
@@ -190,17 +187,22 @@ export class NotesApiV1Service {
     const TOKEN = await this.secureStorageService.getItem('ssToken');
     const headers = new HttpHeaders().set('Authorization', `Bearer ${TOKEN ?? ''}`);
 
-    if (!navigator.onLine) {
-      return { notes: [], folders: [], has_more: false, watermark: sinceMs || 0 };
+    const backgroundResponses = await this.backgroundSync.consumeDownloaded();
+    let foregroundResponse: any = null;
+    if (navigator.onLine) {
+      foregroundResponse = await firstValueFrom(
+        this.http.post<{ notes: NoteV1[]; folders?: Folder[]; has_more?: boolean; watermark?: number }>(
+          `${this.base}/download`,
+          { since: sinceMs || 0, limit },
+          { headers }
+        )
+      );
     }
 
-    const response = await firstValueFrom(
-      this.http.post<{ notes: NoteV1[]; folders?: Folder[]; has_more?: boolean; watermark?: number }>(
-        `${this.base}/download`,
-        { since: sinceMs || 0, limit },
-        { headers }
-      )
-    );
+    const response = this.mergeDownloadResponses([
+      ...backgroundResponses,
+      ...(foregroundResponse ? [foregroundResponse] : []),
+    ], sinceMs);
 
     const decryptedFolders: Folder[] = [];
     for (const folder of Array.isArray(response?.folders) ? response.folders : []) {
@@ -230,8 +232,8 @@ export class NotesApiV1Service {
     }
 
     const decryptedNotes: NoteV1[] = [];
-    for (const rawNote of normalizeNoteSyncFlagsList(response?.notes)) {
-      const note = normalizeNoteSyncFlags(rawNote);
+    for (const rawNote of normalizeNoteSyncFlagsList<NoteV1>(response?.notes)) {
+      const note = normalizeNoteSyncFlags(rawNote) as NoteV1;
       const noteFolderId = this.normalizeFolderId((note as any)?.folder_id);
       const resolvedFolderName = noteFolderId ? (folderNameById.get(noteFolderId) ?? '') : '';
       const decryptedFolderName = await this.decryptLegacyNoteFolder(note?.folder, noteFolderId ?? `${note.id}#folder`, resolvedFolderName);
@@ -247,6 +249,33 @@ export class NotesApiV1Service {
       ...response,
       notes: decryptedNotes,
       folders: decryptedFolders,
+    };
+  }
+
+  private mergeDownloadResponses(responses: any[], sinceMs: number): any {
+    const mergeById = (field: 'notes' | 'folders') => {
+      const values = new Map<string, any>();
+      for (const response of responses) {
+        for (const value of Array.isArray(response?.[field]) ? response[field] : []) {
+          const id = typeof value?.id === 'string' ? value.id : '';
+          if (!id) continue;
+          const current = values.get(id);
+          if (!current || Number(value?.last_modified ?? 0) >= Number(current?.last_modified ?? 0)) {
+            values.set(id, value);
+          }
+        }
+      }
+      return Array.from(values.values());
+    };
+
+    return {
+      notes: mergeById('notes'),
+      folders: mergeById('folders'),
+      has_more: responses.some(response => !!response?.has_more),
+      watermark: responses.reduce(
+        (maximum, response) => Math.max(maximum, Number(response?.watermark ?? 0)),
+        sinceMs || 0
+      ),
     };
   }
 
@@ -282,33 +311,29 @@ export class NotesApiV1Service {
       deleted_ids: deletedIds ?? [],
     } as any;
 
+    await this.outbox.enqueue(<OutboxOp>{
+      opId: payload.op_id,
+      type: 'delete',
+      payload,
+      attempt: 0,
+      nextAt: Date.now(),
+    });
+
     if (!navigator.onLine) {
-      await this.outbox.enqueue(<OutboxOp>{
-        opId: payload.op_id,
-        type: 'delete',
-        payload,
-        attempt: 0,
-        nextAt: Date.now(),
-      });
       return { queued: true, reason: 'offline' } as any;
     }
 
     try {
-      return await firstValueFrom(
+      const response = await firstValueFrom(
         this.http.post(
           `${this.base}sync-plan`,
           { deleted_ids: deletedIds, notes: [] },
           { headers }
         )
       );
+      await this.outbox.drop([payload.op_id]);
+      return response;
     } catch (e) {
-      await this.outbox.enqueue(<OutboxOp>{
-        opId: payload.op_id,
-        type: 'delete',
-        payload,
-        attempt: 0,
-        nextAt: Date.now(),
-      });
       return { queued: true, reason: 'network_error' } as any;
     }
   }

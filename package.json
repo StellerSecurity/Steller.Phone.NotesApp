@@ -9,7 +9,10 @@
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
-    "lint": "ng lint"
+    "lint": "ng lint",
+    "capacitor:copy:after": "node scripts/configure-background-sync.mjs",
+    "capacitor:sync:after": "node scripts/configure-background-sync.mjs",
+    "capacitor:update:after": "node scripts/configure-background-sync.mjs"
   },
   "private": true,
   "dependencies": {
@@ -38,6 +41,7 @@
     "@ngx-translate/core": "^15.0.0",
     "@ngx-translate/http-loader": "^8.0.0",
     "@stellarsecurity/stellar-crypto": "^1.0.2",
+    "@stellar/background-notes-sync": "file:plugins/background-notes-sync",
     "@wfpena/angular-wysiwyg": "^1.1.3",
     "@zxcvbn-ts/core": "^3.0.4",
     "@zxcvbn-ts/language-common": "^3.0.4",

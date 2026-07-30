@@ -29,6 +29,9 @@ project(':capacitor-share').projectDir = new File('../node_modules/@capacitor/sh
 include ':capacitor-status-bar'
 project(':capacitor-status-bar').projectDir = new File('../node_modules/@capacitor/status-bar/android')
 
+include ':stellar-background-notes-sync'
+project(':stellar-background-notes-sync').projectDir = new File('../plugins/background-notes-sync/android')
+
 include ':appsflyer-capacitor-plugin'
 project(':appsflyer-capacitor-plugin').projectDir = new File('../node_modules/appsflyer-capacitor-plugin/android')
 

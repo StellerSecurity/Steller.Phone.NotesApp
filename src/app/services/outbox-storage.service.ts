@@ -2,6 +2,7 @@
 import { Injectable } from '@angular/core';
 import { Storage as IonicStorage } from '@ionic/storage-angular';
 import { OutboxOp } from '../models/Sync';
+import { BackgroundNotesSyncService } from './background-notes-sync.service';
 
 const OUTBOX_KEY = 'notes.sync.outbox.v1';
 
@@ -9,7 +10,10 @@ const OUTBOX_KEY = 'notes.sync.outbox.v1';
 export class OutboxStorage {
   private ready: Promise<void>;
 
-  constructor(private storage: IonicStorage) {
+  constructor(
+    private storage: IonicStorage,
+    private backgroundSync: BackgroundNotesSyncService
+  ) {
     this.ready = this.init();
   }
 
@@ -18,23 +22,49 @@ export class OutboxStorage {
     const existing = await this.storage.get(OUTBOX_KEY);
     if (!Array.isArray(existing)) {
       await this.storage.set(OUTBOX_KEY, []);
+      await this.backgroundSync.replaceQueue([]);
+      return;
     }
+
+    await this.reconcileAndMirror(existing);
   }
 
   private async read(): Promise<OutboxOp[]> {
     await this.ready;
-    return (await this.storage.get(OUTBOX_KEY)) ?? [];
+    const items: OutboxOp[] = (await this.storage.get(OUTBOX_KEY)) ?? [];
+    return this.reconcileAndMirror(items);
   }
 
   private async write(items: OutboxOp[]) {
     await this.ready;
     await this.storage.set(OUTBOX_KEY, items);
+    await this.backgroundSync.replaceQueue(items);
+  }
+
+  private async reconcileAndMirror(items: OutboxOp[]): Promise<OutboxOp[]> {
+    const completedIds = await this.backgroundSync.consumeCompleted();
+    const completed = new Set(completedIds);
+    const reconciled = completed.size > 0
+      ? items.filter((item) => !completed.has(item.opId))
+      : items;
+
+    if (reconciled.length !== items.length) {
+      await this.storage.set(OUTBOX_KEY, reconciled);
+    }
+
+    await this.backgroundSync.replaceQueue(reconciled);
+    return reconciled;
   }
 
   /** Add a new operation to the queue (FIFO). */
   async enqueue(op: OutboxOp) {
     const items = await this.read();
-    items.push(op);
+    const existingIndex = items.findIndex((item) => item.opId === op.opId);
+    if (existingIndex >= 0) {
+      items[existingIndex] = op;
+    } else {
+      items.push(op);
+    }
     await this.write(items);
   }
 

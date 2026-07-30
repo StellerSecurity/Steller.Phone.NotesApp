@@ -21,7 +21,9 @@ log.txt
 /.ionic
 /www
 /platforms
-/plugins
+/plugins/*
+!/plugins/background-notes-sync/
+!/plugins/background-notes-sync/**
 
 # Compiled output
 /dist

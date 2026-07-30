@@ -139,7 +139,7 @@ export class ProfileComponent {
 
   private async logout() {
     await this.dataService.clearAppData();
-    await this.router.navigateByUrl('/', { replaceUrl: true });
+    window.location.replace('/');
   }
 
   navigateToRegister() {

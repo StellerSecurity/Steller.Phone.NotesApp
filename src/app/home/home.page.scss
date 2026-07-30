@@ -1455,6 +1455,8 @@ ion-refresher-content {
   background: transparent !important;
   --background: var(--stellar-surface) !important;
   --ion-background-color: transparent !important;
+  content-visibility: auto;
+  contain-intrinsic-size: auto 100px;
   border-radius: 12px !important;
   margin-bottom: 15px !important;
   overflow: visible !important;

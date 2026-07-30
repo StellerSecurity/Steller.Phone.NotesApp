@@ -3,6 +3,11 @@ import { SecureStorageService } from "./secure-storage.service";
 import { Preferences } from '@capacitor/preferences';
 import { NotesStorageService } from './notes-storage.service';
 import { Filesystem, Directory } from '@capacitor/filesystem';
+import { BackgroundNotesSyncService } from './background-notes-sync.service';
+import { AuthService } from './auth.service';
+import { BiometricUnlockService } from './biometric-unlock.service';
+import { CryptoKeyService } from './crypto-key.service';
+import { NotesService } from './notes.service';
 
 @Injectable({
   providedIn: 'root'
@@ -16,7 +21,12 @@ export class DataService {
 
   constructor(
     private secureStorageService: SecureStorageService,
-    private notesStorageService: NotesStorageService
+    private notesStorageService: NotesStorageService,
+    private backgroundSync: BackgroundNotesSyncService,
+    private authService: AuthService,
+    private biometricUnlockService: BiometricUnlockService,
+    private cryptoKeyService: CryptoKeyService,
+    private notesService: NotesService
   ) { }
 
   public setForceDownloadOnHome(forceDownloadOnHome: boolean) {
@@ -143,11 +153,18 @@ export class DataService {
     }
 
     this.wipeInProgress = (async () => {
+      this.authService.clearAuthenticationState();
+      this.cryptoKeyService.clearRuntimeKeys();
+      this.notesService.clearSensitiveRuntimeState();
+      this.forceDownloadOnHome = false;
+      await this.biometricUnlockService.clearStoredCredential();
       await this.markWipePending();
 
       try {
         await this.notesStorageService.flush();
         await this.secureStorageService.clear();
+        await this.backgroundSync.replaceQueue([]);
+        await this.backgroundSync.clearDownloaded();
         await this.notesStorageService.clearManagedData();
         await this.clearLegacyNoteUnlockState();
         await this.clearBrowserStorage();
