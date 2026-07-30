@@ -201,6 +201,7 @@ export class NotesService {
     this.notesAppPassword = '';
     this.decryptedNotes = null;
     this.LAST_ACTIVITY_TIMESTAMP = 0;
+    this.pendingNoteMutations.clear();
   }
 
   public setAppLockTimeoutMinutes(minutes: number) {
@@ -239,7 +240,7 @@ export class NotesService {
   }
 
   public setAppWipeAfterDays(days: number) {
-    const allowed = [0, 7, 14, 30, 60, 90];
+    const allowed = [0, 7, 14, 28, 30, 60, 90];
     const normalized = allowed.includes(days) ? days : 0;
     this.notesStorageService.setAppWipeAfterDays(String(normalized));
   }
@@ -247,7 +248,7 @@ export class NotesService {
   public getAppWipeAfterDays(): number {
     const raw = this.notesStorageService.getAppWipeAfterDays();
     const parsed = Number(raw);
-    const allowed = [0, 7, 14, 30, 60, 90];
+    const allowed = [0, 7, 14, 28, 30, 60, 90];
 
     if (!Number.isFinite(parsed) || !allowed.includes(parsed)) {
       return 0;

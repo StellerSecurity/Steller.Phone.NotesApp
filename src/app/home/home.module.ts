@@ -9,7 +9,6 @@ import { DeleteNoteModalModule } from '../delete-note-modal/delete-note-modal.mo
 import { RestPassModalModule } from '../restpass-modal/resetpass-modal.module';
 import { TranslateModule } from '@ngx-translate/core';
 import {AppModule} from "../app.module";
-import {StriphtmlPipe} from "../striphtml.pipe";
 import { ClickOutsideDirective } from '../directives/click-outside.directive';
 import { DeleteFolderModalModule } from '../delete-folder-modal/delete-folder-modal.module';
 
@@ -24,6 +23,6 @@ import { DeleteFolderModalModule } from '../delete-folder-modal/delete-folder-mo
         DeleteFolderModalModule,
         TranslateModule
     ],
-    declarations: [HomePage, StriphtmlPipe, ClickOutsideDirective]
+    declarations: [HomePage, ClickOutsideDirective]
 })
 export class HomePageModule {}

@@ -50,6 +50,18 @@ import { App } from '@capacitor/app';
 import { Preferences } from '@capacitor/preferences';
 import { BiometricUnlockService } from '../services/biometric-unlock.service';
 import { AppsflyerService } from '../services/appsflyer.service';
+import { homeNotePreview } from '../utils/home-note-preview.util';
+
+interface NoteListCacheEntry {
+  titleSource: string;
+  textSource: string;
+  folderSource: string;
+  normalizedTitle: string;
+  normalizedText: string;
+  normalizedFolder: string;
+  titlePreview?: string;
+  textPreview?: string;
+}
 
 @Component({
   selector: 'app-home',
@@ -60,7 +72,8 @@ export class HomePage implements AfterViewInit, OnDestroy {
   private static readonly LONG_PRESS_DELAY_MS = 200;
   private static readonly LONG_PRESS_START_DELAY_MS = 100;
   private static readonly MOVE_TOLERANCE_PX = 15;
-  private static readonly SEARCH_FOCUS_DELAY_MS = 100;
+  private static readonly SEARCH_FOCUS_MAX_ATTEMPTS = 8;
+  private static readonly SEARCH_FOCUS_RETRY_MS = 75;
   private static readonly DETECT_CHANGES_DELAY_MS = 200;
   private static readonly PAGER_SWIPE_LOCK_X_PX = 10;
   private static readonly PAGER_SWIPE_DIRECTION_RATIO = 1.2;
@@ -71,6 +84,11 @@ export class HomePage implements AfterViewInit, OnDestroy {
   private static readonly CHECKBOX_DISMISS_EDGE_PX = 20;
   private static readonly CHECKBOX_DISMISS_TRIGGER_PX = 56;
   private static readonly CHECKBOX_DISMISS_DIRECTION_RATIO = 1.2;
+  private static readonly SEARCH_DEBOUNCE_MS = 180;
+  private static readonly INITIAL_RENDERED_NOTES = 48;
+  private static readonly RENDERED_NOTES_INCREMENT = 40;
+  private static readonly RENDER_MORE_THRESHOLD_PX = 640;
+  private static readonly ESTIMATED_NOTE_ROW_HEIGHT_PX = 100;
 
   @ViewChild(IonModal) modal: IonModal;
   @ViewChild('searchbar') searchbar: IonSearchbar;
@@ -100,6 +118,9 @@ export class HomePage implements AfterViewInit, OnDestroy {
   public visibleNotes: any[] = [];
   public allVisibleNotes: any[] = [];
   public favoriteVisibleNotes: any[] = [];
+  public renderedVisibleNotes: any[] = [];
+  public renderedAllVisibleNotes: any[] = [];
+  public renderedFavoriteVisibleNotes: any[] = [];
   public activeFilter: 'all' | 'favorites' = 'all';
   public activeFolderName: string = '__all__';
   public folderBrowserMode = true;
@@ -161,6 +182,15 @@ export class HomePage implements AfterViewInit, OnDestroy {
   private lastSyncAnalyticsAt = 0;
   private activeFolderNameBeforeSearch = '__all__';
   private activeFilterBeforeSearch: 'all' | 'favorites' = 'all';
+  private renderedAllNotesLimit = HomePage.INITIAL_RENDERED_NOTES;
+  private renderedFavoriteNotesLimit = HomePage.INITIAL_RENDERED_NOTES;
+  private searchDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+  private searchFocusTimer: ReturnType<typeof setTimeout> | null = null;
+  private searchFocusRequestId = 0;
+  private renderExpansionFrame: number | null = null;
+  private renderExpansionScheduled = false;
+  private homeScrollElement: HTMLElement | null = null;
+  private readonly noteListCache = new WeakMap<object, NoteListCacheEntry>();
 
   private readonly boundGlobalTouchEnd = () => {
     if (this.pagerTouchStartX !== null || this.pagerTracking || this.isPagerDragging) {
@@ -388,6 +418,16 @@ export class HomePage implements AfterViewInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.clearSearchDebounce();
+    this.cancelPendingSearchFocus();
+
+    if (this.renderExpansionFrame !== null) {
+      cancelAnimationFrame(this.renderExpansionFrame);
+      this.renderExpansionFrame = null;
+    }
+    this.renderExpansionScheduled = false;
+    this.homeScrollElement = null;
+
     if (this.pressGestureInitTimer) {
       clearTimeout(this.pressGestureInitTimer);
       this.pressGestureInitTimer = null;
@@ -532,6 +572,7 @@ export class HomePage implements AfterViewInit, OnDestroy {
     this.scrollRestored = true;
 
     const y = this.scrollService.get(this.url);
+    this.ensureRenderedNotesForScrollPosition(y);
 
     requestAnimationFrame(() => {
       requestAnimationFrame(async () => {
@@ -607,16 +648,17 @@ export class HomePage implements AfterViewInit, OnDestroy {
     this.folderBrowserMode = false;
     this.activeFolderName = '__all__';
     this.activeFilter = 'all';
+    this.resetRenderedNoteLimits();
     this.refreshVisibleNotes();
-
-    setTimeout(() => {
-      this.searchbar?.setFocus();
-    }, HomePage.SEARCH_FOCUS_DELAY_MS);
+    this.cdr.detectChanges();
+    this.focusSearchbarWhenReady();
   }
 
   exitSearchMode() {
     this.resetPagerTouch();
     this.resetCheckboxDismissGesture();
+    this.cancelPendingSearchFocus();
+    this.clearSearchDebounce();
     this.search_query = '';
     this.pauseSync = false;
     this.search();
@@ -626,15 +668,70 @@ export class HomePage implements AfterViewInit, OnDestroy {
       this.folderBrowserMode = this.folderBrowserModeBeforeSearch;
       this.activeFolderName = this.activeFolderNameBeforeSearch;
       this.activeFilter = this.activeFilterBeforeSearch;
+      this.resetRenderedNoteLimits();
       this.refreshVisibleNotes();
       this.cdr.detectChanges();
       this.schedulePressGestureInit();
     }, HomePage.DETECT_CHANGES_DELAY_MS);
   }
 
+  private focusSearchbarWhenReady(): void {
+    this.cancelPendingSearchFocus();
+    const requestId = this.searchFocusRequestId;
+    void this.tryFocusSearchbar(requestId, 0);
+  }
+
+  private async tryFocusSearchbar(requestId: number, attempt: number): Promise<void> {
+    if (!this.searchMode || requestId !== this.searchFocusRequestId) {
+      return;
+    }
+
+    const searchbar = this.searchbar;
+
+    if (searchbar) {
+      try {
+        await searchbar.setFocus();
+
+        if (!this.searchMode || requestId !== this.searchFocusRequestId) {
+          return;
+        }
+
+        const input = await searchbar.getInputElement();
+        if (!input.matches(':focus')) {
+          input.focus({ preventScroll: true });
+        }
+
+        if (input.matches(':focus')) {
+          return;
+        }
+      } catch {
+        // Ionic may still be creating the searchbar's native input. Retry below.
+      }
+    }
+
+    if (attempt + 1 >= HomePage.SEARCH_FOCUS_MAX_ATTEMPTS) {
+      return;
+    }
+
+    this.searchFocusTimer = setTimeout(() => {
+      this.searchFocusTimer = null;
+      void this.tryFocusSearchbar(requestId, attempt + 1);
+    }, HomePage.SEARCH_FOCUS_RETRY_MS);
+  }
+
+  private cancelPendingSearchFocus(): void {
+    this.searchFocusRequestId += 1;
+
+    if (this.searchFocusTimer !== null) {
+      clearTimeout(this.searchFocusTimer);
+      this.searchFocusTimer = null;
+    }
+  }
+
   public onHomeScroll(event: CustomEvent) {
     const scrollTop = event?.detail?.scrollTop ?? 0;
     this.headerHasShadow = scrollTop > 8;
+    this.scheduleRenderedNotesExpansion();
   }
 
   public async toggleCheckbox() {
@@ -721,9 +818,30 @@ export class HomePage implements AfterViewInit, OnDestroy {
     this.checkboxDismissTracking = false;
   }
 
+  public scheduleSearch(value?: string | null): void {
+    if (typeof value === 'string') {
+      this.search_query = value;
+    }
+
+    this.clearSearchDebounce();
+    this.searchDebounceTimer = setTimeout(() => {
+      this.searchDebounceTimer = null;
+      this.search();
+    }, HomePage.SEARCH_DEBOUNCE_MS);
+  }
+
+  private clearSearchDebounce(): void {
+    if (this.searchDebounceTimer !== null) {
+      clearTimeout(this.searchDebounceTimer);
+      this.searchDebounceTimer = null;
+    }
+  }
+
   search() {
+    this.clearSearchDebounce();
     this.resetPagerTouch();
     this.resetCheckboxDismissGesture();
+    this.resetRenderedNoteLimits();
 
     if (this.search_query.length == 0) {
       this.isSearching = false;
@@ -737,22 +855,21 @@ export class HomePage implements AfterViewInit, OnDestroy {
     const filteredNewResults: any[] = [];
 
     for (let i = 0; this.notes.length > i; i++) {
-      const normalizedText = normalize(this.notes[i]?.text);
-      const result = normalizedText.includes(normalizedQuery);
+      const note = this.notes[i];
+      const cached = this.getNoteListCacheEntry(note);
+      const result = cached.normalizedText.includes(normalizedQuery);
 
       let titleExists = false;
-      if (this.notes[i].title !== undefined) {
-        const normalizedTitle = normalize(this.notes[i]?.title);
-        titleExists = normalizedTitle.includes(normalizedQuery);
+      if (note.title !== undefined) {
+        titleExists = cached.normalizedTitle.includes(normalizedQuery);
       }
 
-      const normalizedFolder = normalize(this.notes[i]?.folder ?? '');
-      const folderMatches = normalizedFolder.includes(normalizedQuery);
+      const folderMatches = cached.normalizedFolder.includes(normalizedQuery);
 
-      if (result && !this.notes[i].protected) {
-        filteredNewResults.push(this.notes[i]);
+      if (result && !note.protected) {
+        filteredNewResults.push(note);
       } else if (titleExists || folderMatches) {
-        filteredNewResults.push(this.notes[i]);
+        filteredNewResults.push(note);
       }
     }
 
@@ -765,6 +882,56 @@ export class HomePage implements AfterViewInit, OnDestroy {
       this.cdr.detectChanges();
       this.schedulePressGestureInit();
     }, HomePage.DETECT_CHANGES_DELAY_MS);
+  }
+
+  private getNoteListCacheEntry(note: any): NoteListCacheEntry {
+    const titleSource = note?.title === null || note?.title === undefined ? '' : String(note.title);
+    const textSource = note?.text === null || note?.text === undefined ? '' : String(note.text);
+    const folderSource = note?.folder === null || note?.folder === undefined ? '' : String(note.folder);
+
+    const cached = note && typeof note === 'object'
+      ? this.noteListCache.get(note)
+      : undefined;
+
+    if (
+      cached
+      && cached.titleSource === titleSource
+      && cached.textSource === textSource
+      && cached.folderSource === folderSource
+    ) {
+      return cached;
+    }
+
+    const next: NoteListCacheEntry = {
+      titleSource,
+      textSource,
+      folderSource,
+      normalizedTitle: normalize(titleSource),
+      normalizedText: normalize(textSource),
+      normalizedFolder: normalize(folderSource),
+    };
+
+    if (note && typeof note === 'object') {
+      this.noteListCache.set(note, next);
+    }
+
+    return next;
+  }
+
+  public noteTitlePreview(note: any): string {
+    const cached = this.getNoteListCacheEntry(note);
+    if (cached.titlePreview === undefined) {
+      cached.titlePreview = homeNotePreview(cached.titleSource);
+    }
+    return cached.titlePreview;
+  }
+
+  public noteTextPreview(note: any): string {
+    const cached = this.getNoteListCacheEntry(note);
+    if (cached.textPreview === undefined) {
+      cached.textPreview = homeNotePreview(cached.textSource);
+    }
+    return cached.textPreview;
   }
 
   initializePressGesture(): void {
@@ -1267,6 +1434,7 @@ export class HomePage implements AfterViewInit, OnDestroy {
     this.visibleNotes = this.activeFilter === 'favorites'
       ? [...this.favoriteVisibleNotes]
       : [...this.allVisibleNotes];
+    this.refreshRenderedNotes();
   }
 
   private getPagerIndex(): number {
@@ -1320,6 +1488,103 @@ export class HomePage implements AfterViewInit, OnDestroy {
     }
 
     this.schedulePressGestureInit();
+  }
+
+  private resetRenderedNoteLimits(): void {
+    this.renderedAllNotesLimit = HomePage.INITIAL_RENDERED_NOTES;
+    this.renderedFavoriteNotesLimit = HomePage.INITIAL_RENDERED_NOTES;
+  }
+
+  private refreshRenderedNotes(): void {
+    this.renderedAllVisibleNotes = this.allVisibleNotes.slice(0, this.renderedAllNotesLimit);
+    this.renderedFavoriteVisibleNotes = this.favoriteVisibleNotes.slice(0, this.renderedFavoriteNotesLimit);
+    this.renderedVisibleNotes = this.activeFilter === 'favorites'
+      ? this.renderedFavoriteVisibleNotes
+      : this.renderedAllVisibleNotes;
+  }
+
+  private get hasMoreRenderedNotes(): boolean {
+    return this.activeFilter === 'favorites'
+      ? this.renderedFavoriteNotesLimit < this.favoriteVisibleNotes.length
+      : this.renderedAllNotesLimit < this.allVisibleNotes.length;
+  }
+
+  private extendRenderedNotes(): void {
+    if (!this.hasMoreRenderedNotes) {
+      return;
+    }
+
+    if (this.activeFilter === 'favorites') {
+      this.renderedFavoriteNotesLimit = Math.min(
+        this.favoriteVisibleNotes.length,
+        this.renderedFavoriteNotesLimit + HomePage.RENDERED_NOTES_INCREMENT
+      );
+    } else {
+      this.renderedAllNotesLimit = Math.min(
+        this.allVisibleNotes.length,
+        this.renderedAllNotesLimit + HomePage.RENDERED_NOTES_INCREMENT
+      );
+    }
+
+    this.refreshRenderedNotes();
+    this.schedulePressGestureInit();
+  }
+
+  private scheduleRenderedNotesExpansion(): void {
+    if (!this.hasMoreRenderedNotes || this.renderExpansionScheduled) {
+      return;
+    }
+
+    this.renderExpansionScheduled = true;
+    this.renderExpansionFrame = requestAnimationFrame(async () => {
+      this.renderExpansionFrame = null;
+
+      try {
+        this.homeScrollElement = this.homeScrollElement
+          ?? await this.content?.getScrollElement()
+          ?? null;
+
+        const scrollElement = this.homeScrollElement;
+        if (!scrollElement) {
+          return;
+        }
+
+        const remaining = scrollElement.scrollHeight
+          - scrollElement.scrollTop
+          - scrollElement.clientHeight;
+
+        if (remaining <= HomePage.RENDER_MORE_THRESHOLD_PX) {
+          this.extendRenderedNotes();
+        }
+      } finally {
+        this.renderExpansionScheduled = false;
+      }
+    });
+  }
+
+  private ensureRenderedNotesForScrollPosition(scrollTop: number): void {
+    if (this.folderBrowserMode || scrollTop <= 0) {
+      return;
+    }
+
+    const viewportBuffer = Math.max(window.innerHeight, 600);
+    const requiredNotes = Math.ceil(
+      (scrollTop + viewportBuffer) / HomePage.ESTIMATED_NOTE_ROW_HEIGHT_PX
+    );
+
+    if (this.activeFilter === 'favorites') {
+      this.renderedFavoriteNotesLimit = Math.max(
+        this.renderedFavoriteNotesLimit,
+        Math.min(this.favoriteVisibleNotes.length, requiredNotes)
+      );
+    } else {
+      this.renderedAllNotesLimit = Math.max(
+        this.renderedAllNotesLimit,
+        Math.min(this.allVisibleNotes.length, requiredNotes)
+      );
+    }
+
+    this.refreshRenderedNotes();
   }
 
   public get shouldUsePager(): boolean {
@@ -1662,6 +1927,7 @@ export class HomePage implements AfterViewInit, OnDestroy {
     this.activeFolderName = folderName;
     this.folderBrowserMode = false;
     this.activeFilter = 'all';
+    this.resetRenderedNoteLimits();
     this.refreshVisibleNotes();
 
     requestAnimationFrame(() => {

@@ -38,6 +38,7 @@ export class RichTextEditorComponent implements OnInit, OnDestroy {
   private resizeListener: (() => void) | null = null;
   private clickOutsideListener: (() => void) | null = null;
   private editorImageClickUnlisten: (() => void) | null = null;
+  private editorCopyUnlisten: (() => void) | null = null;
   private viewerPointers = new Map<number, { x: number; y: number }>();
   private lastTapAt = 0;
   private pinchStartDistance: number | null = null;
@@ -103,11 +104,16 @@ export class RichTextEditorComponent implements OnInit, OnDestroy {
       this.editorImageClickUnlisten();
       this.editorImageClickUnlisten = null;
     }
+    if (this.editorCopyUnlisten) {
+      this.editorCopyUnlisten();
+      this.editorCopyUnlisten = null;
+    }
   }
 
   onEditorCreated(quillInstance: any) {
     this.quill = quillInstance;
     this.bindImageClickHandler();
+    this.bindCopyHandler();
 
     requestAnimationFrame(() => {
       setTimeout(() => this.focusEmptyEditorWithoutScrolling(), 300);
@@ -172,6 +178,58 @@ export class RichTextEditorComponent implements OnInit, OnDestroy {
   onContentChange(content: string) {
     this.note_text = content;
     this.noteChange.emit(content);
+  }
+
+  private bindCopyHandler(): void {
+    if (!isPlatformBrowser(this.platformId) || !this.quill?.root) {
+      return;
+    }
+
+    if (this.editorCopyUnlisten) {
+      this.editorCopyUnlisten();
+    }
+
+    this.editorCopyUnlisten = this.renderer.listen(
+      this.quill.root,
+      'copy',
+      (event: ClipboardEvent) => {
+        const clipboard = event.clipboardData;
+        const selection = this.quill?.getSelection?.();
+
+        if (!clipboard || !selection || selection.length <= 0) {
+          return;
+        }
+
+        try {
+          const selectedContents = this.quill.getContents(
+            selection.index,
+            selection.length
+          );
+          const containsEmbed = selectedContents?.ops?.some(
+            (operation: any) => typeof operation?.insert !== 'string'
+          );
+
+          // Preserve the browser's native copy behavior for images and other
+          // embeds. For text-only selections, omit Quill's paragraph HTML:
+          // apps such as WhatsApp otherwise render every line as two lines.
+          if (containsEmbed) {
+            return;
+          }
+
+          const plainText = String(
+            this.quill.getText(selection.index, selection.length) ?? ''
+          )
+            .replace(/\r\n?/g, '\n')
+            .replace(/\u00A0/g, ' ');
+
+          clipboard.setData('text/plain', plainText);
+          event.preventDefault();
+        } catch {
+          // Fall back to the native clipboard if Quill cannot resolve the
+          // current selection.
+        }
+      }
+    );
   }
 
   onHeaderChange(event: Event) {

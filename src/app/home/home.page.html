@@ -42,7 +42,7 @@
       *ngIf="searchMode"
       #searchbar
       [(ngModel)]="search_query"
-      (ionInput)="search()"
+      (ionInput)="scheduleSearch($event.detail.value)"
       placeholder="{{'searchNotesInput' | translate}}"
       show-clear-button="focus"
       clear-icon="trash-bin"
@@ -519,10 +519,10 @@
 
               <ng-template #visibleNoteContent>
                 <span class="note-txt-title" *ngIf="note.title !== undefined">
-                  {{ (note.title.length > 40) ? (note.title | striphtml | slice:0:40) + '...' : (note.title | striphtml) }}<br>
+                  {{ noteTitlePreview(note) }}<br>
                 </span>
                 <span class="note-txt">
-                  {{ (note.text.length > 40) ? (note.text | striphtml | slice:0:40) + '...' : (note.text | striphtml) }}
+                  {{ noteTextPreview(note) }}
                 </span>
               </ng-template>
             </ion-label>
@@ -571,14 +571,14 @@
           [style.transform]="pagerTransform">
           <section class="home-page-pane">
             <ion-list class="notes-card-list">
-              <ng-container *ngTemplateOutlet="notesListTemplate; context: { $implicit: allVisibleNotes }"></ng-container>
+              <ng-container *ngTemplateOutlet="notesListTemplate; context: { $implicit: renderedAllVisibleNotes }"></ng-container>
             </ion-list>
           </section>
 
           <section class="home-page-pane">
             <ng-container *ngIf="favoriteVisibleNotes.length > 0; else favoritesEmptyStateTemplate">
               <ion-list class="notes-card-list">
-                <ng-container *ngTemplateOutlet="notesListTemplate; context: { $implicit: favoriteVisibleNotes }"></ng-container>
+                <ng-container *ngTemplateOutlet="notesListTemplate; context: { $implicit: renderedFavoriteVisibleNotes }"></ng-container>
               </ion-list>
             </ng-container>
           </section>
@@ -670,7 +670,7 @@
       </ion-grid>
 
       <ion-list class="notes-card-list" *ngIf="visibleNotes.length > 0">
-        <ng-container *ngTemplateOutlet="notesListTemplate; context: { $implicit: visibleNotes }"></ng-container>
+        <ng-container *ngTemplateOutlet="notesListTemplate; context: { $implicit: renderedVisibleNotes }"></ng-container>
       </ion-list>
     </ng-template>
 

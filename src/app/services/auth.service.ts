@@ -24,6 +24,10 @@ export class AuthService {
     this.loggedInSubject.next(!!token);
   }
 
+  clearAuthenticationState(): void {
+    this.loggedInSubject.next(false);
+  }
+
   createAccount(data: loginDto): Observable<any> {
     return this.http.post<any>(baseUrl + auth.createAcc, data);
   }

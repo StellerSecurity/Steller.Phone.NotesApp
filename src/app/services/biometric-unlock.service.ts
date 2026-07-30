@@ -62,7 +62,14 @@ export class BiometricUnlockService {
       return;
     }
 
-    await Preferences.remove({ key: this.enabledKey });
+    await this.clearStoredCredential();
+  }
+
+  public async clearStoredCredential(): Promise<void> {
+    try {
+      await Preferences.remove({ key: this.enabledKey });
+    } catch {}
+
     await this.deleteStoredPassword();
   }
 

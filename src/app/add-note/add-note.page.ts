@@ -81,6 +81,7 @@ export class AddNotePage implements OnDestroy {
   private typingTimeout: any;
   private isPaused = false;
   private stopSyncing = false;
+  private viewActive = false;
   private newlyCreatedNote = false;
   private fetchLiveNoteBound = () => {};
   private routeSub?: Subscription;
@@ -758,6 +759,7 @@ export class AddNotePage implements OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.viewActive = false;
     this.closeMoreMenu();
     this.routeSub?.unsubscribe();
     this.stopLiveNotePolling();
@@ -782,6 +784,7 @@ export class AddNotePage implements OnDestroy {
   }
 
   async ionViewWillEnter(): Promise<void> {
+    this.viewActive = true;
     this.allTranslations = this.translatorService.allTranslations;
     this.loadFolders();
 
@@ -801,9 +804,12 @@ export class AddNotePage implements OnDestroy {
       }
     } catch (e) {
     }
+
+    this.startLiveNotePolling();
   }
 
   ionViewWillLeave() {
+    this.viewActive = false;
     this.closeMoreMenu();
     this.forceSaveNow();
     this.relockProtectedNote();
@@ -1174,6 +1180,13 @@ export class AddNotePage implements OnDestroy {
   }
 
   startLiveNotePolling() {
+    if (!this.viewActive || this.newlyCreatedNote || this.liveNoteTimer != null) {
+      return;
+    }
+
+    this.stopSyncing = false;
+    this.isPaused = false;
+
     this.liveNoteTimer = window.setInterval(() => {
       if (this.isPaused || document.hidden || !navigator.onLine) return;
       this.fetchLiveNote();
@@ -1191,7 +1204,11 @@ export class AddNotePage implements OnDestroy {
 
   private stopLiveNotePolling() {
     this.stopSyncing = true;
-    if (this.liveNoteTimer) clearInterval(this.liveNoteTimer);
+    this.isPaused = false;
+    if (this.liveNoteTimer != null) {
+      clearInterval(this.liveNoteTimer);
+      this.liveNoteTimer = undefined;
+    }
     window.removeEventListener('focus', this.fetchLiveNoteBound);
     window.removeEventListener('online', this.fetchLiveNoteBound);
   }
