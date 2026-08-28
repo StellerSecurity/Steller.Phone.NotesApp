@@ -41,15 +41,18 @@ describe('AddNotePage formatting persistence', () => {
   it('waits for persistence before navigating back', async () => {
     const page: any = Object.create(AddNotePage.prototype);
     const order: string[] = [];
-    page.flushAutosaveBeforeBackground = jasmine.createSpy('flushAutosaveBeforeBackground')
+    page.forceSaveNow = jasmine.createSpy('forceSaveNow')
       .and.callFake(async () => order.push('save'));
+    page.relockProtectedNote = jasmine.createSpy('relockProtectedNote')
+      .and.callFake(() => order.push('relock'));
     page.navController = {
       back: jasmine.createSpy('back').and.callFake(() => order.push('navigate')),
     };
 
     await page.back();
 
-    expect(order).toEqual(['save', 'navigate']);
+    expect(page.forceSaveNow).toHaveBeenCalledOnceWith(false);
+    expect(order).toEqual(['save', 'relock', 'navigate']);
   });
 
   it('preserves formatted HTML in local-only mode without requiring Stellar ID', async () => {

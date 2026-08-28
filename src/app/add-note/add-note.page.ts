@@ -1476,7 +1476,11 @@ export class AddNotePage implements OnDestroy {
   }
 
   public async back(): Promise<void> {
-    await this.flushAutosaveBeforeBackground();
+    // Navigation only needs to wait for the durable local snapshot. The normal
+    // save path schedules signed-in sync without making the back button wait
+    // for encryption and a foreground network response.
+    await this.forceSaveNow(false);
+    this.relockProtectedNote();
     this.navController.back();
   }
 
