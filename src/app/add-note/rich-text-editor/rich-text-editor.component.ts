@@ -8,6 +8,7 @@ import { Capacitor } from '@capacitor/core';
 import { Filesystem, Directory } from '@capacitor/filesystem';
 import { TranslatorService } from '../../services/translator.service';
 import { AppHapticsService } from '../../services/app-haptics.service';
+import { normalizeNoteBodyForRichTextEditor } from '../../utils/rich-text-content.util';
 
 interface HeaderOption {
   value: string;
@@ -26,7 +27,29 @@ export class RichTextEditorComponent implements OnInit, OnDestroy {
   @ViewChild('viewerViewport') viewerViewportRef?: ElementRef<HTMLDivElement>;
   @ViewChild('viewerImage') viewerImageRef?: ElementRef<HTMLImageElement>;
 
-  @Input() note_text: string = '';
+  private normalizedNoteText = '';
+
+  @Input()
+  get note_text(): string {
+    return this.normalizedNoteText;
+  }
+
+  set note_text(value: string) {
+    const source = typeof value === 'string' ? value : String(value ?? '');
+    const normalized = normalizeNoteBodyForRichTextEditor(source);
+    this.normalizedNoteText = normalized;
+
+    if (normalized !== source) {
+      // Let the parent autosave the migrated representation after Angular has
+      // completed the current input-binding pass.
+      Promise.resolve().then(() => {
+        if (this.normalizedNoteText === normalized) {
+          this.noteChange.emit(normalized);
+        }
+      });
+    }
+  }
+
   @Output() noteChange = new EventEmitter<string>();
 
   quill: any;

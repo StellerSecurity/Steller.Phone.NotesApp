@@ -72,6 +72,27 @@ describe('RichTextEditorComponent', () => {
     reopenedFixture.destroy();
   });
 
+  it('preserves line boundaries when reopening a legacy plain-text note', async () => {
+    const reopenedFixture = TestBed.createComponent(RichTextEditorComponent);
+    const reopened = reopenedFixture.componentInstance;
+    const migratedValues: string[] = [];
+    reopened.noteChange.subscribe((value) => migratedValues.push(value));
+    reopened.note_text = 'test\ntest\n\ntest';
+    reopenedFixture.detectChanges();
+    await reopenedFixture.whenStable();
+    reopenedFixture.detectChanges();
+
+    expect(reopened.quill.root.innerHTML).toBe(
+      '<p>test</p><p>test</p><p><br></p><p>test</p>'
+    );
+    expect(reopened.quill.getText()).toBe('test\ntest\n\ntest\n');
+    expect(migratedValues[migratedValues.length - 1]).toBe(
+      '<p>test</p><p>test</p><p><br></p><p>test</p>'
+    );
+
+    reopenedFixture.destroy();
+  });
+
   formattingFixtures.forEach((html, index) => {
     it(`keeps formatting fixture ${index + 1} idempotent across repeated mobile round trips`, () => {
       component.quill.clipboard.dangerouslyPasteHTML(html, 'silent');
