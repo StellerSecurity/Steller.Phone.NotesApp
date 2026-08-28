@@ -95,6 +95,26 @@ export class RichTextEditorComponent implements OnInit, OnDestroy {
       delay: 0,
       maxStack: 300,
       userOnly: true
+    },
+    keyboard: {
+      bindings: {
+        preserveShiftEnterLine: {
+          key: 13,
+          shiftKey: true,
+          handler: (range: { index: number; length: number }) => {
+            if (!this.quill || !range) {
+              return false;
+            }
+
+            // Quill 1.3 does not reliably turn a WebView Shift+Enter into a
+            // Delta newline. Insert it through Quill so it survives HTML
+            // serialization, autosave, sync, and rehydration.
+            this.quill.insertText(range.index, '\n', 'user');
+            this.quill.setSelection(range.index + 1, 0, 'silent');
+            return false;
+          }
+        }
+      }
     }
   };
 

@@ -72,6 +72,59 @@ describe('RichTextEditorComponent', () => {
     reopenedFixture.destroy();
   });
 
+  it('preserves repeated Shift+Enter lines and blank lines after rehydration', async () => {
+    const emitted: string[] = [];
+    component.noteChange.subscribe((value) => emitted.push(value));
+    const shiftEnter = component.quillModules.keyboard.bindings.preserveShiftEnterLine.handler;
+    let cursor = 0;
+
+    const type = (text: string, followingBreaks: number) => {
+      component.quill.insertText(cursor, text, 'user');
+      cursor += text.length;
+      for (let index = 0; index < followingBreaks; index += 1) {
+        shiftEnter({ index: cursor, length: 0 });
+        cursor += 1;
+      }
+    };
+
+    type('test', 1);
+    type('test', 1);
+    type('test', 1);
+    type('test', 2);
+    type('test', 2);
+    type('test', 2);
+    type('test', 0);
+
+    const expectedHtml = [
+      '<p>test</p>',
+      '<p>test</p>',
+      '<p>test</p>',
+      '<p>test</p>',
+      '<p><br></p>',
+      '<p>test</p>',
+      '<p><br></p>',
+      '<p>test</p>',
+      '<p><br></p>',
+      '<p>test</p>',
+    ].join('');
+    const savedHtml = emitted[emitted.length - 1];
+    expect(savedHtml).toBe(expectedHtml);
+
+    const reopenedFixture = TestBed.createComponent(RichTextEditorComponent);
+    const reopened = reopenedFixture.componentInstance;
+    reopened.note_text = savedHtml;
+    reopenedFixture.detectChanges();
+    await reopenedFixture.whenStable();
+    reopenedFixture.detectChanges();
+
+    expect(reopened.quill.root.innerHTML).toBe(expectedHtml);
+    expect(reopened.quill.getText()).toBe(
+      'test\ntest\ntest\ntest\n\ntest\n\ntest\n\ntest\n'
+    );
+
+    reopenedFixture.destroy();
+  });
+
   it('preserves line boundaries when reopening a legacy plain-text note', async () => {
     const reopenedFixture = TestBed.createComponent(RichTextEditorComponent);
     const reopened = reopenedFixture.componentInstance;
