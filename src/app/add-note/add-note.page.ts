@@ -91,9 +91,10 @@ export class AddNotePage implements OnDestroy {
   private encryptedProtectedTitle = '';
   private noteUnlockModalOpen = false;
   private appStateListener?: PluginListenerHandle;
+  private backgroundFlushPromise: Promise<void> | null = null;
   private readonly visibilityChangeHandler = () => {
     if (document.hidden) {
-      this.relockProtectedNote();
+      void this.flushAutosaveBeforeBackground();
       return;
     }
     this.promptUnlockForProtectedNote().then(() => {});
@@ -811,8 +812,7 @@ export class AddNotePage implements OnDestroy {
   ionViewWillLeave() {
     this.viewActive = false;
     this.closeMoreMenu();
-    this.forceSaveNow();
-    this.relockProtectedNote();
+    void this.flushAutosaveBeforeBackground();
     this.stopLiveNotePolling();
     this.removeProtectedNoteRelockListeners().then(() => {});
   }
@@ -876,9 +876,9 @@ export class AddNotePage implements OnDestroy {
 
   private async installProtectedNoteRelockListeners() {
     if (!this.appStateListener) {
-      this.appStateListener = await App.addListener('appStateChange', ({ isActive }: { isActive: boolean }) => {
+      this.appStateListener = await App.addListener('appStateChange', async ({ isActive }: { isActive: boolean }) => {
         if (!isActive) {
-          this.relockProtectedNote();
+          await this.flushAutosaveBeforeBackground();
           return;
         }
         this.promptUnlockForProtectedNote().then(() => {});
@@ -943,7 +943,7 @@ export class AddNotePage implements OnDestroy {
     return titleEmpty && textEmpty;
   }
 
-  private forceSaveNow(): void {
+  private async forceSaveNow(uploadImmediately = false): Promise<void> {
     if (this.suppressAutoSave) return;
     if (this.isEffectivelyEmptyNewNote()) return;
     if (!this.hasMeaningfulChanges()) return;
@@ -954,7 +954,19 @@ export class AddNotePage implements OnDestroy {
     }
 
     this.typing = false;
-    this.save(null);
+    await this.save(null, uploadImmediately);
+  }
+
+  private flushAutosaveBeforeBackground(): Promise<void> {
+    if (!this.backgroundFlushPromise) {
+      this.backgroundFlushPromise = (async () => {
+        await this.forceSaveNow(true);
+        this.relockProtectedNote();
+      })().finally(() => {
+        this.backgroundFlushPromise = null;
+      });
+    }
+    return this.backgroundFlushPromise;
   }
 
   private async persistLocalNotesState() {
@@ -1327,7 +1339,7 @@ export class AddNotePage implements OnDestroy {
     }
   }
 
-  save(ev: any) {
+  async save(ev: any, uploadImmediately = false): Promise<void> {
     if (this.notes_id === null) return;
     if (this.note_locked) return;
 
@@ -1414,10 +1426,10 @@ export class AddNotePage implements OnDestroy {
       void this.appsflyer.logEvent('note_edited', noteAnalyticsValues);
     }
 
-    void this.storeNoteInStorage(true);
+    await this.storeNoteInStorage(true, false, uploadImmediately);
   }
 
-  async storeNoteInStorage(serverSync = true, forceDownloadOnHome = false) {
+  async storeNoteInStorage(serverSync = true, forceDownloadOnHome = false, uploadImmediately = false) {
     if (this.saveTimeout) {
       clearTimeout(this.saveTimeout);
       this.saveTimeout = null;
@@ -1444,6 +1456,13 @@ export class AddNotePage implements OnDestroy {
     const notesToSend = this.notes;
     const foldersToSend = this.getStoredFolders();
 
+    if (uploadImmediately) {
+      if (serverSync && this.authService.isLoggedIn) {
+        await this.notesApiV1Service.upload(0, notesToSend, undefined, foldersToSend);
+      }
+      return;
+    }
+
     this.saveTimeout = window.setTimeout(() => {
       (async () => {
         if (serverSync && this.authService.isLoggedIn) {
@@ -1456,8 +1475,8 @@ export class AddNotePage implements OnDestroy {
     }, 500);
   }
 
-  public back() {
-    this.forceSaveNow();
+  public async back(): Promise<void> {
+    await this.flushAutosaveBeforeBackground();
     this.navController.back();
   }
 
