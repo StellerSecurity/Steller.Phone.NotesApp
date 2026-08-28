@@ -176,7 +176,8 @@ describe('RichTextEditorComponent', () => {
     reopenedFixture.destroy();
   });
 
-  it('handles WebView insertLineBreak events that bypass keydown', async () => {
+  (['insertLineBreak', 'insertParagraph'] as const).forEach((inputType) => {
+  it(`handles WebView ${inputType} events that bypass keydown`, async () => {
     const emitted: string[] = [];
     component.noteChange.subscribe((value) => emitted.push(value));
     component.quill.focus();
@@ -185,7 +186,7 @@ describe('RichTextEditorComponent', () => {
     const insertWebViewLineBreak = () => {
       component.quill.setSelection(cursor, 0, 'silent');
       const event = new InputEvent('beforeinput', {
-        inputType: 'insertLineBreak',
+        inputType,
         bubbles: true,
         cancelable: true,
       });
@@ -220,6 +221,7 @@ describe('RichTextEditorComponent', () => {
 
     expect(reopened.quill.getText()).toBe(expectedText);
     reopenedFixture.destroy();
+  });
   });
 
   it('preserves line boundaries when reopening a legacy plain-text note', async () => {

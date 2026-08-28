@@ -250,9 +250,13 @@ export class RichTextEditorComponent implements OnInit, OnDestroy {
       this.quill.root,
       'beforeinput',
       (event: InputEvent) => {
-        // Some mobile WebViews and IMEs emit Shift+Enter only as
-        // `insertLineBreak`, bypassing Quill's keydown bindings entirely.
-        if (event.inputType !== 'insertLineBreak' || !event.cancelable) {
+        // Some mobile WebViews and IMEs emit Enter only through beforeinput,
+        // bypassing Quill's keydown bindings. This happens for both regular
+        // Enter and Shift+Enter depending on the platform keyboard.
+        if (
+          !['insertParagraph', 'insertLineBreak'].includes(event.inputType) ||
+          !event.cancelable
+        ) {
           return;
         }
 
