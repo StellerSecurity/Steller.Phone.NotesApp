@@ -62,6 +62,7 @@ export class RichTextEditorComponent implements OnInit, OnDestroy {
   private clickOutsideListener: (() => void) | null = null;
   private editorImageClickUnlisten: (() => void) | null = null;
   private editorCopyUnlisten: (() => void) | null = null;
+  private editorBeforeInputUnlisten: (() => void) | null = null;
   private viewerPointers = new Map<number, { x: number; y: number }>();
   private lastTapAt = 0;
   private pinchStartDistance: number | null = null;
@@ -102,15 +103,7 @@ export class RichTextEditorComponent implements OnInit, OnDestroy {
           key: 13,
           shiftKey: true,
           handler: (range: { index: number; length: number }) => {
-            if (!this.quill || !range) {
-              return false;
-            }
-
-            // Quill 1.3 does not reliably turn a WebView Shift+Enter into a
-            // Delta newline. Insert it through Quill so it survives HTML
-            // serialization, autosave, sync, and rehydration.
-            this.quill.insertText(range.index, '\n', 'user');
-            this.quill.setSelection(range.index + 1, 0, 'silent');
+            this.insertDurableLineBreak(range);
             return false;
           }
         }
@@ -151,12 +144,17 @@ export class RichTextEditorComponent implements OnInit, OnDestroy {
       this.editorCopyUnlisten();
       this.editorCopyUnlisten = null;
     }
+    if (this.editorBeforeInputUnlisten) {
+      this.editorBeforeInputUnlisten();
+      this.editorBeforeInputUnlisten = null;
+    }
   }
 
   onEditorCreated(quillInstance: any) {
     this.quill = quillInstance;
     this.bindImageClickHandler();
     this.bindCopyHandler();
+    this.bindBeforeInputHandler();
 
     requestAnimationFrame(() => {
       setTimeout(() => this.focusEmptyEditorWithoutScrolling(), 300);
@@ -225,6 +223,48 @@ export class RichTextEditorComponent implements OnInit, OnDestroy {
 
     this.normalizedNoteText = editorHtml;
     this.noteChange.emit(editorHtml);
+  }
+
+  private insertDurableLineBreak(range: { index: number; length: number } | null): void {
+    if (!this.quill || !range) {
+      return;
+    }
+
+    if (range.length > 0) {
+      this.quill.deleteText(range.index, range.length, 'user');
+    }
+    this.quill.insertText(range.index, '\n', 'user');
+    this.quill.setSelection(range.index + 1, 0, 'silent');
+  }
+
+  private bindBeforeInputHandler(): void {
+    if (!isPlatformBrowser(this.platformId) || !this.quill?.root) {
+      return;
+    }
+
+    if (this.editorBeforeInputUnlisten) {
+      this.editorBeforeInputUnlisten();
+    }
+
+    this.editorBeforeInputUnlisten = this.renderer.listen(
+      this.quill.root,
+      'beforeinput',
+      (event: InputEvent) => {
+        // Some mobile WebViews and IMEs emit Shift+Enter only as
+        // `insertLineBreak`, bypassing Quill's keydown bindings entirely.
+        if (event.inputType !== 'insertLineBreak' || !event.cancelable) {
+          return;
+        }
+
+        const range = this.quill.getSelection?.(true) ?? null;
+        if (!range) {
+          return;
+        }
+
+        event.preventDefault();
+        this.insertDurableLineBreak(range);
+      }
+    );
   }
 
   private bindCopyHandler(): void {

@@ -125,6 +125,103 @@ describe('RichTextEditorComponent', () => {
     reopenedFixture.destroy();
   });
 
+  it('handles real Shift+Enter keyboard events without dropping one break per gap', async () => {
+    const emitted: string[] = [];
+    component.noteChange.subscribe((value) => emitted.push(value));
+    component.quill.focus();
+    let cursor = 0;
+
+    const pressShiftEnter = () => {
+      component.quill.setSelection(cursor, 0, 'silent');
+      const event = new KeyboardEvent('keydown', {
+        key: 'Enter',
+        code: 'Enter',
+        keyCode: 13,
+        which: 13,
+        shiftKey: true,
+        bubbles: true,
+        cancelable: true,
+      });
+      component.quill.root.dispatchEvent(event);
+      expect(event.defaultPrevented).toBeTrue();
+      cursor += 1;
+    };
+
+    const type = (text: string, followingBreaks: number) => {
+      component.quill.insertText(cursor, text, 'user');
+      cursor += text.length;
+      for (let index = 0; index < followingBreaks; index += 1) {
+        pressShiftEnter();
+      }
+    };
+
+    type('test', 2);
+    type('test', 3);
+    type('test', 3);
+    type('test', 2);
+    type('test', 0);
+
+    const expectedText = 'test\n\ntest\n\n\ntest\n\n\ntest\n\ntest\n';
+    expect(component.quill.getText()).toBe(expectedText);
+
+    const savedHtml = emitted[emitted.length - 1];
+    const reopenedFixture = TestBed.createComponent(RichTextEditorComponent);
+    const reopened = reopenedFixture.componentInstance;
+    reopened.note_text = savedHtml;
+    reopenedFixture.detectChanges();
+    await reopenedFixture.whenStable();
+    reopenedFixture.detectChanges();
+
+    expect(reopened.quill.getText()).toBe(expectedText);
+    reopenedFixture.destroy();
+  });
+
+  it('handles WebView insertLineBreak events that bypass keydown', async () => {
+    const emitted: string[] = [];
+    component.noteChange.subscribe((value) => emitted.push(value));
+    component.quill.focus();
+    let cursor = 0;
+
+    const insertWebViewLineBreak = () => {
+      component.quill.setSelection(cursor, 0, 'silent');
+      const event = new InputEvent('beforeinput', {
+        inputType: 'insertLineBreak',
+        bubbles: true,
+        cancelable: true,
+      });
+      component.quill.root.dispatchEvent(event);
+      expect(event.defaultPrevented).toBeTrue();
+      cursor += 1;
+    };
+
+    const type = (text: string, followingBreaks: number) => {
+      component.quill.insertText(cursor, text, 'user');
+      cursor += text.length;
+      for (let index = 0; index < followingBreaks; index += 1) {
+        insertWebViewLineBreak();
+      }
+    };
+
+    type('test', 2);
+    type('test', 3);
+    type('test', 3);
+    type('test', 2);
+    type('test', 0);
+
+    const expectedText = 'test\n\ntest\n\n\ntest\n\n\ntest\n\ntest\n';
+    expect(component.quill.getText()).toBe(expectedText);
+
+    const reopenedFixture = TestBed.createComponent(RichTextEditorComponent);
+    const reopened = reopenedFixture.componentInstance;
+    reopened.note_text = emitted[emitted.length - 1];
+    reopenedFixture.detectChanges();
+    await reopenedFixture.whenStable();
+    reopenedFixture.detectChanges();
+
+    expect(reopened.quill.getText()).toBe(expectedText);
+    reopenedFixture.destroy();
+  });
+
   it('preserves line boundaries when reopening a legacy plain-text note', async () => {
     const reopenedFixture = TestBed.createComponent(RichTextEditorComponent);
     const reopened = reopenedFixture.componentInstance;
