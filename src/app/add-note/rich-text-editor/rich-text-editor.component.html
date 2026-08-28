@@ -55,6 +55,7 @@
   <quill-editor
     [(ngModel)]="note_text"
     (ngModelChange)="onContentChange($event)"
+    format="html"
     [modules]="quillModules"
     (onEditorCreated)="onEditorCreated($event)"
     placeholder="{{'enterYourNoteHere' | translate}}">

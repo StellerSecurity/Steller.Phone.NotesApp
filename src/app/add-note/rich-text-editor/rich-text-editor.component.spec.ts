@@ -54,10 +54,10 @@ describe('RichTextEditorComponent', () => {
     const emitted: string[] = [];
     component.noteChange.subscribe((value) => emitted.push(value));
 
-    component.quill.setText('test\ntest\n\ntest\n', 'user');
+    component.quill.setText('test\ntest\n\n\ntest\n', 'user');
     const savedHtml = emitted[emitted.length - 1];
 
-    expect(savedHtml).toBe('<p>test</p><p>test</p><p><br></p><p>test</p>');
+    expect(savedHtml).toBe('<p>test</p><p>test</p><p><br></p><p><br></p><p>test</p>');
 
     const reopenedFixture = TestBed.createComponent(RichTextEditorComponent);
     const reopened = reopenedFixture.componentInstance;
@@ -67,7 +67,7 @@ describe('RichTextEditorComponent', () => {
     reopenedFixture.detectChanges();
 
     expect(reopened.quill.root.innerHTML).toBe(savedHtml);
-    expect(reopened.quill.getText()).toBe('test\ntest\n\ntest\n');
+    expect(reopened.quill.getText()).toBe('test\ntest\n\n\ntest\n');
 
     reopenedFixture.destroy();
   });
@@ -77,18 +77,53 @@ describe('RichTextEditorComponent', () => {
     const reopened = reopenedFixture.componentInstance;
     const migratedValues: string[] = [];
     reopened.noteChange.subscribe((value) => migratedValues.push(value));
-    reopened.note_text = 'test\ntest\n\ntest';
+    reopened.note_text = 'test\ntest\n\n\ntest';
     reopenedFixture.detectChanges();
     await reopenedFixture.whenStable();
     reopenedFixture.detectChanges();
 
     expect(reopened.quill.root.innerHTML).toBe(
-      '<p>test</p><p>test</p><p><br></p><p>test</p>'
+      '<p>test</p><p>test</p><p><br></p><p><br></p><p>test</p>'
     );
-    expect(reopened.quill.getText()).toBe('test\ntest\n\ntest\n');
+    expect(reopened.quill.getText()).toBe('test\ntest\n\n\ntest\n');
     expect(migratedValues[migratedValues.length - 1]).toBe(
-      '<p>test</p><p>test</p><p><br></p><p>test</p>'
+      '<p>test</p><p>test</p><p><br></p><p><br></p><p>test</p>'
     );
+
+    reopenedFixture.destroy();
+  });
+
+  [
+    'test\ntest<br><br><br>test',
+    '<p>test\ntest</p><p><br></p><p><br></p><p>test</p>',
+  ].forEach((legacyHtml, index) => {
+    it(`preserves line boundaries in mixed legacy HTML fixture ${index + 1}`, async () => {
+      const reopenedFixture = TestBed.createComponent(RichTextEditorComponent);
+      const reopened = reopenedFixture.componentInstance;
+      reopened.note_text = legacyHtml;
+      reopenedFixture.detectChanges();
+      await reopenedFixture.whenStable();
+      reopenedFixture.detectChanges();
+
+      expect(reopened.quill.root.innerHTML).toBe(
+        '<p>test</p><p>test</p><p><br></p><p><br></p><p>test</p>'
+      );
+      expect(reopened.quill.getText()).toBe('test\ntest\n\n\ntest\n');
+
+      reopenedFixture.destroy();
+    });
+  });
+
+  it('does not turn pretty-printed HTML whitespace into note lines', async () => {
+    const reopenedFixture = TestBed.createComponent(RichTextEditorComponent);
+    const reopened = reopenedFixture.componentInstance;
+    reopened.note_text = '<p>test</p>\n<p>test</p>';
+    reopenedFixture.detectChanges();
+    await reopenedFixture.whenStable();
+    reopenedFixture.detectChanges();
+
+    expect(reopened.quill.root.innerHTML).toBe('<p>test</p><p>test</p>');
+    expect(reopened.quill.getText()).toBe('test\ntest\n');
 
     reopenedFixture.destroy();
   });

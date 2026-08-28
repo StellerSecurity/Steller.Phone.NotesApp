@@ -9,6 +9,53 @@ function escapeHtml(value: string): string {
     .replace(/'/g, '&#39;');
 }
 
+function preserveLiteralHtmlNewlines(value: string): string {
+  const source = value.replace(/\r\n?/g, '\n');
+  let result = '';
+  let insideTag = false;
+  let quote = '';
+  let tagStart = -1;
+  let preDepth = 0;
+
+  for (let index = 0; index < source.length; index += 1) {
+    const character = source[index];
+
+    if (!insideTag && character === '<') {
+      insideTag = true;
+      tagStart = index;
+    } else if (insideTag && quote) {
+      if (character === quote) {
+        quote = '';
+      }
+    } else if (insideTag && (character === '"' || character === "'")) {
+      quote = character;
+    } else if (insideTag && character === '>') {
+      const tag = source.slice(tagStart, index + 1);
+      if (/^<\s*\/\s*pre\b/i.test(tag)) {
+        preDepth = Math.max(0, preDepth - 1);
+      } else if (/^<\s*pre\b/i.test(tag) && !/\/\s*>$/.test(tag)) {
+        preDepth += 1;
+      }
+      insideTag = false;
+    }
+
+    if (character !== '\n' || insideTag || preDepth > 0) {
+      result += character;
+      continue;
+    }
+
+    const before = source.slice(0, index).match(/\S(?=\s*$)/)?.[0];
+    const after = source.slice(index + 1).match(/^\s*(\S)/)?.[1];
+
+    // Newlines used only to pretty-print HTML between tags are not note
+    // content. Every other literal newline must become an explicit break
+    // before Quill parses the HTML, otherwise the browser collapses it.
+    result += before === '>' && after === '<' ? character : '<br>';
+  }
+
+  return result;
+}
+
 /**
  * Quill's HTML model collapses newlines when a legacy plain-text note is fed
  * directly into it. Convert only non-HTML note bodies into explicit Quill
@@ -16,8 +63,12 @@ function escapeHtml(value: string): string {
  */
 export function normalizeNoteBodyForRichTextEditor(value: unknown): string {
   const source = typeof value === 'string' ? value : String(value ?? '');
-  if (!source || RICH_TEXT_TAG_PATTERN.test(source)) {
+  if (!source) {
     return source;
+  }
+
+  if (RICH_TEXT_TAG_PATTERN.test(source)) {
+    return preserveLiteralHtmlNewlines(source);
   }
 
   return source

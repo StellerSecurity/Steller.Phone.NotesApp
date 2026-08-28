@@ -199,8 +199,12 @@ export class RichTextEditorComponent implements OnInit, OnDestroy {
   }
 
   onContentChange(content: string) {
-    this.note_text = content;
-    this.noteChange.emit(content);
+    const editorHtml = typeof this.quill?.root?.innerHTML === 'string'
+      ? this.quill.root.innerHTML
+      : normalizeNoteBodyForRichTextEditor(content);
+
+    this.normalizedNoteText = editorHtml;
+    this.noteChange.emit(editorHtml);
   }
 
   private bindCopyHandler(): void {
