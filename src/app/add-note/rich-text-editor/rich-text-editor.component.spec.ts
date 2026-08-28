@@ -50,6 +50,28 @@ describe('RichTextEditorComponent', () => {
     fixture.detectChanges();
   }));
 
+  it('preserves typed paragraph and blank-line boundaries after rehydration', async () => {
+    const emitted: string[] = [];
+    component.noteChange.subscribe((value) => emitted.push(value));
+
+    component.quill.setText('test\ntest\n\ntest\n', 'user');
+    const savedHtml = emitted[emitted.length - 1];
+
+    expect(savedHtml).toBe('<p>test</p><p>test</p><p><br></p><p>test</p>');
+
+    const reopenedFixture = TestBed.createComponent(RichTextEditorComponent);
+    const reopened = reopenedFixture.componentInstance;
+    reopened.note_text = savedHtml;
+    reopenedFixture.detectChanges();
+    await reopenedFixture.whenStable();
+    reopenedFixture.detectChanges();
+
+    expect(reopened.quill.root.innerHTML).toBe(savedHtml);
+    expect(reopened.quill.getText()).toBe('test\ntest\n\ntest\n');
+
+    reopenedFixture.destroy();
+  });
+
   formattingFixtures.forEach((html, index) => {
     it(`keeps formatting fixture ${index + 1} idempotent across repeated mobile round trips`, () => {
       component.quill.clipboard.dangerouslyPasteHTML(html, 'silent');

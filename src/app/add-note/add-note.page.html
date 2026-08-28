@@ -3,12 +3,13 @@
     <div class="note-toolbar-inner">
       <div class="note-toolbar-left">
         <ion-buttons>
-          <ion-back-button
-            defaultHref="/"
+          <ion-button
+            type="button"
+            aria-label="back"
             class="custom-back-button"
-            text="">
-            <ion-icon slot="icon-only" style="display: none;"></ion-icon>
-          </ion-back-button>
+            fill="clear"
+            (click)="back()">
+          </ion-button>
         </ion-buttons>
       </div>
 
