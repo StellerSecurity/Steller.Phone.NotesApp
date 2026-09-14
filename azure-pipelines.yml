@@ -38,13 +38,10 @@ stages:
       displayName: 'Install Node.js'
 
     - script: |
-        npm install
-        npm install -g @ionic/cli --skip-confirmation
-        npm install -g @angular/cli@latest --skip-confirmation
-        npm install @angular/service-worker --skip-confirmation --force
-        ng add @angular/pwa --skip-confirmation --force
-        ionic build --prod --skip-confirmation --force
-      displayName: 'npm install, build and test'
+        set -eu
+        npm ci --ignore-scripts --no-audit --no-fund
+        npm run build -- --configuration production
+      displayName: 'Build from the committed dependency lockfile'
 
     - task: ArchiveFiles@2
       displayName: 'Archive files'
