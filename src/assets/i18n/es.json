@@ -329,5 +329,10 @@
   "appearanceDescription": "Elige claro, oscuro o sigue la configuración del dispositivo.",
   "appearanceSystem": "Usar configuración del dispositivo",
   "appearanceLight": "Claro",
-  "appearanceDark": "Oscuro"
+  "appearanceDark": "Oscuro",
+  "retryAction": "Reintentar",
+  "notesDownloadFailed": "Has iniciado sesión, pero no se pudieron descargar tus notas. Inténtalo de nuevo.",
+  "waitBeforeResend": "Espera 30 segundos antes de solicitar otro código.",
+  "accountRequestFailed": "No se pudo completar la solicitud. Comprueba tu conexión e inténtalo de nuevo.",
+  "secretRevocationFailed": "No se pudo revocar el enlace y puede seguir funcionando. Inténtalo de nuevo."
 }

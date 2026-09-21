@@ -12,7 +12,9 @@
     "lint": "ng lint",
     "capacitor:copy:after": "node scripts/configure-background-sync.mjs",
     "capacitor:sync:after": "node scripts/configure-background-sync.mjs",
-    "capacitor:update:after": "node scripts/configure-background-sync.mjs"
+    "capacitor:update:after": "node scripts/configure-background-sync.mjs",
+    "test:sync": "ng test --watch=false --browsers=ChromeHeadless --ts-config=tsconfig.sync-spec.json --include=src/app/services/sync-worker-retention.spec.ts --include=src/app/services/notes-api-v1.service.spec.ts --include=src/app/profile/profile-sync.spec.ts --include=src/app/add-note/rich-text-editor/preserve-note-line-breaks.spec.ts --include=src/app/home/home-sync.spec.ts --include=src/app/services/notes-storage-retention.spec.ts --include=src/app/services/upload-confirmation.spec.ts --include=src/app/add-note/save-durability.spec.ts --include=src/app/profile/download-isolation.spec.ts --include=src/app/controlled-flow-audit.spec.ts",
+    "test:security": "ng test --watch=false --browsers=ChromeHeadless --ts-config=tsconfig.security-audit.json --include=src/app/html-security-audit.spec.ts"
   },
   "private": true,
   "dependencies": {

@@ -329,5 +329,10 @@
   "appearanceDescription": "Choisissez clair, sombre ou suivez le réglage de votre appareil.",
   "appearanceSystem": "Utiliser le réglage de l’appareil",
   "appearanceLight": "Clair",
-  "appearanceDark": "Sombre"
+  "appearanceDark": "Sombre",
+  "retryAction": "Réessayer",
+  "notesDownloadFailed": "Vous êtes connecté, mais vos notes n’ont pas pu être téléchargées. Réessayez.",
+  "waitBeforeResend": "Attendez 30 secondes avant de demander un nouveau code.",
+  "accountRequestFailed": "La demande n’a pas pu aboutir. Vérifiez votre connexion et réessayez.",
+  "secretRevocationFailed": "Le lien n’a pas pu être révoqué et peut encore fonctionner. Réessayez."
 }

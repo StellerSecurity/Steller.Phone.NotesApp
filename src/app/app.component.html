@@ -1,4 +1,12 @@
 <ion-app>
+  <div *ngIf="notesStorage.hasStorageError$ | async" role="alert" style="position:relative;padding:12px;background:#8b2020;color:white;z-index:10000">
+    Changes could not be saved on this device. Keep the app open and free up storage.
+    <ion-button size="small" (click)="retryStorage()">Retry</ion-button>
+  </div>
+  <div *ngIf="noteService.syncNeedsAttention$ | async" role="alert" style="position:relative;padding:12px;background:#8b2020;color:white;z-index:10000">
+    Some changes could not be synchronized. They are kept on this device.
+    <ion-button size="small" (click)="syncWorker.retryPending()">Retry</ion-button>
+  </div>
   <ion-router-outlet></ion-router-outlet>
 
   <div class="privacy-shield" *ngIf="showPrivacyShield">

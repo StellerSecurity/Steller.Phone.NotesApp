@@ -84,11 +84,6 @@ public class BackgroundNotesSyncPlugin extends Plugin {
     @PluginMethod
     public void clearDownloaded(PluginCall call) {
         BackgroundNotesSyncStore.clearDownloaded(getContext());
-        getContext().getSharedPreferences(BackgroundNotesSyncStore.PREFS, Context.MODE_PRIVATE)
-            .edit()
-            .remove(BackgroundNotesSyncStore.PULL_WATERMARK)
-            .remove(BackgroundNotesSyncStore.PULL_USER)
-            .apply();
         call.resolve();
     }
 

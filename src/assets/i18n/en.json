@@ -329,5 +329,10 @@
   "appearanceDescription": "Choose light, dark, or follow your device setting.",
   "appearanceSystem": "Use device setting",
   "appearanceLight": "Light",
-  "appearanceDark": "Dark"
+  "appearanceDark": "Dark",
+  "retryAction": "Retry",
+  "notesDownloadFailed": "You are signed in, but your notes could not be downloaded. Please try again.",
+  "waitBeforeResend": "Please wait 30 seconds before requesting another code.",
+  "accountRequestFailed": "The request could not be completed. Check your connection and try again.",
+  "secretRevocationFailed": "The link could not be revoked and may still work. Please try again."
 }

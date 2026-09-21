@@ -1,3 +1,4 @@
+import { BehaviorSubject } from 'rxjs';
 import { Injectable } from '@angular/core';
 import { Storage as IonicStorage } from '@ionic/storage-angular';
 @Injectable({
@@ -20,7 +21,10 @@ export class NotesStorageService {
   ] as const;
   private cache = new Map<string, string | null>();
   private ready: Promise<void>;
-  private pendingWrites = new Set<Promise<void>>();
+  private serial: Promise<void> = Promise.resolve();
+  private unsaved = new Map<string, { value: string | null }>();
+  private failures = new Map<string, unknown>();
+  readonly hasStorageError$ = new BehaviorSubject(false);
   constructor(private storage: IonicStorage) {
     this.ready = this.initInternal();
   }
@@ -52,7 +56,7 @@ export class NotesStorageService {
   private async primeCache(): Promise<void> {
     for (const key of this.managedKeys) {
       const value = await this.storage.get(key);
-      this.cache.set(key, value ?? null);
+      if (!this.unsaved.has(key)) this.cache.set(key, value ?? null);
     }
   }
   private readLegacy(key: string): string | null {
@@ -70,21 +74,39 @@ export class NotesStorageService {
   }
   public setValue(key: string, value: string): void {
     this.cache.set(key, value);
-    this.trackWrite(this.persistValue(key, value));
+    this.queueWrite(key, value);
   }
   public removeValue(key: string): void {
     this.cache.set(key, null);
-    this.trackWrite(this.persistRemoval(key));
+    this.queueWrite(key, null);
   }
   public async flush(): Promise<void> {
-    while (this.pendingWrites.size > 0) {
-      await Promise.all(Array.from(this.pendingWrites));
-    }
+    let observed: Promise<void>;
+    do {
+      observed = this.serial;
+      await observed;
+    } while (observed !== this.serial);
+    if (this.failures.size) throw this.failures.values().next().value;
   }
-  private trackWrite(writePromise: Promise<void>): void {
-    this.pendingWrites.add(writePromise);
-    writePromise.finally(() => {
-      this.pendingWrites.delete(writePromise);
+  public async retryFailedWrites(): Promise<void> {
+    for (const [key, intent] of Array.from(this.unsaved.entries())) this.queueWrite(key, intent.value);
+    await this.flush();
+  }
+  private queueWrite(key: string, value: string | null): void {
+    const intent = { value };
+    this.unsaved.set(key, intent);
+    this.serial = this.serial.then(async () => {
+      try {
+        if (value === null) await this.persistRemoval(key);
+        else await this.persistValue(key, value);
+        if (this.unsaved.get(key) === intent) {
+          this.unsaved.delete(key);
+          this.failures.delete(key);
+        }
+      } catch (error) {
+        if (this.unsaved.get(key) === intent) this.failures.set(key, error);
+      }
+      this.hasStorageError$.next(this.failures.size > 0);
     });
   }
   public getNotesRaw(): string {

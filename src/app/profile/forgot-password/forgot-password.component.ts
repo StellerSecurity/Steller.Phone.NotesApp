@@ -1,3 +1,4 @@
+import { finalize } from 'rxjs';
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -11,7 +12,7 @@ import { AppHapticsService } from 'src/app/services/app-haptics.service';
   styleUrls: ['./forgot-password.component.scss'],
 })
 export class ForgotPasswordComponent implements OnInit {
-  showVerification = true;
+  showVerification = false;
   otpValue = '';
   otpConfig = {
     length: 6,
@@ -23,6 +24,7 @@ export class ForgotPasswordComponent implements OnInit {
   };
   forgotPasswordForm: FormGroup;
   isProcessing = false;
+  private resendAllowedAt = 0;
 
   constructor(private fb: FormBuilder, private authService: AuthService,
     private toastMessageService: ToastMessageService,
@@ -42,24 +44,31 @@ export class ForgotPasswordComponent implements OnInit {
   }
 
   async sendCode() {
-    if (this.forgotPasswordForm.valid) {
-      this.isProcessing = true;
-      this.authService.forgotPassword(this.forgotPasswordForm.get('email')?.value).subscribe({
-        next: (response) => {
-          this.isProcessing = false;
+    if (this.isProcessing) return;
+    if (this.forgotPasswordForm.invalid) {
+      this.forgotPasswordForm.markAllAsTouched();
+      await this.appHaptics.warning();
+      return;
+    }
+    if (Date.now() < this.resendAllowedAt) {
+      await this.toastMessageService.showError('waitBeforeResend', undefined, true);
+      return;
+    }
+    this.isProcessing = true;
+    this.authService.forgotPassword(this.forgotPasswordForm.get('email')?.value)
+      .pipe(finalize(() => { this.isProcessing = false; })).subscribe({
+        next: response => {
           if (response.response_code == 200) {
             this.appHaptics.success();
+            this.otpValue = '';
+            this.resendAllowedAt = Date.now() + 30000;
             this.showVerification = true;
           } else {
             this.toastMessageService.showError(response.response_message);
           }
         },
-        error: (error) => {
-          this.isProcessing = false;
-          this.toastMessageService.showError(error?.error?.message);
-        }
-      })
-    }
+        error: () => { this.toastMessageService.showError('accountRequestFailed', undefined, true); }
+      });
   }
 
   resendCode() {
@@ -68,14 +77,16 @@ export class ForgotPasswordComponent implements OnInit {
   }
 
   useDifferentEmail() {
+    if (this.isProcessing) return;
     this.appHaptics.selectionChanged();
+    this.otpValue = '';
     this.showVerification = false;
   }
 
   onOtpChange(value: string) {
     this.otpValue = value;
 
-    if(this.otpValue?.length == 6 ) {
+    if(this.showVerification && !this.isProcessing && this.forgotPasswordForm.valid && /^\d{6}$/.test(this.otpValue)) {
       this.appHaptics.success();
       this.router.navigate(['/profile/create-new-password'], {
         queryParams: {

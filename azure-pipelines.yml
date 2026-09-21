@@ -38,18 +38,15 @@ stages:
       displayName: 'Install Node.js'
 
     - script: |
-        npm install
-        npm install -g @ionic/cli --skip-confirmation
-        npm install -g @angular/cli@latest --skip-confirmation
-        npm install @angular/service-worker --skip-confirmation --force
-        ng add @angular/pwa --skip-confirmation --force
-        ionic build --prod --skip-confirmation --force
+        set -e
+        npm ci --ignore-scripts
+        npm run build -- --configuration production
       displayName: 'npm install, build and test'
 
     - task: ArchiveFiles@2
       displayName: 'Archive files'
       inputs:
-        rootFolderOrFile: '$(System.DefaultWorkingDirectory)'
+        rootFolderOrFile: '$(System.DefaultWorkingDirectory)/www'
         includeRootFolder: false
         archiveType: zip
         archiveFile: $(Build.ArtifactStagingDirectory)/$(Build.BuildId).zip
@@ -61,7 +58,7 @@ stages:
 - stage: Deploy
   displayName: Deploy stage
   dependsOn: Build
-  condition: succeeded()
+  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
   jobs:
   - deployment: Deploy
     displayName: Deploy

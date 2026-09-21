@@ -8,6 +8,14 @@ import { AppHapticsService } from '../services/app-haptics.service';
   styleUrls: ['./note-locked-modal.component.scss'],
 })
 export class NoteLockedModalComponent {
+  private focusTimer?: ReturnType<typeof setTimeout>;
+  private closed = false;
+
+  ngOnDestroy(): void {
+    this.closed = true;
+    clearTimeout(this.focusTimer);
+  }
+
   public showPassword: boolean = false;
   @ViewChild('passwordInput', { static: false }) passwordInput!: IonInput;
 
@@ -15,13 +23,14 @@ export class NoteLockedModalComponent {
 
   ngAfterViewInit() {
     // Wait a tick to ensure modal animation finishes before focusing
-    setTimeout(() => {
-      this.passwordInput?.setFocus();
+    this.focusTimer = setTimeout(() => {
+      if (!this.closed) this.passwordInput?.setFocus();
     }, 200);
   }
 
   // Dismiss the modal with the confirmation result
   public dismiss(confirm: boolean): void {
+    this.ngOnDestroy();
     // Get the input value before dismissing the modal
     const inputValue = this.passwordInput.value;
     if (confirm) {

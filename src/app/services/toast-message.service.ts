@@ -25,12 +25,13 @@ export class ToastMessageService {
     await toast.present();
   }
 
-  async showError(message: string = this.translate.instant('operationFailed')) {
+  async showError(message: string = this.translate.instant('operationFailed'), retry?: () => void, translationKey = false) {
     const toast = await this.toastController.create({
-      message: message,
-      duration: 3000,
+      message: translationKey ? this.translate.instant(message) : message,
+      duration: retry ? 10000 : 3000,
       position: 'top',
-      color: 'danger'
+      color: 'danger',
+      buttons: retry ? [{ text: this.translate.instant('retryAction'), handler: retry }] : []
     });
     await this.appHaptics.error();
     await toast.present();

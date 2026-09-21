@@ -1,3 +1,4 @@
+import { BehaviorSubject, Subject } from 'rxjs';
 import { Injectable } from '@angular/core';
 import { NotesStorageService } from './notes-storage.service';
 
@@ -21,6 +22,10 @@ export interface PendingNoteMutation {
 export class NotesService {
   constructor(private notesStorageService: NotesStorageService) {}
 
+  readonly refreshRequested$ = new Subject<void>();
+
+  readonly syncNeedsAttention$ = new BehaviorSubject(false);
+
   private decryptedNotes: any = null;
   private notesAppPassword: string = "";
   private LAST_ACTIVITY_TIMESTAMP = 0;
@@ -29,6 +34,10 @@ export class NotesService {
   private readonly NOTE_LOCKOUT_UNTIL_PREFIX = 'note_lockout_until_';
 
   private pendingNoteMutations = new Map<string, PendingNoteMutation>();
+
+  public hasPendingMutations(): boolean {
+    return this.pendingNoteMutations.size > 0;
+  }
 
   public getNotes() {
     return this.notesStorageService.getNotesRaw();
@@ -202,6 +211,7 @@ export class NotesService {
     this.decryptedNotes = null;
     this.LAST_ACTIVITY_TIMESTAMP = 0;
     this.pendingNoteMutations.clear();
+    this.syncNeedsAttention$.next(false);
   }
 
   public setAppLockTimeoutMinutes(minutes: number) {

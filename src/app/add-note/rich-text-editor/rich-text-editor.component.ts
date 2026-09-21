@@ -1,13 +1,17 @@
+import { bindEditorScroll } from './editor-scroll';
 import {
   Component, EventEmitter, Input, Output, Renderer2,
   Inject, PLATFORM_ID, OnInit, OnDestroy, ViewChild, ElementRef
 } from '@angular/core';
+import { DomSanitizer } from '@angular/platform-browser';
+import { bindSafeNotePaste } from './safe-note-paste';
 import { isPlatformBrowser } from '@angular/common';
 import { ToastController } from '@ionic/angular';
 import { Capacitor } from '@capacitor/core';
 import { Filesystem, Directory } from '@capacitor/filesystem';
 import { TranslatorService } from '../../services/translator.service';
 import { AppHapticsService } from '../../services/app-haptics.service';
+import { preserveNoteLineBreaks } from './preserve-note-line-breaks';
 
 interface HeaderOption {
   value: string;
@@ -37,7 +41,35 @@ export class RichTextEditorComponent implements OnInit, OnDestroy {
   private dropdownElement: HTMLElement | null = null;
   private resizeListener: (() => void) | null = null;
   private clickOutsideListener: (() => void) | null = null;
+  private dropdownListeners: Array<() => void> = [];
+  private dropdownTimer?: ReturnType<typeof setTimeout>;
   private editorImageClickUnlisten: (() => void) | null = null;
+  private editorScrollUnlisten?: () => void;
+  private destroyed = false;
+  private viewActive = true;
+  private focusGeneration = 0;
+  private focusTimers = new Set<ReturnType<typeof setTimeout>>();
+  private headingRange = { index: 0, length: 0 };
+  private selectionUnlisten?: () => void;
+
+  public setViewActive(active: boolean): void {
+    if (this.viewActive === active) return;
+    this.viewActive = active;
+    this.focusGeneration++;
+    this.focusTimers.forEach(timer => clearTimeout(timer));
+    this.focusTimers.clear();
+    if (!active) this.closeDropdown();
+  }
+
+  private scheduleFocusWork(action: () => void, delay: number): void {
+    const generation = this.focusGeneration;
+    const timer = setTimeout(() => {
+      this.focusTimers.delete(timer);
+      if (!this.destroyed && this.viewActive && generation === this.focusGeneration) action();
+    }, delay);
+    this.focusTimers.add(timer);
+  }
+  private editorPasteUnlisten?: () => void;
   private editorCopyUnlisten: (() => void) | null = null;
   private viewerPointers = new Map<number, { x: number; y: number }>();
   private lastTapAt = 0;
@@ -61,6 +93,9 @@ export class RichTextEditorComponent implements OnInit, OnDestroy {
   ];
 
   quillModules = {
+    clipboard: {
+      matchers: [[1, preserveNoteLineBreaks]]
+    },
     toolbar: {
       container: '#custom-toolbar',
       handlers: {
@@ -77,6 +112,7 @@ export class RichTextEditorComponent implements OnInit, OnDestroy {
 
   constructor(
     private renderer: Renderer2,
+    private sanitizer: DomSanitizer,
     private toastController: ToastController,
     private translatorService: TranslatorService,
     private appHaptics: AppHapticsService,
@@ -96,6 +132,11 @@ export class RichTextEditorComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
+    this.destroyed = true;
+    this.setViewActive(false);
+    this.selectionUnlisten?.();
+    this.editorScrollUnlisten?.();
+    this.editorPasteUnlisten?.();
     this.closeDropdown();
     if (this.resizeListener) {
       this.resizeListener();
@@ -111,17 +152,29 @@ export class RichTextEditorComponent implements OnInit, OnDestroy {
   }
 
   onEditorCreated(quillInstance: any) {
+    this.selectionUnlisten?.();
     this.quill = quillInstance;
+    const rememberSelection = (range: { index: number; length: number } | null) => {
+      if (range) this.headingRange = { ...range };
+    };
+    quillInstance.on('selection-change', rememberSelection);
+    this.selectionUnlisten = () => quillInstance.off('selection-change', rememberSelection);
+    const content = this.hostRef.nativeElement.closest('ion-content') as any;
+    void content?.getScrollElement().then((scroll: HTMLElement) => {
+      if (this.destroyed || this.quill !== quillInstance) return;
+      this.editorScrollUnlisten?.();
+      this.editorScrollUnlisten = bindEditorScroll(quillInstance, scroll, this.toolbarRef.nativeElement);
+    });
+    this.editorPasteUnlisten?.();
+    this.editorPasteUnlisten = bindSafeNotePaste(quillInstance, this.sanitizer);
     this.bindImageClickHandler();
     this.bindCopyHandler();
 
-    requestAnimationFrame(() => {
-      setTimeout(() => this.focusEmptyEditorWithoutScrolling(), 300);
-    });
+    this.scheduleFocusWork(() => this.focusEmptyEditorWithoutScrolling(), 300);
   }
 
   private focusEmptyEditorWithoutScrolling(): void {
-    if (!isPlatformBrowser(this.platformId) || !this.quill) {
+    if (this.destroyed || !this.viewActive || !isPlatformBrowser(this.platformId) || !this.quill) {
       return;
     }
 
@@ -136,7 +189,9 @@ export class RichTextEditorComponent implements OnInit, OnDestroy {
     const documentScrollElement = document.scrollingElement as HTMLElement | null;
     const savedDocumentScrollTop = documentScrollElement?.scrollTop ?? 0;
 
+    const generation = this.focusGeneration;
     const restoreTop = () => {
+      if (this.destroyed || !this.viewActive || generation !== this.focusGeneration) return;
       if (documentScrollElement) {
         documentScrollElement.scrollTop = savedDocumentScrollTop;
       }
@@ -147,7 +202,7 @@ export class RichTextEditorComponent implements OnInit, OnDestroy {
 
       if (ionContent?.getScrollElement) {
         void ionContent.getScrollElement().then((scrollElement: HTMLElement) => {
-          scrollElement.scrollTop = 0;
+          if (!this.destroyed && this.viewActive && generation === this.focusGeneration) scrollElement.scrollTop = 0;
         });
       }
     };
@@ -168,11 +223,9 @@ export class RichTextEditorComponent implements OnInit, OnDestroy {
 
     restoreTop();
 
-    requestAnimationFrame(() => {
-      restoreTop();
-      setTimeout(restoreTop, 50);
-      setTimeout(restoreTop, 150);
-    });
+    this.scheduleFocusWork(restoreTop, 16);
+    this.scheduleFocusWork(restoreTop, 50);
+    this.scheduleFocusWork(restoreTop, 150);
   }
 
   onContentChange(content: string) {
@@ -238,7 +291,7 @@ export class RichTextEditorComponent implements OnInit, OnDestroy {
 
     if (this.quill) {
       const headerValue = value === 'false' ? false : parseInt(value, 10);
-      this.quill.format('header', headerValue);
+      this.quill.format('header', headerValue, 'user');
     }
   }
 
@@ -618,21 +671,21 @@ export class RichTextEditorComponent implements OnInit, OnDestroy {
         this.renderer.addClass(optionElement, 'selected');
       }
 
-      this.renderer.listen(optionElement, 'click', (e: Event) => {
+      this.dropdownListeners.push(this.renderer.listen(optionElement, 'click', (e: Event) => {
         e.preventDefault();
         e.stopPropagation();
         e.stopImmediatePropagation();
 
         this.selectOption(option.value);
-      });
+      }));
 
-      this.renderer.listen(optionElement, 'mouseenter', () => {
+      this.dropdownListeners.push(this.renderer.listen(optionElement, 'mouseenter', () => {
         this.renderer.addClass(optionElement, 'hover');
-      });
+      }));
 
-      this.renderer.listen(optionElement, 'mouseleave', () => {
+      this.dropdownListeners.push(this.renderer.listen(optionElement, 'mouseleave', () => {
         this.renderer.removeClass(optionElement, 'hover');
-      });
+      }));
 
       this.renderer.appendChild(this.dropdownElement, optionElement);
     });
@@ -641,7 +694,9 @@ export class RichTextEditorComponent implements OnInit, OnDestroy {
     this.renderer.appendChild(document.body, this.dropdownElement);
     this.renderer.addClass(document.body, 'dropdown-open');
 
-    setTimeout(() => {
+    this.dropdownTimer = setTimeout(() => {
+      this.dropdownTimer = undefined;
+      if (!this.isDropdownOpen) return;
       if (this.clickOutsideListener) {
         this.clickOutsideListener();
         this.clickOutsideListener = null;
@@ -704,14 +759,13 @@ export class RichTextEditorComponent implements OnInit, OnDestroy {
 
       if (this.quill) {
         const headerValue = value === 'false' ? false : parseInt(value, 10);
-        this.quill.format('header', headerValue);
-
-        setTimeout(() => {
-          this.quill.focus();
-        }, 50);
+        if (this.destroyed || !this.viewActive) return;
+        const range = this.quill.getSelection() ?? this.headingRange;
+        // format() implicitly calls Quill.focus(), which scrolls the editor.
+        this.quill.formatLine(range.index, range.length, 'header', headerValue, 'user');
+        this.quill.root.focus({ preventScroll: true });
+        this.quill.setSelection(range.index, range.length, 'silent');
       }
-
-      this.onHeaderChange(new Event('change'));
     }
   }
 
@@ -720,11 +774,15 @@ export class RichTextEditorComponent implements OnInit, OnDestroy {
 
     this.isDropdownOpen = false;
 
-    if (this.dropdownElement) {
-      while (this.dropdownElement.firstChild) {
-        this.renderer.removeChild(this.dropdownElement, this.dropdownElement.firstChild);
-      }
+    if (this.dropdownTimer !== undefined) {
+      clearTimeout(this.dropdownTimer);
+      this.dropdownTimer = undefined;
+    }
+    this.dropdownListeners.splice(0).forEach(unlisten => unlisten());
 
+    // Animation renderers may defer removal. Remove the container once instead
+    // of repeatedly removing a firstChild that has not left the DOM yet.
+    if (this.dropdownElement) {
       if (this.dropdownElement.parentNode) {
         this.renderer.removeChild(document.body, this.dropdownElement);
       }

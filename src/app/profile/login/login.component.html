@@ -26,10 +26,10 @@
           [ngClass]="{'border-danger': loginForm.get('email')?.invalid && loginForm.get('email')?.touched}">
         </ion-input>
       </ion-item>
-      <ion-text color="danger" *ngIf="loginForm.get('email')?.hasError('required') && loginForm.get('email')?.touched">
+      <ion-text color="danger" role="alert" *ngIf="loginForm.get('email')?.hasError('required') && loginForm.get('email')?.touched">
         <small>{{'emailIsRequired' | translate}}</small>
       </ion-text>
-      <ion-text color="danger" *ngIf="loginForm.get('email')?.hasError('email') && loginForm.get('email')?.touched">
+      <ion-text color="danger" role="alert" *ngIf="loginForm.get('email')?.hasError('email') && loginForm.get('email')?.touched">
         <small>{{'invalidEmailFormat' | translate}}</small>
       </ion-text>
 
@@ -58,6 +58,10 @@
           (click)="togglePasswordVisibility()"
         ></ion-icon>
       </ion-item>
+
+      <ion-text color="danger" role="alert" *ngIf="loginForm.get('password')?.hasError('required') && loginForm.get('password')?.touched">
+        <small>{{'passwordIsRequired' | translate}}</small>
+      </ion-text>
 
       <div class="forgot-password" (click)="forgotPassword()">{{'forgotPassword' | translate}}</div>
 

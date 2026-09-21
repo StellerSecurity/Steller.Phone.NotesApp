@@ -1,3 +1,8 @@
+import { noteSearchText, matchesNoteSearch } from '../utils/note-search';
+import { nextNoteVersion } from '../utils/note-version';
+import { OutboxStorage } from '../services/outbox-storage.service';
+import { SyncWorkerService } from '../services/sync-worker.service';
+import type { PluginListenerHandle } from '@capacitor/core';
 import {
   AfterViewInit,
   ChangeDetectorRef,
@@ -105,7 +110,7 @@ export class HomePage implements AfterViewInit, OnDestroy {
   private pressGestureInitTimer: any = null;
   private longPressElementsChangesSub: Subscription | null = null;
   private backButtonSub: any = null;
-  private appStateListener: any = null;
+  private appStateListener: Promise<PluginListenerHandle> | null = null;
 
   public should_display = true;
   public checkboxOpened = false;
@@ -204,6 +209,8 @@ export class HomePage implements AfterViewInit, OnDestroy {
     }
   };
 
+  private readonly realtimeHint = () => { void this.syncFromServer().catch(() => {}); };
+
   constructor(
     private cryptoService: CryptoService,
     public noteService: NotesService,
@@ -215,6 +222,8 @@ export class HomePage implements AfterViewInit, OnDestroy {
     private route: ActivatedRoute,
     private dataService: DataService,
     private notesApiServiceV1: NotesApiV1Service,
+    private syncWorker: SyncWorkerService,
+    private outbox: OutboxStorage,
     private translatorService: TranslatorService,
     private gestureCtrl: GestureController,
     private router: Router,
@@ -409,7 +418,12 @@ export class HomePage implements AfterViewInit, OnDestroy {
     });
   }
 
+  private refreshNotesSub?: Subscription;
+
   ngAfterViewInit(): void {
+    this.refreshNotesSub = this.noteService.refreshRequested$.subscribe(() => {
+      if (!this.pauseSync && this.should_display) this.setData(this.noteService.getNotesAppPassword());
+    });
     this.longPressElementsChangesSub = this.longPressElements.changes.subscribe(() => {
       this.schedulePressGestureInit();
     });
@@ -418,6 +432,8 @@ export class HomePage implements AfterViewInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    window.removeEventListener('stellar:notes-changed', this.realtimeHint);
+    this.refreshNotesSub?.unsubscribe();
     this.clearSearchDebounce();
     this.cancelPendingSearchFocus();
 
@@ -449,8 +465,11 @@ export class HomePage implements AfterViewInit, OnDestroy {
     }
 
     if (this.appStateListener) {
-      this.appStateListener.remove();
+      const pendingListener = this.appStateListener;
       this.appStateListener = null;
+      void pendingListener.then(listener => listener.remove()).catch(error => {
+        console.warn('Failed to remove home app-state listener', error);
+      });
     }
 
     window.removeEventListener('touchend', this.boundGlobalTouchEnd);
@@ -458,6 +477,7 @@ export class HomePage implements AfterViewInit, OnDestroy {
   }
 
   async ionViewWillEnter() {
+    window.addEventListener('stellar:notes-changed', this.realtimeHint);
     this.initialHomeLoadFinished = false;
     this.headerHasShadow = false;
 
@@ -584,16 +604,22 @@ export class HomePage implements AfterViewInit, OnDestroy {
   ionViewDidEnter() {
     // Resync notes silently when the app comes back to foreground.
     // Do not show the Home skeleton here; the existing notes should stay visible.
-    if (this.appStateListener) {
-      this.appStateListener.remove();
-      this.appStateListener = null;
+    // Ionic caches this page. Keep one listener across visits, and await its
+    // asynchronous handle when the page is finally destroyed.
+    if (!this.appStateListener) {
+      const pendingListener = App.addListener('appStateChange', ({ isActive }: { isActive: boolean }) => {
+        if (isActive && !this.pauseSync && this.authService.isLoggedIn) {
+          this.syncFromServer({ silent: true }).then(() => {});
+        }
+      });
+      this.appStateListener = pendingListener;
+      void pendingListener.catch(error => {
+        if (this.appStateListener === pendingListener) {
+          this.appStateListener = null;
+        }
+        console.warn('Failed to register home app-state listener', error);
+      });
     }
-
-    this.appStateListener = App.addListener('appStateChange', ({ isActive }: { isActive: boolean }) => {
-      if (isActive && !this.pauseSync && this.authService.isLoggedIn) {
-        this.syncFromServer({ silent: true }).then(() => {});
-      }
-    });
     this.schedulePressGestureInit();
     this.registerBackButtonHandler();
     window.addEventListener('touchend', this.boundGlobalTouchEnd, { passive: true });
@@ -601,6 +627,7 @@ export class HomePage implements AfterViewInit, OnDestroy {
   }
 
   async ionViewWillLeave() {
+    window.removeEventListener('stellar:notes-changed', this.realtimeHint);
     if (this.searchMode) {
       this.exitSearchMode();
     }
@@ -843,7 +870,7 @@ export class HomePage implements AfterViewInit, OnDestroy {
     this.resetCheckboxDismissGesture();
     this.resetRenderedNoteLimits();
 
-    if (this.search_query.length == 0) {
+    if (normalize(this.search_query).length === 0) {
       this.isSearching = false;
       this.filteredResults = this.notes;
       this.refreshVisibleNotes();
@@ -851,27 +878,12 @@ export class HomePage implements AfterViewInit, OnDestroy {
       return;
     }
 
-    const normalizedQuery = normalize(this.search_query);
-    const filteredNewResults: any[] = [];
-
-    for (let i = 0; this.notes.length > i; i++) {
-      const note = this.notes[i];
+    const terms = normalize(this.search_query).split(' ');
+    const filteredNewResults = this.notes.filter(note => {
       const cached = this.getNoteListCacheEntry(note);
-      const result = cached.normalizedText.includes(normalizedQuery);
-
-      let titleExists = false;
-      if (note.title !== undefined) {
-        titleExists = cached.normalizedTitle.includes(normalizedQuery);
-      }
-
-      const folderMatches = cached.normalizedFolder.includes(normalizedQuery);
-
-      if (result && !note.protected) {
-        filteredNewResults.push(note);
-      } else if (titleExists || folderMatches) {
-        filteredNewResults.push(note);
-      }
-    }
+      return matchesNoteSearch(terms, cached.normalizedTitle, cached.normalizedFolder,
+        cached.normalizedText, !!note.protected);
+    });
 
     this.isSearching = true;
     this.pauseSync = true;
@@ -907,7 +919,7 @@ export class HomePage implements AfterViewInit, OnDestroy {
       textSource,
       folderSource,
       normalizedTitle: normalize(titleSource),
-      normalizedText: normalize(textSource),
+      normalizedText: noteSearchText(textSource),
       normalizedFolder: normalize(folderSource),
     };
 
@@ -1152,6 +1164,7 @@ export class HomePage implements AfterViewInit, OnDestroy {
 
   async handleRefresh(event: Event) {
     const refresher = event.target as HTMLIonRefresherElement;
+    void this.syncWorker.retryPending();
 
     this.dataService.setForceDownloadOnHome(true);
 
@@ -1162,14 +1175,17 @@ export class HomePage implements AfterViewInit, OnDestroy {
     }
   }
 
+  private downloadInProgress = false;
+  private warnedAboutUnreadableNotes = false;
+
   async syncFromServer(options: { silent?: boolean } = {}) {
     if (!this.authService.isLoggedIn) return;
-    if (this.pauseSync) return;
+    if (this.pauseSync || this.downloadInProgress) return;
 
     if (this.syncTimer == null) {
       this.syncTimer = setInterval(() => {
-        if (!this.pauseSync && this.authService.isLoggedIn) {
-          this.syncFromServer();
+        if (!this.pauseSync && !document.hidden && this.authService.isLoggedIn) {
+          this.syncFromServer({ silent: true });
         }
       }, 30_000);
     }
@@ -1178,9 +1194,22 @@ export class HomePage implements AfterViewInit, OnDestroy {
       this.isSyncing = true;
     }
 
+    this.downloadInProgress = true;
     try {
-      const res = await this.notesApiServiceV1.download(0);
+      const knownNotes: Record<string, number> = {};
+      for (const note of this.notes ?? []) {
+        if (!this.noteService.hasAnyPendingMutation(note.id)) {
+          knownNotes[note.id] = Number(note.last_modified);
+        }
+      }
+      const res = await this.notesApiServiceV1.download(0, 1000, knownNotes);
 
+      if (!this.authService.isLoggedIn || this.pauseSync) return;
+      const queuedUploads = new Set<string>();
+      for (const op of await this.outbox.getAll()) {
+        if (op.type === 'upload') for (const note of op.payload.notes ?? []) queuedUploads.add(note.id);
+      }
+      let unreadableNotes = 0;
       const serverNotes = res?.notes ?? [];
       const serverFolders = Array.isArray((res as any)?.folders) ? (res as any).folders : [];
       const decryptedFolderNameById = await this.decryptServerFolders(serverFolders);
@@ -1194,10 +1223,12 @@ export class HomePage implements AfterViewInit, OnDestroy {
           continue;
         }
 
+        // Even after restart, a rejected/unconfirmed upload must not be overwritten.
+        if (queuedUploads.has(s.id)) continue;
+
         if (s.deleted) {
-          if (!local || (s.last_modified ?? 0) >= (local?.last_modified ?? 0)) {
-            map.delete(s.id);
-          }
+          // A server tombstone is terminal regardless of this device's clock.
+          map.delete(s.id);
 
           this.noteService.reconcileServerConfirmation(s);
           continue;
@@ -1211,29 +1242,35 @@ export class HomePage implements AfterViewInit, OnDestroy {
           continue;
         }
 
-        const blobText = unpackCipherBlob(s.text);
-        s.text = await decryptTextWithMK(this.mkRaw, {
-          ...blobText,
-          v: 1,
-          aad_b64: btoa(s.id)
-        });
+        try {
+          const blobText = unpackCipherBlob(s.text);
+          s.text = await decryptTextWithMK(this.mkRaw, {
+            ...blobText,
+            v: 1,
+            aad_b64: btoa(s.id)
+          });
 
-        s.favorite = !!(s.favorite ?? local?.favorite);
-        s.pinned = !!(s.pinned ?? local?.pinned);
+          s.favorite = !!(s.favorite ?? local?.favorite);
+          s.pinned = !!(s.pinned ?? local?.pinned);
 
-        if (typeof s.title === 'string' && s.title.length > 0) {
-          const blobTitle = unpackCipherBlob(s.title);
-          s.title = await decryptTextWithMK(
-            this.mkRaw,
-            { ...blobTitle, v: 1, aad_b64: btoa(s.id + '#title') }
-          );
-        } else {
-          s.title = '';
+          if (typeof s.title === 'string' && s.title.length > 0) {
+            const blobTitle = unpackCipherBlob(s.title);
+            s.title = await decryptTextWithMK(
+              this.mkRaw,
+              { ...blobTitle, v: 1, aad_b64: btoa(s.id + '#title') }
+            );
+          } else {
+            s.title = '';
+          }
+
+          const noteFolderId = this.normalizeFolderId((s as any)?.folder_id);
+          s.folder_id = noteFolderId;
+          s.folder = noteFolderId ? (decryptedFolderNameById.get(noteFolderId) ?? '') : '';
+        } catch {
+          unreadableNotes++;
+          continue; // Retain the local version and continue processing healthy records.
         }
 
-        const noteFolderId = this.normalizeFolderId((s as any)?.folder_id);
-        s.folder_id = noteFolderId;
-        s.folder = noteFolderId ? (decryptedFolderNameById.get(noteFolderId) ?? '') : '';
 
         if (!local) {
           map.set(s.id, s);
@@ -1248,6 +1285,14 @@ export class HomePage implements AfterViewInit, OnDestroy {
         this.noteService.reconcileServerConfirmation(s);
       }
 
+      if (unreadableNotes && !this.warnedAboutUnreadableNotes) {
+        const toast = await this.toastController.create({
+          message: 'Some notes could not be opened. Other notes will continue to sync.',
+          duration: 6000, position: 'bottom',
+        });
+        await toast.present();
+      }
+      this.warnedAboutUnreadableNotes = unreadableNotes > 0;
       const merged = Array.from(map.values()).filter((n: any) => !n.deleted);
       this.notes = merged;
       this.filteredResults = merged;
@@ -1272,6 +1317,12 @@ export class HomePage implements AfterViewInit, OnDestroy {
         if (!localFolder || normalizedFolder.last_modified >= Number(localFolder?.last_modified ?? 0)) {
           folderMap.set(key, normalizedFolder);
         }
+      }
+
+      // Folder names can change without changing the note's version.
+      for (const note of merged) {
+        const folder = folderMap.get(this.normalizeFolderId(note.folder_id) ?? '');
+        if (folder) note.folder = folder.deleted ? '' : folder.name;
       }
 
       if (this.noteService.appHasPasswordChallenge()) {
@@ -1299,6 +1350,7 @@ export class HomePage implements AfterViewInit, OnDestroy {
         error_type: navigator.onLine ? 'unknown' : 'network',
       });
     } finally {
+      this.downloadInProgress = false;
       if (!options.silent) {
         this.isSyncing = false;
         this.waitForSync = false;
@@ -1450,9 +1502,10 @@ export class HomePage implements AfterViewInit, OnDestroy {
   }
 
   private updatePagerTransform(offsetX = 0) {
-    const width = this.pagerWidth || this.pagerShell?.nativeElement?.clientWidth || 0;
-    const baseX = -this.getPagerIndex() * width;
-    this.pagerTransform = `translate3d(${baseX + offsetX}px, 0, 0)`;
+    // The pager can be absent while search shows no results. Resolve its resting
+    // position in CSS so recreating/resizing it cannot leave Favorites on All.
+    const basePercent = -this.getPagerIndex() * 100;
+    this.pagerTransform = `translate3d(calc(${basePercent}% + ${offsetX}px), 0, 0)`;
   }
 
   private updateSegmentLine(offsetPx = 0) {
@@ -1835,21 +1888,18 @@ export class HomePage implements AfterViewInit, OnDestroy {
   }
 
   private async persistNotesState() {
-    if (this.noteService.appHasPasswordChallenge()) {
-      const encryptedNotesSave = this.cryptoService.encrypt(
-        JSON.stringify(this.notes),
-        this.noteService.getNotesAppPassword()
-      );
-      this.noteService.setNotes(encryptedNotesSave);
-    } else {
-      this.noteService.setNotes(JSON.stringify(this.notes));
-    }
-    this.noteService.setDecryptedNotes(JSON.stringify(this.notes));
-    await this.noteService.flushPersistence();
-
+    const snapshot = this.notes.map(note => ({ ...note }));
+    const raw = JSON.stringify(snapshot);
     if (this.authService.isLoggedIn) {
-      this.notesApiServiceV1.upload(0, this.notes, undefined, this.getStoredFolders(this.noteService.getNotesAppPassword())).then(() => {});
+      const changedNotes = snapshot.filter(note => this.noteService.hasAnyPendingMutation(note.id));
+      await this.notesApiServiceV1.upload(0, changedNotes, undefined,
+        this.getStoredFolders(this.noteService.getNotesAppPassword()), true);
     }
+    this.noteService.setNotes(this.noteService.appHasPasswordChallenge()
+      ? this.cryptoService.encrypt(raw, this.noteService.getNotesAppPassword()) : raw);
+    this.noteService.setDecryptedNotes(raw);
+    await this.noteService.flushPersistence();
+    if (this.authService.isLoggedIn) void this.syncWorker.trySync();
   }
 
   public async togglePinnedFromHome(event: Event, noteId: string) {
@@ -1863,7 +1913,7 @@ export class HomePage implements AfterViewInit, OnDestroy {
     }
 
     targetNote.pinned = !targetNote.pinned;
-    targetNote.last_modified = Date.now();
+    targetNote.last_modified = nextNoteVersion(this.notes ?? []);
 
     this.noteService.markPendingMutation(noteId, 'pin', targetNote.last_modified);
 
@@ -1890,7 +1940,7 @@ export class HomePage implements AfterViewInit, OnDestroy {
     }
 
     targetNote.favorite = !targetNote.favorite;
-    targetNote.last_modified = Date.now();
+    targetNote.last_modified = nextNoteVersion(this.notes ?? []);
 
     this.noteService.markPendingMutation(noteId, 'favorite', targetNote.last_modified);
 

@@ -106,23 +106,86 @@ final class BackgroundNotesSyncStore {
         return result;
     }
 
-    static synchronized void stageDownloaded(Context context, JSONObject response) throws Exception {
-        JSONArray responses = readArrayFile(context, INBOX_FILE);
-        responses.put(response);
-        JSONArray capped = new JSONArray();
-        for (int i = Math.max(0, responses.length() - 20); i < responses.length(); i++) {
-            capped.put(responses.get(i));
+    private static DownloadAccumulator<JSONObject> records(JSONArray responses, String field) {
+        DownloadAccumulator<JSONObject> result = new DownloadAccumulator<>(
+            item -> item.optString("id", ""),
+            item -> item.optLong("last_modified", 0),
+            item -> item.optBoolean("deleted", false)
+        );
+        for (int i = 0; i < responses.length(); i++) {
+            JSONObject response = responses.optJSONObject(i);
+            JSONArray items = response == null ? null : response.optJSONArray(field);
+            if (items == null) continue;
+            for (int j = 0; j < items.length(); j++) result.add(items.optJSONObject(j));
         }
-        writeArrayFile(context, INBOX_FILE, capped);
+        return result;
+    }
+
+    private static JSONArray compactDownloaded(JSONArray responses) throws Exception {
+        if (responses.length() == 0) return responses;
+        JSONObject merged = new JSONObject();
+        merged.put("notes", new JSONArray(records(responses, "notes").values()));
+        merged.put("folders", new JSONArray(records(responses, "folders").values()));
+        long watermark = 0;
+        boolean hasMore = false;
+        for (int i = 0; i < responses.length(); i++) {
+            JSONObject response = responses.optJSONObject(i);
+            if (response == null) continue;
+            watermark = Math.max(watermark, response.optLong("watermark", 0));
+            hasMore |= response.optBoolean("has_more", false);
+        }
+        merged.put("watermark", watermark);
+        merged.put("has_more", hasMore);
+        return new JSONArray().put(merged);
+    }
+
+    static synchronized JSONObject prepareDownload(Context context, String userMarker) throws Exception {
+        SharedPreferences preferences = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
+        if (!userMarker.equals(preferences.getString(PULL_USER, ""))) {
+            // Clear the old account before recording the new marker; fail closed on disk errors.
+            writeArrayFile(context, INBOX_FILE, new JSONArray());
+            preferences.edit().putString(PULL_USER, userMarker).putLong(PULL_WATERMARK, 0).apply();
+        }
+        // Only advertise records still durably staged. Consumption or missing/corrupt
+        // cache automatically falls back to a full pull, without a separate stale cursor.
+        return new JSONObject(records(readArrayFile(context, INBOX_FILE), "notes").knownVersions());
+    }
+
+    static synchronized boolean stageDownloaded(Context context, JSONObject response, String userMarker) throws Exception {
+        SharedPreferences preferences = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
+        // Ignore an in-flight response from a session cleared by logout/account switching.
+        if (!userMarker.equals(preferences.getString(PULL_USER, ""))) return false;
+        JSONArray responses = readArrayFile(context, INBOX_FILE);
+        String previous = responses.toString();
+        responses.put(response);
+        JSONArray compacted = compactDownloaded(responses);
+        if (!previous.equals(compacted.toString())) writeArrayFile(context, INBOX_FILE, compacted);
+        long watermark = response.optLong("watermark", 0);
+        if (watermark > preferences.getLong(PULL_WATERMARK, 0)) {
+            preferences.edit().putLong(PULL_WATERMARK, watermark).apply();
+        }
+        return true;
     }
 
     static synchronized JSONArray consumeDownloaded(Context context) {
+        // A failed disk clear at logout must not expose the old account's inbox.
+        if (context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString(PULL_USER, "").isEmpty()) {
+            return new JSONArray();
+        }
         JSONArray responses = readArrayFile(context, INBOX_FILE);
-        try { writeArrayFile(context, INBOX_FILE, new JSONArray()); } catch (Exception ignored) {}
-        return responses;
+        try {
+            JSONArray compacted = compactDownloaded(responses);
+            writeArrayFile(context, INBOX_FILE, new JSONArray());
+            return compacted;
+        } catch (Exception ignored) {
+            // Preserve the original inbox if compaction or clearing fails.
+            return responses;
+        }
     }
 
     static synchronized void clearDownloaded(Context context) {
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
+            .remove(PULL_USER).remove(PULL_WATERMARK).apply();
         try { writeArrayFile(context, INBOX_FILE, new JSONArray()); } catch (Exception ignored) {}
     }
 
