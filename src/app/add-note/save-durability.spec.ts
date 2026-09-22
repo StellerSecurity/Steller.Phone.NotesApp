@@ -1,6 +1,29 @@
 import { AddNotePage } from './add-note.page';
 
 describe('Editor durable queue ordering', () => {
+  function newNote(html: string) {
+    const page: any = Object.create(AddNotePage.prototype);
+    Object.assign(page, {
+      newlyCreatedNote: true, note_title: '', note_text: html,
+      getUntitledLabel: () => 'Untitled', hasMeaningfulChanges: () => true,
+      save: jasmine.createSpy('save'),
+    });
+    return page;
+  }
+  for (const src of ['data:image/png;base64,AA==', 'https://example.com/photo.png']) {
+    it('saves a new image-only note on leave: ' + src.split(':')[0], () => {
+      const page = newNote('<p><img src="' + src + '"></p>');
+      page.forceSaveNow();
+      expect(page.save).toHaveBeenCalledWith(null);
+    });
+  }
+  for (const html of ['', '<p><br></p>', '<p> &nbsp; </p>', '<p><img src=""></p>']) {
+    it('still skips a truly empty new note: ' + html, () => {
+      const page = newNote(html);
+      page.forceSaveNow();
+      expect(page.save).not.toHaveBeenCalled();
+    });
+  }
   function pageFor(upload: any) {
     const page: any = Object.create(AddNotePage.prototype);
     Object.assign(page, {

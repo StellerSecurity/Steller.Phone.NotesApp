@@ -924,18 +924,19 @@ export class AddNotePage implements OnDestroy {
     await this.askforNotePassword();
   }
 
-  private htmlToPlainText(html: string): string {
-    if (!html) return '';
+  private hasNoteContent(html: string): boolean {
+    if (!html) return false;
 
     try {
       const doc = new DOMParser().parseFromString(html, 'text/html');
-      return (doc.body?.textContent ?? '').replace(/\u00A0/g, ' ').trim();
+      const text = (doc.body?.textContent ?? '').replace(/\u00A0/g, ' ').trim();
+      // An embedded image is note content even when it has no accompanying text.
+      // Inspect inert HTML; never mount saved markup just to detect an empty note.
+      return text.length > 0 || Array.from(doc.querySelectorAll('img[src]'))
+        .some(image => (image.getAttribute('src') ?? '').trim().length > 0);
     } catch {
-      return html
-        .replace(/<br\s*\/?>/gi, '\n')
-        .replace(/<[^>]+>/g, '')
-        .replace(/\u00A0/g, ' ')
-        .trim();
+      // If inspection fails, preserve the draft rather than silently discard it.
+      return html.trim().length > 0;
     }
   }
 
@@ -945,10 +946,7 @@ export class AddNotePage implements OnDestroy {
     const title = (this.note_title ?? '').trim();
     const titleEmpty = title.length === 0 || title === this.getUntitledLabel();
 
-    const plainText = this.htmlToPlainText(this.note_text ?? '');
-    const textEmpty = plainText.length === 0;
-
-    return titleEmpty && textEmpty;
+    return titleEmpty && !this.hasNoteContent(this.note_text ?? '');
   }
 
   private forceSaveNow(): void {
