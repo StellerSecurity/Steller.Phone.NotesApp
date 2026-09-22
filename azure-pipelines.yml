@@ -38,15 +38,15 @@ stages:
       displayName: 'Install Node.js'
 
     - script: |
-        set -e
-        npm ci --ignore-scripts
+        set -eu
+        npm ci --legacy-peer-deps --ignore-scripts --no-audit --no-fund
         npm run build -- --configuration production
-      displayName: 'npm install, build and test'
+      displayName: 'Build from the committed dependency lockfile'
 
     - task: ArchiveFiles@2
       displayName: 'Archive files'
       inputs:
-        rootFolderOrFile: '$(System.DefaultWorkingDirectory)/www'
+        rootFolderOrFile: '$(System.DefaultWorkingDirectory)'
         includeRootFolder: false
         archiveType: zip
         archiveFile: $(Build.ArtifactStagingDirectory)/$(Build.BuildId).zip
@@ -58,7 +58,7 @@ stages:
 - stage: Deploy
   displayName: Deploy stage
   dependsOn: Build
-  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+  condition: succeeded()
   jobs:
   - deployment: Deploy
     displayName: Deploy

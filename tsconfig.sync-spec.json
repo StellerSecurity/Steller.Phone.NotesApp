@@ -15,6 +15,7 @@
     "src/app/services/upload-confirmation.spec.ts",
     "src/app/add-note/save-durability.spec.ts",
     "src/app/profile/download-isolation.spec.ts",
-    "src/app/controlled-flow-audit.spec.ts"
+    "src/app/controlled-flow-audit.spec.ts",
+    "src/app/utils/note-search.spec.ts"
   ]
 }
