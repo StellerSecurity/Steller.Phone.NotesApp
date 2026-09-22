@@ -1,6 +1,61 @@
 import { encryptTextWithMK, packCipherBlob } from '@stellarsecurity/stellar-crypto';
 import { HomePage } from './home.page';
 
+describe('Mobile metadata save ordering', () => {
+  function fixture() {
+    const page: any = Object.create(HomePage.prototype);
+    let saved = '[]';
+    const uploads: Array<{ resolve: () => void; reject: (error: Error) => void }> = [];
+    page.notes = [{ id: 'qa', text: '<p>keep</p>', favorite: false, pinned: false, last_modified: 1 }];
+    page.filteredResults = page.notes;
+    page.authService = { isLoggedIn: true };
+    page.notesSyncTail = Promise.resolve();
+    page.appHaptics = { selectionChanged: async () => {} };
+    page.refreshVisibleNotes = () => {};
+    page.getStoredFolders = () => [];
+    page.noteService = {
+      markPendingMutation: () => {}, hasAnyPendingMutation: () => true,
+      appHasPasswordChallenge: () => false, getNotesAppPassword: () => '',
+      setNotes: (raw: string) => { saved = raw; }, setDecryptedNotes: () => {},
+      flushPersistence: async () => {}, syncNeedsAttention$: { next: jasmine.createSpy('attention') },
+    };
+    page.notesApiServiceV1 = { upload: jasmine.createSpy('upload').and.callFake(() => new Promise<void>((resolve, reject) => uploads.push({ resolve, reject }))) };
+    page.syncWorker = { trySync: async () => {} };
+    const present = jasmine.createSpy('present').and.resolveTo();
+    page.toastController = { create: async () => ({ present }) };
+    return { page, uploads, present, read: () => JSON.parse(saved) };
+  }
+
+  it('keeps the newest local flag while serializing slow encryption in tap order', async () => {
+    const f = fixture(); const event = { stopPropagation: () => {}, preventDefault: () => {} } as Event;
+    const first = f.page.toggleFavoriteFromHome(event, 'qa');
+    for (let i = 0; i < 5; i++) await Promise.resolve();
+    const second = f.page.toggleFavoriteFromHome(event, 'qa');
+    for (let i = 0; i < 5; i++) await Promise.resolve();
+    expect(f.read()[0].favorite).toBeFalse();
+    expect(f.uploads.length).toBe(1);
+    f.uploads[0].resolve(); await first;
+    for (let i = 0; i < 5; i++) await Promise.resolve();
+    f.uploads[1].resolve(); await second;
+    const sent = f.page.notesApiServiceV1.upload.calls.allArgs().map((args: any[]) => args[1][0]);
+    expect(sent.map((note: any) => note.favorite)).toEqual([true, false]);
+    expect(sent[1].last_modified).toBeGreaterThan(sent[0].last_modified);
+    expect(f.read()[0].favorite).toBeFalse();
+    expect(f.read()[0].text).toBe('<p>keep</p>');
+  });
+
+  it('retains a local flag and reports a failed queue write', async () => {
+    const f = fixture(); const event = { stopPropagation: () => {}, preventDefault: () => {} } as Event;
+    const saving = f.page.togglePinnedFromHome(event, 'qa');
+    for (let i = 0; i < 5; i++) await Promise.resolve();
+    f.uploads[0].reject(new Error('Synthetic storage failure'));
+    await expectAsync(saving).toBeResolved();
+    expect(f.read()[0]?.pinned).toBeTrue();
+    expect(f.page.noteService.syncNeedsAttention$.next).toHaveBeenCalledWith(true);
+    expect(f.present).toHaveBeenCalled();
+  });
+});
+
 describe('Incremental home synchronization', () => {
   function pageFor(response: any) {
     const page: any = Object.create(HomePage.prototype);
@@ -60,6 +115,47 @@ describe('Incremental home synchronization', () => {
     const page = pageFor({ notes: [], folders: [] });
     await Promise.all([page.syncFromServer(), page.syncFromServer()]);
     expect(page.notesApiServiceV1.download).toHaveBeenCalledTimes(1);
+  });
+
+  it('coalesces realtime hints during an older download into one immediate follow-up', async () => {
+    const page = pageFor({ notes: [], folders: [] });
+    let release!: (value: any) => void;
+    const first = new Promise(resolve => release = resolve);
+    page.notesApiServiceV1.download.and.returnValues(first, Promise.resolve({ notes: [], folders: [] }));
+    const running = page.syncFromServer({ silent: true });
+    for (let i=0; i<20; i++) await page.syncFromServer({ silent: true, realtime: true });
+    expect(page.notesApiServiceV1.download).toHaveBeenCalledTimes(1);
+    release({ notes: [], folders: [] }); await running;
+    expect(page.notesApiServiceV1.download).toHaveBeenCalledTimes(2);
+    expect(page.trackSyncFailed).not.toHaveBeenCalled();
+  });
+
+  it('does not run a deferred realtime download after logout', async () => {
+    const page = pageFor({ notes: [], folders: [] });
+    let release!: (value: any) => void;
+    page.notesApiServiceV1.download.and.returnValue(new Promise(resolve => release = resolve));
+    const running = page.syncFromServer({ silent: true });
+    await page.syncFromServer({ silent: true, realtime: true }); page.authService.isLoggedIn=false;
+    release({ notes: [], folders: [] }); await running;
+    expect(page.notesApiServiceV1.download).toHaveBeenCalledTimes(1);
+    expect(page.noteService.setNotes).not.toHaveBeenCalled();
+  });
+
+  it('applies desktop favorite and pin changes, including false, without changing note text', async () => {
+    const key=new Uint8Array(32).fill(3);
+    const text=packCipherBlob(await encryptTextWithMK(key,'test\ntest\ntest','saved'));
+    const title=packCipherBlob(await encryptTextWithMK(key,'Shared note','saved#title'));
+    const page=pageFor({notes:[],folders:[]});page.mkRaw=key;
+    page.noteService.shouldIgnoreServerNote=()=>false;
+    for (const [favorite,pinned] of [[true,false],[true,true],[false,true],[false,false]]) {
+      const version=Number(page.notes.find((n:any)=>n.id==='saved').last_modified)+1;
+      page.notesApiServiceV1.download.and.resolveTo({notes:[{id:'saved',title,text,last_modified:version,favorite,pinned,auto_wipe:false}],folders:[]});
+      await page.syncFromServer({silent:true,realtime:true});
+      const saved=page.notes.find((n:any)=>n.id==='saved');
+      expect(saved.favorite).toBe(favorite);expect(saved.pinned).toBe(pinned);
+      expect(saved.text).toBe('test\ntest\ntest');expect(saved.title).toBe('Shared note');
+      expect(saved.auto_wipe).toBeFalse();expect(page.trackSyncFailed).not.toHaveBeenCalled();
+    }
   });
   it('keeps a queued local edit even when the server clock is ahead', async () => {
     const page = pageFor({ notes: [{ id: 'saved', deleted: true, last_modified: 999999 }], folders: [] });

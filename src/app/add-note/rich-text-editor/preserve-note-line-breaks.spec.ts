@@ -22,7 +22,7 @@ describe('note HTML line breaks', () => {
   function editor(preserve = true): Quill {
     return new Quill(host, { modules: {
       toolbar: false,
-      clipboard: { matchers: preserve ? [[1, preserveNoteLineBreaks]] : [] }
+      clipboard: { matchVisual: false, matchers: preserve ? [[1, preserveNoteLineBreaks]] : [] }
     }});
   }
 
@@ -62,5 +62,16 @@ describe('note HTML line breaks', () => {
     expect(quill.getText()).toBe('one\ntwo\n');
     expect(quill.getFormat(0, 3)['list']).toBe('bullet');
     expect(quill.getFormat(4, 3)['list']).toBe('bullet');
+  });
+
+  it('does not turn CSS spacing into extra blank lines on repeated imports', () => {
+    styles.textContent = '.ql-clipboard p { display:block; margin:0; height:20px; } .ql-clipboard p + p { margin-top:100px; }';
+    const quill = editor();
+    let html = '<p>first</p><p>second</p><p><br></p><p>last</p>';
+    for (let cycle = 0; cycle < 5; cycle++) {
+      quill.setContents(quill.clipboard.convert(html));
+      expect(quill.getText()).toBe('first\nsecond\n\nlast\n');
+      html = quill.root.innerHTML;
+    }
   });
 });

@@ -209,7 +209,7 @@ export class HomePage implements AfterViewInit, OnDestroy {
     }
   };
 
-  private readonly realtimeHint = () => { void this.syncFromServer().catch(() => {}); };
+  private readonly realtimeHint = () => { void this.syncFromServer({ silent: true, realtime: true }).catch(() => {}); };
 
   constructor(
     private cryptoService: CryptoService,
@@ -1176,11 +1176,16 @@ export class HomePage implements AfterViewInit, OnDestroy {
   }
 
   private downloadInProgress = false;
+  private realtimeDownloadRequested = false;
   private warnedAboutUnreadableNotes = false;
 
-  async syncFromServer(options: { silent?: boolean } = {}) {
+  async syncFromServer(options: { silent?: boolean; realtime?: boolean } = {}) {
     if (!this.authService.isLoggedIn) return;
-    if (this.pauseSync || this.downloadInProgress) return;
+    if (this.pauseSync) return;
+    if (this.downloadInProgress) {
+      if (options.realtime) this.realtimeDownloadRequested = true;
+      return;
+    }
 
     if (this.syncTimer == null) {
       this.syncTimer = setInterval(() => {
@@ -1358,6 +1363,10 @@ export class HomePage implements AfterViewInit, OnDestroy {
 
       this.dataService.setForceDownloadOnHome(false);
       await this.refreshHomeNoticeCards();
+      if (this.realtimeDownloadRequested) {
+        this.realtimeDownloadRequested = false;
+        if (this.authService.isLoggedIn && !this.pauseSync) await this.syncFromServer({ silent: true });
+      }
     }
   }
 
@@ -1887,19 +1896,40 @@ export class HomePage implements AfterViewInit, OnDestroy {
     return this.visibleNotes;
   }
 
+  private notesSyncTail: Promise<void> = Promise.resolve();
+
   private async persistNotesState() {
     const snapshot = this.notes.map(note => ({ ...note }));
     const raw = JSON.stringify(snapshot);
-    if (this.authService.isLoggedIn) {
-      const changedNotes = snapshot.filter(note => this.noteService.hasAnyPendingMutation(note.id));
-      await this.notesApiServiceV1.upload(0, changedNotes, undefined,
-        this.getStoredFolders(this.noteService.getNotesAppPassword()), true);
-    }
+    const loggedIn = this.authService.isLoggedIn;
+    const changedNotes = snapshot.filter(note => this.noteService.hasAnyPendingMutation(note.id));
+    const folders = this.getStoredFolders(this.noteService.getNotesAppPassword());
+    // Persist the newest local state before async encryption. An older completion
+    // must never restore its snapshot over a later tap, including while offline.
     this.noteService.setNotes(this.noteService.appHasPasswordChallenge()
       ? this.cryptoService.encrypt(raw, this.noteService.getNotesAppPassword()) : raw);
     this.noteService.setDecryptedNotes(raw);
-    await this.noteService.flushPersistence();
-    if (this.authService.isLoggedIn) void this.syncWorker.trySync();
+    // Observe a failed flush immediately, even if an earlier queue write is slow.
+    const persisted = this.noteService.flushPersistence().then(() => null, error => ({ error }));
+    const pending = this.notesSyncTail.then(async () => {
+      const failed = await persisted;
+      if (failed) throw failed.error;
+      if (!loggedIn || !this.authService.isLoggedIn) return;
+      // Keep encryption/enqueue order aligned with tap order as well.
+      await this.notesApiServiceV1.upload(0, changedNotes, undefined, folders, true);
+      void this.syncWorker.trySync();
+    });
+    this.notesSyncTail = pending.catch(() => {});
+    try {
+      await pending;
+    } catch {
+      this.noteService.syncNeedsAttention$.next(true);
+      const toast = await this.toastController.create({
+        message: 'The change could not be saved or synced. Keep the app open and try again.',
+        duration: 5000, color: 'danger',
+      });
+      await toast.present();
+    }
   }
 
   public async togglePinnedFromHome(event: Event, noteId: string) {

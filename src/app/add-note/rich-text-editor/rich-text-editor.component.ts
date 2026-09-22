@@ -94,6 +94,8 @@ export class RichTextEditorComponent implements OnInit, OnDestroy {
 
   quillModules = {
     clipboard: {
+      // Preserve semantic paragraphs, not layout-dependent gaps between blocks.
+      matchVisual: false,
       matchers: [[1, preserveNoteLineBreaks]]
     },
     toolbar: {
