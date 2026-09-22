@@ -11,7 +11,7 @@ import { Capacitor } from '@capacitor/core';
 import { Filesystem, Directory } from '@capacitor/filesystem';
 import { TranslatorService } from '../../services/translator.service';
 import { AppHapticsService } from '../../services/app-haptics.service';
-import { preserveNoteLineBreaks } from './preserve-note-line-breaks';
+import { preserveNoteLineBreaks, preserveNoteSpaces } from './preserve-note-line-breaks';
 
 interface HeaderOption {
   value: string;
@@ -96,7 +96,7 @@ export class RichTextEditorComponent implements OnInit, OnDestroy {
     clipboard: {
       // Preserve semantic paragraphs, not layout-dependent gaps between blocks.
       matchVisual: false,
-      matchers: [[1, preserveNoteLineBreaks]]
+      matchers: [[3, preserveNoteSpaces], [1, preserveNoteLineBreaks]]
     },
     toolbar: {
       container: '#custom-toolbar',

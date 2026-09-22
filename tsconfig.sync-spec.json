@@ -16,6 +16,11 @@
     "src/app/add-note/save-durability.spec.ts",
     "src/app/profile/download-isolation.spec.ts",
     "src/app/controlled-flow-audit.spec.ts",
-    "src/app/utils/note-search.spec.ts"
+    "src/app/utils/note-search.spec.ts",
+    "src/app/adversarial-sync.spec.ts",
+    "src/app/editor-stress.spec.ts",
+    "src/app/focus-audit.spec.ts",
+    "src/app/html-security-audit.spec.ts",
+    "src/app/add-note/rich-text-editor/editor-scroll.spec.ts"
   ]
 }

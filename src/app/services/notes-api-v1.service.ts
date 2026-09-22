@@ -37,6 +37,13 @@ export class NotesApiV1Service {
   ) {}
 
 
+  private async assertCurrentSession(token: string | null, generation: number): Promise<void> {
+    const current = await this.secureStorageService.getItem('ssToken');
+    if (!token || current !== token || generation !== this.outbox.generation) {
+      throw new Error('Note session changed');
+    }
+  }
+
   private normalizeFolderId(folderId: any): string | null {
     return typeof folderId === 'string' && folderId.trim().length > 0 ? folderId.trim() : null;
   }
@@ -99,7 +106,9 @@ export class NotesApiV1Service {
     folders: ReadonlyArray<Folder> = [],
     queueOnly = false
   ): Promise<object> {
+    const generation = this.outbox.generation;
     const TOKEN = await this.secureStorageService.getItem("ssToken");
+    await this.assertCurrentSession(TOKEN, generation);
     const headers = new HttpHeaders().set('Authorization', `Bearer ${TOKEN ?? ''}`);
 
     // 1) Load EAK → MK into CryptoKeyService (RAM) if we have it
@@ -166,14 +175,16 @@ export class NotesApiV1Service {
     } as any;
 
     // Persist first so suspending or killing the WebView cannot lose this mutation.
+    await this.assertCurrentSession(TOKEN, generation);
     await this.outbox.enqueue(<OutboxOp><unknown>{
       opId: payload.op_id,
       type: 'upload',
       payload,
       attempt: 0,
       nextAt: Date.now(),
-    });
+    }, generation);
 
+    await this.assertCurrentSession(TOKEN, generation);
     if (queueOnly) return { queued: true, reason: 'durable' };
     if (!navigator.onLine) {
       return { queued: true, reason: 'offline' };
@@ -185,6 +196,7 @@ export class NotesApiV1Service {
         this.http.post<object>(`${this.base}upload`, payload, { headers }).pipe(timeout(15000))
       );
       await confirmUpload(this.http, this.base, headers, payload, res);
+      await this.assertCurrentSession(TOKEN, generation);
       await this.outbox.drop([payload.op_id]);
       // Acknowledging an older upload must not clear a newer local edit.
       for (const note of encryptedNotes) {
@@ -196,6 +208,7 @@ export class NotesApiV1Service {
       if (!environment.production) console.info('Notes upload acknowledged', JSON.stringify({ notes: encryptedNotes.length }));
       return res;
     } catch (error: any) {
+      await this.assertCurrentSession(TOKEN, generation);
       if (error?.status === 409 || error?.message === 'Note upload was not confirmed') {
         await this.outbox.update(payload.op_id, item => ({ ...item, conflict: true }));
       }
@@ -342,7 +355,9 @@ export class NotesApiV1Service {
   // PUBLIC: deleteNotes
   // --------------------------------------------------
   async deleteNotes(deletedIds: string[]) {
+    const generation = this.outbox.generation;
     const TOKEN = await this.secureStorageService.getItem("ssToken");
+    await this.assertCurrentSession(TOKEN, generation);
     const headers = new HttpHeaders().set('Authorization', `Bearer ${TOKEN ?? ''}`);
 
     const payload = {
@@ -358,8 +373,9 @@ export class NotesApiV1Service {
       payload,
       attempt: 0,
       nextAt: Date.now(),
-    });
+    }, generation);
 
+    await this.assertCurrentSession(TOKEN, generation);
     if (!navigator.onLine) {
       return { queued: true, reason: 'offline' } as any;
     }
@@ -372,9 +388,11 @@ export class NotesApiV1Service {
           { headers }
         ).pipe(timeout(15000))
       );
+      await this.assertCurrentSession(TOKEN, generation);
       await this.outbox.drop([payload.op_id]);
       return response;
     } catch (e: any) {
+      await this.assertCurrentSession(TOKEN, generation);
       return { queued: true, reason: 'network_error' } as any;
     }
   }

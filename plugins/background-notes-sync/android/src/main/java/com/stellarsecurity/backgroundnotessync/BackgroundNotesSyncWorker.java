@@ -50,10 +50,12 @@ public class BackgroundNotesSyncWorker extends Worker {
             long now = System.currentTimeMillis();
 
             for (int i = 0; uploadUrl != null && syncPlanUrl != null && i < queue.length(); i++) {
+                if (isStopped() || !isCurrentToken(token)) return Result.success();
                 JSONObject operation = queue.optJSONObject(i);
                 if (operation == null || operation.optBoolean("conflict", false) || operation.optLong("nextAt", 0) > now) continue;
 
                 boolean uploaded = send(operation, token, uploadUrl, syncPlanUrl);
+                if (isStopped() || !isCurrentToken(token)) return Result.success();
                 int attempt = operation.optInt("attempt", 0) + (uploaded ? 0 : 1);
                 BackgroundNotesSyncStore.updateAfterAttempt(
                     getApplicationContext(),
@@ -174,6 +176,7 @@ public class BackgroundNotesSyncWorker extends Worker {
     private boolean send(JSONObject operation, String token, String uploadUrl, String syncPlanUrl) {
         HttpURLConnection connection = null;
         try {
+            if (isStopped() || !isCurrentToken(token)) return false;
             boolean isDelete = "delete".equals(operation.optString("type"));
             JSONObject payload = operation.optJSONObject("payload");
             if (payload == null) return true;

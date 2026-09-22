@@ -10,7 +10,7 @@ describe('Notes API persistence', () => {
   beforeEach(() => {
     http = { post: jasmine.createSpy('post').and.returnValue(of({ notes: [], folders: [] })) };
     outbox = { enqueue: jasmine.createSpy('enqueue').and.resolveTo(), drop: jasmine.createSpy('drop').and.resolveTo() };
-    service = new NotesApiV1Service(http, { getItem: async () => null } as any, {} as any, outbox,
+    service = new NotesApiV1Service(http, { getItem: async (key: string) => key === 'ssToken' ? 'synthetic-token' : null } as any, {} as any, outbox,
       { consumeDownloaded: async () => [] } as any, {} as any);
   });
   it('uses the canonical download route without a double slash', async () => {

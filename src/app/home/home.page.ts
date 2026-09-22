@@ -1201,6 +1201,10 @@ export class HomePage implements AfterViewInit, OnDestroy {
 
     this.downloadInProgress = true;
     try {
+      const sessionToken = await this.secureStorageService.getItem('ssToken');
+      if (!sessionToken) return;
+      const mkRaw = this.mkRaw;
+      const confirmations: any[] = [];
       const knownNotes: Record<string, number> = {};
       for (const note of this.notes ?? []) {
         if (!this.noteService.hasAnyPendingMutation(note.id)) {
@@ -1235,7 +1239,7 @@ export class HomePage implements AfterViewInit, OnDestroy {
           // A server tombstone is terminal regardless of this device's clock.
           map.delete(s.id);
 
-          this.noteService.reconcileServerConfirmation(s);
+          confirmations.push(s);
           continue;
         }
 
@@ -1243,13 +1247,13 @@ export class HomePage implements AfterViewInit, OnDestroy {
           continue;
         }
 
-        if (!this.mkRaw) {
+        if (!mkRaw) {
           continue;
         }
 
         try {
           const blobText = unpackCipherBlob(s.text);
-          s.text = await decryptTextWithMK(this.mkRaw, {
+          s.text = await decryptTextWithMK(mkRaw, {
             ...blobText,
             v: 1,
             aad_b64: btoa(s.id)
@@ -1261,7 +1265,7 @@ export class HomePage implements AfterViewInit, OnDestroy {
           if (typeof s.title === 'string' && s.title.length > 0) {
             const blobTitle = unpackCipherBlob(s.title);
             s.title = await decryptTextWithMK(
-              this.mkRaw,
+              mkRaw,
               { ...blobTitle, v: 1, aad_b64: btoa(s.id + '#title') }
             );
           } else {
@@ -1279,7 +1283,7 @@ export class HomePage implements AfterViewInit, OnDestroy {
 
         if (!local) {
           map.set(s.id, s);
-          this.noteService.reconcileServerConfirmation(s);
+          confirmations.push(s);
           continue;
         }
 
@@ -1287,7 +1291,7 @@ export class HomePage implements AfterViewInit, OnDestroy {
           map.set(s.id, { ...local, ...s });
         }
 
-        this.noteService.reconcileServerConfirmation(s);
+        confirmations.push(s);
       }
 
       if (unreadableNotes && !this.warnedAboutUnreadableNotes) {
@@ -1298,10 +1302,7 @@ export class HomePage implements AfterViewInit, OnDestroy {
         await toast.present();
       }
       this.warnedAboutUnreadableNotes = unreadableNotes > 0;
-      const merged = Array.from(map.values()).filter((n: any) => !n.deleted);
-      this.notes = merged;
-      this.filteredResults = merged;
-      this.refreshVisibleNotes();
+      let merged = Array.from(map.values()).filter((n: any) => !n.deleted);
 
       const localFolders = this.getStoredFolders(this.noteService.getNotesAppPassword());
       const folderMap = new Map<string, any>();
@@ -1324,6 +1325,24 @@ export class HomePage implements AfterViewInit, OnDestroy {
         }
       }
 
+      // Decryption yields to editing, locking and logout. Revalidate before any
+      // note state is applied, then merge against the newest durable local state.
+      if (!this.authService.isLoggedIn || this.pauseSync ||
+          sessionToken !== await this.secureStorageService.getItem('ssToken')) return;
+      const stored = this.noteService.getNotes();
+      const currentNotes = JSON.parse(this.noteService.appHasPasswordChallenge()
+        ? this.cryptoService.decrypt(stored, this.noteService.getNotesAppPassword()) : (stored || '[]'));
+      if (!Array.isArray(currentNotes)) throw new Error('Invalid notes storage');
+      const finalNotes = new Map(merged.map((note: any) => [note.id, note]));
+      const remoteDeleted = new Set(serverNotes.filter((note: any) => note.deleted && !queuedUploads.has(note.id)).map((note: any) => note.id));
+      for (const current of currentNotes) {
+        if (remoteDeleted.has(current.id)) continue;
+        const previous = finalNotes.get(current.id);
+        if (!previous || this.noteService.hasAnyPendingMutation(current.id) ||
+            Number(current.last_modified ?? 0) > Number(previous.last_modified ?? 0)) finalNotes.set(current.id, current);
+      }
+      merged = Array.from(finalNotes.values()).filter((note: any) => !note.deleted && !this.noteService.hasPendingDelete(note.id));
+
       // Folder names can change without changing the note's version.
       for (const note of merged) {
         const folder = folderMap.get(this.normalizeFolderId(note.folder_id) ?? '');
@@ -1345,6 +1364,16 @@ export class HomePage implements AfterViewInit, OnDestroy {
         this.noteService.setNotes(JSON.stringify(merged));
         this.noteService.setFolders(JSON.stringify(Array.from(folderMap.values())));
       }
+
+      for (const confirmation of confirmations) {
+        // A download cannot acknowledge a different edit created while decrypting.
+        if (!this.noteService.hasAnyPendingMutation(confirmation.id) || confirmation.deleted) {
+          this.noteService.reconcileServerConfirmation(confirmation);
+        }
+      }
+      this.notes = merged;
+      this.filteredResults = merged;
+      this.refreshVisibleNotes();
 
       await this.noteService.flushPersistence();
       this.setData(this.noteService.getNotesAppPassword());

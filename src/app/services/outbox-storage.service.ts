@@ -10,6 +10,8 @@ const OUTBOX_KEY = 'notes.sync.outbox.v1';
 export class OutboxStorage {
   private ready: Promise<void>;
   private serial: Promise<unknown> = Promise.resolve();
+  private sessionGeneration = 0;
+  get generation(): number { return this.sessionGeneration; }
 
   private exclusive<T>(action: () => Promise<T>): Promise<T> {
     const result = this.serial.then(() => this.ready).then(action);
@@ -66,9 +68,10 @@ export class OutboxStorage {
   }
 
   /** Serialize the entire read/modify/persist operation, including native reconciliation. */
-  enqueue(op: OutboxOp): Promise<void> {
+  enqueue(op: OutboxOp, generation = this.generation): Promise<void> {
     return this.exclusive(async () => {
       const items = await this.read();
+      if (generation !== this.generation) throw new Error('Note session changed');
       const index = items.findIndex(item => item.opId === op.opId);
       if (index >= 0) items[index] = op;
       else items.push(op);
@@ -120,6 +123,7 @@ export class OutboxStorage {
   }
 
   clear(): Promise<void> {
+    this.sessionGeneration++;
     return this.exclusive(() => this.write([]));
   }
 }

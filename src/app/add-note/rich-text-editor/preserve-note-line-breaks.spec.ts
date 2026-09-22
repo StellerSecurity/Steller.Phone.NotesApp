@@ -1,5 +1,5 @@
 import Quill from 'quill';
-import { preserveNoteLineBreaks } from './preserve-note-line-breaks';
+import { preserveNoteLineBreaks, preserveNoteSpaces } from './preserve-note-line-breaks';
 
 describe('note HTML line breaks', () => {
   let host: HTMLDivElement;
@@ -22,7 +22,7 @@ describe('note HTML line breaks', () => {
   function editor(preserve = true): Quill {
     return new Quill(host, { modules: {
       toolbar: false,
-      clipboard: { matchVisual: false, matchers: preserve ? [[1, preserveNoteLineBreaks]] : [] }
+      clipboard: { matchVisual: false, matchers: preserve ? [[3, preserveNoteSpaces], [1, preserveNoteLineBreaks]] : [] }
     }});
   }
 

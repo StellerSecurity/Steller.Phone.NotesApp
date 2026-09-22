@@ -4,7 +4,7 @@ import { Component } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { FormsModule } from '@angular/forms';
 import { QuillModule } from 'ngx-quill';
-import { preserveNoteLineBreaks } from './add-note/rich-text-editor/preserve-note-line-breaks';
+import { preserveNoteLineBreaks, preserveNoteSpaces } from './add-note/rich-text-editor/preserve-note-line-breaks';
 
 @Component({template: `<quill-editor [(ngModel)]="html" [modules]="modules" [sanitize]="true" (onEditorCreated)="created($event)"></quill-editor>`})
 class AuditHost {
@@ -14,7 +14,7 @@ class AuditHost {
   constructor(private sanitizer: DomSanitizer) {}
   created(quill: any) { this.quill = quill; this.cleanup = bindSafeNotePaste(quill, this.sanitizer); }
   ngOnDestroy() { this.cleanup?.(); }
-  modules = {toolbar: false, clipboard: {matchers: [[1, preserveNoteLineBreaks]]}};
+  modules = {toolbar: false, clipboard: {matchers: [[3, preserveNoteSpaces], [1, preserveNoteLineBreaks]]}};
 }
 
 describe('Untrusted stored HTML in the actual ngx-quill input path', () => {

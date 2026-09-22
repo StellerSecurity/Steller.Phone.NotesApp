@@ -61,6 +61,7 @@ describe('Incremental home synchronization', () => {
     const page: any = Object.create(HomePage.prototype);
     page.authService = { isLoggedIn: true };
     page.pauseSync = false;
+    page.secureStorageService = { getItem: async () => 'synthetic-session' };
     page.syncTimer = 1; // Do not start a live timer in the test.
     page.notes = [
       { id: 'saved', text: 'local text', folder_id: 'folder', folder: 'Before', last_modified: 100 },
@@ -70,6 +71,8 @@ describe('Incremental home synchronization', () => {
     page.notesApiServiceV1 = { download: jasmine.createSpy('download').and.resolveTo(response) };
     page.noteService = {
       hasAnyPendingMutation: (id: string) => id === 'pending',
+      hasPendingDelete: () => false,
+      getNotes: () => JSON.stringify(page.notes),
       getNotesAppPassword: () => '',
       appHasPasswordChallenge: () => false,
       setNotes: jasmine.createSpy('setNotes'),
@@ -139,6 +142,33 @@ describe('Incremental home synchronization', () => {
     release({ notes: [], folders: [] }); await running;
     expect(page.notesApiServiceV1.download).toHaveBeenCalledTimes(1);
     expect(page.noteService.setNotes).not.toHaveBeenCalled();
+  });
+
+  for (const accountSwitch of [false, true]) it('rejects a download if the session ends during decryption: '+accountSwitch, async () => {
+    const page = pageFor({ notes: [], folders: [] });
+    let release!: () => void; let entered!: () => void;
+    const started = new Promise<void>(resolve => entered = resolve);
+    page.decryptServerFolders = async () => { entered(); await new Promise<void>(resolve => release = resolve); return new Map(); };
+    const running = page.syncFromServer({silent:true}); await started;
+    if (accountSwitch) page.secureStorageService.getItem = async () => 'replacement-session';
+    else page.authService.isLoggedIn = false;
+    release(); await running;
+    expect(page.noteService.setNotes).not.toHaveBeenCalled();
+    expect(page.noteService.setFolders).not.toHaveBeenCalled();
+  });
+
+  it('retains an edit made after the download starts decrypting', async () => {
+    const key = new Uint8Array(32).fill(3);
+    const text = packCipherBlob(await encryptTextWithMK(key, 'server snapshot', 'saved'));
+    const page = pageFor({notes:[{id:'saved',text,title:'',last_modified:101}],folders:[]});
+    page.mkRaw = key;
+    page.noteService.getNotes = () => JSON.stringify(page.notes);
+    page.noteService.shouldIgnoreServerNote = () => {
+      page.notes = page.notes.map((note:any) => note.id === 'saved' ? {...note,text:'typed during decryption',last_modified:500} : note);
+      return false;
+    };
+    await page.syncFromServer({silent:true});
+    expect(page.notes.find((note:any)=>note.id==='saved').text).toBe('typed during decryption');
   });
 
   it('applies desktop favorite and pin changes, including false, without changing note text', async () => {

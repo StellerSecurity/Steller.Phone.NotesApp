@@ -99,20 +99,28 @@ export class SyncWorkerService {
     }
   }
 
+  private async isCurrentSession(headers: HttpHeaders, generation: number): Promise<boolean> {
+    const token = await this.secure.getItem('ssToken');
+    return !!token && headers.get('Authorization') === `Bearer ${token}` && generation === this.outbox.generation;
+  }
+
   async trySync(): Promise<void> {
     if (this.syncing) return;
     // Acquire before the first await: timer, resume and reconnect can overlap.
     this.syncing = true;
+    const generation = this.outbox.generation;
     try {
       if (!(await this.isOnline())) return;
       const headers = await this.authHeaders();
       if (!headers) return;
       const batch = await this.outbox.peekBatch(50, Date.now());
       for (const op of batch) {
+        if (!await this.isCurrentSession(headers, generation)) return;
         if (op.conflict) continue;
         try {
           await this.sendOp(op, headers);
         } catch (error: any) {
+          if (!await this.isCurrentSession(headers, generation)) return;
           if (error?.status === 409 || error?.message === 'Note upload was not confirmed') {
             this.notesState.syncNeedsAttention$.next(true);
           }
@@ -124,6 +132,7 @@ export class SyncWorkerService {
           });
           continue;
         }
+        if (!await this.isCurrentSession(headers, generation)) return;
         await this.outbox.drop([op.opId]);
         if (!(await this.outbox.getAll()).length) this.notesState.syncNeedsAttention$.next(false);
         for (const note of op.payload.notes ?? []) {
