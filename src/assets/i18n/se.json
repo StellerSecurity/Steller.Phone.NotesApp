@@ -329,5 +329,10 @@
   "appearanceDescription": "Välj ljust, mörkt eller följ enhetens inställning.",
   "appearanceSystem": "Använd enhetens inställning",
   "appearanceLight": "Ljust",
-  "appearanceDark": "Mörkt"
+  "appearanceDark": "Mörkt",
+  "retryAction": "Försök igen",
+  "notesDownloadFailed": "Du är inloggad, men dina anteckningar kunde inte hämtas. Försök igen.",
+  "waitBeforeResend": "Vänta 30 sekunder innan du begär en ny kod.",
+  "accountRequestFailed": "Begäran kunde inte slutföras. Kontrollera anslutningen och försök igen.",
+  "secretRevocationFailed": "Länken kunde inte återkallas och kan fortfarande fungera. Försök igen."
 }

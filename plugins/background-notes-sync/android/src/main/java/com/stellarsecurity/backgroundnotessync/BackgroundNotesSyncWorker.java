@@ -50,10 +50,12 @@ public class BackgroundNotesSyncWorker extends Worker {
             long now = System.currentTimeMillis();
 
             for (int i = 0; uploadUrl != null && syncPlanUrl != null && i < queue.length(); i++) {
+                if (isStopped() || !isCurrentToken(token)) return Result.success();
                 JSONObject operation = queue.optJSONObject(i);
-                if (operation == null || operation.optLong("nextAt", 0) > now) continue;
+                if (operation == null || operation.optBoolean("conflict", false) || operation.optLong("nextAt", 0) > now) continue;
 
                 boolean uploaded = send(operation, token, uploadUrl, syncPlanUrl);
+                if (isStopped() || !isCurrentToken(token)) return Result.success();
                 int attempt = operation.optInt("attempt", 0) + (uploaded ? 0 : 1);
                 BackgroundNotesSyncStore.updateAfterAttempt(
                     getApplicationContext(),
@@ -64,7 +66,7 @@ public class BackgroundNotesSyncWorker extends Worker {
                 );
             }
             if (downloadUrl != null) {
-                pull(token, downloadUrl, preferences);
+                pull(token, downloadUrl);
             } else {
                 recordPullResult("skipped_no_download_url", 0, 0, 0, 0);
                 Log.w(TAG, "Background pull skipped: download URL is not configured");
@@ -77,23 +79,21 @@ public class BackgroundNotesSyncWorker extends Worker {
         }
     }
 
-    private void pull(String token, String endpoint, SharedPreferences preferences) {
+    private void pull(String token, String endpoint) {
         HttpURLConnection connection = null;
         try {
             Log.i(TAG, "Background pull started");
+            if (!isCurrentToken(token)) return;
             String userMarker = tokenMarker(token);
-            if (!userMarker.equals(preferences.getString(BackgroundNotesSyncStore.PULL_USER, ""))) {
-                preferences.edit()
-                    .putString(BackgroundNotesSyncStore.PULL_USER, userMarker)
-                    .putLong(BackgroundNotesSyncStore.PULL_WATERMARK, 0)
-                    .apply();
-                BackgroundNotesSyncStore.clearDownloaded(getApplicationContext());
-            }
+            JSONObject knownNotes = BackgroundNotesSyncStore.prepareDownload(getApplicationContext(), userMarker);
 
-            long since = preferences.getLong(BackgroundNotesSyncStore.PULL_WATERMARK, 0);
+            // The durable inbox manifest is the only omission hint. A watermark
+            // must not hide records after consumption, cache loss or account changes.
+            long since = 0;
             JSONObject body = new JSONObject();
             body.put("since", since);
             body.put("limit", 1000);
+            body.put("known_notes", knownNotes);
             connection = (HttpURLConnection) new URL(endpoint).openConnection();
             connection.setRequestMethod("POST");
             connection.setConnectTimeout(10_000);
@@ -111,9 +111,9 @@ public class BackgroundNotesSyncWorker extends Worker {
                 Log.w(TAG, "Background pull returned HTTP " + status);
                 return;
             }
-            InputStream input = connection.getInputStream();
             byte[] data;
-            try (java.io.ByteArrayOutputStream output = new java.io.ByteArrayOutputStream()) {
+            try (InputStream input = connection.getInputStream();
+                 java.io.ByteArrayOutputStream output = new java.io.ByteArrayOutputStream()) {
                 byte[] buffer = new byte[8192];
                 int read;
                 while ((read = input.read(buffer)) != -1) output.write(buffer, 0, read);
@@ -124,11 +124,13 @@ public class BackgroundNotesSyncWorker extends Worker {
             JSONArray folders = response.optJSONArray("folders");
             int noteCount = notes == null ? 0 : notes.length();
             int folderCount = folders == null ? 0 : folders.length();
-            if (noteCount > 0 || folderCount > 0) {
-                BackgroundNotesSyncStore.stageDownloaded(getApplicationContext(), response);
+            if (notes == null) throw new IllegalArgumentException("Missing notes array");
+            if (!isCurrentToken(token)
+                || !BackgroundNotesSyncStore.stageDownloaded(getApplicationContext(), response, userMarker)) {
+                recordPullResult("skipped_stale_session", status, 0, 0, since);
+                return;
             }
             long watermark = response.optLong("watermark", since);
-            if (watermark > since) preferences.edit().putLong(BackgroundNotesSyncStore.PULL_WATERMARK, watermark).apply();
             recordPullResult("success", status, noteCount, folderCount, watermark);
             Log.i(TAG, "Background pull succeeded: notes=" + noteCount
                 + ", folders=" + folderCount + ", watermark=" + watermark);
@@ -159,6 +161,11 @@ public class BackgroundNotesSyncWorker extends Worker {
             .apply();
     }
 
+    private boolean isCurrentToken(String token) throws Exception {
+        byte[] current = new PasswordStorageHelper(getApplicationContext()).getData("ssToken");
+        return current != null && token.equals(new String(current, StandardCharsets.UTF_8));
+    }
+
     private String tokenMarker(String token) throws Exception {
         byte[] digest = MessageDigest.getInstance("SHA-256").digest(token.getBytes(StandardCharsets.UTF_8));
         StringBuilder result = new StringBuilder();
@@ -169,12 +176,14 @@ public class BackgroundNotesSyncWorker extends Worker {
     private boolean send(JSONObject operation, String token, String uploadUrl, String syncPlanUrl) {
         HttpURLConnection connection = null;
         try {
+            if (isStopped() || !isCurrentToken(token)) return false;
             boolean isDelete = "delete".equals(operation.optString("type"));
             JSONObject payload = operation.optJSONObject("payload");
             if (payload == null) return true;
 
             JSONObject body = payload;
             String endpoint = uploadUrl;
+            if (!isDelete) body.put("require_note_ack", true);
             if (isDelete) {
                 endpoint = syncPlanUrl;
                 body = new JSONObject();
@@ -197,9 +206,18 @@ public class BackgroundNotesSyncWorker extends Worker {
             }
 
             int status = connection.getResponseCode();
-            InputStream response = status >= 400 ? connection.getErrorStream() : connection.getInputStream();
-            if (response != null) response.close();
-            return status >= 200 && status < 300;
+            if (status < 200 || status >= 300) return false;
+            try (InputStream response = connection.getInputStream();
+                 java.io.ByteArrayOutputStream output = new java.io.ByteArrayOutputStream()) {
+                byte[] buffer = new byte[8192];
+                int read;
+                while ((read = response.read(buffer)) != -1) output.write(buffer, 0, read);
+                if (isDelete) return true;
+                // Legacy servers cannot confirm native uploads. Keep the operation;
+                // the foreground worker verifies it using the legacy download API.
+                JSONObject ack = new JSONObject(new String(output.toByteArray(), StandardCharsets.UTF_8));
+                return ack.optBoolean("note_ack_v1", false);
+            }
         } catch (Exception ignored) {
             return false;
         } finally {

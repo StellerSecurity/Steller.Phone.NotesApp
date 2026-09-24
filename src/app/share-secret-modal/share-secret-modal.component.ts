@@ -1,3 +1,4 @@
+import { finalize, timeout } from 'rxjs';
 import { Component, Input } from '@angular/core';
 import { LoadingController, ModalController, ToastController } from '@ionic/angular';
 import { SecretapiService } from '../services/secretapi.service';
@@ -96,9 +97,12 @@ export class ShareSecretModalComponent {
     });
   }
   burnSecret() {
+    if (this.isDeletingSecret) return;
     this.appHaptics.warning();
     this.isDeletingSecret = true;
-    this.secretapi.delete(this.createdSecret?.id).subscribe({
+    this.secretapi.delete(this.createdSecret?.id).pipe(
+      timeout(15000), finalize(() => { this.isDeletingSecret = false; })
+    ).subscribe({
       next: async () => {
         this.closeModal();
         const toast = await this.toastController.create({
@@ -111,6 +115,11 @@ export class ShareSecretModalComponent {
         await toast.present();
       },
       error: async () => {
+        const toast = await this.toastController.create({
+          message: this.allTranslations?.secretRevocationFailed ?? 'The link could not be revoked and may still work. Please try again.',
+          duration: 6000, position: 'bottom',
+        });
+        await toast.present();
       },
       complete: async () => {
         this.isDeletingSecret = false;

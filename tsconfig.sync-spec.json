@@ -1,0 +1,26 @@
+{
+  "extends": "./tsconfig.spec.json",
+  "files": [
+    "src/test.ts",
+    "src/polyfills.ts"
+  ],
+  "include": [
+    "src/app/services/sync-worker-retention.spec.ts",
+    "src/app/services/notes-api-v1.service.spec.ts",
+    "src/app/profile/profile-sync.spec.ts",
+    "src/app/add-note/rich-text-editor/preserve-note-line-breaks.spec.ts",
+    "src/app/home/home-sync.spec.ts",
+    "src/**/*.d.ts",
+    "src/app/services/notes-storage-retention.spec.ts",
+    "src/app/services/upload-confirmation.spec.ts",
+    "src/app/add-note/save-durability.spec.ts",
+    "src/app/profile/download-isolation.spec.ts",
+    "src/app/controlled-flow-audit.spec.ts",
+    "src/app/utils/note-search.spec.ts",
+    "src/app/adversarial-sync.spec.ts",
+    "src/app/editor-stress.spec.ts",
+    "src/app/focus-audit.spec.ts",
+    "src/app/html-security-audit.spec.ts",
+    "src/app/add-note/rich-text-editor/editor-scroll.spec.ts"
+  ]
+}

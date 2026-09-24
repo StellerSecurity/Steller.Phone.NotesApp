@@ -158,7 +158,7 @@ public enum BackgroundNotesSyncProcessor {
             let now = Date().timeIntervalSince1970 * 1000
             return loadQueueUnlocked().first { operation in
                 let nextAt = (operation["nextAt"] as? NSNumber)?.doubleValue ?? 0
-                return nextAt <= now
+                return (operation["conflict"] as? Bool) != true && nextAt <= now
             }
         }
 
@@ -204,10 +204,11 @@ public enum BackgroundNotesSyncProcessor {
 
         let isDelete = (operation["type"] as? String) == "delete"
         let endpoint = isDelete ? syncPlanURL : uploadURL
-        let body: [String: Any] = isDelete
+        var body: [String: Any] = isDelete
             ? ["deleted_ids": payload["deleted_ids"] as? [Any] ?? [], "notes": []]
             : payload
 
+        if !isDelete { body["require_note_ack"] = true }
         guard let url = URL(string: endpoint), let data = try? JSONSerialization.data(withJSONObject: body) else {
             completion(false)
             return
@@ -220,9 +221,13 @@ public enum BackgroundNotesSyncProcessor {
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue("application/json", forHTTPHeaderField: "Accept")
-        URLSession.shared.dataTask(with: request) { _, response, _ in
+        URLSession.shared.dataTask(with: request) { data, response, _ in
             let status = (response as? HTTPURLResponse)?.statusCode ?? 0
-            completion((200..<300).contains(status))
+            guard (200..<300).contains(status) else { completion(false); return }
+            if isDelete { completion(true); return }
+            let ack = data.flatMap { try? JSONSerialization.jsonObject(with: $0) } as? [String: Any]
+            // Unconfirmed legacy responses remain queued for foreground verification.
+            completion(ack?["note_ack_v1"] as? Bool == true)
         }.resume()
     }
 

@@ -95,7 +95,11 @@ export class LoginComponent implements OnInit {
   }
 
 
+  private initialDownloadInProgress = false;
+
   private async syncNotesAfterLogin(eakB64: string): Promise<void> {
+    if (this.initialDownloadInProgress) return;
+    this.initialDownloadInProgress = true;
     try {
       const res = await this.notesApiV1Service.download(0);
       const serverNotes = res?.notes ?? [];
@@ -126,6 +130,7 @@ export class LoginComponent implements OnInit {
       }
       const map = new Map<string, any>((localNotes ?? []).map((n: any) => [n.id, n]));
 
+      let unreadableNotes = 0;
       for (const s of serverNotes) {
         const local = map.get(s.id);
 
@@ -136,30 +141,36 @@ export class LoginComponent implements OnInit {
           continue;
         }
 
-        const blobText = unpackCipherBlob(s.text);
-        s.text = await decryptTextWithMK(mkRaw, {
-          ...blobText,
-          v: 1,
-          aad_b64: btoa(s.id),
-        });
-
-        s.favorite = !!(s.favorite ?? local?.favorite);
-        s.pinned = !!(s.pinned ?? local?.pinned);
-
-        if (typeof s.title === 'string' && s.title.length > 0) {
-          const blobTitle = unpackCipherBlob(s.title);
-          s.title = await decryptTextWithMK(mkRaw, {
-            ...blobTitle,
+        try {
+          const blobText = unpackCipherBlob(s.text);
+          s.text = await decryptTextWithMK(mkRaw, {
+            ...blobText,
             v: 1,
-            aad_b64: btoa(s.id + '#title'),
+            aad_b64: btoa(s.id),
           });
-        } else {
-          s.title = '';
+
+          s.favorite = !!(s.favorite ?? local?.favorite);
+          s.pinned = !!(s.pinned ?? local?.pinned);
+
+          if (typeof s.title === 'string' && s.title.length > 0) {
+            const blobTitle = unpackCipherBlob(s.title);
+            s.title = await decryptTextWithMK(mkRaw, {
+              ...blobTitle,
+              v: 1,
+              aad_b64: btoa(s.id + '#title'),
+            });
+          } else {
+            s.title = '';
+          }
+
+          const noteFolderId = ((s as any)?.folder_id ?? '').trim();
+          s.folder_id = noteFolderId || null;
+          s.folder = noteFolderId ? (decryptedFolderNameById.get(noteFolderId) ?? '') : '';
+        } catch {
+          unreadableNotes++;
+          continue;
         }
 
-        const noteFolderId = ((s as any)?.folder_id ?? '').trim();
-        s.folder_id = noteFolderId || null;
-        s.folder = noteFolderId ? (decryptedFolderNameById.get(noteFolderId) ?? '') : '';
 
         if (!local) {
           map.set(s.id, s);
@@ -196,14 +207,23 @@ export class LoginComponent implements OnInit {
 
       this.notesService.setDecryptedNotes(mergedJson);
       await this.notesService.flushPersistence();
+      this.notesService.refreshRequested$?.next();
+      if (unreadableNotes) {
+        await this.toastMessageService.showError('Some notes could not be opened. Other notes have been synchronized.');
+      }
     } catch (err) {
       void this.appsflyer.logEvent('sync_failed', { source: 'login', direction: 'bidirectional', error_type: navigator.onLine ? 'unknown' : 'network' });
       console.error('Post-login notes download failed', err);
+      await this.toastMessageService.showError('notesDownloadFailed', () => { if (this.authService.isLoggedIn) void this.syncNotesAfterLogin(eakB64); }, true);
+    } finally {
+      this.initialDownloadInProgress = false;
     }
   }
 
   async login() {
+    if (this.isSaving) return;
     if (!this.loginForm.valid) {
+      this.loginForm.markAllAsTouched();
       await this.appHaptics.warning();
       return;
     }
@@ -313,7 +333,7 @@ export class LoginComponent implements OnInit {
     } catch (error: any) {
       console.error('Login failed', error);
       await this.toastMessageService.showError(
-        this.translatorService.allTranslations?.somethingWentWrong ?? 'Something went wrong',
+        'accountRequestFailed', undefined, true,
       );
     } finally {
       this.isSaving = false;

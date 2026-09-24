@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import {BehaviorSubject, firstValueFrom, Observable} from 'rxjs';
+import {BehaviorSubject, firstValueFrom, Observable, timeout} from 'rxjs';
 import { loginDto } from '../constants/models/authDto';
 import {HttpClient, HttpHeaders} from '@angular/common/http';
 import { auth, baseUrl } from '../constants/api/product.api';
@@ -10,6 +10,8 @@ import { SecureStorageService } from './secure-storage.service';
 })
 export class AuthService {
   private loggedInSubject = new BehaviorSubject<boolean>(false);
+
+  public readonly loginState$ = this.loggedInSubject.asObservable();
 
   constructor(private http: HttpClient, private secureStorageService: SecureStorageService) {
     this.initializeAuthState();
@@ -29,11 +31,11 @@ export class AuthService {
   }
 
   createAccount(data: loginDto): Observable<any> {
-    return this.http.post<any>(baseUrl + auth.createAcc, data);
+    return this.http.post<any>(baseUrl + auth.createAcc, data).pipe(timeout(15000));
   }
 
   loginHandling(data: loginDto): Observable<any> {
-    return this.http.post<any>(baseUrl + auth.loginAcc, data);
+    return this.http.post<any>(baseUrl + auth.loginAcc, data).pipe(timeout(15000));
   }
 
   async updateEak(payload: {
@@ -50,16 +52,16 @@ export class AuthService {
     const headers = new HttpHeaders().set('Authorization', `Bearer ${TOKEN ?? ''}`);
 
     return firstValueFrom(
-      this.http.patch<any>(baseUrl + auth.updateEak, payload, { headers })
+      this.http.patch<any>(baseUrl + auth.updateEak, payload, { headers }).pipe(timeout(15000))
     );
   }
 
   forgotPassword(email: any): Observable<any> {
-    return this.http.post<any>(baseUrl + auth.forgotPassword, { email });
+    return this.http.post<any>(baseUrl + auth.forgotPassword, { email }).pipe(timeout(15000));
   }
 
   resetPassword(data: any): Observable<any> {
-    return this.http.post<any>(baseUrl + auth.resetPasswordUrl, data);
+    return this.http.post<any>(baseUrl + auth.resetPasswordUrl, data).pipe(timeout(15000));
   }
 
   async buildAuthHeaders(): Promise<HttpHeaders> {
@@ -72,7 +74,7 @@ export class AuthService {
       this.buildAuthHeaders()
         .then((headers) => {
           this.http
-            .post<any>(baseUrl + auth.deleteUser, { current_password: currentPassword }, { headers })
+            .post<any>(baseUrl + auth.deleteUser, { current_password: currentPassword }, { headers }).pipe(timeout(15000))
             .subscribe({
               next: (response) => {
                 subscriber.next(response);

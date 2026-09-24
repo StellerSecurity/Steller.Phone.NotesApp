@@ -329,5 +329,10 @@
   "appearanceDescription": "Kies licht, donker of volg de instelling van je apparaat.",
   "appearanceSystem": "Apparaatinstelling gebruiken",
   "appearanceLight": "Licht",
-  "appearanceDark": "Donker"
+  "appearanceDark": "Donker",
+  "retryAction": "Opnieuw proberen",
+  "notesDownloadFailed": "Je bent ingelogd, maar je notities konden niet worden gedownload. Probeer het opnieuw.",
+  "waitBeforeResend": "Wacht 30 seconden voordat je een nieuwe code aanvraagt.",
+  "accountRequestFailed": "Het verzoek kon niet worden voltooid. Controleer je verbinding en probeer het opnieuw.",
+  "secretRevocationFailed": "De link kon niet worden ingetrokken en werkt mogelijk nog. Probeer het opnieuw."
 }

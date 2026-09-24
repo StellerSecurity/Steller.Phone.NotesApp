@@ -1,3 +1,6 @@
+import { NotesService } from '../services/notes.service';
+import { SyncWorkerService } from '../services/sync-worker.service';
+import { OutboxStorage } from '../services/outbox-storage.service';
 import { Component } from '@angular/core';
 import { Router } from '@angular/router';
 import { AlertController } from '@ionic/angular';
@@ -32,6 +35,9 @@ export class ProfileComponent {
     public authService: AuthService,
     private translatorService: TranslatorService,
     private appHaptics: AppHapticsService,
+    private notesService: NotesService,
+    private outbox: OutboxStorage,
+    private syncWorker: SyncWorkerService,
   ) {}
 
   ionViewWillEnter() {
@@ -138,6 +144,20 @@ export class ProfileComponent {
   }
 
   private async logout() {
+    await this.notesService.flushPersistence();
+    // Pending mutations also cover the editor's debounce before enqueueing.
+    if (this.notesService.hasPendingMutations() || (await this.outbox.getAll()).length > 0) {
+      const alert = await this.alertController.create({
+        header: 'Notes not synced',
+        message: 'Your notes are still saved on this device. Let syncing finish before logging out.',
+        buttons: ['OK', {
+          text: this.translatorService.allTranslations?.retry ?? 'Retry',
+          handler: () => { void this.syncWorker.retryPending(); },
+        }],
+      });
+      await alert.present();
+      return;
+    }
     await this.dataService.clearAppData();
     window.location.replace('/');
   }

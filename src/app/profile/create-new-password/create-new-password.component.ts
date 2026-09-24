@@ -1,3 +1,4 @@
+import { finalize } from 'rxjs';
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -79,6 +80,8 @@ export class CreateNewPasswordComponent implements OnInit, OnDestroy {
   }
 
   confirm() {
+    if (this.isSaving) return;
+    this.passwordForm.markAllAsTouched();
     if (this.passwordForm.valid) {
       const password = this.passwordForm.get("password")?.value ?? "";
       if (!isPasswordAcceptable(password)) {
@@ -95,6 +98,7 @@ export class CreateNewPasswordComponent implements OnInit, OnDestroy {
           confirmation_code: this.confirmationCode,
           email: this.email,
         })
+        .pipe(finalize(() => { this.isSaving = false; }))
         .subscribe({
           next: (response: any) => {
             this.isSaving = false;
@@ -107,7 +111,7 @@ export class CreateNewPasswordComponent implements OnInit, OnDestroy {
           },
           error: (error: any) => {
             this.isSaving = false;
-            this.toastMessageService.showError(error?.error?.message);
+            this.toastMessageService.showError('accountRequestFailed', undefined, true);
           },
         });
       return;

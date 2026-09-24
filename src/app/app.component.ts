@@ -1,3 +1,6 @@
+import { NoteConflictService } from './services/note-conflict.service';
+import { RealtimeNotesService } from './services/realtime-notes.service';
+import { NotesStorageService } from './services/notes-storage.service';
 import { Component, NgZone } from '@angular/core';
 import { TranslatorService } from './services/translator.service';
 import { Storage as IonicStorage } from '@ionic/storage-angular';
@@ -17,16 +20,21 @@ import { AppsflyerService } from './services/appsflyer.service';
 export class AppComponent {
   public showPrivacyShield = false;
   constructor(
+    private noteConflicts: NoteConflictService,
+    private realtimeNotes: RealtimeNotesService,
     private translator: TranslatorService,
     private storage: IonicStorage,
-    private syncWorker: SyncWorkerService,
-    private noteService: NotesService,
+    public syncWorker: SyncWorkerService,
+    public noteService: NotesService,
     private zone: NgZone,
     private screenshotProtectionService: ScreenshotProtectionService,
     private themeService: ThemeService,
-    private appsflyer: AppsflyerService
+    private appsflyer: AppsflyerService,
+    public notesStorage: NotesStorageService
   ) {
     this.syncWorker.init();
+    this.realtimeNotes.init();
+    this.noteConflicts.init();
     this.installPrivacyShield();
     void this.screenshotProtectionService.applyCurrentSetting(this.noteService.appHasPasswordChallenge());
     void this.themeService.initialize();
@@ -36,6 +44,9 @@ export class AppComponent {
     // Initialize AppsFlyer on startup (no-op on web or if plugin missing)
     void this.appsflyer.init();
     void this.appsflyer.logEventOnce('first_open', { platform: Capacitor.getPlatform() });
+  }
+  public async retryStorage(): Promise<void> {
+    try { await this.notesStorage.retryFailedWrites(); } catch { /* Banner remains visible. */ }
   }
   ngOnInit() {
     if (Capacitor.getPlatform() === 'ios') {

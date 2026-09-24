@@ -6,7 +6,8 @@ import { AddNotePage } from './add-note.page';
 const routes: Routes = [
   {
     path: '',
-    component: AddNotePage
+    component: AddNotePage,
+    canDeactivate: [(page: AddNotePage) => page.canLeave()]
   }
 ];
 

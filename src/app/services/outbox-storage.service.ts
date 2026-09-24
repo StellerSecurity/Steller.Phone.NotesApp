@@ -9,6 +9,16 @@ const OUTBOX_KEY = 'notes.sync.outbox.v1';
 @Injectable({ providedIn: 'root' })
 export class OutboxStorage {
   private ready: Promise<void>;
+  private serial: Promise<unknown> = Promise.resolve();
+  private sessionGeneration = 0;
+  get generation(): number { return this.sessionGeneration; }
+
+  private exclusive<T>(action: () => Promise<T>): Promise<T> {
+    const result = this.serial.then(() => this.ready).then(action);
+    // A failed storage operation must not poison subsequent attempts.
+    this.serial = result.catch(() => undefined);
+    return result;
+  }
 
   constructor(
     private storage: IonicStorage,
@@ -26,13 +36,13 @@ export class OutboxStorage {
       return;
     }
 
-    await this.reconcileAndMirror(existing);
+    await this.backgroundSync.replaceQueue(await this.reconcile(existing));
   }
 
   private async read(): Promise<OutboxOp[]> {
     await this.ready;
     const items: OutboxOp[] = (await this.storage.get(OUTBOX_KEY)) ?? [];
-    return this.reconcileAndMirror(items);
+    return this.reconcile(items);
   }
 
   private async write(items: OutboxOp[]) {
@@ -41,7 +51,7 @@ export class OutboxStorage {
     await this.backgroundSync.replaceQueue(items);
   }
 
-  private async reconcileAndMirror(items: OutboxOp[]): Promise<OutboxOp[]> {
+  private async reconcile(items: OutboxOp[]): Promise<OutboxOp[]> {
     const completedIds = await this.backgroundSync.consumeCompleted();
     const completed = new Set(completedIds);
     const reconciled = completed.size > 0
@@ -52,50 +62,68 @@ export class OutboxStorage {
       await this.storage.set(OUTBOX_KEY, reconciled);
     }
 
-    await this.backgroundSync.replaceQueue(reconciled);
+    // Native completion already removed these IDs there. Read-only queue polling
+    // must not reset native retry state or postpone Android's scheduled worker.
     return reconciled;
   }
 
-  /** Add a new operation to the queue (FIFO). */
-  async enqueue(op: OutboxOp) {
-    const items = await this.read();
-    const existingIndex = items.findIndex((item) => item.opId === op.opId);
-    if (existingIndex >= 0) {
-      items[existingIndex] = op;
-    } else {
-      items.push(op);
-    }
-    await this.write(items);
+  /** Serialize the entire read/modify/persist operation, including native reconciliation. */
+  enqueue(op: OutboxOp, generation = this.generation): Promise<void> {
+    return this.exclusive(async () => {
+      const items = await this.read();
+      if (generation !== this.generation) throw new Error('Note session changed');
+      const index = items.findIndex(item => item.opId === op.opId);
+      if (index >= 0) items[index] = op;
+      else items.push(op);
+      await this.write(items);
+    });
   }
 
-  /**
-   * Read up to `limit` ops that are due (nextAt <= now), without removing them.
-   * Use `drop()` to remove after successful processing.
-   */
-  async peekBatch(limit = 50, now = Date.now()): Promise<OutboxOp[]> {
-    const items = await this.read();
-    return items.filter(x => (x.nextAt ?? 0) <= now).slice(0, limit);
+  peekBatch(limit = 50, now = Date.now()): Promise<OutboxOp[]> {
+    return this.exclusive(async () => (await this.read())
+      .filter(item => !item.conflict && (item.nextAt ?? 0) <= now).slice(0, limit));
   }
 
-  /** Remove a set of operations by id (after successful processing). */
-  async drop(opIds: string[]) {
-    const items = await this.read();
-    const next = items.filter(i => !opIds.includes(i.opId));
-    await this.write(next);
+  drop(opIds: string[]): Promise<void> {
+    return this.exclusive(async () => {
+      await this.write((await this.read()).filter(item => !opIds.includes(item.opId)));
+    });
   }
 
-  /** Replace the entire queue (useful after updating attempts/nextAt). */
-  async replace(updated: OutboxOp[]) {
-    await this.write(updated);
+  update(opId: string, change: (op: OutboxOp) => OutboxOp): Promise<void> {
+    return this.exclusive(async () => {
+      await this.write((await this.read()).map(item => item.opId === opId ? change(item) : item));
+    });
   }
 
-  /** Introspect the whole queue (debug/metrics). */
-  async getAll(): Promise<OutboxOp[]> {
-    return this.read();
+  retryPending(): Promise<void> {
+    return this.exclusive(async () => {
+      await this.write((await this.read()).map(item => ({ ...item, attempt: 0, nextAt: 0 })));
+    });
   }
 
-  /** Optional: clear everything (use with care). */
-  async clear(): Promise<void> {
-    await this.write([]);
+  getAll(): Promise<OutboxOp[]> {
+    return this.exclusive(() => this.read());
+  }
+
+  /** Remove only versions explicitly covered by the user's conflict choice. */
+  async discardChosenVersions(versions: Record<string, number>): Promise<void> {
+    return this.exclusive(async () => {
+      const result: OutboxOp[] = [];
+      for (const item of await this.read()) {
+        if (item.type !== 'upload') { result.push(item); continue; }
+        const notes = item.payload.notes.filter(n => !(n.id in versions) || Number(n.last_modified) > versions[n.id]);
+        if (notes.length === item.payload.notes.length) { result.push(item); continue; }
+        if (!notes.length && !(item.payload as any).folders?.length && !item.payload.deleted_ids?.length) continue;
+        const opId = globalThis.crypto.randomUUID();
+        result.push({ ...item, opId, payload: { ...item.payload, op_id: opId, notes } });
+      }
+      await this.write(result);
+    });
+  }
+
+  clear(): Promise<void> {
+    this.sessionGeneration++;
+    return this.exclusive(() => this.write([]));
   }
 }

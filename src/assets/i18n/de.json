@@ -329,5 +329,10 @@
   "appearanceDescription": "Wähle hell, dunkel oder folge der Geräteeinstellung.",
   "appearanceSystem": "Geräteeinstellung verwenden",
   "appearanceLight": "Hell",
-  "appearanceDark": "Dunkel"
+  "appearanceDark": "Dunkel",
+  "retryAction": "Erneut versuchen",
+  "notesDownloadFailed": "Du bist angemeldet, aber deine Notizen konnten nicht heruntergeladen werden. Versuche es erneut.",
+  "waitBeforeResend": "Bitte warte 30 Sekunden, bevor du einen weiteren Code anforderst.",
+  "accountRequestFailed": "Die Anfrage konnte nicht abgeschlossen werden. Prüfe deine Verbindung und versuche es erneut.",
+  "secretRevocationFailed": "Der Link konnte nicht widerrufen werden und funktioniert möglicherweise weiterhin. Versuche es erneut."
 }

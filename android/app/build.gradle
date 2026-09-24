@@ -2,11 +2,11 @@ apply plugin: 'com.android.application'
 
 android {
     namespace "Steller.Phone.NotesApp"
-    compileSdkVersion 36
+    compileSdkVersion rootProject.ext.compileSdkVersion
     defaultConfig {
         applicationId "steller.phone.notesapp"
-        minSdkVersion 23
-        targetSdkVersion 36
+        minSdkVersion rootProject.ext.minSdkVersion
+        targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 42
         versionName "2.87"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"

@@ -1,11 +1,13 @@
 // services/sync-worker.service.ts
+import { confirmUpload } from './upload-confirmation';
 import { Injectable, NgZone } from '@angular/core';
 import { Network } from '@capacitor/network';
 import { App } from '@capacitor/app';
 import { OutboxStorage } from './outbox-storage.service';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { SecureStorageService } from './secure-storage.service';
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, timeout } from 'rxjs';
+import { NotesService } from './notes.service';
 import { OutboxOp } from '../models/Sync';
 import { buildApiUrl, notes } from '../constants/api/product.api';
 
@@ -22,7 +24,8 @@ export class SyncWorkerService {
     private http: HttpClient,
     private outbox: OutboxStorage,
     private zone: NgZone,
-    private secure: SecureStorageService
+    private secure: SecureStorageService,
+    private notesState: NotesService
   ) {}
 
   init() {
@@ -33,14 +36,16 @@ export class SyncWorkerService {
 
 
     setInterval(() => this.trySync(), 10_000);
-    Network.addListener('networkStatusChange', () => this.trySync());
+    Network.addListener('networkStatusChange', (status) => {
+      if (status.connected) void this.retryPending();
+    });
     App.addListener('appStateChange', (s) => {
       if (s.isActive) {
-        this.trySync();
+        void this.retryPending();
       }
     });
 
-    this.trySync();
+    void this.retryPending();
   }
 
   private async isOnline(): Promise<boolean> {
@@ -63,9 +68,11 @@ export class SyncWorkerService {
 
   private async sendOp(op: OutboxOp, headers: HttpHeaders): Promise<void> {
     if (op.type === 'upload') {
-      await firstValueFrom(
-        this.http.post(`${this.base}${notes.upload}`, op.payload, { headers })
+      const payload = { ...op.payload, require_note_ack: true };
+      const response = await firstValueFrom(
+        this.http.post(`${this.base}${notes.upload}`, payload, { headers }).pipe(timeout(15000))
       );
+      await confirmUpload(this.http, this.base, headers, payload, response);
       return;
     }
 
@@ -75,7 +82,7 @@ export class SyncWorkerService {
         notes: [],
       };
       await firstValueFrom(
-        this.http.post(`${this.base}${notes.syncPlan}`, body, { headers })
+        this.http.post(`${this.base}${notes.syncPlan}`, body, { headers }).pipe(timeout(15000))
       );
       return;
     }
@@ -83,80 +90,60 @@ export class SyncWorkerService {
     throw new Error(`Unknown op type: ${op.type}`);
   }
 
-  private applyFailure(
-    nextQueue: OutboxOp[],
-    opId: string,
-    now: number
-  ): OutboxOp[] {
-    const updatedQueue: OutboxOp[] = [];
-
-    for (const item of nextQueue) {
-      if (item.opId !== opId) {
-        updatedQueue.push(item);
-        continue;
-      }
-
-      const attempt = (item.attempt ?? 0) + 1;
-      if (attempt > MAX_ATTEMPT) {
-        continue;
-      }
-
-      updatedQueue.push({
-        ...item,
-        attempt,
-        nextAt: now + this.backoffMs(attempt),
-      });
+  async retryPending(): Promise<void> {
+    try {
+      await this.outbox.retryPending();
+      await this.trySync();
+    } catch {
+      console.warn('Could not resume note synchronization; queued notes are retained.');
     }
-
-    return updatedQueue;
   }
 
-  async trySync() {
-    if (this.syncing) {
-      return;
-    }
+  private async isCurrentSession(headers: HttpHeaders, generation: number): Promise<boolean> {
+    const token = await this.secure.getItem('ssToken');
+    return !!token && headers.get('Authorization') === `Bearer ${token}` && generation === this.outbox.generation;
+  }
 
-    if (!(await this.isOnline())) {
-      return;
-    }
-
-    const headers = await this.authHeaders();
-    if (!headers) {
-      return;
-    }
-
+  async trySync(): Promise<void> {
+    if (this.syncing) return;
+    // Acquire before the first await: timer, resume and reconnect can overlap.
     this.syncing = true;
+    const generation = this.outbox.generation;
     try {
-      const now = Date.now();
-      const batch = await this.outbox.peekBatch(50, now);
-
-      if (batch.length === 0) {
-        return;
-      }
-
-      let nextQueue = await this.outbox.getAll();
-
+      if (!(await this.isOnline())) return;
+      const headers = await this.authHeaders();
+      if (!headers) return;
+      const batch = await this.outbox.peekBatch(50, Date.now());
       for (const op of batch) {
+        if (!await this.isCurrentSession(headers, generation)) return;
+        if (op.conflict) continue;
         try {
           await this.sendOp(op, headers);
-          nextQueue = nextQueue.filter((item: OutboxOp) => item.opId !== op.opId);
-        } catch (e) {
-          nextQueue = this.applyFailure(nextQueue, op.opId, Date.now());
+        } catch (error: any) {
+          if (!await this.isCurrentSession(headers, generation)) return;
+          if (error?.status === 409 || error?.message === 'Note upload was not confirmed') {
+            this.notesState.syncNeedsAttention$.next(true);
+          }
+          await this.outbox.update(op.opId, item => {
+            const attempt = (item.attempt ?? 0) + 1;
+            // Keep retrying slowly after repeated failures; never discard or park forever.
+            const delay = attempt > MAX_ATTEMPT ? 300_000 : this.backoffMs(attempt);
+            return { ...item, conflict: item.conflict || error?.status === 409 || error?.message === 'Note upload was not confirmed', attempt, nextAt: Date.now() + delay };
+          });
+          continue;
+        }
+        if (!await this.isCurrentSession(headers, generation)) return;
+        await this.outbox.drop([op.opId]);
+        if (!(await this.outbox.getAll()).length) this.notesState.syncNeedsAttention$.next(false);
+        for (const note of op.payload.notes ?? []) {
+          const pending = this.notesState.getPendingMutation(note.id);
+          if (pending && pending.type !== 'delete' && pending.localUpdatedAt <= Number(note.last_modified)) {
+            this.notesState.clearPendingMutation(note.id);
+          }
         }
       }
-
-      await this.outbox.replace(nextQueue);
-    } catch (e) {
-
-      const now = Date.now();
-      const batch = await this.outbox.peekBatch(50, now);
-      if (batch.length > 0) {
-        let nextQueue = await this.outbox.getAll();
-        for (const op of batch) {
-          nextQueue = this.applyFailure(nextQueue, op.opId, now);
-        }
-        await this.outbox.replace(nextQueue);
-      }
+    } catch {
+      // Storage/network-status failures leave the durable queue intact for the next run.
     } finally {
       this.syncing = false;
     }
