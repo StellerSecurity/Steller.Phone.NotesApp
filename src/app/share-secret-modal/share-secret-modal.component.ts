@@ -157,13 +157,40 @@ export class ShareSecretModalComponent {
   }
   async shareLink() {
     await this.appHaptics.tap();
-    void this.appsflyer.logEvent('stellar_secret_link_shared', { method: 'system_share' });
-    await Share.share({
-      title: this.allTranslations?.shareSecretTitle ?? 'Stellar Secret',
-      text: this.allTranslations?.hereIsYourSecretLink ?? 'Here is your secret link',
-      url: this.secretUrl,
-      dialogTitle: this.allTranslations?.shareDialogTitle ?? 'Stellar Note',
+
+    if (!this.secretUrl) {
+      await this.showShareFailureToast();
+      return;
+    }
+
+    try {
+      const canShare = await Share.canShare();
+
+      if (!canShare?.value) {
+        await this.copyLink();
+        return;
+      }
+
+      void this.appsflyer.logEvent('stellar_secret_link_shared', { method: 'system_share' });
+      await Share.share({
+        title: this.allTranslations?.shareSecretTitle ?? 'Stellar Secret',
+        text: this.allTranslations?.hereIsYourSecretLink ?? 'Here is your secret link',
+        url: this.secretUrl,
+        dialogTitle: this.allTranslations?.shareDialogTitle ?? 'Stellar Note',
+      });
+    } catch (error) {
+      await this.appHaptics.error();
+      await this.showShareFailureToast();
+    }
+  }
+
+  private async showShareFailureToast(): Promise<void> {
+    const toast = await this.toastController.create({
+      message: this.allTranslations?.failedToShareSecret ?? 'Failed to share secret. Please check your internet connection or try again.',
+      duration: 4000,
+      position: 'bottom',
     });
+    await toast.present();
   }
   private formatDate(dateString: string): string {
     const date = new Date(dateString);

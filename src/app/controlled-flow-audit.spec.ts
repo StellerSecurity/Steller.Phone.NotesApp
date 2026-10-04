@@ -7,6 +7,7 @@ import { AddNotePage } from './add-note/add-note.page';
 import { throwError } from 'rxjs';
 import { LoginComponent } from './profile/login/login.component';
 import { ShareSecretModalComponent } from './share-secret-modal/share-secret-modal.component';
+import { Share } from '@capacitor/share';
 
 describe('Controlled failure-path audit', () => {
   it('informs the user when the first download after login fails', async () => {
@@ -29,8 +30,50 @@ describe('Controlled failure-path audit', () => {
     expect(page.isDeletingSecret).toBeFalse();
     expect(page.toastController.create).toHaveBeenCalled();
   });
-});
 
+  it('opens the share modal after closing the note action popover', async () => {
+    const page: any = Object.create(AddNotePage.prototype);
+    page.moreMenuOpen = true;
+    page.moreMenuEvent = {};
+    page.waitForOverlayDismissalFrame = jasmine.createSpy('waitForOverlayDismissalFrame').and.resolveTo();
+    page.shareStellarSecret = jasmine.createSpy('shareStellarSecret').and.resolveTo();
+    await page.handleShare();
+    expect(page.moreMenuOpen).toBeFalse();
+    expect(page.moreMenuEvent).toBeUndefined();
+    expect(page.waitForOverlayDismissalFrame).toHaveBeenCalled();
+    expect(page.shareStellarSecret).toHaveBeenCalled();
+  });
+
+  it('shows a failure message instead of silently dropping share modal errors', async () => {
+    const page: any = Object.create(AddNotePage.prototype);
+    page.shareModalOpening = false;
+    page.appHaptics = {tap: async () => {}, error: jasmine.createSpy('error').and.resolveTo()};
+    page.note_text = 'Secret text';
+    page.modalCtrl = {create: jasmine.createSpy('create').and.rejectWith(new Error('overlay failed'))};
+    page.toastController = {create: jasmine.createSpy('create').and.resolveTo({present: jasmine.createSpy('present').and.resolveTo()})};
+    page.allTranslations = {failedToShareSecret: 'Kunne ikke dele hemmeligheden.'};
+    await page.shareStellarSecret();
+    expect(page.appHaptics.error).toHaveBeenCalled();
+    expect(page.toastController.create).toHaveBeenCalledWith(jasmine.objectContaining({message: 'Kunne ikke dele hemmeligheden.'}));
+    expect(page.shareModalOpening).toBeFalse();
+  });
+
+  it('shows a toast when native sharing fails', async () => {
+    const page: any = Object.create(ShareSecretModalComponent.prototype);
+    page.secretUrl = 'https://stellarsecret.io/test-secret';
+    page.allTranslations = {failedToShareSecret: 'Share failed'};
+    page.appHaptics = {tap: async () => {}, error: jasmine.createSpy('error').and.resolveTo()};
+    page.appsflyer = {logEvent: jasmine.createSpy('logEvent')};
+    page.toastController = {create: jasmine.createSpy('create').and.resolveTo({present: jasmine.createSpy('present').and.resolveTo()})};
+    spyOn(Share, 'canShare').and.resolveTo({value: true});
+    spyOn(Share, 'share').and.rejectWith(new Error('native sheet unavailable'));
+
+    await page.shareLink();
+
+    expect(page.appHaptics.error).toHaveBeenCalled();
+    expect(page.toastController.create).toHaveBeenCalledWith(jasmine.objectContaining({message: 'Share failed'}));
+  });
+});
 
 describe('Account request recovery', () => {
   function resetPage(response: any) {
