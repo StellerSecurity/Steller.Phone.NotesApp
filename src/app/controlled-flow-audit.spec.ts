@@ -73,6 +73,54 @@ describe('Controlled failure-path audit', () => {
     expect(page.appHaptics.error).toHaveBeenCalled();
     expect(page.toastController.create).toHaveBeenCalledWith(jasmine.objectContaining({message: 'Share failed'}));
   });
+
+
+  it('keeps shared-secret creation inside the create button loading state', async () => {
+    const response = new Subject<any>();
+    const page: any = Object.create(ShareSecretModalComponent.prototype);
+    page.isLoading = false;
+    page.step = 1;
+    page.secret_id = 'secret-id';
+    page.addSecretModal = {id: 'secret-hash'};
+    page.appHaptics = {tap: jasmine.createSpy('tap').and.resolveTo(), success: jasmine.createSpy('success').and.resolveTo(), error: jasmine.createSpy('error').and.resolveTo()};
+    page.appsflyer = {logEvent: jasmine.createSpy('logEvent')};
+    page.secretapi = {create: jasmine.createSpy('create').and.returnValue(response)};
+    page.toastController = {create: jasmine.createSpy('create')};
+    page.loadingController = {create: jasmine.createSpy('create')};
+
+    await page.createSecret();
+    await page.createSecret();
+
+    expect(page.isLoading).toBeTrue();
+    expect(page.secretapi.create).toHaveBeenCalledTimes(1);
+    expect(page.loadingController.create).not.toHaveBeenCalled();
+
+    response.next({id: 'created-secret'});
+    response.complete();
+
+    expect(page.createdSecret).toEqual({id: 'created-secret'});
+    expect(page.step).toBe(2);
+    expect(page.secretUrl).toBe('https://stellarsecret.io/secret-id');
+    expect(page.isLoading).toBeFalse();
+  });
+
+  it('clears create button loading and shows toast when shared-secret creation fails', async () => {
+    const response = new Subject<any>();
+    const page: any = Object.create(ShareSecretModalComponent.prototype);
+    page.isLoading = false;
+    page.appHaptics = {tap: jasmine.createSpy('tap').and.resolveTo(), error: jasmine.createSpy('error').and.resolveTo()};
+    page.secretapi = {create: jasmine.createSpy('create').and.returnValue(response)};
+    page.allTranslations = {failedToShareSecret: 'Create failed'};
+    page.toastController = {create: jasmine.createSpy('create').and.resolveTo({present: jasmine.createSpy('present').and.resolveTo()})};
+
+    await page.createSecret();
+    response.error(new Error('offline'));
+    await Promise.resolve();
+
+    expect(page.isLoading).toBeFalse();
+    expect(page.appHaptics.error).toHaveBeenCalled();
+    expect(page.toastController.create).toHaveBeenCalledWith(jasmine.objectContaining({message: 'Create failed'}));
+  });
 });
 
 describe('Account request recovery', () => {
