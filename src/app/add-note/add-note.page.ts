@@ -103,6 +103,7 @@ export class AddNotePage implements OnDestroy {
   private suppressAutoSave = false;
   private pendingDeletedNote: NoteV1 | null = null;
   private pendingNewFolderResolver: ((value: string | null) => void) | null = null;
+  private shareModalOpening = false;
 
   private initialNoteSnapshot: {
     title: string;
@@ -345,12 +346,18 @@ export class AddNotePage implements OnDestroy {
 
   public async handleShare(): Promise<void> {
     this.closeMoreMenu();
+    await this.waitForOverlayDismissalFrame();
     await this.shareStellarSecret();
   }
 
   public async handleDelete(): Promise<void> {
     this.closeMoreMenu();
     await this.deleteNote();
+  }
+
+  private async waitForOverlayDismissalFrame(): Promise<void> {
+    await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+    await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
   }
 
   private normalizeFolderId(folderId: any): string | null {
@@ -1034,29 +1041,47 @@ export class AddNotePage implements OnDestroy {
   }
 
   public async shareStellarSecret() {
-    await this.appHaptics.tap();
+    if (this.shareModalOpening) {
+      return;
+    }
 
-    const addSecretModal = new Secret();
-    const secret_id = uuidv4();
+    this.shareModalOpening = true;
 
-    addSecretModal.expires_at = '0';
-    addSecretModal.id = sha512(secret_id);
+    try {
+      await this.appHaptics.tap();
 
-    let secretMessage = this.note_text.replace(/<br ?\/?>/g, '\n');
-    const doc = new DOMParser().parseFromString(secretMessage, 'text/html');
-    secretMessage = doc.body?.textContent?.trim() || '';
+      const addSecretModal = new Secret();
+      const secret_id = uuidv4();
 
-    addSecretModal.message = CryptoJS.AES.encrypt(secretMessage, secret_id).toString();
+      addSecretModal.expires_at = '0';
+      addSecretModal.id = sha512(secret_id);
 
-    const modal = await this.modalCtrl.create({
-      component: ShareSecretModalComponent,
-      componentProps: { addSecretModal, secret_id },
-      cssClass: 'secret-modal',
-      breakpoints: [0, 0.7],
-      initialBreakpoint: 0.7,
-    });
+      let secretMessage = this.note_text.replace(/<br ?\/?>/g, '\n');
+      const doc = new DOMParser().parseFromString(secretMessage, 'text/html');
+      secretMessage = doc.body?.textContent?.trim() || '';
 
-    await modal.present();
+      addSecretModal.message = CryptoJS.AES.encrypt(secretMessage, secret_id).toString();
+
+      const modal = await this.modalCtrl.create({
+        component: ShareSecretModalComponent,
+        componentProps: { addSecretModal, secret_id },
+        cssClass: 'secret-modal',
+        breakpoints: [0, 0.7],
+        initialBreakpoint: 0.7,
+      });
+
+      await modal.present();
+    } catch (error) {
+      await this.appHaptics.error();
+      const toast = await this.toastController.create({
+        message: this.allTranslations?.failedToShareSecret ?? 'Failed to share secret. Please check your internet connection or try again.',
+        duration: 4000,
+        position: 'bottom',
+      });
+      await toast.present();
+    } finally {
+      this.shareModalOpening = false;
+    }
   }
 
   enableEditingTitle() {
