@@ -55,6 +55,7 @@ import { App } from '@capacitor/app';
 import { Preferences } from '@capacitor/preferences';
 import { BiometricUnlockService } from '../services/biometric-unlock.service';
 import { AppsflyerService } from '../services/appsflyer.service';
+import { RemoteDownloadSyncService } from '../services/remote-download-sync.service';
 import { homeNotePreview } from '../utils/home-note-preview.util';
 
 interface NoteListCacheEntry {
@@ -209,7 +210,7 @@ export class HomePage implements AfterViewInit, OnDestroy {
     }
   };
 
-  private readonly realtimeHint = () => { void this.syncFromServer({ silent: true, realtime: true }).catch(() => {}); };
+  private readonly realtimeHint = () => { void this.remoteDownloadSync.requestImmediateSync('realtime').catch(() => {}); };
 
   constructor(
     private cryptoService: CryptoService,
@@ -236,6 +237,7 @@ export class HomePage implements AfterViewInit, OnDestroy {
     private platform: Platform,
     private biometricUnlockService: BiometricUnlockService,
     private appsflyer: AppsflyerService,
+    private remoteDownloadSync: RemoteDownloadSyncService,
   ) {}
 
 

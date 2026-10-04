@@ -1,5 +1,6 @@
 import { encryptTextWithMK, packCipherBlob } from '@stellarsecurity/stellar-crypto';
 import { HomePage } from './home.page';
+import { RemoteDownloadSyncService } from '../services/remote-download-sync.service';
 
 describe('Mobile metadata save ordering', () => {
   function fixture() {
@@ -212,6 +213,31 @@ describe('Incremental home synchronization', () => {
 
 });
 
+
+
+describe('Central mobile remote synchronization', () => {
+  it('coalesces realtime and upload acknowledgements while a pull is in flight', async () => {
+    const service: any = Object.create(RemoteDownloadSyncService.prototype);
+    service.inFlight = null;
+    service.realtimeRequested = false;
+    let release!: () => void;
+    let calls = 0;
+    service.performSync = async () => {
+      calls++;
+      if (calls === 1) await new Promise<void>(resolve => release = resolve);
+      return calls === 2;
+    };
+
+    const running = service.requestImmediateSync('manual');
+    void service.requestImmediateSync('realtime');
+    void service.requestImmediateSync('upload_ack');
+    expect(calls).toBe(1);
+
+    release();
+    await running;
+    expect(calls).toBe(2);
+  });
+});
 
 describe('Favorites pager restoration', () => {
   it('positions Favorites correctly even while the pager DOM is absent after an empty search', () => {

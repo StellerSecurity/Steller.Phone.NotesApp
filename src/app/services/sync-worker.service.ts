@@ -48,6 +48,12 @@ export class SyncWorkerService {
     void this.retryPending();
   }
 
+  private dispatchNotesChanged(): void {
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('stellar:notes-changed'));
+    }
+  }
+
   private async isOnline(): Promise<boolean> {
     const st = await Network.getStatus();
     return st.connected ?? navigator.onLine;
@@ -109,6 +115,7 @@ export class SyncWorkerService {
     // Acquire before the first await: timer, resume and reconnect can overlap.
     this.syncing = true;
     const generation = this.outbox.generation;
+    let uploadedAny = false;
     try {
       if (!(await this.isOnline())) return;
       const headers = await this.authHeaders();
@@ -134,6 +141,7 @@ export class SyncWorkerService {
         }
         if (!await this.isCurrentSession(headers, generation)) return;
         await this.outbox.drop([op.opId]);
+        uploadedAny = true;
         if (!(await this.outbox.getAll()).length) this.notesState.syncNeedsAttention$.next(false);
         for (const note of op.payload.notes ?? []) {
           const pending = this.notesState.getPendingMutation(note.id);
@@ -146,6 +154,7 @@ export class SyncWorkerService {
       // Storage/network-status failures leave the durable queue intact for the next run.
     } finally {
       this.syncing = false;
+      if (uploadedAny) this.dispatchNotesChanged();
     }
   }
 }
