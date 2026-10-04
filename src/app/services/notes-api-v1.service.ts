@@ -37,6 +37,12 @@ export class NotesApiV1Service {
   ) {}
 
 
+  private dispatchNotesChanged(): void {
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('stellar:notes-changed'));
+    }
+  }
+
   private async assertCurrentSession(token: string | null, generation: number): Promise<void> {
     const current = await this.secureStorageService.getItem('ssToken');
     if (!token || current !== token || generation !== this.outbox.generation) {
@@ -206,6 +212,7 @@ export class NotesApiV1Service {
         }
       }
       if (!environment.production) console.info('Notes upload acknowledged', JSON.stringify({ notes: encryptedNotes.length }));
+      this.dispatchNotesChanged();
       return res;
     } catch (error: any) {
       await this.assertCurrentSession(TOKEN, generation);

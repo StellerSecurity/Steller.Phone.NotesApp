@@ -1,6 +1,7 @@
 import { NoteConflictService } from './services/note-conflict.service';
 import { RealtimeNotesService } from './services/realtime-notes.service';
 import { NotesStorageService } from './services/notes-storage.service';
+import { RemoteDownloadSyncService } from './services/remote-download-sync.service';
 import { Component, NgZone } from '@angular/core';
 import { TranslatorService } from './services/translator.service';
 import { Storage as IonicStorage } from '@ionic/storage-angular';
@@ -30,10 +31,12 @@ export class AppComponent {
     private screenshotProtectionService: ScreenshotProtectionService,
     private themeService: ThemeService,
     private appsflyer: AppsflyerService,
-    public notesStorage: NotesStorageService
+    public notesStorage: NotesStorageService,
+    private remoteDownloadSync: RemoteDownloadSyncService
   ) {
     this.syncWorker.init();
     this.realtimeNotes.init();
+    this.remoteDownloadSync.init();
     this.noteConflicts.init();
     this.installPrivacyShield();
     void this.screenshotProtectionService.applyCurrentSetting(this.noteService.appHasPasswordChallenge());
