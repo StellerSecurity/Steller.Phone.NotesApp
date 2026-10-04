@@ -1,6 +1,6 @@
 import { finalize, timeout } from 'rxjs';
 import { Component, Input } from '@angular/core';
-import { LoadingController, ModalController, ToastController } from '@ionic/angular';
+import { ModalController, ToastController } from '@ionic/angular';
 import { SecretapiService } from '../services/secretapi.service';
 import { Share } from '@capacitor/share';
 import { Router } from '@angular/router';
@@ -27,7 +27,6 @@ export class ShareSecretModalComponent {
   constructor(
     private modalCtrl: ModalController,
     private toastController: ToastController,
-    private loadingController: LoadingController,
     private secretapi: SecretapiService,
     private router: Router,
     private translatorService: TranslatorService,
@@ -72,9 +71,9 @@ export class ShareSecretModalComponent {
     this.modalCtrl.dismiss();
   }
   async createSecret() {
+    if (this.isLoading) return;
     await this.appHaptics.tap();
-    const loading = await this.loadingController.create();
-    await loading.present();
+    this.isLoading = true;
     this.secretapi.create(this.addSecretModal).subscribe({
       next: async (response) => {
         this.createdSecret = response;
@@ -85,13 +84,11 @@ export class ShareSecretModalComponent {
         await this.appHaptics.success();
       },
       error: async () => {
-        await loading.dismiss();
         this.isLoading = false;
         await this.appHaptics.error();
-        alert(this.allTranslations?.failedToShareSecret ?? "Failed to share secret. Please check your internet connection or try again.");
+        await this.showShareFailureToast();
       },
       complete: async () => {
-        await loading.dismiss();
         this.isLoading = false;
       }
     });
