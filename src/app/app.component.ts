@@ -51,6 +51,11 @@ export class AppComponent {
   public async retryStorage(): Promise<void> {
     try { await this.notesStorage.retryFailedWrites(); } catch { /* Banner remains visible. */ }
   }
+  public async retrySynchronization(): Promise<void> {
+    await this.syncWorker.retryPending();
+    await this.noteConflicts.retryPending();
+    await this.syncWorker.trySync();
+  }
   ngOnInit() {
     if (Capacitor.getPlatform() === 'ios') {
       Keyboard.setResizeMode({

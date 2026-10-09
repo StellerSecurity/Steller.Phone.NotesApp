@@ -116,7 +116,9 @@ export class OutboxStorage {
         if (notes.length === item.payload.notes.length) { result.push(item); continue; }
         if (!notes.length && !(item.payload as any).folders?.length && !item.payload.deleted_ids?.length) continue;
         const opId = globalThis.crypto.randomUUID();
-        result.push({ ...item, opId, payload: { ...item.payload, op_id: opId, notes } });
+        result.push({ ...item, opId, payload: { ...item.payload, op_id: opId, notes },
+          // A resolved note must not leave its remaining folder upload parked.
+          ...(!notes.length ? { conflict: false, attempt: 0, nextAt: 0 } : {}) });
       }
       await this.write(result);
     });

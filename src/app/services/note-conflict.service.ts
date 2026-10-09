@@ -17,6 +17,18 @@ export function conflictPreview(note: any): string {
   return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
 
+/** Ciphertexts use random IVs; compare full decrypted content and metadata. */
+export function sameConflictContent(local: any, remote: any): boolean {
+  if (!local || !remote || local.deleted || remote.deleted || local.id !== remote.id) return false;
+  for (const field of ['text', 'title', 'folder_id', 'folder']) {
+    if ((local[field] ?? '') !== (remote[field] ?? '')) return false;
+  }
+  const flag = (value: any) => value === undefined || value === null ? false
+    : value === 1 || value === '1' || value === 'true' ? true
+    : value === 0 || value === '0' || value === 'false' ? false : value;
+  return ['protected', 'auto_wipe', 'pinned', 'favorite'].every(field => flag(local[field]) === flag(remote[field]));
+}
+
 /** Conflicts stay in the encrypted outbox until the user explicitly chooses. */
 @Injectable({ providedIn: 'root' })
 export class NoteConflictService {
@@ -33,6 +45,13 @@ export class NoteConflictService {
     if (this.started) return;
     this.started = true;
     setInterval(() => { void this.check(); }, 2000);
+  }
+
+  async retryPending(): Promise<void> {
+    // Explicit retry may reopen a postponed choice, never select a version.
+    this.snoozed.clear();
+    this.snoozedNotes.clear();
+    await this.check();
   }
 
   private readLocal(): any[] {
@@ -59,12 +78,26 @@ export class NoteConflictService {
   async check(): Promise<void> {
     if (this.busy || document.hidden || !navigator.onLine || this.state.shouldAskForPassword()) return;
     this.busy = true;
+    let selectedOpId: string | undefined;
     try {
       const token = await this.secure.getItem('ssToken');
       if (!token) return;
       const queue = await this.outbox.getAll();
+      if (!queue.length) {
+        this.state.syncNeedsAttention$.next(false);
+        return;
+      }
       const op: any = queue.filter((item: any) => item.conflict).sort((a, b) => Math.max(...b.payload.notes.map(n => Number(n.last_modified ?? 0))) - Math.max(...a.payload.notes.map(n => Number(n.last_modified ?? 0)))).find((item: any) => (this.snoozed.get(item.opId) ?? 0) <= Date.now() && item.payload.notes.every((n: any) => (this.snoozedNotes.get(n.id) ?? 0) <= Date.now()));
       if (!op) return;
+      selectedOpId = op.opId;
+      if (op.type === 'upload' && !op.payload.notes.length) {
+        // Older conflict resolutions could strand the remaining folder upload.
+        // Requeue it for normal server confirmation instead of discarding it.
+        if (token !== await this.secure.getItem('ssToken')) return;
+        await this.outbox.update(op.opId, item => item.type === 'upload' && !item.payload.notes.length
+          ? { ...item, conflict: false, attempt: 0, nextAt: 0 } : item);
+        return;
+      }
       // Only the latest pending edit should be presented. Older conflicting snapshots
       // remain durable until the user resolves the newest one.
       const snapshot = JSON.stringify(op.payload);
@@ -82,10 +115,17 @@ export class NoteConflictService {
       const choices: Array<{ sent: any; remote: any; local: any; choice: string }> = [];
       for (const sent of op.payload.notes) {
         const remote = (result.notes ?? []).find((n: any) => n.id === sent.id);
-        if (remote && remote.text === sent.text && remote.title === sent.title && Number(remote.last_modified) === Number(sent.last_modified)) continue;
         const local = await this.decode(sent);
         const decodedRemote = await this.decode(remote);
         if (token !== await this.secure.getItem('ssToken') || this.state.shouldAskForPassword()) return;
+        if (sameConflictContent(local, decodedRemote)) {
+          const observed = observedLocal.get(sent.id);
+          // A newer draft may be persisted locally before it reaches the outbox.
+          if (!observed || !sameConflictContent(JSON.parse(observed), local)) return;
+          // Already-saved data uses the same persistence/session guards as a choice.
+          choices.push({ sent, remote, local, choice: 'server' });
+          continue;
+        }
         const alert = await this.alerts.create({
           header: 'Choose note version',
           message: `<b>This device</b><br>${conflictPreview(local)}<br><br><b>Other device</b><br>${conflictPreview(decodedRemote)}`,
@@ -185,6 +225,8 @@ export class NoteConflictService {
       window.dispatchEvent(new Event('stellar:notes-changed'));
     } catch {
       // Authentication, decryption, network and persistence failures retain the conflict.
+      // One unreadable operation must not monopolize every subsequent check.
+      if (selectedOpId) this.snoozed.set(selectedOpId, Date.now() + 30_000);
     } finally { this.busy = false; }
   }
 }

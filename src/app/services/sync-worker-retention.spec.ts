@@ -1,5 +1,5 @@
 import { packCipherBlob } from '@stellarsecurity/stellar-crypto';
-import { NoteConflictService, conflictPreview } from './note-conflict.service';
+import { NoteConflictService, conflictPreview, sameConflictContent } from './note-conflict.service';
 import { RealtimeNotesService, validRealtimeGrant } from './realtime-notes.service';
 import { of, Subject, throwError } from 'rxjs';
 import { OutboxStorage } from './outbox-storage.service';
@@ -319,6 +319,53 @@ describe('Explicit multi-device conflict choices', () => {
   return {...context,resolver,alerts};
  }
  beforeEach(()=>{spyOnProperty(document,'hidden','get').and.returnValue(false);spyOnProperty(navigator,'onLine','get').and.returnValue(true);});
+ it('reconciles already saved plaintext despite randomized encryption and newer server version',async()=>{
+  const c=await setup('later');
+  c.remote.text=packCipherBlob({iv_b64:'AQEBAQEBAQEBAQEB',ct_b64:btoa('different-prefix'+'local text')});
+  c.remote.title=blob('local');await c.resolver.check();
+  expect(c.alerts.create).not.toHaveBeenCalled();expect(await c.q.getAll()).toEqual([]);expect(c.local()[0].base_version).toBe(300);
+ });
+ it('does not discard a metadata conflict merely because ciphertext and version match',async()=>{
+  const c=await setup('later');c.remote.text=blob('local text');c.remote.title=blob('local');c.remote.last_modified=200;c.remote.favorite=true;
+  await c.resolver.check();expect(c.alerts.create).toHaveBeenCalled();expect((await c.q.getAll()).length).toBe(1);
+ });
+ it('preserves a newer local draft while reconciling already saved queued content',async()=>{
+  const c=await setup('later');c.remote.text=blob('local text');c.remote.title=blob('local');c.edit();
+  await c.resolver.check();expect(c.local()[0].text).toBe('new typing');expect((await c.q.getAll()).length).toBe(1);expect(c.alerts.create).not.toHaveBeenCalled();
+ });
+ it('explicit retry immediately reopens a postponed real conflict without choosing a version',async()=>{
+  const c=await setup('later');await c.resolver.check();await c.resolver.check();expect(c.alerts.create).toHaveBeenCalledTimes(1);
+  await (c.resolver as any).retryPending();expect(c.alerts.create).toHaveBeenCalledTimes(2);expect((await c.q.getAll()).length).toBe(1);expect(c.local()[0].text).toBe('local text');
+ });
+ it('leaves a folder remainder eligible after resolving its note conflict',async()=>{
+  const c=await setup('server');await c.q.update('conflict',(item: OutboxOp)=>({...item,payload:{...item.payload,folders:[{id:'f',name:'encrypted',last_modified:1}]} as any}));
+  await c.resolver.check();const remaining=await c.q.getAll();expect(remaining.length).toBe(1);expect(remaining[0].payload.notes).toEqual([]);
+  expect((await c.q.peekBatch()).length).toBe(1);expect((remaining[0].payload as any).folders.length).toBe(1);
+ });
+ it('recovers a previously stranded folder-only conflict without dropping it',async()=>{
+  const c=await setup('later');await c.q.update('conflict',(item: OutboxOp)=>({...item,payload:{...item.payload,notes:[],folders:[{id:'f',name:'encrypted',last_modified:1}]} as any}));
+  await c.resolver.check();expect((await c.q.getAll()).length).toBe(1);expect((await c.q.peekBatch()).length).toBe(1);expect(c.alerts.create).not.toHaveBeenCalled();
+ });
+ it('clears the warning after native/background sync emptied the durable queue',async()=>{
+  const c=await setup('later');const attention=jasmine.createSpy('attention');c.state.syncNeedsAttention$={next:attention};await c.q.drop(['conflict']);
+  await c.resolver.check();expect(attention).toHaveBeenCalledWith(false);
+ });
+ it('retains an unreadable conflict while allowing another note to be reviewed',async()=>{
+  const c=await setup('later');await c.q.enqueue({opId:'unreadable',type:'upload',conflict:true,payload:{op_id:'unreadable',since:0,notes:[{id:'bad',text:'invalid cipher',last_modified:500}]}});
+  await c.resolver.check();expect(c.alerts.create).not.toHaveBeenCalled();await c.resolver.check();expect(c.alerts.create).toHaveBeenCalledTimes(1);expect((await c.q.getAll()).length).toBe(2);
+ });
+ it('compares full text, formatting, and all metadata before automatic reconciliation',()=>{
+  const a={id:'n',text:'a'.repeat(500),title:'same'};
+  expect(sameConflictContent(a,{...a,text:a.text+'b'})).toBeFalse();
+  expect(sameConflictContent({...a,text:'<b>x</b>'},{...a,text:'x'})).toBeFalse();
+  for(const field of ['protected','auto_wipe','pinned','favorite','deleted'])expect(sameConflictContent(a,{...a,[field]:true})).toBeFalse();
+  expect(sameConflictContent(a,{...a,folder_id:'different'})).toBeFalse();
+  expect(sameConflictContent(a,{...a,folder:'different'})).toBeFalse();
+ });
+ it('retains an already-saved conflict if local persistence fails',async()=>{
+  const c=await setup('later');c.remote.text=blob('local text');c.remote.title=blob('local');c.state.flushPersistence=async()=>{throw new Error('disk full');};
+  await c.resolver.check();expect((await c.q.getAll()).length).toBe(1);expect(c.alerts.create).not.toHaveBeenCalled();
+ });
  it('Later preserves both local text and encrypted pending operation',async()=>{
   const c=await setup('later');await c.resolver.check();expect(c.local()[0].text).toBe('local text');expect((await c.q.getAll()).length).toBe(1);
  });
