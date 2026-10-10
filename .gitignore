@@ -24,6 +24,8 @@ log.txt
 /plugins/*
 !/plugins/background-notes-sync/
 !/plugins/background-notes-sync/**
+/plugins/background-notes-sync/android/build/
+/plugins/background-notes-sync/android/.gradle/
 
 # Compiled output
 /dist
