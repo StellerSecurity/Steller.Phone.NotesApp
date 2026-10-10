@@ -14,6 +14,9 @@ interface AppsFlyerInitOptions {
  * "AppsFlyer plugin is not implemented on android".
  */
 const AppsFlyer: any = registerPlugin('AppsFlyerPlugin');
+const StellarSecurity = registerPlugin<{
+  analyticsPolicy(): Promise<{ allowed: boolean }>;
+}>('StellarSecurity');
 
 @Injectable({ providedIn: 'root' })
 export class AppsflyerService {
@@ -37,6 +40,14 @@ export class AppsflyerService {
     }
 
     try {
+      // An unavailable Android policy also disables analytics. Never fall back to tracking.
+      if (Capacitor.getPlatform() === 'android') {
+        const policy = await StellarSecurity.analyticsPolicy();
+        if (policy.allowed !== true) {
+          this.initFailed = true;
+          return;
+        }
+      }
       const cfg: AppsFlyerInitOptions = {
         devKey: (options?.devKey || (window as any)?.env?.APPSFLYER_DEV_KEY || '').trim(),
         appId: (options?.appId || (window as any)?.env?.IOS_APP_ID || undefined),
