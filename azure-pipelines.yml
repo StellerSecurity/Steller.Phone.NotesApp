@@ -39,7 +39,8 @@ stages:
 
     - script: |
         set -eu
-        npm ci --legacy-peer-deps --ignore-scripts --no-audit --no-fund
+        npm run test:dependency-hardening
+        npm run deps:install
         npm run build -- --configuration production
       displayName: 'Build from the committed dependency lockfile'
 
@@ -76,3 +77,4 @@ stages:
               appType: webAppLinux
               appName: $(webAppName)
               package: $(Pipeline.Workspace)/drop/$(Build.BuildId).zip
+
