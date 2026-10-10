@@ -1,0 +1,33 @@
+Dependency setup and Capacitor commands
+
+After dependency review and approval, install with:
+  npm run deps:install
+
+This uses the committed lockfile, disables dependency install hooks, and removes
+Capacitor CLI telemetry before returning successfully. No versions are upgraded.
+Do not override ignore-scripts or use npm rebuild to enable every install hook.
+
+For an existing installation:
+  npm run deps:harden
+
+Use the local CLI through:
+  npm run cap -- sync android
+  npm run cap -- open android
+
+The wrapper applies the fix before loading Capacitor. Build, start, watch and ng
+also apply it explicitly. The fix does not depend on npm lifecycle hooks.
+A bare npm ci followed by npx cap bypasses this setup. Use deps:install and the
+cap command above instead.
+
+All reviewed CLI copies are patched, including the one under @capacitor/assets.
+Their telemetry module neither collects nor sends arguments, signing passwords,
+errors or identifiers. Global user telemetry settings are not read or changed.
+Dependency layout/version changes stop hardening until the policy is reviewed.
+The existing Capacitor background-sync hooks remain in package.json.
+
+Native tools whose setup normally uses install hooks may need separately
+reviewed setup. Do not enable all lifecycle scripts to resolve missing binaries.
+Notes' sharp 0.30.7 already checks libvips integrity and is not patched here.
+
+Run the first-party regression tests without installing packages:
+  node --test scripts/dependency-hardening.test.cjs
