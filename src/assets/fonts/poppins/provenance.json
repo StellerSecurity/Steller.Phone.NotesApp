@@ -1,0 +1,123 @@
+{
+  "family": "Poppins",
+  "version": "4.004",
+  "license": "OFL-1.1",
+  "source": "Existing Stellar.Secret.UIAPP/src/assets/Poppins assets",
+  "upstream": "https://github.com/itfoundry/Poppins",
+  "files": [
+    {
+      "name": "OFL.txt",
+      "bytes": 4385,
+      "gitBlob": "76df3b565672e3248a5715339d092d4cb6c75019",
+      "sha256": "6be04893d770899a015649c7aa3b582f871b272f8747a92b78b17c3e5c8b2573"
+    },
+    {
+      "name": "Poppins-Black.ttf",
+      "bytes": 151396,
+      "gitBlob": "71c0f995ee64396f29a3d9ef283b5050f45d6e0f",
+      "sha256": "291e4388a436cf0c0d532ce4735a4ca36bd2286912b051ea423d5c383be06cd7"
+    },
+    {
+      "name": "Poppins-BlackItalic.ttf",
+      "bytes": 171604,
+      "gitBlob": "7aeb58bd1b9436a814a50ee3539d38f7668908c8",
+      "sha256": "a5e3e31e9dc6878269fdda8a968f8c0212beef9f7ef6028b6d1e02293316db7d"
+    },
+    {
+      "name": "Poppins-Bold.ttf",
+      "bytes": 153944,
+      "gitBlob": "00559eeb290fb8036f10633ff0640447d827b27c",
+      "sha256": "7219547ee25334cbac0fe4b3acf0bf631e48ebb622c71af038edaaa652c60875"
+    },
+    {
+      "name": "Poppins-BoldItalic.ttf",
+      "bytes": 176588,
+      "gitBlob": "e61e8e88bdc98d7edba0ba2a372dfd7b4e5c4b3f",
+      "sha256": "9d4d9f3c2c289eaec403660ec215bdc45e62b49f978807714bfc31ca7916c8fe"
+    },
+    {
+      "name": "Poppins-ExtraBold.ttf",
+      "bytes": 152764,
+      "gitBlob": "df7093608a7eb6173529ce9eeeb4d46e3a8290e5",
+      "sha256": "94a215f88fbde9099cb3bd1431b8142aba26af36f8771effec56a94bc3aad1fd"
+    },
+    {
+      "name": "Poppins-ExtraBoldItalic.ttf",
+      "bytes": 173916,
+      "gitBlob": "14d2b375dc0c2c4aec35b3d9d4bd89d7291c52dd",
+      "sha256": "bba986e116690660f70d3ebb18a74d8d2c8eafcda6c28c8ffc4306aa1e2b91e4"
+    },
+    {
+      "name": "Poppins-ExtraLight.ttf",
+      "bytes": 161456,
+      "gitBlob": "e76ec69a650f1323fe9af6dafc55628ca1afc7e1",
+      "sha256": "60c4bb1b8f272f0ac4702b962cc46e58e885a65624479be1c0646c9e37d9ce62"
+    },
+    {
+      "name": "Poppins-ExtraLightItalic.ttf",
+      "bytes": 186168,
+      "gitBlob": "89513d94693ae8100315edbb982d7d243f5469f6",
+      "sha256": "05418f4d333f25ddaf359adaf39b2777e64dad0f83c3fa4502d193d0ad19a9b7"
+    },
+    {
+      "name": "Poppins-Italic.ttf",
+      "bytes": 182012,
+      "gitBlob": "12b7b3c40b5c8dd7d90968d43bac7bc673a6c221",
+      "sha256": "3225cec6a018310497ea9ee116aa43b2a833464fed6156dceb9a3a4424bb8613"
+    },
+    {
+      "name": "Poppins-Light.ttf",
+      "bytes": 159892,
+      "gitBlob": "bc36bcc2427a84e29e61ea7b634024072c04b206",
+      "sha256": "647f014d36822ef7e0413ffbb65598ae0cb57fb798e635c63912c93d94eb356a"
+    },
+    {
+      "name": "Poppins-LightItalic.ttf",
+      "bytes": 184460,
+      "gitBlob": "9e70be6a9ef052bd26e248428cb4db214663afca",
+      "sha256": "6d00aa5531c8b8ba0934de7925985c6636c99fbc89b4c9f79629fb4a9067654f"
+    },
+    {
+      "name": "Poppins-Medium.ttf",
+      "bytes": 156520,
+      "gitBlob": "6bcdcc27f22e001e46defdfd9e23f224ff65dd67",
+      "sha256": "8d909883de81344e0fbcfef30e931872e92d9aeecdf85b6dcf6e0b28c078e98e"
+    },
+    {
+      "name": "Poppins-MediumItalic.ttf",
+      "bytes": 180444,
+      "gitBlob": "be67410fd0a5aaf22e118ff0dd3be2dcd441f34c",
+      "sha256": "449f6bd907fe29dbdfd5ef0990bdbb7fd800efa748a83f7b7529dcb94f79955b"
+    },
+    {
+      "name": "Poppins-Regular.ttf",
+      "bytes": 158240,
+      "gitBlob": "9f0c71b70a49664ced448c63edc9c4ff2bf8cf4a",
+      "sha256": "707fdc5c8bab57a90061c6a8ed7b70d5ffb82fc810e994e79f90bace890c255a"
+    },
+    {
+      "name": "Poppins-SemiBold.ttf",
+      "bytes": 155232,
+      "gitBlob": "74c726e32781bc2c0a83170f6800c0ef4cb9ddcf",
+      "sha256": "248c0244b350ec68880996aa6be6d7796274b49992d5fcbbefe251906aa4ea36"
+    },
+    {
+      "name": "Poppins-SemiBoldItalic.ttf",
+      "bytes": 178584,
+      "gitBlob": "3e6c942233c69f6b30cb8e8cdb4eea44b350586f",
+      "sha256": "74b31cbc29dc90c2d630e77673e7b6f714ff9bb01e5d424670bc61ca85b6093a"
+    },
+    {
+      "name": "Poppins-Thin.ttf",
+      "bytes": 161652,
+      "gitBlob": "03e736613a750cdd8d4f54bca28844e2d13257cb",
+      "sha256": "95875f9ef0d12d5cbdd64852933a578021c810cec247f7564207e046cf6c7289"
+    },
+    {
+      "name": "Poppins-ThinItalic.ttf",
+      "bytes": 187044,
+      "gitBlob": "e26db5dd3dbab6fcdb06f7fd9ab9347ead808f02",
+      "sha256": "043226b0e187263ab54de3e971b663a77e52c3857cbb235c8410388db6d28de8"
+    }
+  ]
+}
