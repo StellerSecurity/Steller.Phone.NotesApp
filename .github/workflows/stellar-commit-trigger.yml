@@ -3,7 +3,7 @@ run-name: Commit trigger ${{ inputs.trace_id || github.run_id }}
 on:
   push:
   schedule:
-    - cron: '23 */6 * * *'
+    - cron: '23 4 * * 1'
   workflow_dispatch:
     inputs:
       mode:
