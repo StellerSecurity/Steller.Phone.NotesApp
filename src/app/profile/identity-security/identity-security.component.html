@@ -1,0 +1,49 @@
+<ion-header class="ion-no-border">
+  <ion-toolbar>
+    <ion-buttons slot="start"><ion-button (click)="close()" [attr.aria-label]="t.close"><ion-icon slot="icon-only" name="chevron-back-outline"></ion-icon></ion-button></ion-buttons>
+    <ion-title>Stellar ID</ion-title>
+    <ion-buttons slot="end"><ion-button (click)="close()" [attr.aria-label]="t.close"><ion-icon slot="icon-only" name="close-outline"></ion-icon></ion-button></ion-buttons>
+  </ion-toolbar>
+</ion-header>
+<ion-content>
+  <main class="identity-security">
+    <div class="brand"><img src="assets/note-logo.png" alt=""><span>Stellar Notes</span></div>
+    <h1>{{ recoverMode ? t.recoverTitle : code ? t.saveTitle : t.title }}</h1>
+    <ng-container *ngIf="recoverMode; else security">
+      <p>{{t.recoverHelp}}</p>
+      <form [formGroup]="recoveryForm" (ngSubmit)="recover()">
+        <label for="recovery-email">{{t.email}}</label>
+        <input id="recovery-email" type="email" autocomplete="username" formControlName="email" [attr.aria-invalid]="recoveryForm.get('email')?.invalid && recoveryForm.get('email')?.touched">
+        <label for="recovery-code">{{t.code}}</label>
+        <textarea id="recovery-code" rows="3" autocomplete="off" spellcheck="false" autocapitalize="off" formControlName="code"></textarea>
+        <label for="recovery-password">{{t.next}}</label>
+        <div class="password-field"><input id="recovery-password" [type]="showPassword ? 'text' : 'password'" autocomplete="new-password" formControlName="password"><button type="button" (click)="showPassword = !showPassword" [attr.aria-label]="t.show" [attr.aria-pressed]="showPassword"><ion-icon [name]="showPassword ? 'eye-off-outline' : 'eye-outline'"></ion-icon></button></div>
+        <p class="hint">{{t.weak}}</p>
+        <ion-button expand="block" type="submit" [disabled]="isSaving"><ion-spinner *ngIf="isSaving" name="crescent"></ion-spinner><span *ngIf="!isSaving">{{t.recover}}</span></ion-button>
+      </form>
+    </ng-container>
+    <ng-template #security>
+      <section *ngIf="code; else controls" class="recovery-panel">
+        <p>{{t.saveHelp}}</p>
+        <textarea class="code" readonly rows="3" [value]="code" [attr.aria-label]="t.code" autocomplete="off" spellcheck="false"></textarea>
+        <ion-button expand="block" fill="outline" (click)="copyCode()">{{t.copy}}</ion-button>
+        <label class="saved"><input type="checkbox" [(ngModel)]="saved"><span>{{t.saved}}</span></label>
+        <ion-button expand="block" (click)="done()" [disabled]="!saved || isSaving">{{t.done}}</ion-button>
+      </section>
+      <ng-template #controls>
+        <p *ngIf="newAccount">{{t.missingCode}}</p>
+        <form [formGroup]="passwordForm" (ngSubmit)="changePassword()">
+          <label for="current-password">{{t.current}}</label>
+          <input id="current-password" type="password" autocomplete="current-password" formControlName="current">
+          <label for="new-password">{{t.next}}</label>
+          <input id="new-password" type="password" autocomplete="new-password" formControlName="next">
+          <p class="hint">{{t.weak}}</p>
+          <ion-button expand="block" type="submit" [disabled]="isSaving"><ion-spinner *ngIf="isSaving" name="crescent"></ion-spinner><span *ngIf="!isSaving">{{t.change}}</span></ion-button>
+          <hr>
+          <p class="hint">{{t.replacement}}</p>
+          <ion-button expand="block" fill="outline" type="button" (click)="generate()" [disabled]="isSaving">{{t.generate}}</ion-button>
+        </form>
+      </ng-template>
+    </ng-template>
+  </main>
+</ion-content>

@@ -8,11 +8,11 @@ describe('Logout data protection', () => {
       page.notesService = { flushPersistence: async () => {}, hasPendingMutations: () => pending === 'editor' };
       page.outbox = { getAll: async () => pending === 'outbox' ? [{}] : [] };
       page.dataService = { clearAppData: jasmine.createSpy('wipe') };
-      const present = jasmine.createSpy('present').and.resolveTo();
-      page.alertController = { create: async () => ({ present }) };
+
       await page.logout();
       expect(page.dataService.clearAppData).not.toHaveBeenCalled();
-      expect(present).toHaveBeenCalled();
+      expect(page.logoutOpen).toBeTrue();
+      expect(page.logoutBlocked).toBeTrue();
     });
   }
 });

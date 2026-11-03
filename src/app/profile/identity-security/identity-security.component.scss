@@ -1,0 +1,20 @@
+ion-content { --background: var(--stellar-background, #F6F6FD); }
+ion-toolbar { --background: var(--stellar-background, #F6F6FD); --color: var(--stellar-text, #0B0C19); }
+ion-title { font-size: 18px; font-weight: 700; }
+.identity-security { max-width: 480px; margin: 0 auto; padding: 24px 20px calc(32px + env(safe-area-inset-bottom)); color: var(--stellar-text, #0B0C19); }
+.brand { display: flex; gap: 12px; align-items: center; font-weight: 700; margin-bottom: 24px; img { width: 40px; height: 40px; object-fit: contain; } }
+h1 { font-size: 24px; line-height: 1.4; font-weight: 700; margin: 0 0 12px; }
+p { color: var(--stellar-muted, #62626A); font-size: 14px; line-height: 1.6; margin: 0 0 24px; }
+label { display: block; font-size: 14px; font-weight: 600; margin: 18px 0 8px; }
+input:not([type=checkbox]), textarea { display: block; width: 100%; box-sizing: border-box; border: 1px solid #D6D6E0; border-radius: 12px; padding: 13px 14px; background: var(--stellar-surface, #FFFFFF); color: var(--stellar-text, #0B0C19); font: inherit; font-size: 16px; min-height: 48px; }
+input:focus-visible, textarea:focus-visible, button:focus-visible { outline: 2px solid #2761FC; outline-offset: 3px; }
+input[aria-invalid=true] { border-color: #E10000; }
+textarea { resize: vertical; overflow-wrap: anywhere; }
+.code { font-family: ui-monospace, monospace; line-height: 1.7; word-break: break-all; margin-bottom: 16px; }
+.password-field { position: relative; input { padding-right: 52px; } button { position: absolute; inset: 2px 2px 2px auto; width: 44px; border: 0; border-radius: 10px; background: transparent; color: #62626A; display: grid; place-items: center; ion-icon { width: 22px; height: 22px; } } }
+.saved { display: flex; gap: 12px; align-items: flex-start; font-weight: 400; line-height: 1.5; margin: 24px 0; input { width: 22px; height: 22px; flex: 0 0 22px; accent-color: #2761FC; } }
+.hint { font-size: 12px; margin: 10px 0 18px; }
+ion-button { --background: #2761FC; --background-hover: #2152D4; --border-radius: 12px; --box-shadow: none; min-height: 48px; font-size: 14px; font-weight: 700; margin: 14px 0 0; text-transform: none; }
+ion-button[fill=outline] { --background: transparent; --color: #2761FC; --border-color: #D6D6E0; }
+hr { background: #EAEAF0; margin: 28px 0 20px; }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; animation: none !important; } }

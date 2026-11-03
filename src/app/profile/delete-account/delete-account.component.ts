@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
-import { AlertController } from '@ionic/angular';
+import { identityCopy } from '../identity-copy';
 import { firstValueFrom } from 'rxjs';
 import { AuthService } from 'src/app/services/auth.service';
 import { DataService } from 'src/app/services/data.service';
@@ -18,11 +18,11 @@ export class DeleteAccountComponent implements OnInit {
   deleteForm!: FormGroup;
   isSaving = false;
   showPassword = false;
+  confirmOpen = false;
 
   constructor(
     private fb: FormBuilder,
     private router: Router,
-    private alertController: AlertController,
     private authService: AuthService,
     private dataService: DataService,
     private toastMessageService: ToastMessageService,
@@ -50,31 +50,18 @@ export class DeleteAccountComponent implements OnInit {
       return;
     }
 
+    this.confirmOpen = true;
+  }
+
+  get dialogCopy() {
     const t = this.translatorService.allTranslations;
+    return { title: t?.deleteAccountQuestion ?? 'Delete account?', message: t?.deleteAccountConfirmMessage ?? 'This permanently deletes your Stellar ID and cannot be undone.',
+      confirm: t?.delete ?? 'Delete', cancel: t?.cancel ?? 'Cancel', close: identityCopy(this.translatorService.language).close };
+  }
 
-    const alert = await this.alertController.create({
-      header: t?.deleteAccountQuestion ?? 'Delete account?',
-      message: t?.deleteAccountConfirmMessage ?? 'This permanently deletes your Stellar ID for Notes and cannot be undone.',
-      buttons: [
-        {
-          text: t?.cancel ?? 'Cancel',
-          role: 'cancel',
-          handler: () => {
-            this.appHaptics.tap();
-          },
-        },
-        {
-          text: t?.delete ?? 'Delete',
-          role: 'destructive',
-          handler: async () => {
-            await this.appHaptics.impactHeavy();
-            await this.performDelete();
-          },
-        },
-      ],
-    });
-
-    await alert.present();
+  async confirmDelete() {
+    if (this.isSaving) return;
+    await this.performDelete();
   }
 
   private async performDelete() {
@@ -110,6 +97,8 @@ export class DeleteAccountComponent implements OnInit {
       this.isSaving = false;
     }
   }
+
+  ionViewDidLeave(): void { this.confirmOpen = false; this.deleteForm.get('currentPassword')?.reset(); }
 
   goBack() {
     this.appHaptics.tap();

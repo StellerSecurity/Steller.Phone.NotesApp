@@ -73,3 +73,5 @@ Thumbs.db
 
 # Markdown documentation stays local and must not be committed to GitHub.
 *.[mM][dD]
+
+/identity-runtime/node_modules

@@ -1,3 +1,4 @@
+import { sessionToken } from '../utils/session-token';
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { firstValueFrom, timeout } from 'rxjs';
@@ -66,7 +67,7 @@ export class RealtimeNotesService {
   }
   private async connect(generation: number): Promise<void> {
     try {
-      const token = await this.secure.getItem('ssToken');
+      const token = await sessionToken(this.secure);
       if (!token || generation !== this.generation || !this.auth.isLoggedIn) return;
       const grant = await firstValueFrom(this.http.post<any>(baseUrl + 'api/v1/notescontroller/realtime', {}, {
         headers: new HttpHeaders().set('Authorization', `Bearer ${token}`)

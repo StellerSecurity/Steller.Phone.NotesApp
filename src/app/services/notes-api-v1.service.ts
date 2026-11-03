@@ -1,3 +1,4 @@
+import { sessionToken } from '../utils/session-token';
 // services/notes-api-v1.service.ts — OFFLINE-FIRST (keeps your public methods)
 import { confirmUpload } from './upload-confirmation';
 import { Injectable } from '@angular/core';
@@ -113,7 +114,7 @@ export class NotesApiV1Service {
     queueOnly = false
   ): Promise<object> {
     const generation = this.outbox.generation;
-    const TOKEN = await this.secureStorageService.getItem("ssToken");
+    const TOKEN = await sessionToken(this.secureStorageService);
     await this.assertCurrentSession(TOKEN, generation);
     const headers = new HttpHeaders().set('Authorization', `Bearer ${TOKEN ?? ''}`);
 
@@ -233,7 +234,7 @@ export class NotesApiV1Service {
     limit = 1000,
     knownNotes?: Record<string, number>
   ): Promise<{ notes: NoteV1[]; folders: Folder[]; has_more?: boolean; watermark?: number }> {
-    const TOKEN = await this.secureStorageService.getItem('ssToken');
+    const TOKEN = await sessionToken(this.secureStorageService);
     const headers = new HttpHeaders().set('Authorization', `Bearer ${TOKEN ?? ''}`);
 
     const backgroundResponses = await this.backgroundSync.consumeDownloaded();
@@ -344,7 +345,7 @@ export class NotesApiV1Service {
   // PUBLIC: find
   // --------------------------------------------------
   async find(id: string): Promise<NoteV1> {
-    const TOKEN = await this.secureStorageService.getItem("ssToken");
+    const TOKEN = await sessionToken(this.secureStorageService);
     const headers = new HttpHeaders().set('Authorization', `Bearer ${TOKEN ?? ''}`);
 
     if (!navigator.onLine) {
@@ -363,7 +364,7 @@ export class NotesApiV1Service {
   // --------------------------------------------------
   async deleteNotes(deletedIds: string[]) {
     const generation = this.outbox.generation;
-    const TOKEN = await this.secureStorageService.getItem("ssToken");
+    const TOKEN = await sessionToken(this.secureStorageService);
     await this.assertCurrentSession(TOKEN, generation);
     const headers = new HttpHeaders().set('Authorization', `Bearer ${TOKEN ?? ''}`);
 

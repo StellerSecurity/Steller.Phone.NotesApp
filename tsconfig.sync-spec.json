@@ -21,6 +21,7 @@
     "src/app/editor-stress.spec.ts",
     "src/app/focus-audit.spec.ts",
     "src/app/html-security-audit.spec.ts",
-    "src/app/add-note/rich-text-editor/editor-scroll.spec.ts"
+    "src/app/add-note/rich-text-editor/editor-scroll.spec.ts",
+    "src/app/services/identity-auth.spec.ts"
   ]
 }

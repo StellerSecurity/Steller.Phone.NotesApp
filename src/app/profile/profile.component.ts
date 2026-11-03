@@ -1,9 +1,9 @@
+import { identityCopy } from './identity-copy';
 import { NotesService } from '../services/notes.service';
 import { SyncWorkerService } from '../services/sync-worker.service';
 import { OutboxStorage } from '../services/outbox-storage.service';
 import { Component } from '@angular/core';
 import { Router } from '@angular/router';
-import { AlertController } from '@ionic/angular';
 import { SecureStorageService } from '../services/secure-storage.service';
 import { DataService } from "../services/data.service";
 import { AuthService } from '../services/auth.service';
@@ -20,6 +20,9 @@ export class ProfileComponent {
   isLoggedIn = false;
   isLoading = true;
   showAccountName = false;
+  logoutOpen = false;
+  logoutBlocked = false;
+  logoutBusy = false;
 
   readonly desktopDownloadUrls = {
     windows: 'https://stellarsecurity.com/download/platform/windows?top=notes',
@@ -29,7 +32,6 @@ export class ProfileComponent {
 
   constructor(
     private router: Router,
-    private alertController: AlertController,
     private secureStorageService: SecureStorageService,
     private dataService: DataService,
     public authService: AuthService,
@@ -52,8 +54,8 @@ export class ProfileComponent {
       this.user = JSON.parse(user);
     }
 
-    const token = await this.secureStorageService.getItem('ssToken');
-    this.isLoggedIn = !!token;
+    await this.authService.initializeAuthState();
+    this.isLoggedIn = this.authService.isLoggedIn;
     this.isLoading = false;
   }
 
@@ -107,6 +109,10 @@ export class ProfileComponent {
     window.open(url, '_blank', 'noopener,noreferrer');
   }
 
+  get securityTitle(): string { return identityCopy(this.translatorService.language).title; }
+
+  goToSecurity() { this.router.navigate(['/profile/security']); }
+
   goToSettings() {
     this.router.navigate(['/app-settings']);
   }
@@ -115,49 +121,37 @@ export class ProfileComponent {
     this.router.navigate(['/profile/about']);
   }
 
+  get dialogCopy() {
+    const t = this.translatorService.allTranslations;
+    return { title: this.logoutBlocked ? 'Notes not synced' : (t?.confirmLogout ?? 'Log out?'),
+      message: this.logoutBlocked ? 'Your notes are still saved on this device. Let syncing finish before logging out.' : (t?.confirmLogoutMessage ?? 'Log out on this device?'),
+      cancel: t?.cancel ?? 'Cancel', confirm: this.logoutBlocked ? (t?.retry ?? 'Retry') : (t?.logout ?? 'Log out'),
+      close: identityCopy(this.translatorService.language).close };
+  }
+
   async confirmLogout() {
     await this.appHaptics.warning();
+    this.logoutBlocked = false;
+    this.logoutOpen = true;
+  }
 
-    const alert = await this.alertController.create({
-      header: this.translatorService.allTranslations?.confirmLogout ?? 'Confirm Logout',
-      message: this.translatorService.allTranslations?.confirmLogoutMessage ?? 'Are you sure you want to logout?',
-      buttons: [
-        {
-          text: this.translatorService.allTranslations?.cancel ?? 'Cancel',
-          role: 'cancel',
-          cssClass: 'secondary',
-          handler: () => {
-            this.appHaptics.tap();
-          },
-        },
-        {
-          text: this.translatorService.allTranslations?.logout ?? 'Logout',
-          handler: () => {
-            this.appHaptics.success();
-            this.logout();
-          },
-        },
-      ],
-    });
-
-    await alert.present();
+  async submitLogout() {
+    if (this.logoutBusy) return;
+    if (this.logoutBlocked) { this.logoutOpen = false; await this.syncWorker.retryPending(); return; }
+    this.logoutBusy = true;
+    try { await this.logout(); }
+    finally { this.logoutBusy = false; }
   }
 
   private async logout() {
     await this.notesService.flushPersistence();
     // Pending mutations also cover the editor's debounce before enqueueing.
     if (this.notesService.hasPendingMutations() || (await this.outbox.getAll()).length > 0) {
-      const alert = await this.alertController.create({
-        header: 'Notes not synced',
-        message: 'Your notes are still saved on this device. Let syncing finish before logging out.',
-        buttons: ['OK', {
-          text: this.translatorService.allTranslations?.retry ?? 'Retry',
-          handler: () => { void this.syncWorker.retryPending(); },
-        }],
-      });
-      await alert.present();
+      this.logoutBlocked = true;
+      this.logoutOpen = true;
       return;
     }
+    await this.authService.revokeCurrentIdentity();
     await this.dataService.clearAppData();
     window.location.replace('/');
   }

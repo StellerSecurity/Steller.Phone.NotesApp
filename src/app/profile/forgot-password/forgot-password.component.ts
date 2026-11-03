@@ -55,6 +55,17 @@ export class ForgotPasswordComponent implements OnInit {
       return;
     }
     this.isProcessing = true;
+    try {
+      if (await this.authService.loginMethod(this.forgotPasswordForm.get('email')?.value) === 'opaque') {
+        await this.router.navigate(['/profile/recover'], { state: { email: this.forgotPasswordForm.get('email')?.value } });
+        this.isProcessing = false;
+        return;
+      }
+    } catch {
+      this.isProcessing = false;
+      await this.toastMessageService.showError('accountRequestFailed', undefined, true);
+      return;
+    }
     this.authService.forgotPassword(this.forgotPasswordForm.get('email')?.value)
       .pipe(finalize(() => { this.isProcessing = false; })).subscribe({
         next: response => {
