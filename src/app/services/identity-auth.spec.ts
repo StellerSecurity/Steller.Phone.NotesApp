@@ -6,6 +6,24 @@ import { IdentityAuthService } from './identity-auth.service';
 import { sessionToken } from '../utils/session-token';
 
 describe('Protected mobile login', () => {
+  it('runs the pinned browser WASM and preserves the export key across login', async () => {
+    const opaque = await import('../../../identity-runtime/node_modules/@serenity-kit/opaque');
+    await opaque.ready;
+    const password = 'synthetic-browser-password';
+    const identifiers = {client:'browser@example.invalid',server:'https://id.stellarsecurity.com'};
+    const serverSetup = opaque.server.createSetup();
+    const start = opaque.client.startRegistration({password});
+    const response = opaque.server.createRegistrationResponse({serverSetup,userIdentifier:identifiers.client,registrationRequest:start.registrationRequest});
+    const registered = opaque.client.finishRegistration({...start,...response,password,identifiers});
+    const login = opaque.client.startLogin({password});
+    const challenge = opaque.server.startLogin({serverSetup,registrationRecord:registered.registrationRecord,startLoginRequest:login.startLoginRequest,userIdentifier:identifiers.client,identifiers});
+    const finished = opaque.client.finishLogin({...login,...challenge,password,identifiers});
+    expect(finished).toBeDefined();
+    expect(finished!.exportKey).toBe(registered.exportKey);
+    expect(finished!.serverStaticPublicKey).toBe(opaque.server.getPublicKey(serverSetup));
+    expect(opaque.server.finishLogin({...challenge,finishLoginRequest:finished!.finishLoginRequest,identifiers}).sessionKey).toBe(finished!.sessionKey);
+  }, 15000);
+
   function setup(method: 'legacy' | 'opaque') {
     const http = { post: jasmine.createSpy('post').and.returnValue(of({ response_code: 200 })) };
     const identity = {
