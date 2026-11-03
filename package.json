@@ -20,7 +20,8 @@
     "cap": "node scripts/capacitor.cjs",
     "test:dependency-hardening": "node --test scripts/dependency-hardening.test.cjs",
     "deps:identity": "npm ci --prefix identity-runtime --ignore-scripts --no-audit --no-fund && node scripts/verify-identity-runtime.cjs",
-    "test:identity:integration": "node scripts/verify-identity-runtime.cjs && node scripts/identity-protocol.test.cjs"
+    "test:identity:integration": "node scripts/verify-identity-runtime.cjs && node scripts/identity-protocol.test.cjs",
+    "test:identity:browser": "node scripts/identity-browser.test.cjs"
   },
   "private": true,
   "dependencies": {

@@ -4,8 +4,15 @@ import { ForgotPasswordComponent } from '../profile/forgot-password/forgot-passw
 import { AuthService } from './auth.service';
 import { IdentityAuthService } from './identity-auth.service';
 import { sessionToken } from '../utils/session-token';
+import { ThemeService } from './theme.service';
 
 describe('Protected mobile login', () => {
+  it('defaults new installations to light while preserving saved appearance choices', async () => {
+    for (const [stored, expected] of [[null, 'light'], ['invalid', 'light'], ['dark', 'dark'], ['system', 'system']] as const) {
+      const storage = {create: async () => storage, get: async () => stored};
+      expect(await new ThemeService(storage as any).getAppearanceMode()).toBe(expected);
+    }
+  });
   it('runs the pinned browser WASM and preserves the export key across login', async () => {
     const opaque = await import('../../../identity-runtime/node_modules/@serenity-kit/opaque');
     await opaque.ready;
