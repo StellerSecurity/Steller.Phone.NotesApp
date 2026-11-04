@@ -7,11 +7,7 @@ import {NotesService} from "../../services/notes.service";
 import {NotesApiV1Service} from "../../services/notes-api-v1.service";
 
 import {
-  createVault,
-  exportServerBundleFromHeader,
-  extractPlainEAK,
   decryptTextWithMK,
-  ServerBundle,
   unpackCipherBlob,
 } from '@stellarsecurity/stellar-crypto';
 
@@ -58,6 +54,8 @@ export class CreateAccountComponent implements OnInit {
               private secureStorageService: SecureStorageService,
               private appHaptics: AppHapticsService,
               private appsflyer: AppsflyerService) {}
+
+  ionViewDidLeave(): void { this.createUserForm?.get('password')?.reset(); }
 
   ngOnInit(): void {
     this.initCreateUserForm();
@@ -249,6 +247,7 @@ export class CreateAccountComponent implements OnInit {
     }
 
     this.isSaving = true;
+    let identityRoot: Uint8Array | null = null;
 
     try {
       const createUserObj = {
@@ -256,30 +255,17 @@ export class CreateAccountComponent implements OnInit {
         password: this.createUserForm.get('password')?.value,
       };
 
-      const { header } = await createVault(createUserObj.password);
-      const bundle = exportServerBundleFromHeader(header);
-
-      const payload = {
-        ...createUserObj,
-        ...bundle,
-      };
-
-      const response = await firstValueFrom(this.authService.createAccount(payload));
+      const result = await this.authService.createProtectedAccount(createUserObj.username, createUserObj.password);
+      const response = result.response;
+      identityRoot = result.identity.rootKey;
 
       if (response.response_code == 200) {
-        await this.secureStorageService.setItem("ssToken", response.token);
+        await this.authService.prepareProtectedSession(result.identity);
         await this.secureStorageService.setItem("ssUser", JSON.stringify(response.user));
 
         const user = response.user;
 
-        const serverBundle = {
-          crypto_version: user.crypto_version,
-          kdf_params: user.kdf_params,
-          kdf_salt: user.kdf_salt_b64,
-          eak: user.eak_b64,
-        } as ServerBundle;
-
-        const { eakB64 } = await extractPlainEAK(createUserObj.password, serverBundle);
+        const eakB64 = btoa(String.fromCharCode(...identityRoot));
 
         await this.cryptoKeyService.importEAK(eakB64);
 
@@ -297,6 +283,9 @@ export class CreateAccountComponent implements OnInit {
           await this.secureStorageService.setItem('ssEakB64', eakB64);
           await this.secureStorageService.removeItem('ssEakB64_Encrypted');
         }
+
+        await this.secureStorageService.setItem('ssToken', response.token);
+        this.createUserForm.reset();
 
         let notes = this.notesService.getNotes();
 
@@ -331,14 +320,14 @@ export class CreateAccountComponent implements OnInit {
         });
         await this.authService.initializeAuthState();
         await this.appHaptics.success();
-        await this.router.navigate(['/']);
+        await this.router.navigate(['/profile/security'], { state: { newAccount: true } });
       } else {
         await this.toastMessageService.showError(response.response_message);
       }
     } catch (error: any) {
-      console.error('Create account failed', error);
       await this.toastMessageService.showError('accountRequestFailed', undefined, true);
     } finally {
+      identityRoot?.fill(0);
       this.isSaving = false;
     }
   }

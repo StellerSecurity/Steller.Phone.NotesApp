@@ -6,9 +6,12 @@ import { CreateAccountComponent } from './create-account/create-account.componen
 import { ForgotPasswordComponent } from './forgot-password/forgot-password.component';
 import { CreateNewPasswordComponent } from './create-new-password/create-new-password.component';
 import { DeleteAccountComponent } from './delete-account/delete-account.component';
+import { IdentitySecurityComponent } from './identity-security/identity-security.component';
 import { AboutComponent } from './about/about.component';
 
 const routes: Routes = [
+  { path: 'security', component: IdentitySecurityComponent },
+  { path: 'recover', component: IdentitySecurityComponent, data: { recover: true } },
   {
     path: '',
     component: ProfileComponent

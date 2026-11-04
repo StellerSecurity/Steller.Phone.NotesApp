@@ -1,3 +1,4 @@
+import { sessionToken } from '../utils/session-token';
 // services/sync-worker.service.ts
 import { confirmUpload } from './upload-confirmation';
 import { Injectable, NgZone } from '@angular/core';
@@ -64,7 +65,7 @@ export class SyncWorkerService {
   }
 
   private async authHeaders(): Promise<HttpHeaders | null> {
-    const token = await this.secure.getItem('ssToken');
+    const token = await sessionToken(this.secure);
     if (!token) {
       return null;
     }
@@ -106,7 +107,7 @@ export class SyncWorkerService {
   }
 
   private async isCurrentSession(headers: HttpHeaders, generation: number): Promise<boolean> {
-    const token = await this.secure.getItem('ssToken');
+    const token = await sessionToken(this.secure);
     return !!token && headers.get('Authorization') === `Bearer ${token}` && generation === this.outbox.generation;
   }
 

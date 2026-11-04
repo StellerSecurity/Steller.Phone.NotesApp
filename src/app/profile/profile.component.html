@@ -49,6 +49,8 @@
       </div>
     </ng-template>
 
+    <button type="button" *ngIf="isLoggedIn && user?.auth_version === 2" (click)="goToSecurity()" class="action-item identity-security-action"><ion-icon name="shield-checkmark-outline"></ion-icon><span>{{securityTitle}}</span></button>
+
     <div (click)="goToSettings()" class="action-item">
       <ion-icon name="options-outline" slot="start"></ion-icon>
       <ion-label>{{'settings' | translate}}</ion-label>
@@ -118,3 +120,5 @@
     </div>
   </div>
 </ion-content>
+
+<app-account-dialog [isOpen]="logoutOpen" [title]="dialogCopy.title" [message]="dialogCopy.message" [cancelLabel]="dialogCopy.cancel" [confirmLabel]="dialogCopy.confirm" [closeLabel]="dialogCopy.close" [busy]="logoutBusy" (dismiss)="logoutOpen = false" (confirm)="submitLogout()"></app-account-dialog>

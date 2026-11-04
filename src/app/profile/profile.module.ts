@@ -12,11 +12,13 @@ import { ForgotPasswordComponent } from './forgot-password/forgot-password.compo
 import { CreateNewPasswordComponent } from './create-new-password/create-new-password.component';
 import { NgOtpInputModule } from 'ng-otp-input';
 import { DeleteAccountComponent } from './delete-account/delete-account.component';
+import { IdentitySecurityComponent } from './identity-security/identity-security.component';
+import { AccountDialogComponent } from './account-dialog/account-dialog.component';
 import { AboutComponent } from './about/about.component';
 
 @NgModule({
   declarations: [ProfileComponent, LoginComponent, CreateAccountComponent,
-    ForgotPasswordComponent, CreateNewPasswordComponent, DeleteAccountComponent, AboutComponent],
+    ForgotPasswordComponent, CreateNewPasswordComponent, DeleteAccountComponent, AboutComponent, IdentitySecurityComponent],
   imports: [
     CommonModule,
     FormsModule,
@@ -24,7 +26,8 @@ import { AboutComponent } from './about/about.component';
     IonicModule,
     ProfileRoutingModule,
     TranslateModule,
-    NgOtpInputModule
+    NgOtpInputModule,
+    AccountDialogComponent
   ]
 })
 export class ProfileModule { }

@@ -66,6 +66,13 @@ export class CryptoKeyService {
         this.mkKey = null;
     }
 
+    async withEak<T>(work: (key: Uint8Array) => Promise<T>): Promise<T> {
+        if (!this.eakBytes || this.eakBytes.length !== 32) throw new Error('notesLocked');
+        const copy = new Uint8Array(this.eakBytes);
+        try { return await work(copy); }
+        finally { this.zeroize(copy); }
+    }
+
     async importEAK(eakB64: string): Promise<void> {
         if (typeof eakB64 !== 'string' || !eakB64.length) {
             throw new Error('EAK missing');

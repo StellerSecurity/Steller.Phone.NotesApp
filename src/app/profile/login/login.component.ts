@@ -51,6 +51,8 @@ export class LoginComponent implements OnInit {
     private appsflyer: AppsflyerService,
   ) {}
 
+  ionViewDidLeave(): void { this.loginForm?.get('password')?.reset(); }
+
   ngOnInit(): void {
     this.initLoginForm();
   }
@@ -235,15 +237,21 @@ export class LoginComponent implements OnInit {
       password: this.loginForm.get('password')?.value,
     };
 
+    let identityRoot: Uint8Array | null = null;
     try {
-      let response: any = await firstValueFrom(
-        this.authService.loginHandling(loginObj),
-      );
+      const result = await this.authService.signIn(loginObj.username, loginObj.password);
+      const response = result.response;
+      identityRoot = result.identity?.rootKey ?? null;
 
       if (response.response_code === 200) {
-        await this.secureStorageService.setItem('ssToken', response.token);
+        if (result.identity) {
+          await this.authService.prepareProtectedSession(result.identity);
+        } else {
+          await this.authService.rememberLegacySession();
+          await this.secureStorageService.setItem('ssToken', response.token);
+        }
 
-        if (response.user.eak_b64 == null) {
+        if (!identityRoot && response.user.eak_b64 == null) {
           const { header } = await createVault(loginObj.password);
           const bundle = exportServerBundleFromHeader(header);
 
@@ -269,11 +277,8 @@ export class LoginComponent implements OnInit {
           eak: user.eak_b64,
         };
 
-        const { eakB64: derivedEakB64 } = await extractPlainEAK(
-          loginObj.password,
-          bundle,
-        );
-        const eakB64 = derivedEakB64;
+        const eakB64 = identityRoot ? btoa(String.fromCharCode(...identityRoot))
+          : (await extractPlainEAK(loginObj.password, bundle)).eakB64;
 
         await this.cryptoKeyService.importEAK(eakB64);
 
@@ -291,6 +296,9 @@ export class LoginComponent implements OnInit {
           await this.secureStorageService.setItem('ssEakB64', eakB64);
           await this.secureStorageService.removeItem('ssEakB64_Encrypted');
         }
+
+        if (result.identity) await this.secureStorageService.setItem('ssToken', response.token);
+        this.loginForm.reset();
 
         let notes = this.notesService.getNotes();
 
@@ -331,11 +339,11 @@ export class LoginComponent implements OnInit {
         await this.toastMessageService.showError(response.response_message);
       }
     } catch (error: any) {
-      console.error('Login failed', error);
       await this.toastMessageService.showError(
         'accountRequestFailed', undefined, true,
       );
     } finally {
+      identityRoot?.fill(0);
       this.isSaving = false;
     }
   }

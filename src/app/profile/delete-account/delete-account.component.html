@@ -72,3 +72,5 @@
     </form>
   </div>
 </ion-content>
+
+<app-account-dialog [isOpen]="confirmOpen" [title]="dialogCopy.title" [message]="dialogCopy.message" [confirmLabel]="dialogCopy.confirm" [cancelLabel]="dialogCopy.cancel" [closeLabel]="dialogCopy.close" [destructive]="true" [busy]="isSaving" (dismiss)="confirmOpen = false" (confirm)="confirmDelete()"></app-account-dialog>

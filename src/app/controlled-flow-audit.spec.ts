@@ -125,7 +125,7 @@ describe('Controlled failure-path audit', () => {
 
 describe('Account request recovery', () => {
   function resetPage(response: any) {
-    const auth: any = { forgotPassword: jasmine.createSpy('send').and.returnValue(response) };
+    const auth: any = { forgotPassword: jasmine.createSpy('send').and.returnValue(response), loginMethod: jasmine.createSpy('method').and.resolveTo('legacy') };
     const toast: any = { showError: jasmine.createSpy('error').and.resolveTo() };
     const haptics: any = { warning: async () => {}, success: () => {}, selectionChanged: () => {} };
     const page = new ForgotPasswordComponent(new FormBuilder(), auth, toast, {} as any, haptics);
@@ -159,7 +159,7 @@ describe('Account request recovery', () => {
     expect(page.showVerification).toBeFalse();
   });
   it('times out each account request instead of waiting indefinitely', fakeAsync(() => {
-    const service = new AuthService({post: () => NEVER} as any, {getItem: async () => null} as any);
+    const service = new AuthService({post: () => NEVER} as any, {getItem: async () => null} as any, {} as any);
     const errors: any[] = [];
     [service.loginHandling({} as any), service.createAccount({} as any), service.forgotPassword('test'), service.resetPassword({})]
       .forEach(request => request.subscribe({error: e => errors.push(e)}));

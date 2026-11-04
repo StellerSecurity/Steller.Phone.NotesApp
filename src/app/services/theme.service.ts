@@ -11,7 +11,7 @@ export class ThemeService {
   private readonly storageKey = 'ssAppearanceMode';
   private readonly darkClass = 'stellar-dark-theme';
   private mediaQuery: MediaQueryList | null = null;
-  private currentMode: AppearanceMode = 'system';
+  private currentMode: AppearanceMode = 'light';
   private storageReady: Promise<IonicStorage> | null = null;
 
   constructor(private storage: IonicStorage) {}
@@ -67,7 +67,7 @@ export class ThemeService {
       return mode;
     }
 
-    return 'system';
+    return 'light';
   }
 
   private async getStorage(): Promise<IonicStorage> {
