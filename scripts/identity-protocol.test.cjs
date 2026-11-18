@@ -110,6 +110,33 @@ const deadline=setTimeout(()=>{child.kill();throw new Error('Identity protocol t
  check((await rpc('resolveToken',{body:{token:tokenBeforeDeletion}})).status,401,'deleted session is invalid');
  const methodHttp=await rpc('methodHttp',{body:{email:'preexisting@example.invalid',nonce:randomBytes(32).toString('base64url')}});
  check(methodHttp.status,200,'method endpoint HTTP success');check(methodHttp.cacheControl.includes('no-store'),true,'signed method response cannot be cached');
+ const legacyRoot=new Uint8Array(randomBytes(32));
+ const migrating=await rpc('legacyCreate',{email:'migration-mobile@example.invalid',password:'old-migration-password'});
+ await rpc('legacyPatch',{id:migrating.id,token:migrating.token,envelope:randomBytes(60).toString('base64')});
+ const legacyKey=await crypto.subtle.importKey('raw',legacyRoot,'AES-GCM',false,['encrypt']);
+ const iv=randomBytes(12),plain=new TextEncoder().encode(JSON.stringify({note:'Retained unsynced content',folder:'Original folder'}));
+ const ciphertext=await crypto.subtle.encrypt({name:'AES-GCM',iv},legacyKey,plain);
+ let challenge;
+ const enrollmentClient=new StellarIdClient(pins,async(operation,body)=>{
+   const result=await transport(operation,body);
+   if(operation==='account/enroll/start')challenge=result.challengeId;
+   return result;
+ },async()=>opaque);
+ const migrated=await enrollmentClient.enroll({accountId:migrating.id,email:'migration-mobile@example.invalid',token:migrating.token},'fresh-migration-password',legacyRoot,
+   ()=>rpc('enrollmentCode',{challengeId:challenge}));
+ check(migrated.accountId,migrating.id,'migration preserves account identity');
+ check(migrated.rootKey,legacyRoot,'migration preserves the original content encryption key');
+ const migratedKey=await crypto.subtle.importKey('raw',migrated.rootKey,'AES-GCM',false,['decrypt']);
+ check(new Uint8Array(await crypto.subtle.decrypt({name:'AES-GCM',iv},migratedKey,ciphertext)),plain,'pre-migration note and folder ciphertext still decrypts');
+ check((await rpc('legacyLogin',{email:'migration-mobile@example.invalid',password:'old-migration-password'})).response_code,400,'old apps cannot log in to a migrated account');
+ check((await rpc('resolveToken',{body:{token:migrating.token}})).status,401,'old sessions cannot sync after migration');
+ check((await rpc('resolveToken',{body:{token:resolvedLegacy.token}})).status,200,'unmigrated old users remain signed in');
+ check(await client.method('migration-mobile@example.invalid'),'opaque','signed discovery selects protected login after migration');
+ const newDevice=await client.login('migration-mobile@example.invalid','fresh-migration-password');
+ check(newDevice.rootKey,legacyRoot,'a fresh updated device opens the retained key');
+ await reject(()=>client.login('migration-mobile@example.invalid','old-migration-password'),'old password cannot open migrated account');
+ check(wires.some(w=>JSON.stringify(w.body).includes('fresh-migration-password')),false,'migration never sends the new password to the relay');
+ migrated.rootKey.fill(0);newDevice.rootKey.fill(0);legacyRoot.fill(0);
  await rpc('flags',{login:false,accounts:false,enrollment:false});
  check((await rpc('methodHttp',{body:{email:'preexisting@example.invalid',nonce:randomBytes(32).toString('base64url')}})).status,503,'disabled method never falls back');
  check((await rpc('resolveToken',{body:{token:resolvedLegacy.token}})).status,200,'OPAQUE disablement does not break old token validation');

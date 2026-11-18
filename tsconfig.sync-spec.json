@@ -2,7 +2,9 @@
   "extends": "./tsconfig.spec.json",
   "files": [
     "src/test.ts",
-    "src/polyfills.ts"
+    "src/polyfills.ts",
+    "src/runtime/notes-design-runtime.spec.ts",
+    "src/runtime/local-account-profiles.spec.ts"
   ],
   "include": [
     "src/app/services/sync-worker-retention.spec.ts",
@@ -11,6 +13,7 @@
     "src/app/add-note/rich-text-editor/preserve-note-line-breaks.spec.ts",
     "src/app/home/home-sync.spec.ts",
     "src/**/*.d.ts",
+    "src/app/utils/folder-reference.spec.ts",
     "src/app/services/notes-storage-retention.spec.ts",
     "src/app/services/upload-confirmation.spec.ts",
     "src/app/add-note/save-durability.spec.ts",
@@ -22,6 +25,7 @@
     "src/app/focus-audit.spec.ts",
     "src/app/html-security-audit.spec.ts",
     "src/app/add-note/rich-text-editor/editor-scroll.spec.ts",
-    "src/app/services/identity-auth.spec.ts"
+    "src/app/services/identity-auth.spec.ts",
+    "src/app/services/realtime-notes.service.spec.ts"
   ]
 }

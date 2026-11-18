@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="biometric_lock_title">Lås Stellar Notes op</string>
+    <string name="biometric_lock_message">Lås op for at se dine noter.</string>
+    <string name="biometric_lock_unlock">Lås op med biometri</string>
+    <string name="biometric_lock_passcode">Brug enhedens skærmkode</string>
+    <string name="biometric_lock_prompt">Bekræft din identitet for at åbne Notes.</string>
+    <string name="biometric_lock_retry">Ikke genkendt. Prøv igen.</string>
+    <string name="biometric_lock_cancelled">Oplåsning annulleret. Dine noter er stadig skjult.</string>
+    <string name="biometric_lock_device_setup">Indstil en skærmlås i Android-indstillinger, og prøv igen.</string>
+</resources>

@@ -43,6 +43,12 @@ export class BackgroundNotesSyncService {
     }
   }
 
+  async clearQueueForAccountSwitch(): Promise<void> {
+    if (!Capacitor.isNativePlatform()) return;
+    await NativeBackgroundNotesSync.replaceQueue({ operations: [], uploadUrl: this.uploadUrl, syncPlanUrl: this.syncPlanUrl });
+    await NativeBackgroundNotesSync.clearDownloaded();
+  }
+
   async replaceQueue(operations: OutboxOp[]): Promise<void> {
     if (!Capacitor.isNativePlatform()) {
       return;

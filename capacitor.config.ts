@@ -5,10 +5,11 @@ const config: CapacitorConfig = {
   appId: 'steller.phone.notesapp',
   appName: 'Stellar Private Notes',
   webDir: 'www',
+  backgroundColor: '#F6F6FD',
   plugins: {
     Keyboard: {
-      resize: KeyboardResize.None,
-      resizeOnFullScreen: true
+      resize: KeyboardResize.Native,
+      resizeOnFullScreen: false
     },
     AppsFlyer: {
       devKey: "${APPSFLYER_DEV_KEY}",
