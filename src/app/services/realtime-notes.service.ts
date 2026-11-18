@@ -1,5 +1,6 @@
 import { sessionToken } from '../utils/session-token';
 import { Injectable } from '@angular/core';
+import type { Subscription } from 'rxjs';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { firstValueFrom, timeout } from 'rxjs';
 import { AuthService } from './auth.service';
@@ -28,6 +29,10 @@ export function validRealtimeGrant(value: any, now = Date.now()): boolean {
 @Injectable({ providedIn: 'root' })
 export class RealtimeNotesService {
   private started = false;
+  private authSubscription?: Subscription;
+  private readonly visibilityChanged = () => this.restart();
+  private readonly connected = () => this.restart();
+  private readonly disconnected = () => this.stop();
   private generation = 0;
   private socket?: WebSocket;
   private retry?: ReturnType<typeof setTimeout>;
@@ -38,10 +43,18 @@ export class RealtimeNotesService {
   init(): void {
     if (this.started) return;
     this.started = true;
-    this.auth.loginState$.subscribe(() => this.restart());
-    document.addEventListener('visibilitychange', () => this.restart());
-    window.addEventListener('online', () => this.restart());
-    window.addEventListener('offline', () => this.stop());
+    this.authSubscription = this.auth.loginState$.subscribe(() => this.restart());
+    document.addEventListener('visibilitychange', this.visibilityChanged);
+    window.addEventListener('online', this.connected);
+    window.addEventListener('offline', this.disconnected);
+  }
+  dispose(): void {
+    this.stop();
+    this.authSubscription?.unsubscribe();
+    document.removeEventListener('visibilitychange', this.visibilityChanged);
+    window.removeEventListener('online', this.connected);
+    window.removeEventListener('offline', this.disconnected);
+    this.started = false;
   }
   private stop(): void {
     this.generation++;

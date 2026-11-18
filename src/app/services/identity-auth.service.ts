@@ -80,6 +80,19 @@ export class IdentityAuthService {
     } finally { root.fill(0); }
   }
 
+  async enroll(newPassword: string, confirm: () => Promise<string>): Promise<IdentitySession> {
+    const token = await this.secure.getItem('ssToken');
+    const raw = await this.secure.getItem('ssUser');
+    if (!token || !raw || await this.secure.getItem('ssAuthVersion') === '2') throw new Error('identitySessionExpired');
+    const owner = JSON.parse(raw);
+    if (!owner?.id || typeof owner.email !== 'string') throw new Error('identityVerificationFailed');
+    const session = await this.keys.withEak(async root => (await this.client()).enroll(
+      { accountId: String(owner.id), email: owner.email, token }, newPassword, root, confirm));
+    try { await this.secure.setItem(await this.marker(owner.email), 'opaque'); }
+    catch (error) { session.rootKey.fill(0); throw error; }
+    return session;
+  }
+
   sessionResponse(session: IdentitySession): Record<string, any> {
     return { response_code: 200, token: session.token, user: { id: session.accountId, email: session.email,
       auth_version: 2, crypto_version: 'opaque-v1', eak_b64: session.keyEnvelope } };

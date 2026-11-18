@@ -122,7 +122,7 @@ export class StellarIdClient {
     return { accountId: id, email: normalized, token, expiresAt, keyEnvelope: result['keyEnvelope'], rootKey };
   }
 
-  private async account(flow: string, password: string, input: Json, root: Uint8Array | null, authorizationPassword?: string, owner?: Pick<IdentitySession, 'accountId' | 'email'>): Promise<IdentityAccount & { root: Uint8Array }> {
+  private async account(flow: string, password: string, input: Json, root: Uint8Array | null, authorizationPassword?: string, owner?: Pick<IdentitySession, 'accountId' | 'email'>, confirmEnrollment?: () => Promise<string>): Promise<IdentityAccount & { root: Uint8Array }> {
     const opaque = await this.runtime();
     const registration = opaque.client.startRegistration({ password });
     const authorization = authorizationPassword === undefined ? null : opaque.client.startLogin({ password: authorizationPassword });
@@ -148,7 +148,10 @@ export class StellarIdClient {
     if (!root) return fail();
     const next = opaque.client.startLogin({ password });
     const payload = { registrationRecord: finished.registrationRecord, startLoginRequest: next.startLoginRequest, keyEnvelope: await this.wrap(root, finished.exportKey, identifiers) };
+    const confirmationCode = flow === 'enroll' ? await confirmEnrollment?.() : undefined;
+    if (flow === 'enroll' && !/^[0-9]{8}$/.test(confirmationCode || '')) return fail();
     const prove = await this.post('account/' + flow + '/prove', { challengeId: start['challengeId'], ...payload,
+      ...(flow === 'enroll' ? { confirmationCode } : {}),
       ...(authorizing! ? { authorizationFinish: authorizing!.finishLoginRequest, authorizationProof: await this.accountMac(authorizing!.sessionKey, 'authorize', flow, start['challengeId'], payload) } : {}) });
     const proveIdentifiers = this.identifiers(prove['identifiers'], client, recoveryCredential);
     const confirmation = opaque.client.finishLogin({ password, clientLoginState: next.clientLoginState, loginResponse: prove['loginResponse'], identifiers: proveIdentifiers });
@@ -166,6 +169,18 @@ export class StellarIdClient {
   async register(email: string, password: string, root: Uint8Array): Promise<IdentityAccount> {
     const result = await this.account('register', password, { email: email.trim().toLowerCase() }, root);
     return { accountId: result.accountId, revision: result.revision, keyEnvelope: result.keyEnvelope };
+  }
+
+  async enroll(owner: { accountId: string; email: string; token: string }, newPassword: string,
+    root: Uint8Array, confirm: () => Promise<string>): Promise<IdentitySession> {
+    if (newPassword.length < 12 || root.length !== 32) return fail();
+    const account = await this.account('enroll', newPassword, { token: owner.token }, root, undefined, owner, confirm);
+    const session = await this.login(owner.email, newPassword);
+    if (session.accountId !== account.accountId || !sameBytes(session.rootKey, root)) {
+      session.rootKey.fill(0);
+      return fail();
+    }
+    return session;
   }
 
   async setupRecovery(session: IdentitySession, password: string): Promise<string> {

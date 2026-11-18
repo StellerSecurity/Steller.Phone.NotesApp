@@ -14,10 +14,12 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     }
 
     func applicationWillResignActive(_ application: UIApplication) {
+        BiometricScreenLock.shared.resignActive()
         showPrivacyOverlay()
     }
 
     func applicationDidEnterBackground(_ application: UIApplication) {
+        BiometricScreenLock.shared.background()
         showPrivacyOverlay()
     }
 
@@ -27,6 +29,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
     func applicationDidBecomeActive(_ application: UIApplication) {
         hidePrivacyOverlay()
+        BiometricScreenLock.shared.resume()
     }
 
     func applicationWillTerminate(_ application: UIApplication) {

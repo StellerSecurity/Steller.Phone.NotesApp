@@ -2,6 +2,8 @@ import { fakeAsync, flushMicrotasks, tick } from '@angular/core/testing';
 import { NEVER, of, throwError } from 'rxjs';
 import { NotesApiV1Service } from './notes-api-v1.service';
 import { buildApiUrl, notes } from '../constants/api/product.api';
+import { CryptoKeyService } from './crypto-key.service';
+import { packCipherBlob, unpackCipherBlob } from '@stellarsecurity/stellar-crypto';
 
 describe('Notes API persistence', () => {
   let service: NotesApiV1Service;
@@ -12,6 +14,43 @@ describe('Notes API persistence', () => {
     outbox = { enqueue: jasmine.createSpy('enqueue').and.resolveTo(), drop: jasmine.createSpy('drop').and.resolveTo() };
     service = new NotesApiV1Service(http, { getItem: async (key: string) => key === 'ssToken' ? 'synthetic-token' : null } as any, {} as any, outbox,
       { consumeDownloaded: async () => [] } as any, {} as any);
+  });
+  it('decrypts packed Base64 folder names while retaining plain legacy names', async () => {
+    const keys = new CryptoKeyService(); await keys.importEAK(btoa('x'.repeat(32)));
+    const folderId = crypto.randomUUID();
+    const encryptedName = packCipherBlob(await keys.encryptText('Fælles noter', folderId + '#folder-name'));
+    expect(encryptedName.includes(':')).toBeFalse();
+    http.post.and.returnValue(of({ notes: [{ id: 'fixture-note', folder_id: folderId, folder: encryptedName, text: 'opaque-note-body', last_modified: 1 }], folders: [
+      { id: folderId, name: encryptedName, last_modified: 1 }, { id: 'legacy', name: 'Gamle mapper', last_modified: 1 }
+    ] }));
+    const real = new NotesApiV1Service(http, { getItem: async () => 'synthetic-token' } as any, keys, outbox, { consumeDownloaded: async () => [] } as any, {} as any);
+    const result = await real.download(0);
+    expect(result.folders.map(folder => folder.name)).toEqual(['Fælles noter', 'Gamle mapper']);
+    expect(result.notes[0].folder).toBe('Fælles noter');
+    expect(result.notes[0].text).toBe('opaque-note-body');
+  });
+  it('maps legacy encrypted membership to the replacement folder without changing the note body', async () => {
+    const keys = new CryptoKeyService(); await keys.importEAK(btoa('x'.repeat(32)));
+    const oldId = 'old-folder', newId = 'new-folder';
+    const oldName = packCipherBlob(await keys.encryptText('Dudu', oldId + '#folder-name'));
+    const newName = packCipherBlob(await keys.encryptText('Dudu', newId + '#folder-name'));
+    http.post.and.returnValue(of({ notes: [{ id: 'fixture-note', text: 'untouched-cipher-body', folder_id: oldId, folder: oldName, last_modified: 100 }], folders: [
+      { id: oldId, name: '', deleted: true, last_modified: 200 }, { id: newId, name: newName, last_modified: 300 }
+    ] }));
+    const real = new NotesApiV1Service(http, { getItem: async (key: string) => key === 'ssToken' ? 'synthetic-token' : null } as any, keys, outbox, { consumeDownloaded: async () => [] } as any, {} as any);
+    const result = await real.download(0);
+    expect(result.notes[0].folder_id).toBe(newId); expect(result.notes[0].folder).toBe('Dudu');
+    expect(result.notes[0].text).toBe('untouched-cipher-body');
+  });
+  it('uploads against the active folder rather than an old deleted ID', async () => {
+    const keys = new CryptoKeyService(); await keys.importEAK(btoa('x'.repeat(32)));
+    const real = new NotesApiV1Service(http, { getItem: async (key: string) => key === 'ssToken' ? 'synthetic-token' : null } as any, keys, outbox, { consumeDownloaded: async () => [] } as any, {} as any);
+    await real.upload(0, [{ id: 'fixture-note', text: 'Private fixture', title: '', folder_id: 'old', folder: 'Dudu', last_modified: 100 } as any], undefined,
+      [{ id: 'old', name: 'Dudu', deleted: true }, { id: 'new', name: 'Dudu' }], true);
+    const queued = outbox.enqueue.calls.mostRecent().args[0].payload.notes[0];
+    expect(queued.folder_id).toBe('new');
+    expect(await keys.decryptText(unpackCipherBlob(queued.folder), 'new#folder-name')).toBe('Dudu');
+    expect(http.post).not.toHaveBeenCalled();
   });
   it('uses the canonical download route without a double slash', async () => {
     await service.download(0);

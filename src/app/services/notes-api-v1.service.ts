@@ -1,3 +1,4 @@
+import { resolveFolderReference } from '../utils/folder-reference';
 import { sessionToken } from '../utils/session-token';
 // services/notes-api-v1.service.ts — OFFLINE-FIRST (keeps your public methods)
 import { confirmUpload } from './upload-confirmation';
@@ -56,7 +57,8 @@ export class NotesApiV1Service {
   }
 
   private isCipherBlobString(value: any): boolean {
-    return typeof value === 'string' && value.includes(':') && value.split(':').length >= 3;
+    if (typeof value !== 'string') return false;
+    try { unpackCipherBlob(value); return true; } catch { return false; }
   }
 
   private async encryptFolderName(folderName: string, folderId: string): Promise<string> {
@@ -131,14 +133,6 @@ export class NotesApiV1Service {
       deleted: !!folder?.deleted,
     })).filter((folder: any) => folder.name || folder.deleted);
 
-    const folderIdByName = new Map<string, string>();
-    for (const folder of normalizedFolders) {
-      const normalizedName = (folder?.name ?? '').trim().toLowerCase();
-      if (normalizedName) {
-        folderIdByName.set(normalizedName, folder.id);
-      }
-    }
-
     const encryptedFolders: Folder[] = [];
     for (const folder of normalizedFolders) {
       encryptedFolders.push({
@@ -153,9 +147,7 @@ export class NotesApiV1Service {
       const n = normalizeNoteSyncFlags(rawNote);
       const encText  = await this.crypto.encryptText(n.text  ?? '', n.id);
       const encTitle = await this.crypto.encryptText(n.title ?? '', n.id + '#title');
-      const normalizedFolderName = (n.folder ?? '').trim();
-      const normalizedFolderId = this.normalizeFolderId((n as any)?.folder_id)
-        ?? (normalizedFolderName ? (folderIdByName.get(normalizedFolderName.toLowerCase()) ?? null) : null);
+      const { folder_id: normalizedFolderId, folder: normalizedFolderName } = resolveFolderReference((n as any).folder_id, n.folder, normalizedFolders);
 
       encryptedNotes.push({
         ...n,
@@ -298,12 +290,13 @@ export class NotesApiV1Service {
       const noteFolderId = this.normalizeFolderId((note as any)?.folder_id);
       const resolvedFolderName = noteFolderId ? (folderNameById.get(noteFolderId) ?? '') : '';
       const decryptedFolderName = await this.decryptLegacyNoteFolder(note?.folder, noteFolderId ?? `${note.id}#folder`, resolvedFolderName);
+      const reference = resolveFolderReference(noteFolderId, decryptedFolderName || resolvedFolderName, decryptedFolders);
 
       decryptedNotes.push({
         ...note,
         base_version: Number(note.last_modified ?? 0),
-        folder: decryptedFolderName || resolvedFolderName || '',
-        folder_id: noteFolderId,
+        folder: reference.folder,
+        folder_id: reference.folder_id,
       });
     }
 

@@ -41,8 +41,8 @@ export class AuthService {
     this.loggedInSubject.next(false);
   }
 
-  async signIn(email: string, password: string): Promise<{ response: any; identity?: IdentitySession }> {
-    await this.identity.assertAccount(email);
+  async signIn(email: string, password: string, preserveLocalProfile = false): Promise<{ response: any; identity?: IdentitySession }> {
+    if (!preserveLocalProfile) await this.identity.assertAccount(email);
     const method = await this.identity.method(email);
     if (method === 'legacy') {
       return { response: await firstValueFrom(this.loginHandling({ username: email, password })) };

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="biometric_lock_title">Unlock Stellar Notes</string>
+    <string name="biometric_lock_message">Unlock to see your notes.</string>
+    <string name="biometric_lock_unlock">Unlock with biometrics</string>
+    <string name="biometric_lock_passcode">Use device passcode</string>
+    <string name="biometric_lock_prompt">Confirm your identity to open Notes.</string>
+    <string name="biometric_lock_retry">Not recognized. Please try again.</string>
+    <string name="biometric_lock_cancelled">Unlock cancelled. Your notes remain hidden.</string>
+    <string name="biometric_lock_device_setup">Set up a device screen lock in Android Settings, then try again.</string>
+</resources>
