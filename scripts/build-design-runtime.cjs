@@ -26,7 +26,7 @@ if (!output || !path.isAbsolute(output)) throw new Error('Set STELLAR_DESIGN_OUT
       if (!fs.existsSync(file)) continue;
       const hash = crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex').slice(0, 12);
       const attribute = asset.endsWith('.css') ? 'href' : 'src';
-      const expression = new RegExp(attribute + '="' + asset.replace(/\./g, '\\.') + '(?:\\?v=[a-f0-9]+)?"', 'g');
+      const expression = new RegExp(attribute + '="' + asset.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '(?:\\?v=[a-f0-9]+)?"', 'g');
       html = html.replace(expression, attribute + '="' + asset + '?v=' + hash + '"');
     }
     fs.writeFileSync(index, html);
