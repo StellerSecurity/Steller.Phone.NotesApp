@@ -23,7 +23,8 @@
     "test:identity:integration": "node scripts/verify-identity-runtime.cjs && node scripts/identity-protocol.test.cjs",
     "test:identity:browser": "node scripts/identity-browser.test.cjs",
     "build:design-runtime": "node scripts/build-design-runtime.cjs",
-    "test:upgrade-storage": "node --test scripts/notes-database-upgrade.test.cjs"
+    "test:upgrade-storage": "node --test scripts/notes-database-upgrade.test.cjs",
+    "build:design-app": "node scripts/stage-design-assets.cjs"
   },
   "private": true,
   "dependencies": {
