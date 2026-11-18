@@ -23,9 +23,9 @@ test('the worker uses the published shared scanner with the existing restricted 
 test('all collector copies retain exact compressed and readable source integrity checks', () => {
   const workflow = fs.readFileSync(path.join(root, 'stellar-commit-trigger.yml'), 'utf8');
   const chunks = [...workflow.matchAll(/chunk = base64\.b64decode\('([A-Za-z0-9+/=]+)', validate=True\)/g)].map(match => Buffer.from(match[1], 'base64'));
-  assert.equal(chunks.length, 15);
+  assert.equal(chunks.length, 18);
   for (let index = 0; index < 3; index++) {
-    const packed = Buffer.concat(chunks.slice(index * 5, (index + 1) * 5));
+    const packed = Buffer.concat(chunks.slice(index * 6, (index + 1) * 6));
     assert.equal(packed.length, 65145);
     assert.equal(hash(packed), packedHash);
     const raw = zlib.inflateSync(packed, { maxOutputLength: 133838 });
