@@ -67,6 +67,18 @@ describe('Notes realtime renewal', () => {
     tick(1); flushMicrotasks(); expect(http.post).toHaveBeenCalledTimes(2); expect(sockets[0].readyState).toBe(3);
     service.dispose();
   }));
+  it('coalesces bursts but still dispatches the final notification', fakeAsync(() => {
+    const changed = jasmine.createSpy('notes changed');
+    window.addEventListener('stellar:notes-changed', changed);
+    try {
+      service.init(); flushMicrotasks(); sockets[0].readyState = 1; sockets[0].onopen(); flushMicrotasks();
+      expect(changed).toHaveBeenCalledTimes(1);
+      sockets[0].onmessage({ data: '{"type":"notes.changed"}' }); flushMicrotasks();
+      tick(500); sockets[0].onmessage({ data: '{"type":"notes.changed"}' }); flushMicrotasks();
+      tick(499); expect(changed).toHaveBeenCalledTimes(1);
+      tick(1); flushMicrotasks(); expect(changed).toHaveBeenCalledTimes(2);
+    } finally { window.removeEventListener('stellar:notes-changed', changed); service.dispose(); }
+  }));
   it('does not keep a connection while the app is hidden or signed out', fakeAsync(() => {
     service.init(); flushMicrotasks(); sockets[0].readyState = 1;
     hidden = true; document.dispatchEvent(new Event('visibilitychange')); expect(sockets[0].readyState).toBe(3);

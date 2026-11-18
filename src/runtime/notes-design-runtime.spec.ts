@@ -240,6 +240,21 @@ describe('Original design with existing Notes services', () => {
     const crypto = new CryptoKeyService(); await crypto.importEAK(root);
     expect(await crypto.decryptText(unpackCipherBlob(remote.get(view.id).title), view.id + '#title')).toBe('After reload');
   });
+  it('follows a notification received during a download with another download', async () => {
+    signedIn(); await start();
+    const blocked = new Subject<any>(); let downloads = 0;
+    http.post.and.callFake((url: string) => {
+      if (url.endsWith('/download') && ++downloads === 1) return blocked;
+      return of({ notes: [], folders: [] });
+    });
+    const first = runtime.sync();
+    await waitFor(() => downloads === 1);
+    window.dispatchEvent(new Event('stellar:notes-changed'));
+    blocked.next({ notes: [], folders: [] }); blocked.complete(); await first;
+    await waitFor(() => downloads === 2);
+    expect(downloads).toBe(2);
+  });
+
   it('accepts remote updates again when an unpersisted edit is cancelled', async () => {
     signedIn(); await start(); await runtime.save([note()], []); await runtime.sync();
     const view = runtime.snapshot().notes[0];

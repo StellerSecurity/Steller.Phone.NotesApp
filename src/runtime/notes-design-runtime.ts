@@ -184,8 +184,15 @@ export async function createRuntime(onChange: (snapshot: any) => void, platform:
   }
   let signingIn = false;
   let activeSync: Promise<void> | undefined;
+  let refreshPending = false;
   function sync(): Promise<void> {
-    if (!activeSync) activeSync = performSync().finally(() => { activeSync = undefined; });
+    if (!activeSync) activeSync = performSync().finally(() => {
+      activeSync = undefined;
+      if (refreshPending) {
+        refreshPending = false;
+        if (!disposed && auth.isLoggedIn) queueSync();
+      }
+    });
     return activeSync;
   }
   async function performSync(): Promise<void> {
@@ -267,7 +274,7 @@ export async function createRuntime(onChange: (snapshot: any) => void, platform:
   else auth.clearAuthenticationState();
   const cachedUser = await secure.getItem('ssUser');
   if (cachedUser) user = JSON.parse(cachedUser);
-  const refresh = () => { if (!syncing) queueSync(); };
+  const refresh = () => { if (syncing) refreshPending = true; else queueSync(); };
   window.addEventListener('stellar:notes-changed', refresh);
   window.addEventListener('online', refresh);
   const poll = setInterval(() => { if (!document.hidden) refresh(); }, 30000);

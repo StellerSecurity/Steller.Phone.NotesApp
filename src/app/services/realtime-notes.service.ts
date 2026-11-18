@@ -45,6 +45,7 @@ export class RealtimeNotesService {
   private socket?: WebSocket;
   private retry?: ReturnType<typeof setTimeout>;
   private expiry?: ReturnType<typeof setTimeout>;
+  private trailingHint?: ReturnType<typeof setTimeout>;
   private failures = 0;
   private lastHint = 0;
   private retryAt = 0;
@@ -69,7 +70,8 @@ export class RealtimeNotesService {
   private stop(): void {
     this.generation++;
     this.connectingGeneration = undefined;
-    clearTimeout(this.retry); clearTimeout(this.expiry);
+    clearTimeout(this.retry); clearTimeout(this.expiry); clearTimeout(this.trailingHint);
+    this.trailingHint = undefined;
     const socket = this.socket; this.socket = undefined;
     if (socket) { socket.onclose = null; socket.onerror = null; socket.onmessage = null; socket.onopen = null; socket.close(); }
   }
@@ -100,7 +102,14 @@ export class RealtimeNotesService {
     const currentToken = await this.secure.getItem('ssToken');
     if (generation !== this.generation) return;
     if (currentToken !== token) { this.restart(); return; }
-    if (Date.now() - this.lastHint < 1000) return;
+    const remaining = 1000 - (Date.now() - this.lastHint);
+    if (remaining > 0) {
+      if (!this.trailingHint) this.trailingHint = setTimeout(() => {
+        this.trailingHint = undefined;
+        void this.hint(generation, token).catch(() => this.restart());
+      }, remaining);
+      return;
+    }
     this.lastHint = Date.now();
     window.dispatchEvent(new Event('stellar:notes-changed'));
   }
