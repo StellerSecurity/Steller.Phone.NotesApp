@@ -20,6 +20,8 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 final class BiometricScreenLock {
+    private static final int SUCCESS = 0;
+    private static final int NO_HARDWARE = 12;
     private static final String ENABLED = "notesBiometricScreenLock";
     private static final int CREDENTIAL_REQUEST = 7814;
     private final MainActivity activity;
@@ -90,14 +92,14 @@ final class BiometricScreenLock {
     boolean enabled() { return activity.getPreferences(0).getBoolean(ENABLED, false); }
 
     int availability() {
-        if (Build.VERSION.SDK_INT < 28) return BiometricManager.BIOMETRIC_ERROR_NO_HARDWARE;
+        if (Build.VERSION.SDK_INT < 28) return NO_HARDWARE;
         if (Build.VERSION.SDK_INT >= 29) {
             BiometricManager manager = activity.getSystemService(BiometricManager.class);
             return manager == null ? BiometricManager.BIOMETRIC_ERROR_NO_HARDWARE : manager.canAuthenticate();
         }
         FingerprintManager manager = activity.getSystemService(FingerprintManager.class);
-        if (manager == null || !manager.isHardwareDetected()) return BiometricManager.BIOMETRIC_ERROR_NO_HARDWARE;
-        return manager.hasEnrolledFingerprints() ? BiometricManager.BIOMETRIC_SUCCESS : BiometricManager.BIOMETRIC_ERROR_NONE_ENROLLED;
+        if (manager == null || !manager.isHardwareDetected()) return FingerprintManager.FINGERPRINT_ERROR_HW_NOT_PRESENT;
+        return manager.hasEnrolledFingerprints() ? SUCCESS : FingerprintManager.FINGERPRINT_ERROR_NO_FINGERPRINTS;
     }
 
     void change(boolean enabled, Result result) {
@@ -138,7 +140,7 @@ final class BiometricScreenLock {
     private void authenticate(Result result) {
         pending = result;
         final int revision = ++request;
-        if (Build.VERSION.SDK_INT < 28 || availability() != BiometricManager.BIOMETRIC_SUCCESS) {
+        if (Build.VERSION.SDK_INT < 28 || availability() != SUCCESS) {
             deviceCredential();
             return;
         }
