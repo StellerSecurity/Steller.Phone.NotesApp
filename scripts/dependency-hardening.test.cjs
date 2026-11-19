@@ -28,6 +28,13 @@ test('actions preserve arguments, receiver, result and errors without inspecting
   await telemetry.sendMetric(sensitive, sensitive, sensitive);
 });
 
+test('patched CLI build choices remain available with telemetry disabled', () => {
+  assert.deepEqual(telemetry.TELEMETRY_SAFE_CHOICES.androidreleasetype, ['AAB', 'APK']);
+  assert.deepEqual(telemetry.TELEMETRY_SAFE_CHOICES.signingType, ['apksigner', 'jarsigner']);
+  assert.ok(telemetry.TELEMETRY_SAFE_CHOICES.xcodeExportMethod.includes('app-store-connect'));
+  assert.deepEqual(telemetry.TELEMETRY_SAFE_CHOICES.xcodeSigningStyle, ['automatic', 'manual']);
+});
+
 function fixture(t) {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'stellar-hardening-test-'));
   t.after(() => fs.rmSync(root, { recursive: true, force: true }));
