@@ -1,11 +1,23 @@
-import { of, throwError, Subject } from 'rxjs';
-import { createRuntime } from './notes-design-runtime';
+import { firstValueFrom, of, throwError, Subject } from 'rxjs';
+import { createBrowserHttpClient, createRuntime } from './notes-design-runtime';
 import { validRealtimeGrant } from '../app/services/realtime-notes.service';
 import { CryptoKeyService } from '../app/services/crypto-key.service';
 import { packCipherBlob, unpackCipherBlob } from '@stellarsecurity/stellar-crypto';
 import { createVault, exportServerBundleFromHeader, extractPlainEAK } from '@stellarsecurity/stellar-crypto';
 import { IdentityAuthService } from '../app/services/identity-auth.service';
 import { AuthService } from '../app/services/auth.service';
+
+describe('Browser HTTP transport', () => {
+  it('creates the default transport outside an Angular application and performs XHR', async () => {
+    const http = createBrowserHttpClient();
+    try {
+      await firstValueFrom(http.get(location.origin + '/__stellar_http_transport_probe__'));
+      fail('Expected the local test server to return 404');
+    } catch (error: any) {
+      expect(error.status).toBe(404);
+    }
+  });
+});
 
 describe('Original design with existing Notes services', () => {
   const root = btoa('x'.repeat(32));

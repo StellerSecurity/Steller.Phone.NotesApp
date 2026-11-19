@@ -52,7 +52,7 @@ function fixture(t) {
 
 test('unreviewed installed versions stop before changes', t => {
   const root = fixture(t);
-  const location = Object.keys(policy.capacitor)[1];
+  const location = Object.keys(policy.capacitor)[0];
   fs.writeFileSync(path.join(root, location, 'package.json'), JSON.stringify({ name: '@capacitor/cli', version: '99.0.0' }));
   assert.throws(() => harden(root), /Unreviewed Capacitor/);
   for (const p of Object.keys(policy.capacitor)) {

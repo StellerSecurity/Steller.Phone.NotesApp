@@ -11,6 +11,7 @@ import { TranslatorService } from '../services/translator.service';
 import { AppHapticsService } from '../services/app-haptics.service';
 
 @Component({
+  standalone: false,
   selector: 'app-profile',
   templateUrl: './profile.component.html',
   styleUrls: ['./profile.component.scss'],

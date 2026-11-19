@@ -3,6 +3,7 @@ import { ModalController } from '@ionic/angular';
 import { AppHapticsService } from '../services/app-haptics.service';
 
 @Component({
+  standalone: false,
   selector: 'app-confirmation-modal',
   templateUrl: './confirmation-modal.component.html',
   styleUrls: ['./confirmation-modal.component.scss'],

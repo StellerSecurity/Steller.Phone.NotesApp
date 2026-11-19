@@ -1,20 +1,36 @@
 import { DomSanitizer } from '@angular/platform-browser';
 import { bindSafeNotePaste } from './add-note/rich-text-editor/safe-note-paste';
 import { Component } from '@angular/core';
+import { RichTextEditorComponent } from './add-note/rich-text-editor/rich-text-editor.component';
 import { TestBed } from '@angular/core/testing';
 import { FormsModule } from '@angular/forms';
 import { QuillModule } from 'ngx-quill';
 import { preserveNoteLineBreaks, preserveNoteSpaces } from './add-note/rich-text-editor/preserve-note-line-breaks';
 
-@Component({template: `<quill-editor [(ngModel)]="html" [modules]="modules" [sanitize]="true" (onEditorCreated)="created($event)"></quill-editor>`})
+@Component({
+  standalone: false,template: `<quill-editor [(ngModel)]="html" [modules]="modules" [valueGetter]="adapter.editorValueGetter" [valueSetter]="adapter.editorValueSetter" [sanitize]="true" (onEditorCreated)="created($event)"></quill-editor>`})
 class AuditHost {
   html = '';
   quill: any;
   cleanup?: () => void;
-  constructor(private sanitizer: DomSanitizer) {}
-  created(quill: any) { this.quill = quill; this.cleanup = bindSafeNotePaste(quill, this.sanitizer); }
+  adapter: RichTextEditorComponent;
+  private resolveReady!: () => void;
+  ready = new Promise<void>(resolve => this.resolveReady = resolve);
+  constructor(private sanitizer: DomSanitizer) {
+    this.adapter = new RichTextEditorComponent({} as any, sanitizer, {} as any, {} as any, {} as any, {} as any, 'browser');
+  }
+  created(quill: any) { this.quill = quill; this.cleanup = bindSafeNotePaste(quill, this.sanitizer); this.resolveReady(); }
   ngOnDestroy() { this.cleanup?.(); }
   modules = {toolbar: false, clipboard: {matchers: [[3, preserveNoteSpaces], [1, preserveNoteLineBreaks]]}};
+}
+
+async function editorReady(fixture: any): Promise<void> {
+  await fixture.whenStable();
+  await new Promise<void>((resolve, reject) => {
+    const timeout = setTimeout(() => reject(new Error('Quill did not initialize')), 3000);
+    fixture.componentInstance.ready.then(() => { clearTimeout(timeout); resolve(); });
+  });
+  expect(fixture.nativeElement.querySelector('.ql-editor')).not.toBeNull();
 }
 
 describe('Untrusted stored HTML in the actual ngx-quill input path', () => {
@@ -37,7 +53,7 @@ describe('Untrusted stored HTML in the actual ngx-quill input path', () => {
       const fixture = TestBed.createComponent(AuditHost);
       fixture.componentInstance.html = html;
       fixture.detectChanges();
-      await fixture.whenStable();
+      await editorReady(fixture);
       await new Promise(resolve => setTimeout(resolve, 150));
       const root = fixture.nativeElement.querySelector('.ql-editor');
       console.log('XSS AUDIT', name, 'executed=', (window as any).__stellarXssAudit,
@@ -51,7 +67,7 @@ describe('Untrusted stored HTML in the actual ngx-quill input path', () => {
     const fixture = TestBed.createComponent(AuditHost);
     fixture.componentInstance.html = '<p>replace me</p>';
     fixture.detectChanges();
-    await fixture.whenStable();
+    await editorReady(fixture);
     const quill = fixture.componentInstance.quill;
     quill.setSelection(0, 10);
     const data = new DataTransfer();
@@ -69,7 +85,7 @@ describe('Untrusted stored HTML in the actual ngx-quill input path', () => {
     const fixture = TestBed.createComponent(AuditHost);
     fixture.componentInstance.html = '<h2>Title</h2><p><strong>bold</strong> <s>strike</s></p><p>test</p><p>test</p><p>test</p><ul><li>item</li></ul><p><a href="https://example.com">link</a><img src="data:image/png;base64,AA=="></p>';
     fixture.detectChanges();
-    await fixture.whenStable();
+    await editorReady(fixture);
     const quill = fixture.componentInstance.quill;
     expect(quill.getText()).toContain('test\ntest\ntest\n');
     expect(quill.root.querySelector('h2')?.textContent).toBe('Title');
@@ -78,6 +94,20 @@ describe('Untrusted stored HTML in the actual ngx-quill input path', () => {
     expect(quill.root.querySelector('li')?.textContent).toBe('item');
     expect(quill.root.querySelector('a')?.getAttribute('href')).toBe('https://example.com');
     expect(quill.root.querySelector('img')).not.toBeNull();
+    fixture.destroy();
+  });
+
+  it('uses the production safe exporter instead of Quill semantic HTML export', async () => {
+    const fixture = TestBed.createComponent(AuditHost);
+    fixture.componentInstance.html = '<p>original</p>';
+    fixture.detectChanges();
+    await editorReady(fixture);
+    const quill = fixture.componentInstance.quill;
+    const semantic = spyOn(quill, 'getSemanticHTML').and.throwError('unsafe exporter called');
+    quill.insertText(0, 'safe ', 'user');
+    await fixture.whenStable();
+    expect(semantic).not.toHaveBeenCalled();
+    expect(fixture.componentInstance.html).toContain('safe original');
     fixture.destroy();
   });
 

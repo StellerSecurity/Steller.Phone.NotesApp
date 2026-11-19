@@ -9,6 +9,7 @@ import { AppHapticsService } from 'src/app/services/app-haptics.service';
 import { isPasswordAcceptable } from 'src/app/utils/password-policy';
 
 @Component({
+  standalone: false,
   selector: 'app-create-new-password',
   templateUrl: './create-new-password.component.html',
   styleUrls: ['./create-new-password.component.scss'],

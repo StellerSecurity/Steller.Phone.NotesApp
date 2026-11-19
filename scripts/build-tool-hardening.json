@@ -1,0 +1,32 @@
+{
+  "glob": {
+    "version": "13.0.6",
+    "files": {
+      "dist/commonjs/walker.js": {
+        "original": "1138ced9d5429681a1740af32d13391a38184a3376d1d9d56eea64b7a43274a1",
+        "patched": "a5d267e5c9260b09fe2c107f22b89391e5da9c71d23df3290b86bd82acff8cd2"
+      },
+      "dist/esm/walker.js": {
+        "original": "3e15af549ecc74d8691982d571168fd4b0e38b494c2cbb3edcfb8f97d4036ac6",
+        "patched": "d8f9ad324be2df34ee8d50cdb95218cbd6ce33e5c0b40bd68fb7926e2772693e"
+      },
+      "package.json": {
+        "original": "5a28ef9a1f5252feb47ffe288a6350fe99b18311462e6a9cdacbdd0bb4be6be9",
+        "patched": "a7c7f15a2a04422d55955189c560d7318005d2a7377b7dc1269cf1e72dbadf52"
+      }
+    }
+  },
+  "minimatch": {
+    "version": "10.2.6",
+    "files": {
+      "dist/commonjs/index.js": {
+        "original": "d224f71f20d7c206fcc5b7e9f747324c7698345a0b2c28d717dd9cf698306783",
+        "patched": "831f601ed01ae434431a942946279420fe4b313d2adef81beeadda899cc11cd8"
+      },
+      "dist/esm/index.js": {
+        "original": "59821ec2ce0d3df968292036e5c831ad322b33e9c33a949ecbc9dfe125d165be",
+        "patched": "43d31210cae65c5ca0c8c8221f6dad402a66cfaa140839ec936d86842b08111d"
+      }
+    }
+  }
+}

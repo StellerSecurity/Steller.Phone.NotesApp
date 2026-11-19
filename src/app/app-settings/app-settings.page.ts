@@ -15,6 +15,7 @@ import { AppearanceMode, ThemeService } from '../services/theme.service';
 import { AppsflyerService } from '../services/appsflyer.service';
 
 @Component({
+  standalone: false,
   selector: 'app-app-settings',
   templateUrl: './app-settings.page.html',
   styleUrls: ['./app-settings.page.scss'],

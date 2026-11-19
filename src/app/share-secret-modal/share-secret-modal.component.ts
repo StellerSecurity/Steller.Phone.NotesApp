@@ -9,6 +9,7 @@ import { AppHapticsService } from '../services/app-haptics.service';
 import { NotesService } from '../services/notes.service';
 import { AppsflyerService } from '../services/appsflyer.service';
 @Component({
+  standalone: false,
   selector: 'app-share-secret-modal',
   templateUrl: './share-secret-modal.component.html',
   styleUrls: ['./share-secret-modal.component.scss']

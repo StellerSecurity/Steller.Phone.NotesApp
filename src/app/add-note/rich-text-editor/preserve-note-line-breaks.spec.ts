@@ -22,21 +22,21 @@ describe('note HTML line breaks', () => {
   function editor(preserve = true): Quill {
     return new Quill(host, { modules: {
       toolbar: false,
-      clipboard: { matchVisual: false, matchers: preserve ? [[3, preserveNoteSpaces], [1, preserveNoteLineBreaks]] : [] }
+      clipboard: { matchers: preserve ? [[3, preserveNoteSpaces], [1, preserveNoteLineBreaks]] : [] }
     }});
   }
 
-  it('demonstrates the original paragraph-merging failure without the matcher', () => {
+  it('keeps Quill 2 paragraph boundaries without layout-dependent merging', () => {
     const quill = editor(false);
-    quill.setContents(quill.clipboard.convert('<p>test</p><p>test</p><p>test</p>'));
-    expect(quill.getText()).toBe('testtesttest\n');
+    quill.setContents(quill.clipboard.convert({ html: '<p>test</p><p>test</p><p>test</p>' }));
+    expect(quill.getText()).toBe('test\ntest\ntest\n');
   });
 
   it('preserves three lines through five save/reopen conversions', () => {
     const quill = editor();
     let html = '<p>test</p><p>test</p><p>test</p>';
     for (let cycle = 0; cycle < 5; cycle++) {
-      quill.setContents(quill.clipboard.convert(html));
+      quill.setContents(quill.clipboard.convert({ html: html }));
       expect(quill.getText()).toBe('test\ntest\ntest\n');
       html = quill.root.innerHTML;
     }
@@ -44,13 +44,13 @@ describe('note HTML line breaks', () => {
 
   it('preserves empty paragraphs without doubling existing line breaks', () => {
     const quill = editor();
-    quill.setContents(quill.clipboard.convert('<p>test</p><p><br></p><p>test</p>'));
+    quill.setContents(quill.clipboard.convert({ html: '<p>test</p><p><br></p><p>test</p>' }));
     expect(quill.getText()).toBe('test\n\ntest\n');
   });
 
   it('preserves heading and inline bold formatting', () => {
     const quill = editor();
-    quill.setContents(quill.clipboard.convert('<h2>Title</h2><p><strong>test</strong></p><p>end</p>'));
+    quill.setContents(quill.clipboard.convert({ html: '<h2>Title</h2><p><strong>test</strong></p><p>end</p>' }));
     expect(quill.getText()).toBe('Title\ntest\nend\n');
     expect(quill.getFormat(0, 5)['header']).toBe(2);
     expect(quill.getFormat(6, 4)['bold']).toBeTrue();
@@ -58,7 +58,7 @@ describe('note HTML line breaks', () => {
 
   it('preserves separate bullet items', () => {
     const quill = editor();
-    quill.setContents(quill.clipboard.convert('<ul><li>one</li><li>two</li></ul>'));
+    quill.setContents(quill.clipboard.convert({ html: '<ul><li>one</li><li>two</li></ul>' }));
     expect(quill.getText()).toBe('one\ntwo\n');
     expect(quill.getFormat(0, 3)['list']).toBe('bullet');
     expect(quill.getFormat(4, 3)['list']).toBe('bullet');
@@ -69,7 +69,7 @@ describe('note HTML line breaks', () => {
     const quill = editor();
     let html = '<p>first</p><p>second</p><p><br></p><p>last</p>';
     for (let cycle = 0; cycle < 5; cycle++) {
-      quill.setContents(quill.clipboard.convert(html));
+      quill.setContents(quill.clipboard.convert({ html: html }));
       expect(quill.getText()).toBe('first\nsecond\n\nlast\n');
       html = quill.root.innerHTML;
     }

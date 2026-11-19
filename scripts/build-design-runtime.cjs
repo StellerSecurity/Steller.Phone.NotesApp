@@ -1,8 +1,9 @@
 const fs = require('node:fs');
 const path = require('node:path');
-const { build } = require('esbuild');
 require('./verify-identity-runtime.cjs')();
 const root = path.resolve(__dirname, '..');
+require('./harden-dependencies.cjs').harden(root);
+const { build } = require('esbuild');
 const output = process.env.STELLAR_DESIGN_OUTPUT;
 if (!output || !path.isAbsolute(output)) throw new Error('Set STELLAR_DESIGN_OUTPUT to an absolute output path.');
 (async () => {

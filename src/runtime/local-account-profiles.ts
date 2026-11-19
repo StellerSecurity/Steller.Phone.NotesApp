@@ -24,7 +24,7 @@ export class LocalAccountProfiles {
     for (const byte of bytes) text += String.fromCharCode(byte);
     return btoa(text);
   }
-  private decode(text: string): Uint8Array {
+  private decode(text: string): Uint8Array<ArrayBuffer> {
     return Uint8Array.from(atob(text), byte => byte.charCodeAt(0));
   }
   async save(id: unknown, profile: LocalAccountProfile): Promise<void> {

@@ -13,7 +13,8 @@ import { ToastMessageService } from '../../services/toast-message.service';
 import { isPasswordAcceptable } from '../../utils/password-policy';
 import { identityCopy } from '../identity-copy';
 
-@Component({ selector: 'app-identity-security', templateUrl: './identity-security.component.html', styleUrls: ['./identity-security.component.scss'] })
+@Component({
+  standalone: false, selector: 'app-identity-security', templateUrl: './identity-security.component.html', styleUrls: ['./identity-security.component.scss'] })
 export class IdentitySecurityComponent implements OnDestroy {
   readonly recoverMode: boolean;
   newAccount: boolean;

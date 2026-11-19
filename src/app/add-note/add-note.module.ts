@@ -10,7 +10,6 @@ import { AddNotePage } from './add-note.page';
 import {PasswordStrengthMeterModule} from "angular-password-strength-meter";
 import { NoteLockedModalModule } from '../note-locked-modal/note-locked-modal.module';
 import { DeleteNoteModalModule } from '../delete-note-modal/delete-note-modal.module';
-import {AngularEditorModule} from "@wfpena/angular-wysiwyg";
 import { TranslateModule } from '@ngx-translate/core';
 import { RichTextEditorComponent } from './rich-text-editor/rich-text-editor.component';
 import { QuillModule } from 'ngx-quill';
@@ -23,7 +22,6 @@ import { QuillModule } from 'ngx-quill';
         PasswordStrengthMeterModule,
         NoteLockedModalModule,
         DeleteNoteModalModule,
-        AngularEditorModule,
         TranslateModule,
         QuillModule
     ],

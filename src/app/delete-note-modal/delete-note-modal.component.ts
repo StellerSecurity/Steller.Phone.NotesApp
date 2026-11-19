@@ -3,6 +3,7 @@ import { ModalController } from '@ionic/angular';
 import { AppHapticsService } from '../services/app-haptics.service';
 
 @Component({
+  standalone: false,
   selector: 'app-delete-note-modal',
   templateUrl: './delete-note-modal.component.html',
   styleUrls: ['./delete-note-modal.component.scss'],

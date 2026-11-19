@@ -35,7 +35,7 @@ function harden(root = ROOT) {
   if (JSON.stringify(lockedClis) !== JSON.stringify(Object.keys(policy.capacitor).sort())) {
     throw new Error('Capacitor dependency layout changed; update the reviewed hardening policy');
   }
-  const writes = [];
+  const writes = require('./build-tool-hardening.cjs').prepareBuildHardening(root, lock, checkedFile);
   for (const [location, version] of Object.entries(policy.capacitor)) {
     const installed = JSON.parse(fs.readFileSync(checkedFile(root, `${location}/package.json`), 'utf8'));
     if (lock.packages[location].version !== version || installed.version !== version || installed.name !== '@capacitor/cli') {
