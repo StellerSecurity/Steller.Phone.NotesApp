@@ -12,6 +12,7 @@
     "src/app/services/sync-worker-retention.spec.ts",
     "src/app/services/upload-confirmation.spec.ts",
     "src/app/services/notes-api-v1.service.spec.ts",
-    "src/app/utils/folder-reference.spec.ts"
+    "src/app/utils/folder-reference.spec.ts",
+    "src/app/services/crypto.service.spec.ts"
   ]
 }
