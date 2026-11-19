@@ -5,3 +5,10 @@
 exports.THANK_YOU = 'Capacitor telemetry is disabled for this project.';
 exports.telemetryAction = (_config, action) => action;
 exports.sendMetric = async () => {};
+
+exports.TELEMETRY_SAFE_CHOICES = {
+  androidreleasetype: ['AAB', 'APK'],
+  signingType: ['apksigner', 'jarsigner'],
+  xcodeExportMethod: ['app-store-connect', 'release-testing', 'enterprise', 'debugging', 'developer-id', 'mac-application', 'validation'],
+  xcodeSigningStyle: ['automatic', 'manual'],
+};
