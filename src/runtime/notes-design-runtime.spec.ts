@@ -43,6 +43,8 @@ describe('Original design with existing Notes services', () => {
       if (url.endsWith('/upload')) {
         for (const item of body.notes) {
           const existing = remote.get(item.id);
+          if (existing?.deleted && !item.deleted) return throwError(() => ({ status: 409 }));
+          if (existing && Number(item.last_modified) < Number(existing.last_modified)) return throwError(() => ({ status: 409 }));
           if (existing && existing.edit_session !== item.edit_session && item.base_version !== existing.last_modified) return throwError(() => ({ status: 409 }));
         }
         for (const item of body.notes) { const { deleted_at, ...stored } = item; remote.set(item.id, stored); }
@@ -286,8 +288,94 @@ describe('Original design with existing Notes services', () => {
     expect(runtime.snapshot().notes[0].deleted).toBeTrue();
     expect(runtime.snapshot().notes[0].html).toBe(view.html);
     expect(Number(runtime.snapshot().notes[0].deletedAt)).toBeGreaterThan(0);
-    await runtime.save([{ ...runtime.snapshot().notes[0], deleted: false }], []); await runtime.sync();
-    expect(remote.get(view.id).deleted).toBeFalse();
+    const [restoredId] = await runtime.restoreNotes([view.id]);
+    expect(restoredId).not.toBe(view.id);
+    await runtime.sync(); await runtime.sync();
+    expect(remote.get(view.id).deleted).toBeTrue();
+    expect(remote.get(restoredId).deleted).toBeFalse();
+    expect(runtime.snapshot().notes.find((n: any) => n.id === restoredId).html).toBe(view.html);
+    expect(runtime.snapshot().notes.some((n: any) => n.id === view.id)).toBeFalse();
+  });
+  it('keeps both durable copies across restart while the restore upload fails', async () => {
+    signedIn(); await start();
+    await runtime.save([{ ...note('Restore', '<p><br></p><p>Keep  æøå</p><p><br></p>'), deleted: true }], []); await runtime.sync();
+    const id = runtime.snapshot().notes[0].id, original = remote.get(id);
+    const post = http.post;
+    http.post = (url: string, body: any, options: any) => url.endsWith('/upload') ? throwError(() => ({ status: 503 })) : post(url, body, options);
+    const [restoredId] = await runtime.restoreNotes([id]);
+    await runtime.sync();
+    expect(remote.get(id).text).toBe(original.text);
+    expect(JSON.parse(storage.get('notes')).some((n: any) => n.id === id && n.text)).toBeTrue();
+    runtime.dispose(); await start();
+    expect(runtime.snapshot().notes.map((n: any) => n.id)).toEqual([restoredId]);
+    http.post = post;
+    await disk.set('notes.sync.outbox.v1', storage.get('notes.sync.outbox.v1').map((op: any) => ({ ...op, nextAt: 0 })));
+    await runtime.sync(); await runtime.sync();
+    expect(remote.get(restoredId).deleted).toBeFalse();
+    expect(remote.get(id).text).toBe('');
+    expect(runtime.snapshot().notes[0].html).toBe('<p><br></p><p>Keep  æøå</p><p><br></p>');
+    expect(storage.get('notes.sync.outbox.v1')).toEqual([]);
+  });
+  it('does not finalize the original when the published copy differs despite an upload acknowledgment', async () => {
+    signedIn(); await start();
+    await runtime.save([{ ...note(), deleted: true }], []); await runtime.sync();
+    const originalId = runtime.snapshot().notes[0].id, originalCipher = remote.get(originalId).text;
+    const [copy] = await runtime.restoreNotes([originalId]);
+    const crypto = new CryptoKeyService(); await crypto.importEAK(root);
+    const different = packCipherBlob(await crypto.encryptText('<p>Other content</p>', copy));
+    const post = http.post;
+    http.post = (url: string, body: any, options: any) => {
+      const response = post(url, body, options);
+      if (url.endsWith('/upload') && body.notes.some((n: any) => n.id === copy)) remote.get(copy).text = different;
+      return response;
+    };
+    await runtime.sync();
+    expect(remote.get(originalId).text).toBe(originalCipher);
+    expect(JSON.parse(storage.get('notes')).some((n: any) => n.id === originalId && n.text)).toBeTrue();
+  });
+  it('does not clear newer trash written between verification and source retirement', async () => {
+    signedIn(); await start(); await runtime.save([{ ...note(), deleted: true }], []); await runtime.sync();
+    const id = runtime.snapshot().notes[0].id;
+    const crypto = new CryptoKeyService(); await crypto.importEAK(root);
+    const otherContent = packCipherBlob(await crypto.encryptText('<p>Concurrent trash content</p>', id));
+    const post = http.post;
+    http.post = (url: string, body: any, options: any) => {
+      if (url.endsWith('/upload') && body.notes.some((n: any) => n.id === id && n.deleted && n.text === '')) {
+        const original = remote.get(id); remote.set(id, { ...original, text: otherContent, last_modified: original.last_modified + 10 });
+      }
+      return post(url, body, options);
+    };
+    const [copy] = await runtime.restoreNotes([id]); await runtime.sync(); await runtime.sync();
+    expect(remote.get(id).text).toBe(otherContent);
+    expect(runtime.snapshot().notes.find((n: any) => n.id === copy).html).toBe(note().html);
+    const retirement = storage.get('notes.sync.outbox.v1').find((op: any) => op.payload.notes.some((n: any) => n.id === id && n.text === ''));
+    expect(retirement.conflict).toBeTrue();
+  });
+  it('restores a locked note without its note password and keeps its inner ciphertext unchanged', async () => {
+    signedIn(); await start(); await runtime.save([note()], []);
+    const id = runtime.snapshot().notes[0].id;
+    await runtime.protectNote(id, 'restore-note-code');
+    await runtime.save([{ ...runtime.snapshot().notes[0], locked: true }], []);
+    await runtime.save([{ ...runtime.snapshot().notes[0], deleted: true }], []); await runtime.sync();
+    const encrypted = JSON.parse(storage.get('notes')).find((n: any) => n.id === id);
+    runtime.dispose(); await start();
+    expect(runtime.snapshot().notes[0].unlocked).toBeFalse();
+    const [copy] = await runtime.restoreNotes([id]);
+    const raw = JSON.parse(storage.get('notes')).find((n: any) => n.id === copy);
+    expect(raw.text).toBe(encrypted.text); expect(raw.title).toBe(encrypted.title);
+    await runtime.sync(); await runtime.sync();
+    await runtime.unlockNote(copy, 'restore-note-code');
+    expect(runtime.snapshot().notes.find((n: any) => n.id === copy).html).toBe(note().html);
+  });
+  it('restores a batch without duplicate copies and strips local recovery links from the wire', async () => {
+    signedIn(); await start(); const first = note(), second = { ...note('Second'), id: 'second-note-restore-uuid' };
+    await runtime.save([{ ...first, deleted: true },{ ...second, deleted: true }], []); await runtime.sync();
+    const ids = await runtime.restoreNotes([first.id, first.id, second.id]);
+    const again = await runtime.restoreNotes([first.id, second.id]);
+    expect(again).toEqual(ids); expect(ids.length).toBe(2);
+    await runtime.sync(); await runtime.sync();
+    expect(runtime.snapshot().notes.filter((n: any) => !n.deleted).length).toBe(2);
+    expect([...remote.values()].some((n: any) => n.restore_sources)).toBeFalse();
   });
   it('removes a permanent tombstone while retaining recoverable encrypted trash', async () => {
     signedIn(); await start();

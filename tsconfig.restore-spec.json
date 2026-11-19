@@ -1,0 +1,17 @@
+{
+  "extends": "./tsconfig.spec.json",
+  "files": [
+    "src/test.ts",
+    "src/polyfills.ts"
+  ],
+  "include": [
+    "src/runtime/notes-design-runtime.spec.ts",
+    "src/runtime/note-restoration.spec.ts",
+    "src/runtime/local-account-profiles.spec.ts",
+    "src/**/*.d.ts",
+    "src/app/services/sync-worker-retention.spec.ts",
+    "src/app/services/upload-confirmation.spec.ts",
+    "src/app/services/notes-api-v1.service.spec.ts",
+    "src/app/utils/folder-reference.spec.ts"
+  ]
+}

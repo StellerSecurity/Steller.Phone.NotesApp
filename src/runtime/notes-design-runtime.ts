@@ -1,3 +1,4 @@
+import { LocalNote, copyTrashedNotes, restoreSourceIds, restorationCleanup, RestoreObservation } from './note-restoration';
 import '@angular/compiler';
 import { firstValueFrom, timeout } from 'rxjs';
 import { HttpClient, HttpXhrBackend } from '@angular/common/http';
@@ -89,7 +90,6 @@ export async function createRuntime(onChange: (snapshot: any) => void, platform:
   const worker = new SyncWorkerService(http, outbox, { run: (fn: () => unknown) => fn() } as NgZone, secure, state);
   const realtime = new RealtimeNotesService(http, auth, secure);
   const notePasswords = new Map<string, string>();
-  type LocalNote = NoteV1 & { sync_pending?: boolean };
   let records: LocalNote[] = [];
   let conflicts: string[] = [];
   let folderRecords: Folder[] = [];
@@ -118,8 +118,10 @@ export async function createRuntime(onChange: (snapshot: any) => void, platform:
     records = readArray(stored());
     folderRecords = readArray(state.getFolders());
   }
-  const snapshot = () => ({
-    notes: records.map(note => {
+  const snapshot = () => {
+    const hidden = restoreSourceIds(records);
+    return ({
+    notes: records.filter(note => !hidden.has(note.id)).map(note => {
       let title = note.title || '', html = note.text || '';
       if (note.protected) {
         const password = notePasswords.get(note.id);
@@ -138,6 +140,7 @@ export async function createRuntime(onChange: (snapshot: any) => void, platform:
     appLocked: state.appHasPasswordChallenge() && !state.getNotesAppPassword(),
     appLockEnabled: state.appHasPasswordChallenge(),
   });
+  };
   const emit = () => { if (!disposed) onChange(snapshot()); };
   const persist = async () => {
     const noteJson = JSON.stringify(records), folderJson = JSON.stringify(folderRecords);
@@ -169,7 +172,7 @@ export async function createRuntime(onChange: (snapshot: any) => void, platform:
     state.clearAppUnlockFailures();
     await persist();
   }
-  const uploadNotes = (notes: LocalNote[]) => notes.map(({ sync_pending, ...note }) => note);
+  const uploadNotes = (notes: LocalNote[]) => notes.map(({ sync_pending, restore_sources, ...note }) => note);
   async function queueUnsaved() {
     const queued = await outbox.getAll();
     const updates = records.filter(note => note.sync_pending && !queued.some(op => op.payload.notes?.some(item => item.id === note.id && Number(item.last_modified) === Number(note.last_modified))));
@@ -209,7 +212,8 @@ export async function createRuntime(onChange: (snapshot: any) => void, platform:
       for (const id of pendingDeletes) if (!queuedDeletes.has(id)) { pendingDeletes.delete(id); state.clearPendingMutation(id); }
       await disk.set('notes.design.pending-deletes.v1', [...pendingDeletes]);
       const known: Record<string, number> = {};
-      for (const note of records) if (!state.hasAnyPendingMutation(note.id)) {
+      const hiddenRestoreSources = restoreSourceIds(records);
+      for (const note of records) if (!state.hasAnyPendingMutation(note.id) && !note.restore_sources?.length && !hiddenRestoreSources.has(note.id)) {
         const folder = note.folder_id ? folderRecords.find(item => item.id === note.folder_id) : null;
         const unresolvedFolder = note.folder_id && (!folder || folder.deleted);
         if (!unresolvedFolder && Number(note.base_version) === Number(note.last_modified)) known[note.id] = Number(note.last_modified);
@@ -218,25 +222,46 @@ export async function createRuntime(onChange: (snapshot: any) => void, platform:
       if (!await currentSession()) return;
       await exclusive(async () => {
         if (!await currentSession()) return;
+        const hiddenRestoreSources = restoreSourceIds(records);
         const merged = new Map(records.map(note => [note.id, note]));
+        const restorationChecks = new Map<string, RestoreObservation>();
         for (const encrypted of incoming.notes) {
           const localNote = merged.get(encrypted.id);
           if (encrypted.deleted && !encrypted.text) {
+            restorationChecks.set(encrypted.id, { version: Number(encrypted.last_modified), deleted: true, matches: false, stub: true });
+            if (hiddenRestoreSources.has(encrypted.id)) continue;
             if (!state.hasAnyPendingMutation(encrypted.id) && !dirtyViews.has(encrypted.id) && editingId !== encrypted.id) merged.delete(encrypted.id);
             continue;
           }
-          if (state.getPendingMutation(encrypted.id)) continue;
+          const restoring = !!localNote?.restore_sources?.length || hiddenRestoreSources.has(encrypted.id);
+          if (state.getPendingMutation(encrypted.id) && !restoring) continue;
           const text = await keys.decryptText(unpackCipherBlob(encrypted.text), encrypted.id);
           const title = encrypted.title ? await keys.decryptText(unpackCipherBlob(encrypted.title), encrypted.id + '#title') : '';
           const sameContent = localNote && JSON.stringify([localNote.title,localNote.text,localNote.folder_id,!!localNote.protected,!!localNote.favorite,!!localNote.pinned]) === JSON.stringify([title,text,encrypted.folder_id,!!encrypted.protected,!!encrypted.favorite,!!encrypted.pinned]);
+          if (restoring) restorationChecks.set(encrypted.id, { version: Number(encrypted.last_modified), deleted: !!encrypted.deleted, stub: false,
+            matches: !!localNote && (localNote.title || '') === title && localNote.text === text
+              && ['protected', 'favorite', 'pinned', 'deleted', 'auto_wipe'].every(flag => !!(localNote as any)[flag] === !!(encrypted as any)[flag])
+              && (hiddenRestoreSources.has(encrypted.id) || (localNote.folder_id ?? null) === (encrypted.folder_id ?? null)) });
+          if (state.getPendingMutation(encrypted.id)) continue;
           if (sameContent && Number(encrypted.last_modified) === Number(localNote.last_modified)) {
             localNote.base_version = Number(encrypted.last_modified);
             acknowledgedVersions.set(encrypted.id, Number(encrypted.last_modified));
           }
           if (editingId === encrypted.id || dirtyViews.has(encrypted.id) || (localNote && Number(localNote.last_modified) > Number(encrypted.last_modified))) continue;
-          merged.set(encrypted.id, { ...encrypted, text, title, deleted_at: encrypted.deleted ? Number(encrypted.deleted_at || encrypted.last_modified) : undefined });
+          merged.set(encrypted.id, { ...encrypted, text, title, restore_sources: localNote?.restore_sources, deleted_at: encrypted.deleted ? Number(encrypted.deleted_at || encrypted.last_modified) : undefined });
         }
         if (!await currentSession()) return;
+        const cleanup = restorationCleanup([...merged.values()], restorationChecks);
+        const retiring: Record<string, number> = {};
+        for (const note of merged.values()) for (const source of note.restore_sources || []) if (cleanup.completed.has(source.id)) {
+          retiring[source.id] = Math.max(retiring[source.id] || 0, source.version);
+        }
+        for (const id of cleanup.completed) { merged.delete(id); notePasswords.delete(id); state.clearPendingMutation(id); }
+        for (const note of merged.values()) if (note.restore_sources) {
+          note.restore_sources = note.restore_sources.filter(source => !cleanup.completed.has(source.id));
+          if (!note.restore_sources.length) delete note.restore_sources;
+        }
+        for (const [id, version] of cleanup.retire) retiring[id] = version;
         records = [...merged.values()];
         const localFolders = new Map(folderRecords.map(folder => [folder.id, folder]));
         for (const folder of incoming.folders) {
@@ -253,6 +278,22 @@ export async function createRuntime(onChange: (snapshot: any) => void, platform:
           }
         }
         await persist();
+        if (Object.keys(retiring).length) {
+          await outbox.discardChosenVersions(retiring);
+          const queued = await outbox.getAll();
+          for (const [id, version] of cleanup.retire) {
+            // A later source edit must conflict instead of losing its content.
+            const retirementVersion = version + 1;
+            if (queued.some(op => op.payload.notes.some(note => note.id === id && note.deleted
+              && note.text === '' && Number(note.last_modified) === retirementVersion))) continue;
+            const opId = crypto.randomUUID();
+            await outbox.enqueue({ opId, type: 'upload', attempt: 0, nextAt: Date.now(), createdAt: Date.now(),
+              payload: { op_id: opId, since: 0, notes: [{ id, text: '', title: '', deleted: true,
+                base_version: version, last_modified: retirementVersion, edit_session: crypto.randomUUID() }] } });
+            state.markPendingMutation(id, 'update', retirementVersion);
+          }
+          queueSync();
+        }
       });
       const remaining = await outbox.getAll();
       conflicts = [...new Set(remaining.filter(op => op.conflict).reduce<string[]>((ids, op) => ids.concat((op.payload.notes || []).map(note => note.id)), []))];
@@ -433,6 +474,26 @@ export async function createRuntime(onChange: (snapshot: any) => void, platform:
       const result = await firstValueFrom(auth.forgotPassword(email));
       if (result?.response_code !== 200) throw new Error('passwordResetFailed');
       return { recovery: false };
+    },
+    async restoreNotes(ids: string[]) {
+      const restoredIds = await exclusive(async () => {
+        if (snapshot().appLocked) throw new Error('notesLocked');
+        let version = nextNoteVersion(records);
+        const restored = copyTrashedNotes(records, ids, () => crypto.randomUUID(), () => version++);
+        for (const copy of restored.copies) {
+          const source = copy.restore_sources![copy.restore_sources!.length - 1].id;
+          const reference = resolveFolderReference(copy.folder_id, copy.folder, folderRecords);
+          copy.folder_id = reference.folder_id; copy.folder = reference.folder;
+          if (notePasswords.has(source)) notePasswords.set(copy.id, notePasswords.get(source)!);
+          state.markPendingMutation(copy.id, 'update', Number(copy.last_modified));
+        }
+        records = [...records, ...restored.copies];
+        await persist();
+        if (auth.isLoggedIn) { await queueUnsaved(); queueSync(); }
+        return restored.restoredIds;
+      });
+      emit();
+      return restoredIds;
     },
     async save(viewNotes: any[], viewFolders: string[], deletedIds: string[] = [], deletedFolderNames: string[] = [], changedIds?: string[]) {
       return exclusive(async () => {
