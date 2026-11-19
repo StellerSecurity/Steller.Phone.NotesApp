@@ -10,6 +10,7 @@ import { AppHapticsService } from 'src/app/services/app-haptics.service';
 import { TranslatorService } from 'src/app/services/translator.service';
 
 @Component({
+  standalone: false,
   selector: 'app-delete-account',
   templateUrl: './delete-account.component.html',
   styleUrls: ['./delete-account.component.scss'],

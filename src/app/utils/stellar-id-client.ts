@@ -9,14 +9,14 @@ export interface IdentityAccount { accountId: string; revision: number; keyEnvel
 const utf8 = new TextEncoder();
 const fail = (): never => { throw new Error('identityVerificationFailed'); };
 const encode = (value: Uint8Array): string => btoa(String.fromCharCode(...value));
-const decode = (value: unknown, size?: number): Uint8Array => {
+const decode = (value: unknown, size?: number): Uint8Array<ArrayBuffer> => {
   if (typeof value !== 'string' || value.length > 65536) return fail();
-  let bytes: Uint8Array;
+  let bytes: Uint8Array<ArrayBuffer>;
   try { bytes = Uint8Array.from(atob(value), c => c.charCodeAt(0)); } catch { return fail(); }
   if (encode(bytes) !== value || (size !== undefined && bytes.length !== size)) return fail();
   return bytes;
 };
-const urlDecode = (value: string): Uint8Array => {
+const urlDecode = (value: string): Uint8Array<ArrayBuffer> => {
   if (!/^[A-Za-z0-9_-]+$/.test(value)) return fail();
   return decode(value.replace(/-/g, '+').replace(/_/g, '/') + '='.repeat((4 - value.length % 4) % 4));
 };
@@ -89,7 +89,11 @@ export class StellarIdClient {
   private async wrap(root: Uint8Array, exportKey: string, identifiers: Identifiers): Promise<string> {
     if (root.length !== 32) return fail();
     const iv = crypto.getRandomValues(new Uint8Array(12));
-    const cipher = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, await this.wrappingKey(exportKey, identifiers), root));
+    const data = new Uint8Array(root);
+    let encrypted: ArrayBuffer;
+    try { encrypted = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, await this.wrappingKey(exportKey, identifiers), data); }
+    finally { data.fill(0); }
+    const cipher = new Uint8Array(encrypted);
     const packed = new Uint8Array(iv.length + cipher.length);
     packed.set(iv); packed.set(cipher, iv.length);
     return encode(packed);

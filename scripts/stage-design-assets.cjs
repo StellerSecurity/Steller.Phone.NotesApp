@@ -19,6 +19,7 @@ function stage(source, output) {
 if (require.main === module) {
   const root = path.resolve(__dirname, '..'), source = process.env.STELLAR_NOTES_DESIGN_SOURCE;
   if (!source || !path.isAbsolute(source)) throw Error('Set STELLAR_NOTES_DESIGN_SOURCE to the approved Notes design directory.');
+  require('./harden-dependencies.cjs').harden(root);
   execFileSync(process.execPath, [path.join(source, 'tools/build-quill-editor.cjs')], { stdio: 'inherit' });
   execFileSync(process.execPath, [path.join(root, 'scripts/build-design-runtime.cjs')], {
     stdio: 'inherit', env: { ...process.env, STELLAR_DESIGN_OUTPUT: path.join(source, 'live/runtime.bundle.js') },

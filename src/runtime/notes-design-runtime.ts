@@ -28,7 +28,7 @@ import { resolveFolderReference } from '../app/utils/folder-reference';
 import { homeNotePlainText } from '../app/utils/home-note-preview.util';
 import { nextNoteVersion } from '../app/utils/note-version';
 import { createVault, exportServerBundleFromHeader, extractPlainEAK, unpackCipherBlob } from '@stellarsecurity/stellar-crypto';
-import { ɵ_sanitizeHtml } from '@angular/core';
+import { Injector, runInInjectionContext, ɵ_sanitizeHtml } from '@angular/core';
 import type { NgZone } from '@angular/core';
 import type { Folder } from '../app/models/Folder';
 import type { NoteV1 } from '../app/models/NoteV1';
@@ -64,12 +64,17 @@ export function sanitizeEditorHtml(html: string): string {
   return ɵ_sanitizeHtml(document, html).toString();
 }
 
+export function createBrowserHttpClient(): HttpClient {
+  return runInInjectionContext(Injector.create({ providers: [] }), () =>
+    new HttpClient(new HttpXhrBackend({ build: () => new XMLHttpRequest() })));
+}
+
 export async function createRuntime(onChange: (snapshot: any) => void, platform: { http?: HttpClient; storage?: Storage; secure?: SecureStorageService; background?: boolean } = {}) {
   const backListener = Capacitor.getPlatform() === 'android' ? await App.addListener('backButton', () => {
     const handleBack = (window as Window & { stellarHandleBack?: () => boolean }).stellarHandleBack;
     if (!handleBack?.()) void App.minimizeApp();
   }) : undefined;
-  const http = platform.http || new HttpClient(new HttpXhrBackend({ build: () => new XMLHttpRequest() }));
+  const http = platform.http || createBrowserHttpClient();
   const disk = platform.storage || await openNotesDatabase();
   let initialPreferences: Promise<any[]> | null = Promise.all([disk.get('notes.design.preferences.v1'), disk.get('ssAppearanceMode')]);
   const initialBiometricStatus = biometricStatus().catch(() => ({ available: false, enabled: false, status: -1 }));

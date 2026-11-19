@@ -3,6 +3,7 @@ import { ModalController } from '@ionic/angular';
 import { AppHapticsService } from '../services/app-haptics.service';
 
 @Component({
+  standalone: false,
   selector: 'app-resetpass-modal',
   templateUrl: './resetpass-modal.component.html',
   styleUrls: ['./resetpass-modal.component.scss'],

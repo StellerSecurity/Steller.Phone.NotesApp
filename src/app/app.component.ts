@@ -14,6 +14,7 @@ import { ScreenshotProtectionService } from './services/screenshot-protection.se
 import { ThemeService } from './services/theme.service';
 import { AppsflyerService } from './services/appsflyer.service';
 @Component({
+  standalone: false,
   selector: 'app-root',
   templateUrl: 'app.component.html',
   styleUrls: ['app.component.scss'],

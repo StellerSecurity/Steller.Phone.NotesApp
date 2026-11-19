@@ -22,6 +22,7 @@ import { isPasswordAcceptable } from '../../utils/password-policy';
 import { AppsflyerService } from '../../services/appsflyer.service';
 
 @Component({
+  standalone: false,
   selector: 'app-create-account',
   templateUrl: './create-account.component.html',
   styleUrls: ['./create-account.component.scss'],

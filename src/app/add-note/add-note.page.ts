@@ -38,6 +38,7 @@ const { v4: uuidv4 } = require('uuid');
 const CryptoJS = require('crypto-js');
 
 @Component({
+  standalone: false,
   selector: 'app-add-note',
   templateUrl: './add-note.page.html',
   styleUrls: ['./add-note.page.scss'],

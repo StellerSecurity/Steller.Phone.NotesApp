@@ -2,6 +2,7 @@ import { Component } from '@angular/core';
 import { AppHapticsService } from '../../services/app-haptics.service';
 
 @Component({
+  standalone: false,
   selector: 'app-about',
   templateUrl: './about.component.html',
   styleUrls: ['./about.component.scss'],

@@ -26,6 +26,7 @@ import { Preferences } from '@capacitor/preferences';
 import { AppsflyerService } from '../../services/appsflyer.service';
 
 @Component({
+  standalone: false,
   selector: 'app-login',
   templateUrl: './login.component.html',
   styleUrls: ['./login.component.scss'],

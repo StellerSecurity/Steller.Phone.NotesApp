@@ -3,6 +3,7 @@ import { IonInput, ModalController } from '@ionic/angular';
 import { AppHapticsService } from '../services/app-haptics.service';
 
 @Component({
+  standalone: false,
   selector: 'app-note-locked-modal',
   templateUrl: './note-locked-modal.component.html',
   styleUrls: ['./note-locked-modal.component.scss'],

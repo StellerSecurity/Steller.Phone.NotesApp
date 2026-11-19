@@ -1,6 +1,6 @@
 import { bindEditorScroll } from './editor-scroll';
 import {
-  Component, EventEmitter, Input, Output, Renderer2,
+  SecurityContext, Component, EventEmitter, Input, Output, Renderer2,
   Inject, PLATFORM_ID, OnInit, OnDestroy, ViewChild, ElementRef
 } from '@angular/core';
 import { DomSanitizer } from '@angular/platform-browser';
@@ -11,7 +11,7 @@ import { Capacitor } from '@capacitor/core';
 import { Filesystem, Directory } from '@capacitor/filesystem';
 import { TranslatorService } from '../../services/translator.service';
 import { AppHapticsService } from '../../services/app-haptics.service';
-import { preserveNoteLineBreaks, preserveNoteSpaces } from './preserve-note-line-breaks';
+import { noteEditorModules, sanitizeNoteContent, legacyNoteHtml, CompactImageExport } from './editor-document';
 
 interface HeaderOption {
   value: string;
@@ -19,6 +19,7 @@ interface HeaderOption {
 }
 
 @Component({
+  standalone: false,
   selector: 'app-rich-text-editor',
   templateUrl: './rich-text-editor.component.html',
   styleUrls: ['./rich-text-editor.component.scss']
@@ -92,23 +93,36 @@ export class RichTextEditorComponent implements OnInit, OnDestroy {
     { value: '6', label: 'heading6' }
   ];
 
+  private imageExport = new CompactImageExport();
+  private editorSafeHtml?: string;
+  private contentRevision = 0;
+  private exportedRevision = -1;
+  private revisionUnlisten?: () => void;
+  readonly editorValueSetter = (quill: any, value: string) => {
+    const safe = this.safeHtml(value || '');
+    if (safe === this.editorSafeHtml && this.exportedRevision === this.contentRevision) return quill.getContents();
+    return quill.clipboard.convert({ html: safe });
+  };
+  readonly editorValueGetter = (quill: any): string => {
+    const compact = this.imageExport.prepare(quill.root);
+    const html = legacyNoteHtml(compact.root);
+    const safe = compact.restore(this.safeHtml(html === '<p><br></p>' ? '' : html));
+    this.editorSafeHtml = safe;
+    this.exportedRevision = this.contentRevision;
+    return safe;
+  };
+  private safeHtml(html: string): string {
+    return sanitizeNoteContent(html, value => this.sanitizer.sanitize(SecurityContext.HTML, value) || '');
+  }
+
   quillModules = {
-    clipboard: {
-      // Preserve semantic paragraphs, not layout-dependent gaps between blocks.
-      matchVisual: false,
-      matchers: [[3, preserveNoteSpaces], [1, preserveNoteLineBreaks]]
-    },
+    ...noteEditorModules(),
     toolbar: {
       container: '#custom-toolbar',
       handlers: {
         undo: () => this.quill?.history.undo(),
         redo: () => this.quill?.history.redo()
       }
-    },
-    history: {
-      delay: 0,
-      maxStack: 300,
-      userOnly: true
     }
   };
 
@@ -136,6 +150,7 @@ export class RichTextEditorComponent implements OnInit, OnDestroy {
   ngOnDestroy() {
     this.destroyed = true;
     this.setViewActive(false);
+    this.revisionUnlisten?.();
     this.selectionUnlisten?.();
     this.editorScrollUnlisten?.();
     this.editorPasteUnlisten?.();
@@ -155,7 +170,15 @@ export class RichTextEditorComponent implements OnInit, OnDestroy {
 
   onEditorCreated(quillInstance: any) {
     this.selectionUnlisten?.();
+    this.revisionUnlisten?.();
     this.quill = quillInstance;
+    this.editorSafeHtml = undefined;
+    this.contentRevision = 0;
+    this.exportedRevision = -1;
+    this.imageExport = new CompactImageExport();
+    const revisionChanged = (type: string) => { if (type === 'text-change') this.contentRevision++; };
+    quillInstance.on('editor-change', revisionChanged);
+    this.revisionUnlisten = () => quillInstance.off('editor-change', revisionChanged);
     const rememberSelection = (range: { index: number; length: number } | null) => {
       if (range) this.headingRange = { ...range };
     };
