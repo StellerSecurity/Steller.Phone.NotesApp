@@ -1,0 +1,1 @@
+Improved note locking and password feedback. More consistent formatting and checklists across mobile and desktop. Smoother keyboard, toolbar and navigation. Improved live sync, offline saving and restoring notes from Trash.
