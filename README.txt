@@ -1,6 +1,6 @@
 # Building Stellar Notes for Android and iOS
 
-This is the mobile application repository. The current Android UI combines the approved Notes design, this repository's API/offline/sync services, and the shared desktop Quill editor.
+This is the mobile application repository. The current Android / iOS UI combines the approved Notes design, this repository's API/offline/sync services, and the shared desktop Quill editor.
 
 ## Source checkouts
 
