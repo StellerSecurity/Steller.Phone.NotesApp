@@ -50,7 +50,7 @@ npm run cap -- sync android
 
 `build:design-app` verifies and builds the shared Quill engine, bundles the mobile services using production endpoints, and stages the shipping design in `www/`. Capacitor sync copies it into the native project and configures the plugins/background worker.
 
-**Do not run `npm run build` after staging the design:** it builds the original Angular screen tree and can overwrite `www/` with the old UI. To refresh the shipping app, rerun `build:design-app`, followed by Capacitor sync.
+**Do not run `npm run build` after staging the design:** it builds a separate Angular screen tree and can overwrite `www/` with the alternative UI. To refresh the shipping app, rerun `build:design-app`, followed by Capacitor sync.
 
 Never replace the note body with a separate textarea or change stored notes to compensate for visual spacing. Preserve the shared editor's import/export rules and intentional empty lines.
 
@@ -119,7 +119,7 @@ npm run cap -- open ios
 
 Open **`ios/App/App.xcworkspace`**, not only the `.xcodeproj`. Select the **App** scheme and an installed iPhone simulator, then use **Product → Build** and **Run**. Simulator builds do not require production signing credentials.
 
-**Current iOS release gap:** the checked-in Podfile/plugin list and deployment/version settings predate the current Android release. One app configuration still declares iOS 13.0 while Capacitor 7 requires iOS 14+. Reconcile the native project and locked pods with the pinned Capacitor 7/plugin versions under review before calling iOS release-ready. The Android tests do not establish an iOS build or iPhone test pass.
+**iOS release prerequisites:** verify the Podfile/plugin list and deployment/version settings against the pinned native dependencies. Ensure every app configuration targets iOS 14.0 or later for Capacitor 7. Reconcile the native project and locked pods with the pinned Capacitor 7/plugin versions under review before calling iOS release-ready. The Android tests do not establish an iOS build or iPhone test pass.
 
 ### Archive and sign for TestFlight / App Store
 
@@ -157,8 +157,8 @@ Also test the actual release-mode app with a separate QA account/profile:
 - Login, offline startup, autosave and save/reopen.
 - Quill formatting, Enter, leading/trailing and consecutive empty lines.
 - Toolbar position above the real keyboard, navigation and app lock.
-- Mobile → old desktop and old desktop → mobile sync, including an already-open note.
-- Note/folder deletion, restore and simultaneous edits.
+- Mobile → desktop and desktop → mobile sync, including an already-open note.
+- Note/fexisting deletion, restore and simultaneous edits.
 - An in-place upgrade with synced and unsynced notes preserved.
 
 Unit tests alone do not establish cross-device compatibility. Never clear app data or uninstall an existing installation to make an upgrade test pass. Use a separate QA application ID for isolated tests. A local upload-key-signed APK may not update a Play-installed app because Play App Signing can use a different certificate.
