@@ -1,0 +1,14 @@
+def notesTestConfigFile = rootProject.projectDir.parentFile.toPath().resolve('release-tests.local.json').toFile()
+def notesTestConfig = notesTestConfigFile.exists() ? new groovy.json.JsonSlurper().parse(notesTestConfigFile) : [:]
+def notesReleaseTests = tasks.register('verifyNotesReleaseTests', Exec) {
+    group = 'verification'
+    description = 'Run required Notes tests before packaging a release.'
+    workingDir rootProject.projectDir.parentFile
+    commandLine(System.getenv('STELLAR_NODE_BINARY') ?: notesTestConfig.nodeBinary ?: 'node', 'scripts/test-release.cjs', '--platform', 'android')
+    ignoreExitValue = false
+}
+tasks.configureEach { task ->
+    if (task.name in ['preReleaseBuild', 'assembleRelease', 'bundleRelease', 'packageRelease']) {
+        task.dependsOn(notesReleaseTests)
+    }
+}

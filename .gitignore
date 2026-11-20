@@ -81,3 +81,7 @@ Thumbs.db
 *.jks
 
 /local/
+
+/test-results/
+
+/release-tests.local.json
