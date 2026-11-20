@@ -34,15 +34,25 @@ stages:
     steps:
     - task: NodeTool@0
       inputs:
-        versionSpec: '20.x'
+        versionSpec: '24.22.2'
       displayName: 'Install Node.js'
 
     - script: |
         set -eu
         npm run test:dependency-hardening
         npm run deps:install
-        npm run build -- --configuration production
-      displayName: 'Build from the committed dependency lockfile'
+      displayName: 'Prepare reviewed locked dependencies'
+
+    - script: npm run test:mobile
+      displayName: 'Required mobile unit and integration tests'
+
+    - publish: $(System.DefaultWorkingDirectory)/test-results
+      artifact: notes-test-results
+      condition: always()
+      displayName: 'Publish Notes test reports'
+
+    - script: npm run build -- --configuration production
+      displayName: 'Build only after required tests pass'
 
     - task: ArchiveFiles@2
       displayName: 'Archive files'

@@ -1,0 +1,41 @@
+Notes release tests
+
+From the prepared mobile checkout:
+
+  npm run test:release
+
+This runs storage/dependency unit tests, the Notes UI regression tests, mobile
+integration tests, and automated browser tests of the actual staged UI/runtime.
+The browser uses synthetic accounts, in-memory storage and mocked HTTP. It does
+not log in to production or use personal Notes data.
+
+For IDE builds, copy release-tests.example.json to release-tests.local.json and
+fill in your reviewed Node, Chrome and design-checkout paths. The local file is
+ignored by Git; environment variables override it.
+
+Before the full run, prepare the reviewed dependencies and build the shipping UI
+as described in README.txt. Set STELLAR_NOTES_DESIGN_SOURCE to the absolute path
+of stellar-notes-mobile-test. The shared Quill dependencies must already be
+reviewed/prepared; this command never installs dependencies.
+
+  npm run test:mobile
+
+Runs the mobile unit/integration suites without requiring the design checkout.
+Azure runs this before its build/archive/deploy steps. UI-source tests also run
+in the design repository on pushes, PRs, tags and published-release events.
+
+Android Release builds automatically run the full gate before packaging.
+iOS Release builds run the same gate in the app target's build phase.
+Native builds additionally verify that packaged assets match the tested UI and
+that the runtime bundle matches this mobile source. Stale/missing assets,
+missing suites, failed tests and missing/empty reports block the release.
+
+For Android Studio/Xcode, provide STELLAR_NOTES_DESIGN_SOURCE in the build
+environment. Set STELLAR_NODE_BINARY to the reviewed Node executable's absolute
+path if the IDE cannot find node. CHROME_BIN can select the installed Chrome.
+Capacitor copy/sync must have copied the current www assets into the native app.
+
+Reports: test-results/release.json, mobile-integration.json, mobile-unit.xml and
+notes-ui.xml. Failures name the test in the command/CI output. Reports and local
+fixtures are ignored by Git. Tests cover the included scenarios, not every
+possible defect or a real-device test of every OS version.

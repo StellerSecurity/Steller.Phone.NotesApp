@@ -6,6 +6,7 @@ import { packCipherBlob, unpackCipherBlob } from '@stellarsecurity/stellar-crypt
 import { createVault, exportServerBundleFromHeader, extractPlainEAK } from '@stellarsecurity/stellar-crypto';
 import { IdentityAuthService } from '../app/services/identity-auth.service';
 import { AuthService } from '../app/services/auth.service';
+import { LocalAccountProfiles } from './local-account-profiles';
 
 describe('Browser HTTP transport', () => {
   it('creates the default transport outside an Angular application and performs XHR', async () => {
@@ -570,6 +571,19 @@ describe('Original design with existing Notes services', () => {
     expect(JSON.parse(storage.get('notes'))[0].folder_id).toBe(activeId);
     await runtime.sync();
     expect(downloads()[downloads().length - 1][1].known_notes[id]).toBe(100);
+  });
+  it('logs out after sync, removes session access and preserves the account profile for later login', async () => {
+    const revoke = spyOn(IdentityAuthService.prototype, 'logout').and.resolveTo();
+    signedIn(); await start(); await runtime.save([note()], []); await runtime.sync();
+    await runtime.logout();
+    expect(revoke).toHaveBeenCalledTimes(1);
+    expect(runtime.snapshot().loggedIn).toBeFalse();
+    expect(runtime.snapshot().notes).toEqual([]);
+    for (const key of ['ssToken', 'ssUser', 'ssEakB64', 'ssEakB64_Encrypted']) expect(secure.has(key)).toBeFalse();
+    const profiles = new LocalAccountProfiles(disk, { getItem: async (key: string) => secure.get(key) || null } as any);
+    const profile = await profiles.load('123');
+    expect(profile?.notes[0].title).toBe('Private title');
+    expect(profile?.notes[0].text).toBe('<p>Private content</p>');
   });
   it('blocks logout while changes are still queued offline', async () => {
     spyOnProperty(navigator, 'onLine', 'get').and.returnValue(false);

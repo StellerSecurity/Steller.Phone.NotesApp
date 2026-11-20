@@ -54,6 +54,12 @@ npm run cap -- sync android
 
 Never replace the note body with a separate textarea or change stored notes to compensate for visual spacing. Preserve the shared editor's import/export rules and intentional empty lines.
 
+## Required release tests
+
+Run `npm run test:release` after staging the shipping UI. Android and iOS Release builds also invoke this gate automatically; any failed/missing test or stale native asset stops packaging. Reports are written to `test-results/`.
+
+Copy `release-tests.example.json` to the ignored `release-tests.local.json` and set your design/Node/Chrome paths, or use `STELLAR_NOTES_DESIGN_SOURCE` and `STELLAR_NODE_BINARY` in the build environment. Native assets must be refreshed with Capacitor copy/sync. See TESTING.txt for suites, CI behavior and commands. The test command does not install dependencies or use personal accounts.
+
 ## Open and build Android
 
 ```sh

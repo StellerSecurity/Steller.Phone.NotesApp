@@ -17,6 +17,8 @@ if (!output || !path.isAbsolute(output)) throw new Error('Set STELLAR_DESIGN_OUT
         return { contents: fs.readFileSync(path.join(root, 'src/environments/environment.prod.ts'), 'utf8'), loader: 'ts' };
       });
     } }] });
+  const manifest = { version: 1, sourceSha256: require('./release-tests/source-fingerprint.cjs').runtimeFingerprint(root), bundleSha256: require('node:crypto').createHash('sha256').update(fs.readFileSync(output)).digest('hex') };
+  fs.writeFileSync(path.join(path.dirname(output), 'runtime.sources.json'), JSON.stringify(manifest, null, 2) + '\n');
   const rootIndex = path.resolve(path.dirname(output), '../index.html');
   for (const index of [rootIndex, path.join(path.dirname(rootIndex), 'tests/auth-flow.html')]) {
   if (fs.existsSync(index) && path.basename(output) === 'runtime.bundle.js') {

@@ -1,0 +1,5 @@
+{
+  "designSource": "/absolute/path/to/Stellar.App.Prototypes/stellar-notes-mobile-test",
+  "nodeBinary": "/absolute/path/to/node",
+  "chromeBinary": "/absolute/path/to/chrome"
+}

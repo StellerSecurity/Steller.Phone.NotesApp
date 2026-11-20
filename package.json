@@ -25,7 +25,9 @@
     "build:design-runtime": "node scripts/build-design-runtime.cjs",
     "test:upgrade-storage": "node --test scripts/notes-database-upgrade.test.cjs",
     "build:design-app": "node scripts/stage-design-assets.cjs",
-    "test:build-tool-hardening": "node scripts/harden-dependencies.cjs && STELLAR_REVIEWED_BUILD_TOOLS=1 node --test scripts/build-tool-hardening.test.cjs"
+    "test:build-tool-hardening": "node scripts/harden-dependencies.cjs && STELLAR_REVIEWED_BUILD_TOOLS=1 node --test scripts/build-tool-hardening.test.cjs",
+    "test:release": "node scripts/test-release.cjs",
+    "test:mobile": "node scripts/test-release.cjs --mobile-only"
   },
   "private": true,
   "dependencies": {
