@@ -1,4 +1,4 @@
-# Building Stellar Notes for Android
+# Building Stellar Notes for Android and iOS
 
 This is the mobile application repository. The current Android UI combines the approved Notes design, this repository's API/offline/sync services, and the shared desktop Quill editor.
 
@@ -101,6 +101,36 @@ shasum -a 256 "/absolute/path/to/app-release.aab"
 Require a valid signature and compare the certificate SHA-256 with the known upload certificate from a previous accepted release. Never publish a QA-key-signed bundle. Keep the keystore, passwords and signing configuration outside Git; never put passwords in command arguments or documentation.
 
 For reference, release **2.89 (45)** was built from mobile commit `fa7da9a57b0708c91d26c3689262d0c7dfb0d48e`. Its portrait hardware feature is optional while the activity stays portrait-locked. Preserve both settings so orientation remains fixed without excluding tablets and other eligible devices.
+
+## Build iOS with Xcode
+
+Use the same three source checkouts and shared design build above. iOS builds require a Mac, Xcode **16 or later**, and the project's reviewed CocoaPods installation. Capacitor 7 supports iOS **14+**; confirm both Debug and Release deployment targets and all plugin requirements before building. See the [Capacitor 7 iOS guide](https://capacitorjs.com/docs/v7/ios).
+
+After the dependencies and CocoaPods operations have been reviewed and approved:
+
+```sh
+cd "$NOTES_MOBILE"
+npm run build:design-app
+npm run cap -- sync ios
+npm run cap -- open ios
+```
+
+`sync ios` copies the staged UI, updates native plugin integration and invokes CocoaPods. It is not just a file copy: it can install native dependencies and must follow the same dependency-review policy. Do not run a blanket `pod update` or discard `ios/App/Podfile.lock` to resolve an error.
+
+Open **`ios/App/App.xcworkspace`**, not only the `.xcodeproj`. Select the **App** scheme and an installed iPhone simulator, then use **Product → Build** and **Run**. Simulator builds do not require production signing credentials.
+
+**Current iOS release gap:** the checked-in Podfile/plugin list and deployment/version settings predate the current Android release. One app configuration still declares iOS 13.0 while Capacitor 7 requires iOS 14+. Reconcile the native project and locked pods with the pinned Capacitor 7/plugin versions under review before calling iOS release-ready. The Android tests do not establish an iOS build or iPhone test pass.
+
+### Archive and sign for TestFlight / App Store
+
+1. In the App target, verify bundle identifier `steller.phone.notesapp` and select the existing authorized Apple Developer team.
+2. Set the intended marketing version and a new build number in Xcode. Android's Gradle version fields do not update iOS.
+3. Check Signing & Capabilities, provisioning, privacy manifests, usage descriptions and native plugin registration. Keep certificates and private keys out of Git.
+4. Choose a generic iOS device / **Any iOS Device (arm64)** destination, then **Product → Archive**.
+5. In Organizer, validate the archive, then use **Distribute App → App Store Connect** when the signed release is approved. For a build-only handoff, retain the `.xcarchive`; an unsigned archive is not upload-ready.
+6. Test the signed build through TestFlight on a real iPhone before App Store submission.
+
+Verify Quill spacing/save/reopen, keyboard/toolbar positioning, Face ID or Touch ID screen lock, background/foreground behavior, sync in both directions, and upgrade retention of unsynced notes on iOS too. Do not uninstall or clear a user's app to work around an upgrade failure.
 
 ## Checks before publishing
 
