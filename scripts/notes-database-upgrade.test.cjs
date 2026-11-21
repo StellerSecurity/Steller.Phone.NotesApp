@@ -74,3 +74,51 @@ test('conflicting folder or app-code metadata cannot be combined with matching n
   try{await assert.rejects(()=>f.service.init(),/notesStorageImportConflict/);assert.equal(f.db.writes.length,0);assert.equal(f.source.folders,'raw-folders');assert.equal(f.source.app_password_challenge,'1')}finally{f.restore()}
  }
 });
+
+const repairKey='notes.localstorage.repair.v1';
+function oldFolderSource(locked=true){
+ const folders=Array.from({length:6},(_,i)=>({id:'original-folder-'+i,name:'Folder '+i,deleted:false}));
+ const notes=folders.map((folder,i)=>({id:'original-note-'+i,title:'Offline '+i,folder:folder.name,folder_id:folder.id,text:'<p>First</p><p><br></p><p>Last</p>'}));
+ const encode=value=>locked?require('crypto-js').AES.encrypt(JSON.stringify(value),'old-original-code').toString():JSON.stringify(value);
+ return {notes:encode(notes),folders:encode(folders),...(locked?{app_password_challenge:'1'}:{})};
+}
+test('stale completion marker cannot hide six locked localStorage folders and notes',async()=>{
+ const raw=oldFolderSource(),f=localStorageFixture({storage_migration_version:'1'},raw);
+ try{await f.service.init();assert.equal(f.service.getNotesRaw(),'[]');assert.equal(f.service.getAppPasswordChallengeFlag(),null);assert.equal(await f.service.recoverLegacyIntoEmptyStore(),true);assert.equal(f.service.getNotesRaw(),raw.notes);assert.equal(f.service.getFoldersRaw(),raw.folders);assert.equal(f.service.getAppPasswordChallengeFlag(),'1');assert.deepEqual(f.source,raw);const journal=await f.db.get(repairKey);assert.equal(journal.state,'complete');assert(!JSON.stringify(journal).includes(raw.notes));assert.equal(await f.service.recoverLegacyIntoEmptyStore(),false)}finally{f.restore()}
+});
+test('empty collection placeholders can recover plain guest notes without losing original HTML',async()=>{
+ const raw=oldFolderSource(false),f=localStorageFixture({storage_migration_version:'1',notes:'[]',folders:'[]'},raw);
+ try{await f.service.init();await f.service.recoverLegacyIntoEmptyStore();assert.equal(f.service.getNotesRaw(),raw.notes);assert.equal(f.service.getFoldersRaw(),raw.folders);assert.deepEqual(f.source,raw)}finally{f.restore()}
+});
+test('repair never replaces populated canonical notes or folders',async()=>{
+ for(const core of [{notes:'[{"id":"new-note"}]'},{folders:'[{"id":"new-folder","name":"New"}]'}]){
+  const f=localStorageFixture({storage_migration_version:'1',...core},oldFolderSource());
+  try{await f.service.init();assert.equal(await f.service.recoverLegacyIntoEmptyStore(),false);for(const [key,value]of Object.entries(core))assert.equal(await f.db.get(key),value);assert.equal(f.db.writes.length,0)}finally{f.restore()}
+ }
+});
+test('interrupted stale-marker repair resumes from its verified journal without rewriting matching notes',async()=>{
+ const raw=oldFolderSource(),f=localStorageFixture({storage_migration_version:'1'},raw);f.db.failAfter=2;
+ try{await f.service.init();await assert.rejects(()=>f.service.recoverLegacyIntoEmptyStore(),/disk full/);assert.equal((await f.db.get(repairKey)).state,'copying');assert.equal(await f.db.get('notes'),raw.notes);const retry=new f.service.constructor(f.db);await retry.init();await retry.recoverLegacyIntoEmptyStore();assert.equal(retry.getFoldersRaw(),raw.folders);assert.equal(retry.getAppPasswordChallengeFlag(),'1');assert.equal(f.db.writes.filter(k=>k==='notes').length,1);assert.deepEqual(f.source,raw)}finally{f.restore()}
+});
+test('silent journal failure cannot start copying a recovery source',async()=>{
+ const f=localStorageFixture({storage_migration_version:'1'},oldFolderSource()),set=f.db.set.bind(f.db);f.db.set=async(k,v)=>{if(k!==repairKey)await set(k,v)};
+ try{await f.service.init();await assert.rejects(()=>f.service.recoverLegacyIntoEmptyStore(),/notesStorageImportIncomplete/);assert.equal(await f.db.get('notes'),null);assert.equal(f.db.writes.length,0)}finally{f.restore()}
+});
+test('changed recovery source blocks completion and further retries rather than replacing copied data',async()=>{
+ const raw=oldFolderSource(),f=localStorageFixture({storage_migration_version:'1'},raw),set=f.db.set.bind(f.db);f.db.set=async(k,v)=>{await set(k,v);if(k==='notes')f.source.notes='changed-source'};
+ try{await f.service.init();await assert.rejects(()=>f.service.recoverLegacyIntoEmptyStore(),/notesStorageImportConflict/);assert.equal((await f.db.get(repairKey)).state,'copying');assert.equal(await f.db.get('notes'),raw.notes);const count=f.db.writes.length;await assert.rejects(()=>f.service.recoverLegacyIntoEmptyStore(),/notesStorageImportConflict/);assert.equal(f.db.writes.length,count);assert.equal(f.source.notes,'changed-source')}finally{f.restore()}
+});
+test('repair refuses queued mutations, corrupt ciphertext, expired source timers and conflicting security settings',async()=>{
+ for(const [canonical,change,error]of [
+  [{'notes.sync.outbox.v1':[{opId:'pending'}]},{},'notesStorageImportConflict'],
+  [{},{notes:'corrupt-ciphertext'},'notesStorageInvalid'],
+  [{},{app_wipe_after_days:'7',app_last_unlock_at:String(Date.now()-8*86400000)},'notesStorageRecoveryExpired'],
+  [{privacy_mode_enabled:'true'},{privacy_mode_enabled:'false'},'notesStorageImportConflict']
+ ]){const raw={...oldFolderSource(),...change},f=localStorageFixture({storage_migration_version:'1',...canonical},raw);
+  try{await f.service.init();await assert.rejects(()=>f.service.recoverLegacyIntoEmptyStore(),new RegExp(error));assert.equal(f.db.writes.length,0);assert.deepEqual(f.source,raw)}finally{f.restore()}
+ }
+});
+test('a completed repair cannot resurrect the old mirror after notes were deliberately emptied',async()=>{
+ const f=localStorageFixture({storage_migration_version:'1',notes:'[]',folders:'[]',[repairKey]:{version:1,state:'complete',fingerprint:'previous'}},oldFolderSource());
+ try{await f.service.init();assert.equal(await f.service.recoverLegacyIntoEmptyStore(),false);assert.equal(f.service.getNotesRaw(),'[]');assert.equal(f.db.writes.length,0)}finally{f.restore()}
+});

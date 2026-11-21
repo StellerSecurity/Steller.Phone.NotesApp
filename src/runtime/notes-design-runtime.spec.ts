@@ -479,7 +479,7 @@ describe('Original design with existing Notes services', () => {
     await runtime.unlockApp('original-code');
     expect(runtime.snapshot().notes[0].title).toBe('Only on this phone');
   });
-  it('preserves six encrypted offline folders and their notes from raw localStorage with an app code', async () => {
+  for (const staleMarker of [false, true]) it('preserves six encrypted offline folders and notes with an app code; stale marker: ' + staleMarker, async () => {
     const crypto = new CryptoService();
     const folders = Array.from({ length: 6 }, (_, i) => ({ id: 'old-folder-' + i, name: 'Offline folder ' + i, deleted: false }));
     const notes = folders.map((folder, i) => ({ id: 'old-note-' + i, folder: folder.name, folder_id: folder.id,
@@ -488,7 +488,15 @@ describe('Original design with existing Notes services', () => {
     const rawFolders = crypto.encrypt(JSON.stringify(folders), 'old-app-code');
     localStorage.setItem('notes', rawNotes); localStorage.setItem('folders', rawFolders);
     localStorage.setItem('app_password_challenge', '1');
-    await start(); await runtime.unlockApp('old-app-code');
+    if (staleMarker) {
+      storage.set('storage_migration_version', '1'); storage.set('notes', '[]'); storage.set('folders', '[]');
+    }
+    await start();
+    expect(runtime.snapshot().appLocked).toBeTrue();
+    await expectAsync(runtime.unlockApp('wrong-code')).toBeRejectedWithError('wrongPassword');
+    expect(runtime.snapshot().appLocked).toBeTrue();
+    expect(storage.get('notes')).toBe(rawNotes); expect(localStorage.getItem('notes')).toBe(rawNotes);
+    await runtime.unlockApp('old-app-code');
     expect(runtime.snapshot().loggedIn).toBeFalse();
     expect(runtime.snapshot().folders).toEqual(folders.map(folder => folder.name));
     expect(runtime.snapshot().notes.map((note: any) => note.id)).toEqual(notes.map(note => note.id));
@@ -496,6 +504,15 @@ describe('Original design with existing Notes services', () => {
     runtime.dispose(); await start(); await runtime.unlockApp('old-app-code');
     expect(runtime.snapshot().folders.length).toBe(6);
     expect(runtime.snapshot().notes.every((note: any) => note.html === '<p>First</p><p><br></p><p>Last</p>')).toBeTrue();
+  });
+  it('does not recover old guest notes into an authenticated empty account', async () => {
+    signedIn(); storage.set('storage_migration_version', '1'); storage.set('notes', '[]'); storage.set('folders', '[]');
+    const raw = new CryptoService().encrypt(JSON.stringify([{ id: 'guest-only', title: 'Other profile', text: '<p>Guest</p>' }]), 'guest-code');
+    localStorage.setItem('notes', raw); localStorage.setItem('app_password_challenge', '1');
+    await start();
+    expect(runtime.snapshot().loggedIn).toBeTrue(); expect(runtime.snapshot().appLocked).toBeFalse();
+    expect(runtime.snapshot().notes).toEqual([]); expect(storage.get('notes')).toBe('[]');
+    expect(localStorage.getItem('notes')).toBe(raw); expect(storage.has('notes.localstorage.repair.v1')).toBeFalse();
   });
   it('resets locked local data without deleting synced notes from the server', async () => {
     signedIn(); await start(); await runtime.save([note()], ['Personal']);

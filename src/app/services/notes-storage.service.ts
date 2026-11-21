@@ -67,6 +67,87 @@ export class NotesStorageService {
       if (!this.unsaved.has(key)) this.cache.set(key, value ?? null);
     }
   }
+  /** Startup-only repair for an empty guest database with an old completion marker. */
+  public async recoverLegacyIntoEmptyStore(): Promise<boolean> {
+    await this.init();
+    await this.flush();
+    const journalKey = 'notes.localstorage.repair.v1';
+    const journal = await this.storage.get(journalKey);
+    if (journal?.version === 1 && journal.state === 'complete') return false;
+    const emptyCollection = (value: unknown) => {
+      if (value == null || value === '') return true;
+      if (typeof value !== 'string') return false;
+      try { const parsed = JSON.parse(value); return Array.isArray(parsed) && parsed.length === 0; }
+      catch { return false; }
+    };
+    const target = new Map<string, string | null>();
+    for (const key of this.managedKeys) target.set(key, await this.storage.get(key));
+    if (!journal && (!emptyCollection(target.get('notes')) || !emptyCollection(target.get('folders'))
+      || target.get('app_password_challenge') != null)) return false;
+    const source = this.managedKeys.map(key => [key, this.readLegacy(key, true)] as const);
+    const values = new Map<string, string | null>(source);
+    if (!journal && emptyCollection(values.get('notes')) && emptyCollection(values.get('folders'))) return false;
+    for (const key of ['notes.sync.outbox.v1', 'notes.design.pending-deletes.v1', 'notes.design.folders-pending.v1']) {
+      const value = await this.storage.get(key);
+      if (value != null && value !== false && value !== '[]' && !(Array.isArray(value) && value.length === 0)) {
+        throw new Error('notesStorageImportConflict');
+      }
+    }
+    const fingerprint = async (entries: readonly (readonly [string, string | null])[]) => {
+      const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(JSON.stringify(entries)));
+      return Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, '0')).join('');
+    };
+    const digest = await fingerprint(source);
+    if (journal && (journal.version !== 1 || journal.state !== 'copying' || journal.fingerprint !== digest)) {
+      throw new Error('notesStorageImportConflict');
+    }
+    // Do not guess at an encrypted collection or silently combine lock metadata.
+    const locked = values.get('app_password_challenge') != null;
+    for (const key of ['notes', 'folders']) {
+      const value = values.get(key);
+      if (emptyCollection(value)) continue;
+      if (locked ? !/^U2FsdGVkX1[A-Za-z0-9+/]+={0,2}$/.test(value || '') : (() => {
+        try { return !Array.isArray(JSON.parse(value!)); } catch { return true; }
+      })()) throw new Error('notesStorageInvalid');
+    }
+    if (locked && emptyCollection(values.get('notes'))) throw new Error('notesStorageInvalid');
+    // A stale timer must not erase the only recovery source during import.
+    // Existing, populated databases retain their normal inactivity policy.
+    const wipeDays = Number(values.get('app_wipe_after_days')), lastUnlock = Number(values.get('app_last_unlock_at'));
+    if (locked && wipeDays > 0 && lastUnlock > 0 && Date.now() - lastUnlock >= wipeDays * 86400000) {
+      throw new Error('notesStorageRecoveryExpired');
+    }
+    for (const [key, value] of source) {
+      const existing = target.get(key);
+      if (existing != null && existing !== value && !(['notes', 'folders'].includes(key) && emptyCollection(existing))) {
+        throw new Error('notesStorageImportConflict');
+      }
+    }
+    if (!journal) {
+      const copying = { version: 1, state: 'copying', fingerprint: digest };
+      await this.storage.set(journalKey, copying);
+      if (JSON.stringify(await this.storage.get(journalKey)) !== JSON.stringify(copying)) {
+        throw new Error('notesStorageImportIncomplete');
+      }
+    }
+    for (const [key, value] of source) {
+      if (value === null) continue;
+      const existing = await this.storage.get(key);
+      if (existing !== target.get(key)) throw new Error('notesStorageImportConflict');
+      if (existing !== value) await this.storage.set(key, value);
+      if (await this.storage.get(key) !== value) throw new Error('notesStorageImportIncomplete');
+    }
+    if (await fingerprint(this.managedKeys.map(key => [key, this.readLegacy(key, true)] as const)) !== digest) {
+      throw new Error('notesStorageImportConflict');
+    }
+    const complete = { version: 1, state: 'complete', fingerprint: digest };
+    await this.storage.set(journalKey, complete);
+    if (JSON.stringify(await this.storage.get(journalKey)) !== JSON.stringify(complete)) {
+      throw new Error('notesStorageImportIncomplete');
+    }
+    await this.primeCache();
+    return true;
+  }
   private readLegacy(key: string, required = false): string | null {
     try {
       return localStorage.getItem(key);

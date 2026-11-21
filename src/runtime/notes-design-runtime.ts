@@ -84,6 +84,11 @@ export async function createRuntime(onChange: (snapshot: any) => void, platform:
   await profiles.recover();
   const local = new NotesStorageService(disk);
   await local.init();
+  // Recover only the guest profile. Never import old guest data into a signed-in
+  // account or one whose keys/session still need account-profile recovery.
+  const accountState = await Promise.all(['ssToken', 'ssUser', 'ssIdentitySession', 'ssAuthVersion', 'ssEakB64', 'ssEakB64_Encrypted']
+    .map(key => secure.getItem(key)));
+  const recoveredLegacy = accountState.every(value => value == null) && await local.recoverLegacyIntoEmptyStore();
   const keys = new CryptoKeyService();
   const legacyCrypto = new CryptoService();
   const secrets = new SecretapiService(http);
@@ -308,7 +313,10 @@ export async function createRuntime(onChange: (snapshot: any) => void, platform:
   }
   await auth.initializeAuthState();
   const wipeDays = state.getAppWipeAfterDays(), lastUnlock = state.getLastSuccessfulAppUnlockAt();
-  if (state.appHasPasswordChallenge() && wipeDays > 0 && lastUnlock > 0 && Date.now() - lastUnlock >= wipeDays * 86400000) await wipeLocal();
+  if (state.appHasPasswordChallenge() && wipeDays > 0 && lastUnlock > 0 && Date.now() - lastUnlock >= wipeDays * 86400000) {
+    if (recoveredLegacy) throw new Error('notesStorageRecoveryExpired');
+    await wipeLocal();
+  }
   for (const op of await outbox.getAll()) {
     for (const note of op.payload.notes || []) state.markPendingMutation(note.id, 'update', Number(note.last_modified));
     for (const id of op.payload.deleted_ids || []) { state.markPendingMutation(id, 'delete'); pendingDeletes.add(id); }
