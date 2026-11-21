@@ -7,6 +7,7 @@ import { createVault, exportServerBundleFromHeader, extractPlainEAK } from '@ste
 import { IdentityAuthService } from '../app/services/identity-auth.service';
 import { AuthService } from '../app/services/auth.service';
 import { LocalAccountProfiles } from './local-account-profiles';
+import { CryptoService } from '../app/services/crypto.service';
 
 describe('Browser HTTP transport', () => {
   it('creates the default transport outside an Angular application and performs XHR', async () => {
@@ -457,6 +458,44 @@ describe('Original design with existing Notes services', () => {
     expect(runtime.snapshot().appLocked).toBeTrue();
     await runtime.unlockApp('six-six');
     expect(runtime.snapshot().notes[0].title).toBe('Private title');
+  });
+  for (const folders of [null, '[]']) it('unlocks original localStorage notes without a separately encrypted folder collection: ' + folders, async () => {
+    const original = JSON.stringify([{ id: 'original-local', title: 'Only on this phone', text: '<p>First</p><p><br></p><p>Last</p>', deleted: false }]);
+    const encrypted = new CryptoService().encrypt(original, 'original-code');
+    localStorage.setItem('notes', encrypted);
+    localStorage.setItem('app_password_challenge', '1');
+    if (folders !== null) localStorage.setItem('folders', folders);
+    await start();
+    expect(runtime.snapshot().appLocked).toBeTrue();
+    await expectAsync(runtime.unlockApp('incorrect-code')).toBeRejectedWithError('wrongPassword');
+    expect(runtime.snapshot().appLocked).toBeTrue();
+    expect(storage.get('notes')).toBe(encrypted);
+    await runtime.unlockApp('original-code');
+    expect(runtime.snapshot().appLocked).toBeFalse();
+    expect(runtime.snapshot().notes[0].html).toBe('<p>First</p><p><br></p><p>Last</p>');
+    expect(storage.get('notes')).toBe(encrypted);
+    expect(localStorage.getItem('notes')).toBe(encrypted);
+    runtime.dispose(); await start();
+    await runtime.unlockApp('original-code');
+    expect(runtime.snapshot().notes[0].title).toBe('Only on this phone');
+  });
+  it('preserves six encrypted offline folders and their notes from raw localStorage with an app code', async () => {
+    const crypto = new CryptoService();
+    const folders = Array.from({ length: 6 }, (_, i) => ({ id: 'old-folder-' + i, name: 'Offline folder ' + i, deleted: false }));
+    const notes = folders.map((folder, i) => ({ id: 'old-note-' + i, folder: folder.name, folder_id: folder.id,
+      title: 'Offline note ' + i, text: '<p>First</p><p><br></p><p>Last</p>', deleted: false }));
+    const rawNotes = crypto.encrypt(JSON.stringify(notes), 'old-app-code');
+    const rawFolders = crypto.encrypt(JSON.stringify(folders), 'old-app-code');
+    localStorage.setItem('notes', rawNotes); localStorage.setItem('folders', rawFolders);
+    localStorage.setItem('app_password_challenge', '1');
+    await start(); await runtime.unlockApp('old-app-code');
+    expect(runtime.snapshot().loggedIn).toBeFalse();
+    expect(runtime.snapshot().folders).toEqual(folders.map(folder => folder.name));
+    expect(runtime.snapshot().notes.map((note: any) => note.id)).toEqual(notes.map(note => note.id));
+    expect(storage.get('notes')).toBe(rawNotes); expect(storage.get('folders')).toBe(rawFolders);
+    runtime.dispose(); await start(); await runtime.unlockApp('old-app-code');
+    expect(runtime.snapshot().folders.length).toBe(6);
+    expect(runtime.snapshot().notes.every((note: any) => note.html === '<p>First</p><p><br></p><p>Last</p>')).toBeTrue();
   });
   it('resets locked local data without deleting synced notes from the server', async () => {
     signedIn(); await start(); await runtime.save([note()], ['Personal']);

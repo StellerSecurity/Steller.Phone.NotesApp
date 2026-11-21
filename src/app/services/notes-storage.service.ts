@@ -41,15 +41,23 @@ export class NotesStorageService {
     if (migratedVersion === NotesStorageService.MIGRATION_VERSION) {
       return;
     }
-    for (const key of this.managedKeys) {
+    const source = this.managedKeys.map(key => [key, this.readLegacy(key, true)] as const);
+    const pending: [string, string][] = [];
+    for (const [key, legacy] of source) {
       const existing = await this.storage.get(key);
-      if (existing !== null && existing !== undefined) {
-        continue;
+      if (['notes', 'folders', 'app_password_challenge'].includes(key)
+        && existing != null && legacy !== null && existing !== legacy) {
+        // Keep both original stores untouched rather than combining note bytes
+        // with another collection's password flag or replacing either copy.
+        throw new Error('notesStorageImportConflict');
       }
-      const legacy = this.readLegacy(key);
-      if (legacy !== null) {
-        await this.storage.set(key, legacy);
-      }
+      if (existing == null && legacy !== null) pending.push([key, legacy]);
+    }
+    // The untouched localStorage source remains the recovery copy. Do not add
+    // another plaintext note archive that could outlive enabling an app code.
+    for (const [key, legacy] of pending) {
+      await this.storage.set(key, legacy);
+      if (await this.storage.get(key) !== legacy) throw new Error('notesStorageImportIncomplete');
     }
     await this.storage.set(this.MIGRATION_VERSION_KEY, NotesStorageService.MIGRATION_VERSION);
   }
@@ -59,10 +67,11 @@ export class NotesStorageService {
       if (!this.unsaved.has(key)) this.cache.set(key, value ?? null);
     }
   }
-  private readLegacy(key: string): string | null {
+  private readLegacy(key: string, required = false): string | null {
     try {
       return localStorage.getItem(key);
     } catch {
+      if (required) throw new Error('notesStorageUnavailable');
       return null;
     }
   }
