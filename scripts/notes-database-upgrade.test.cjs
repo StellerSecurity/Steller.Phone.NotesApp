@@ -27,3 +27,50 @@ test('updating appearance alone does not reset old retention, privacy or lock se
 
 test('preview database imports when legacy localStorage is its identical safety mirror',async()=>{const f=fixture({},payload,{notes:payload.notes,folders:payload.folders});await f.open();for(const [key,value]of Object.entries(payload)){assert.deepEqual(await f.a.get(key),value);assert.deepEqual(await f.b.get(key),value)}assert.equal((await f.a.get('notes.design.database-import.v1')).state,'complete')});
 test('matching notes do not hide a conflicting legacy folder or lock entry',async()=>{for(const raw of [{notes:payload.notes,folders:'[{"id":"different-folder"}]'},{notes:payload.notes,app_password_challenge:'different-lock'}]){const f=fixture({},payload,raw);await assert.rejects(()=>f.open(),/ImportConflict/);assert.equal(f.a.writes.length,0)}});
+
+function localStorageFixture(canonical={}, raw={}) {
+ const file=path.resolve(__dirname,'../src/app/services/notes-storage.service.ts'),serviceModule=new Module(file,module);
+ serviceModule.filename=file;serviceModule.paths=module.paths;
+ serviceModule.require=name=>name==='@angular/core'?{Injectable:()=>type=>type}:name==='rxjs'?{BehaviorSubject:class{constructor(value){this.value=value}next(value){this.value=value}}}:name==='@ionic/storage-angular'?{}:require(name);
+ serviceModule._compile(ts.transpileModule(fs.readFileSync(file,'utf8'),{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.CommonJS,experimentalDecorators:true}}).outputText,file);
+ const db=new DB(canonical),source={...raw};
+ const context={getItem:key=>source[key]??null,setItem:(key,value)=>source[key]=value,removeItem:key=>delete source[key]};
+ // Keep each service's localStorage binding isolated without touching browser data.
+ const previous=global.localStorage;global.localStorage=context;
+ const service=new serviceModule.exports.NotesStorageService(db);
+ return {db,source,service,restore:()=>{if(previous===undefined)delete global.localStorage;else global.localStorage=previous}};
+}
+test('raw guest migration verifies the import and keeps original bytes and empty lines in localStorage',async()=>{
+ const notes='[{"id":"old","text":"<p>First</p><p><br></p><p>Last</p>"}]';const f=localStorageFixture({}, {notes});
+ try{await f.service.init();assert.equal(f.service.getNotesRaw(),notes);assert.equal(f.source.notes,notes);assert.equal(await f.db.get('storage_migration_version'),'1')}finally{f.restore()}
+});
+test('raw locked migration keeps ciphertext and password challenge together without adding folders',async()=>{
+ const f=localStorageFixture({}, {notes:'original-encrypted-bytes',app_password_challenge:'1'});
+ try{await f.service.init();assert.equal(f.service.getNotesRaw(),'original-encrypted-bytes');assert.equal(f.service.getAppPasswordChallengeFlag(),'1');assert.equal(f.service.getFoldersRaw(),'[]');assert.equal(await f.db.get('folders'),null);assert.equal(f.source.notes,'original-encrypted-bytes')}finally{f.restore()}
+});
+test('distinct canonical and raw notes fail closed without replacing either copy',async()=>{
+ const f=localStorageFixture({notes:'canonical-note'}, {notes:'different-raw-note'});
+ try{await assert.rejects(()=>f.service.init(),/notesStorageImportConflict/);assert.equal(await f.db.get('notes'),'canonical-note');assert.equal(f.source.notes,'different-raw-note');assert.equal(f.db.writes.length,0)}finally{f.restore()}
+});
+test('failed import leaves the original source intact and never marks completion',async()=>{
+ const f=localStorageFixture({}, {notes:'offline-only'});f.db.failAfter=0;
+ try{await assert.rejects(()=>f.service.init(),/disk full/);assert.equal(f.source.notes,'offline-only');assert.equal(await f.db.get('notes'),null);assert.equal(await f.db.get('storage_migration_version'),null)}finally{f.restore()}
+});
+test('silent failed writes cannot mark an incomplete migration complete',async()=>{
+ const f=localStorageFixture({}, {notes:'offline-only'}),set=f.db.set.bind(f.db);f.db.set=async(k,v)=>{if(k!=='notes')await set(k,v)};
+ try{await assert.rejects(()=>f.service.init(),/notesStorageImportIncomplete/);assert.equal(f.source.notes,'offline-only');assert.equal(await f.db.get('storage_migration_version'),null);assert.equal(await f.db.get('notes'),null)}finally{f.restore()}
+});
+test('an unreadable legacy store is not recorded as an empty completed migration',async()=>{
+ const f=localStorageFixture({}, {notes:'offline-only'});global.localStorage.getItem=()=>{throw Error('access denied')};
+ try{await assert.rejects(()=>f.service.init(),/notesStorageUnavailable/);assert.equal(await f.db.get('storage_migration_version'),null);assert.equal(f.db.writes.length,0);assert.equal(f.source.notes,'offline-only')}finally{f.restore()}
+});
+test('interrupted raw import retries missing keys while preserving both original values',async()=>{
+ const f=localStorageFixture({}, {notes:'encrypted-notes',folders:'encrypted-folders',app_password_challenge:'1'});f.db.failAfter=1;
+ try{await assert.rejects(()=>f.service.init(),/disk full/);assert.equal(await f.db.get('storage_migration_version'),null);const retry=new f.service.constructor(f.db);await retry.init();assert.equal(retry.getNotesRaw(),'encrypted-notes');assert.equal(retry.getFoldersRaw(),'encrypted-folders');assert.equal(retry.getAppPasswordChallengeFlag(),'1');assert.equal(f.source.notes,'encrypted-notes');assert.equal(f.source.folders,'encrypted-folders')}finally{f.restore()}
+});
+test('conflicting folder or app-code metadata cannot be combined with matching notes',async()=>{
+ for(const canonical of [{notes:'same-notes',folders:'canonical-folders'},{notes:'same-notes',app_password_challenge:'other-flag'}]){
+  const f=localStorageFixture(canonical,{notes:'same-notes',folders:'raw-folders',app_password_challenge:'1'});
+  try{await assert.rejects(()=>f.service.init(),/notesStorageImportConflict/);assert.equal(f.db.writes.length,0);assert.equal(f.source.folders,'raw-folders');assert.equal(f.source.app_password_challenge,'1')}finally{f.restore()}
+ }
+});

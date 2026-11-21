@@ -632,7 +632,11 @@ export async function createRuntime(onChange: (snapshot: any) => void, platform:
         const decoded = legacyCrypto.decrypt(state.getNotes(), password);
         if (!decoded) throw new Error('wrongPassword');
         parsed = readArray(decoded);
-        parsedFolders = readArray(legacyCrypto.decrypt(state.getFolders(), password));
+        // The original localStorage app encrypted notes, but had no folders
+        // collection. Authenticate against notes first; only the absent/empty
+        // legacy collection may bypass folder decryption.
+        const folders = state.getFolders();
+        parsedFolders = folders === '[]' ? [] : readArray(legacyCrypto.decrypt(folders, password));
         const wrapped = await secure.getItem('ssEakB64_Encrypted');
         if (wrapped) await keys.importEAK(legacyCrypto.decrypt(wrapped, password));
       } catch {
