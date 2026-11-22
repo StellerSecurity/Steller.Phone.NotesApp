@@ -1,4 +1,4 @@
-import unittest,tempfile,subprocess,hashlib,importlib.util,os
+import unittest,tempfile,subprocess,hashlib,importlib.util,os,zipfile,json
 from pathlib import Path
 NODE=os.environ.get('STELLAR_RECOVERY_TEST_NODE','node')
 BASE=Path(__file__).resolve().parent
@@ -54,4 +54,21 @@ class RecoveryTests(unittest.TestCase):
   self.assertEqual(self.create().returncode,0);self.assertEqual(self.decrypt().returncode,0)
   self.assertEqual(module.inspect(self.case/'out.zip',self.case/'extracted')['files'],6)
   self.assertEqual((self.case/'extracted/storage/files/SingletonLock').read_bytes(),b'user attachment')
+ def test_untrusted_zip_cannot_escape_support_directory(self):
+  archive=self.case/'unsafe.zip'
+  with zipfile.ZipFile(archive,'w') as z:z.writestr('../escape',b'no')
+  with self.assertRaises(ValueError):module.inspect(archive,self.case/'extracted')
+  self.assertFalse((self.case/'extracted').exists());self.assertFalse((self.case/'escape').exists())
+ def test_incomplete_copy_is_rejected(self):
+  archive=self.case/'incomplete.zip'
+  with zipfile.ZipFile(archive,'w') as z:z.writestr('complete.json','{"complete":false}')
+  with self.assertRaises(ValueError):module.inspect(archive)
+ def test_bad_record_hash_is_rejected_before_extraction(self):
+  archive=self.case/'bad-hash.zip'
+  with zipfile.ZipFile(archive,'w') as z:
+   z.writestr('complete.json','{"complete":true}')
+   z.writestr('manifest.json',json.dumps({'files':[{'path':'files/note','size':3,'sha256':'0'*64}]}))
+   z.writestr('storage/files/note',b'abc')
+  with self.assertRaises(ValueError):module.inspect(archive,self.case/'extracted')
+  self.assertFalse((self.case/'extracted').exists())
 if __name__=='__main__':unittest.main(verbosity=2)

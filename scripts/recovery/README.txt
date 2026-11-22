@@ -1,6 +1,7 @@
 STELLAR NOTES — OPT-IN RECOVERY EXPORT
 
-This branch builds Android 2.92-recovery (48), a TARGETED recovery-only update.
+Build with -PnotesRecoveryExport=true for Android 2.92-recovery (48), a TARGETED recovery-only update.
+Without this flag, ordinary Notes builds keep their original manifest and behavior.
 It is not a general-purpose Notes release. MainActivity is disabled; the native
 RecoveryActivity opens before any normal WebView or migration. Inherited app
 startup/background components are excluded. No INTERNET permission is allowed.
@@ -36,7 +37,7 @@ committed, uploaded or included in APK/AAB. Its only copy must be secured and
 backed up by the support owner before distributing this build. Losing the key
 makes recovery exports unreadable. Key rotation requires retaining old keys.
 
-OFFLINE SUPPORT COMMANDS (existing Node, Python and JDK; no package installation)
+OFFLINE SUPPORT COMMANDS (existing Node, Python 3.9+ and JDK; no package installation)
   node scripts/recovery/decrypt-recovery.cjs PRIVATE_KEY.pem INPUT.stnrecovery NEW_OUTPUT.zip
   python3 -B scripts/recovery/inspect-recovery.py NEW_OUTPUT.zip
 
@@ -56,3 +57,12 @@ TESTS
 The existing scripts/test-release.cjs release gate includes the recovery test.
 JAVA_HOME may select the existing reviewed JDK. Missing tools fail the test;
 there are no automatic downloads and no skipped security checks.
+
+BUILD
+  ./gradlew --offline -PnotesRecoveryExport=true :app:lintRelease :app:assembleRelease :app:bundleRelease
+
+Use the existing reviewed toolchain and full release gate. For Android Studio
+signing, set notesRecoveryExport=true only in the isolated recovery project’s
+local android/gradle.properties; do not change global Gradle settings. Verify
+2.92-recovery (48) and RecoveryActivity again after signing. The normal build
+keeps 2.91 (47) until a separately reviewed general release version change.

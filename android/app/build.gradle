@@ -1,5 +1,8 @@
 apply plugin: 'com.android.application'
 
+// Recovery is opt-in; ordinary app builds retain their existing launcher and behavior.
+def notesRecoveryExport = project.findProperty('notesRecoveryExport') == 'true'
+
 android {
     namespace "Steller.Phone.NotesApp"
     compileSdkVersion rootProject.ext.compileSdkVersion
@@ -7,8 +10,8 @@ android {
         applicationId "steller.phone.notesapp"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 48
-        versionName "2.92-recovery"
+        versionCode notesRecoveryExport ? 48 : 47
+        versionName notesRecoveryExport ? "2.92-recovery" : "2.91"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -16,6 +19,7 @@ android {
             ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    sourceSets.main.manifest.srcFile notesRecoveryExport ? 'src/recovery/AndroidManifest.xml' : 'src/main/AndroidManifest.xml'
     buildTypes {
         release {
             minifyEnabled false
@@ -56,18 +60,20 @@ try {
 apply from: 'release-tests.gradle'
 
 // The actual packaged manifest must remain offline and recovery-only.
-def recoveryCompiledCheck = tasks.register('verifyRecoveryApk', Exec) {
-    group = 'verification'
-    dependsOn 'packageRelease'
-    workingDir rootProject.projectDir.parentFile
-    def configFile = new File(rootProject.projectDir.parentFile, 'release-tests.local.json')
-    def config = configFile.exists() ? new groovy.json.JsonSlurper().parse(configFile) : [:]
-    def aaptName = System.getProperty('os.name').toLowerCase().contains('windows') ? 'aapt.exe' : 'aapt'
-    def aaptPath = new File(android.sdkDirectory, 'build-tools/' + android.buildToolsVersion + '/' + aaptName)
-    commandLine(System.getenv('STELLAR_NODE_BINARY') ?: config.nodeBinary ?: 'node',
-        'scripts/recovery/verify-recovery-apk.cjs', aaptPath.absolutePath,
-        layout.buildDirectory.dir('outputs/apk/release').get().asFile.absolutePath)
-}
-tasks.configureEach { task ->
-    if (task.name in ['assembleRelease', 'bundleRelease']) task.dependsOn(recoveryCompiledCheck)
+if (notesRecoveryExport) {
+    def recoveryCompiledCheck = tasks.register('verifyRecoveryApk', Exec) {
+        group = 'verification'
+        dependsOn 'packageRelease'
+        workingDir rootProject.projectDir.parentFile
+        def configFile = new File(rootProject.projectDir.parentFile, 'release-tests.local.json')
+        def config = configFile.exists() ? new groovy.json.JsonSlurper().parse(configFile) : [:]
+        def aaptName = System.getProperty('os.name').toLowerCase().contains('windows') ? 'aapt.exe' : 'aapt'
+        def aaptPath = new File(android.sdkDirectory, 'build-tools/' + android.buildToolsVersion + '/' + aaptName)
+        commandLine(System.getenv('STELLAR_NODE_BINARY') ?: config.nodeBinary ?: 'node',
+            'scripts/recovery/verify-recovery-apk.cjs', aaptPath.absolutePath,
+            layout.buildDirectory.dir('outputs/apk/release').get().asFile.absolutePath)
+    }
+    tasks.configureEach { task ->
+        if (task.name in ['assembleRelease', 'bundleRelease']) task.dependsOn(recoveryCompiledCheck)
+    }
 }
