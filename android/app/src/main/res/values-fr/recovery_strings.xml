@@ -1,0 +1,19 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+  <string name="recovery_label">Récupération Notes</string>
+  <string name="recovery_close">✕</string>
+  <string name="recovery_close_description">Fermer sans exporter</string>
+  <string name="recovery_title">Récupérer vos notes locales</string>
+  <string name="recovery_intro">Cette mise à jour de récupération garde Notes fermé pendant la création d’une copie du stockage local. Vos fichiers originaux ne sont ni déplacés, ni réinitialisés, ni remplacés. Aucun compte n’est nécessaire et aucun envoi automatique n’est effectué.</string>
+  <string name="recovery_password_notice">La copie est chiffrée pour Stellar Support. Le support peut déchiffrer le paquet et examiner ses fichiers. Les notes déjà protégées par votre ancien mot de passe restent protégées ; cet outil ne contourne pas ce mot de passe. Ne saisissez et ne transmettez pas votre mot de passe Stellar ID.</string>
+  <string name="recovery_disclosure">Je comprends que la copie peut contenir des notes privées, des dossiers, des réglages et des informations de connexion, et que Stellar Support peut examiner cette copie.</string>
+  <string name="recovery_consent">Je consens à créer une copie chiffrée pour la récupération. Je choisis son emplacement et décide de la partager ou non avec Stellar Support.</string>
+  <string name="recovery_export">Enregistrer la copie chiffrée</string>
+  <string name="recovery_ready">Le stockage original reste sur ce téléphone. Partagez le fichier enregistré uniquement via un canal de support de confiance.</string>
+  <string name="recovery_preparing">Préparation et vérification de la copie chiffrée…</string>
+  <string name="recovery_saving">Enregistrement de la copie chiffrée…</string>
+  <string name="recovery_saved">Copie enregistrée. Le stockage original est inchangé. Aucun envoi n’a été effectué. Vous pouvez maintenant partager le fichier avec Stellar Support.</string>
+  <string name="recovery_failed">Impossible de préparer la copie. Aucun fichier original n’a été modifié. Fermez les autres fenêtres Notes et réessayez, ou contactez le support.</string>
+  <string name="recovery_cancelled">Exportation annulée. Aucun fichier original n’a été modifié.</string>
+  <string name="recovery_save_failed">L’enregistrement est incomplet. Le fichier de destination peut être incomplet ; ne l’envoyez pas. Aucun fichier original n’a été modifié. Réessayez.</string>
+</resources>

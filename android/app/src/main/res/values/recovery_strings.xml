@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="recovery_label">Notes Recovery</string>
+    <string name="recovery_close">✕</string>
+    <string name="recovery_close_description">Close recovery without exporting</string>
+    <string name="recovery_title">Recover your local notes</string>
+    <string name="recovery_intro">This recovery-only update keeps the normal Notes screen closed while you save a copy of the app’s local storage. Your original files will not be moved, reset or overwritten. No account is required and nothing is uploaded automatically.</string>
+    <string name="recovery_password_notice">The copy is encrypted for Stellar Support. Support can decrypt the exported package and inspect its files. Notes already protected by your old app password remain protected; this tool cannot bypass that password. Do not enter or send your Stellar ID password.</string>
+    <string name="recovery_disclosure">I understand the copy may contain private notes, folders, settings and sign-in information, and Stellar Support can inspect the exported copy.</string>
+    <string name="recovery_consent">I agree to create an encrypted copy for recovery. I choose where to save it and whether to share it with Stellar Support.</string>
+    <string name="recovery_export">Save encrypted recovery copy</string>
+    <string name="recovery_ready">Your original storage stays on this phone. After saving, share the recovery file only through the support channel you trust.</string>
+    <string name="recovery_preparing">Preparing and checking the encrypted copy…</string>
+    <string name="recovery_saving">Saving encrypted recovery copy…</string>
+    <string name="recovery_saved">Recovery copy saved. Your original storage has not been changed. Nothing was uploaded. You can now share the saved file with Stellar Support.</string>
+    <string name="recovery_failed">The recovery copy could not be prepared. No original files were changed. Close other Notes windows and try again, or contact support.</string>
+    <string name="recovery_cancelled">Export cancelled. No original files were changed.</string>
+    <string name="recovery_save_failed">Saving did not finish. The selected destination may contain an incomplete file; do not send it. No original files were changed. Try again.</string>
+</resources>
