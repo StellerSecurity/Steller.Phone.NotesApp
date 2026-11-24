@@ -139,6 +139,9 @@
     "tar@^7.0.0": "7.5.23",
     "tmp@^0.2.0": "0.2.7",
     "rollup": "4.64.5",
-    "msgpackr-extract": "3.0.4"
+    "msgpackr-extract": "3.0.4",
+    "@emnapi/core": "1.7.1",
+    "@emnapi/runtime": "1.7.1",
+    "@emnapi/wasi-threads": "1.1.0"
   }
 }

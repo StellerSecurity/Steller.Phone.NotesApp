@@ -29,7 +29,7 @@ try {
   if (!fs.existsSync(path.join(root, 'node_modules/@angular/cli/bin/ng.js'))) throw Error('Reviewed dependencies are missing. No installation is performed by this command.');
   run('Dependency integrity', path.join(root, 'scripts/verify-identity-runtime.cjs'));
   run('Dependency hardening', path.join(root, 'scripts/harden-dependencies.cjs'));
-  run('Storage upgrade and dependency unit tests', null, ['--test', '--test-reporter=spec', '--test-reporter=junit', '--test-reporter-destination=stdout', '--test-reporter-destination=' + path.join(reports, 'mobile-unit.xml'), 'scripts/notes-database-upgrade.test.cjs', 'scripts/dependency-hardening.test.cjs', 'scripts/test-release-gate.test.cjs', 'scripts/recovery-export.test.cjs', 'scripts/local-export.test.cjs']);
+  run('Storage upgrade and dependency unit tests', null, ['--test', '--test-reporter=spec', '--test-reporter=junit', '--test-reporter-destination=stdout', '--test-reporter-destination=' + path.join(reports, 'mobile-unit.xml'), 'scripts/notes-database-upgrade.test.cjs', 'scripts/dependency-hardening.test.cjs', 'scripts/test-release-gate.test.cjs', 'scripts/recovery-export.test.cjs', 'scripts/local-export.test.cjs', 'scripts/vite-security.test.cjs']);
   if (!mobileOnly) {
     const design = process.env.STELLAR_NOTES_DESIGN_SOURCE || localConfig.designSource;
     if (!design || !path.isAbsolute(design)) throw Error('Set STELLAR_NOTES_DESIGN_SOURCE to the reviewed Notes design checkout.');
