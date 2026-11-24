@@ -1,0 +1,28 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="local_export_close">Luk lokal eksport</string>
+    <string name="local_export_contents">I din fil</string>
+    <string name="local_export_notes">Noter</string>
+    <string name="local_export_folders">Mapper</string>
+    <string name="local_export_privacy_title">Pas på din fil</string>
+    <string name="local_export_locked_notes">Låste noter forbliver krypterede og kræver stadig deres egen notekode.</string>
+    <string name="local_export_save">Vælg placering</string>
+    <string name="local_export_ready">Dine originale noter bliver i appen.</string>
+    <string name="local_export_saving">Gemmer…</string>
+    <string name="local_export_done">Færdig</string>
+    <string name="local_export_saved">Filen er gemt lokalt. Dine noter er uændrede.</string>
+    <string name="local_export_failed">Filen kunne ikke gemmes. Destinationen kan indeholde en ufuldstændig fil. Dine noter er uændrede. Luk skærmen, og prøv igen.</string>
+    <string name="local_export_auth_title">Bekræft telefonens kode</string>
+    <string name="local_export_auth_copy">Indtast telefonens PIN-kode, mønster eller adgangskode for at eksportere dine noter.</string>
+    <string name="local_export_set_code">Indstil en PIN-kode, et mønster eller en adgangskode på telefonen, før du eksporterer noter.</string>
+    <string name="local_export_android_required">Android 11 eller nyere kræves for at bekræfte handlingen med kun telefonens kode.</string>
+    <string name="local_export_auth_failed">Telefonens kode kunne ikke bekræftes. Luk skærmen, og prøv igen.</string>
+    <string name="local_export_expired">Eksporten er udløbet. Luk skærmen, og start igen.</string>
+    <string name="local_export_warning_confirm">Jeg forstår — fortsæt</string>
+    <string name="local_export_warning_cancel">Annuller</string>
+    <string name="backup_export_title">Krypteret sikkerhedskopi</string>
+    <string name="backup_export_intro">Gem dine krypterede noter og mapper. Opbevar den særskilte 30-cifrede kode sikkert.</string>
+    <string name="backup_export_privacy">Hele backupfilen er krypteret. Gem den 30-cifrede kode separat; uden den kan sikkerhedskopien ikke gendannes.</string>
+    <string name="backup_export_warning_title">Gem krypteret sikkerhedskopi?</string>
+    <string name="backup_export_warning_copy">Du skal bruge både filen og den særskilte 30-cifrede kode for at gendanne dine noter. Stellar kan ikke genskabe en mistet kode. Opbevar koden adskilt fra filen, og del dem kun med personer, du stoler på. Dine originale noter bliver i appen.</string>
+</resources>

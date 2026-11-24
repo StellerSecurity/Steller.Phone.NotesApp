@@ -17,6 +17,7 @@ if (!output || !path.isAbsolute(output)) throw new Error('Set STELLAR_DESIGN_OUT
         return { contents: fs.readFileSync(path.join(root, 'src/environments/environment.prod.ts'), 'utf8'), loader: 'ts' };
       });
     } }] });
+  await build({ absWorkingDir: root, entryPoints: ['src/runtime/backup/backup.worker.ts'], bundle: true, platform: 'browser', format: 'iife', target: 'es2022', outfile: path.join(path.dirname(output), 'backup.worker.js'), logLevel: 'warning' });
   const manifest = { version: 1, sourceSha256: require('./release-tests/source-fingerprint.cjs').runtimeFingerprint(root), bundleSha256: require('node:crypto').createHash('sha256').update(fs.readFileSync(output)).digest('hex') };
   fs.writeFileSync(path.join(path.dirname(output), 'runtime.sources.json'), JSON.stringify(manifest, null, 2) + '\n');
   const rootIndex = path.resolve(path.dirname(output), '../index.html');

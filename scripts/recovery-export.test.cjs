@@ -24,12 +24,13 @@ test('compiled recovery safety check rejects network, background and normal-star
 });
 
 
-test('normal Notes keeps its launcher and exposes recovery only through an internal activity',()=>{
+test('normal Notes keeps its launcher and exposes local export only through an internal activity',()=>{
   const fs=require('node:fs');
   const manifest=fs.readFileSync(path.join(__dirname,'../android/app/src/main/AndroidManifest.xml'),'utf8');
-  const recovery=manifest.match(/<activity\s[^>]*android:name="\.RecoveryActivity"[^>]*\/>/);
-  assert.ok(recovery,'Normal build must contain the support-export activity');
+  const recovery=manifest.match(/<activity\s[^>]*android:name="\.LocalNotesExportActivity"[^>]*\/>/);
+  assert.ok(recovery,'Normal build must contain the internal local-export activity');
   assert.match(recovery[0],/android:exported="false"/);
+  assert.doesNotMatch(manifest,/android:name="\.RecoveryActivity"/);
   assert.match(manifest,/android.permission.INTERNET/);
   assert.match(manifest,/<category android:name="android.intent.category.LAUNCHER"/);
   assert.doesNotMatch(manifest,/android:enabled="false"/);

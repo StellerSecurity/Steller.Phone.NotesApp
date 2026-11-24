@@ -2,7 +2,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { execFileSync } = require('node:child_process');
 const assets = ['index.html', 'notes.css', 'notes.js', 'mobile-features.js', 'assets',
-  'live/runtime.bundle.js', 'live/runtime.sources.json', 'live/api-integration.js', 'live/auth-navigation.js', 'live/device-feedback.js',
+  'live/runtime.bundle.js', 'live/backup.worker.js', 'live/runtime.sources.json', 'live/api-integration.js', 'live/auth-navigation.js', 'live/device-feedback.js',
   'editor/engine.bundle.js', 'editor/engine.bundle.css', 'editor/mobile-editor.js'];
 function stage(source, output) {
   for (const asset of assets) if (!fs.existsSync(path.join(source, asset))) throw Error('Missing built design asset: ' + asset);

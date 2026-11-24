@@ -1,10 +1,7 @@
-The normal Android Notes app exposes Settings → Export for support. It opens
-RecoveryActivity only after pending runtime writes and active sync have settled.
-Runtime synchronization pauses while this screen is open and resumes on return.
-The activity is not exported; both native consent boxes are still mandatory.
-Copies that change during capture are rejected. No automatic upload is performed.
-This normal entry does not provide the emergency launcher’s OS-level offline
-isolation: the regular app retains its existing Internet permission and launcher.
+For normal encrypted backups/import, see scripts/local-export/README.txt.
+The normal app exports only a backup encrypted with its separate 30-digit code,
+after fresh app-code verification (when enabled) and device-code confirmation.
+It does not expose plaintext export or invoke this diagnostic exporter.
 
 STELLAR NOTES — OPT-IN RECOVERY EXPORT
 

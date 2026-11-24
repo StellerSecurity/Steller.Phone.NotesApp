@@ -39,8 +39,10 @@ describe('Original design with existing Notes services', () => {
     throw new Error('Expected service update did not arrive');
   }
   const note = (title = 'Private title', html = '<p>Private content</p>') => ({ id: '5b56bdf6-bf29-4306-bf2f-d6f69bd9f7ae', title, html, body: 'Private content', folder: '', pin: false, star: false, locked: false });
+  const backupTestCode = '7'.repeat(30);
+  const fakeBackupCrypto = async (_op: string, _text: string) => JSON.stringify({format:'stellar-notes-backup',version:1,kdf:'argon2id13',memlimit:268435456,opslimit:3,cipher:'xchacha20poly1305-ietf',salt:btoa('s'.repeat(16)),nonce:btoa('n'.repeat(24)),ciphertext:btoa('synthetic authenticated ciphertext')});
   async function start(background = false, extra: any = {}) {
-    runtime = await createRuntime(value => snapshots.push(value), { http, storage: disk, background, ...extra,
+    runtime = await createRuntime(value => snapshots.push(value), { http, storage: disk, background, backupCrypto: fakeBackupCrypto, ...extra,
       secure: { getItem: async (key: string) => secure.get(key) || null,
         setItem: async (key: string, value: string) => { secure.set(key, value); }, removeItem: async (key: string) => { secure.delete(key); }, clear: async () => { secure.clear(); } } as any });
     if (extra.waitForStartup !== false && runtime.snapshot().syncing) await runtime.sync();
@@ -137,14 +139,69 @@ describe('Original design with existing Notes services', () => {
     expect(runtime.snapshot().notes[0].html).toBe(view.html);
     expect(runtime.snapshot().folders).toContain('Local folder');
   });
-  it('pauses sync while support export is open and resumes afterward without changing note content', async () => {
+  const importPayload = () => ({format:'stellar-notes-export',version:1,exportedAt:new Date().toISOString(),
+    notes:[{id:'same-source',folderId:'source-folder',folder:'Personal',pinned:true,favorite:false,deleted:false,deletedAt:null,lastModified:1,locked:false,title:'Imported',html:'<p><br></p><p>Line one</p><p><br></p><p><br></p><p>Last</p><p><br></p>'}],
+    folders:[{id:'source-folder',name:'Personal',deleted:false,lastModified:1}]});
+  it('previews import without changes and imports copies without replacing originals or duplicating matching folders',async()=>{
+    const payload=importPayload();await start(false,{backupCrypto:async()=>JSON.stringify(payload)});await runtime.save([note()],['Personal']);
+    const before=runtime.snapshot().notes[0];
+    const preview=await runtime.inspectBackup('synthetic-encrypted','1'.repeat(30));
+    expect(runtime.snapshot().notes.length).toBe(1);expect(preview.notes).toBe(1);
+    await runtime.importBackup(preview.token);
+    const notes=runtime.snapshot().notes;expect(notes.length).toBe(2);expect(notes.find((n:any)=>n.id===before.id).html).toBe(before.html);
+    const imported=notes.find((n:any)=>n.id!==before.id);expect(imported.id).not.toBe('same-source');expect(imported.html).toBe(payload.notes[0].html);
+    expect(runtime.snapshot().folders).toEqual(['Personal']);
+    await expectAsync(runtime.importBackup(preview.token)).toBeRejectedWithError('backupExpired');
+  });
+  it('cancelled, invalid and wrong-code backup imports do not modify the existing note',async()=>{
+    let output:any=importPayload();await start(false,{backupCrypto:async()=>{if(output instanceof Error)throw output;return JSON.stringify(output);}});await runtime.save([note()],['Personal']);
+    const before=JSON.stringify(runtime.snapshot().notes);
+    let preview=await runtime.inspectBackup('synthetic','2'.repeat(30));runtime.discardBackup();await expectAsync(runtime.importBackup(preview.token)).toBeRejectedWithError('backupExpired');
+    output=new Error('backupUnlockFailed');await expectAsync(runtime.inspectBackup('synthetic','2'.repeat(30))).toBeRejectedWithError('backupUnlockFailed');
+    output={format:'wrong'};await expectAsync(runtime.inspectBackup('synthetic','2'.repeat(30))).toBeRejectedWithError('backupInvalid');
+    expect(JSON.stringify(runtime.snapshot().notes)).toBe(before);
+  });
+  it('does not retain a late decrypted preview after cancellation',async()=>{
+    let complete:(value:string)=>void=()=>{};const work=new Promise<string>(resolve=>complete=resolve);
+    await start(false,{backupCrypto:()=>work});await runtime.save([note()],[]);
+    const inspection=runtime.inspectBackup('synthetic','6'.repeat(30));runtime.discardBackup();complete(JSON.stringify(importPayload()));
+    await expectAsync(inspection).toBeRejectedWithError('notesLocked');expect(runtime.snapshot().notes.length).toBe(1);
+  });
+  it('rolls back a failed local import without losing originals and allows retry',async()=>{
+    await start(false,{backupCrypto:async()=>JSON.stringify(importPayload())});await runtime.save([note()],['Personal']);
+    const stored=storage.get('notes');const preview=await runtime.inspectBackup('synthetic','5'.repeat(30));
+    const original=disk.set;let failOnce=true;disk.set=async(key:string,value:any)=>{if(key==='notes'&&failOnce){failOnce=false;throw Error('syntheticDiskFull');}return original(key,value);};
+    await expectAsync(runtime.importBackup(preview.token)).toBeRejected();expect(runtime.snapshot().notes.length).toBe(1);expect(storage.get('notes')).toBe(stored);
+    await runtime.importBackup(preview.token);expect(runtime.snapshot().notes.length).toBe(2);
+  });
+  it('retains individually locked-note ciphertext and its separate code through backup import',async()=>{
+    const payload:any=importPayload();const cryptoService=new CryptoService();
+    payload.notes[0]={...payload.notes[0],locked:true,encrypted:{format:'cryptojs-aes-passphrase',title:cryptoService.encrypt('Locked import','NoteCode!'),html:cryptoService.encrypt('<p>Secret</p><p><br></p>','NoteCode!')}};
+    delete payload.notes[0].title;delete payload.notes[0].html;
+    await start(false,{backupCrypto:async()=>JSON.stringify(payload)});await runtime.save([note()],['Personal']);
+    const preview=await runtime.inspectBackup('synthetic','3'.repeat(30));await runtime.importBackup(preview.token);
+    const imported=runtime.snapshot().notes.find((n:any)=>n.locked);expect(imported).toBeDefined();
+    expect(()=>runtime.unlockNote(imported.id,'wrong')).toThrowError('wrongPassword');expect(runtime.unlockNote(imported.id,'NoteCode!').text).toBe('<p>Secret</p><p><br></p>');
+  });
+  it('blocks commit while the app has been locked after import preview',async()=>{
+    await start(false,{backupCrypto:async()=>JSON.stringify(importPayload())});await runtime.save([note()],[]);
+    await runtime.setAppLock('AppCode!');const preview=await runtime.inspectBackup('synthetic','4'.repeat(30));await runtime.lockApp();
+    await expectAsync(runtime.importBackup(preview.token)).toBeRejectedWithError('backupExpired');
+  });
+  it('rejects missing or invalid backup codes rather than exporting plaintext', async()=>{
+    const launch=jasmine.createSpy('nativeBackup').and.resolveTo({saved:true});await start(false,{localExport:launch});await runtime.save([note()],[]);
+    await expectAsync(runtime.saveEncryptedBackup()).toBeRejectedWithError('backupCodeInvalid');
+    await expectAsync(runtime.saveEncryptedBackup(undefined,undefined,'1234')).toBeRejectedWithError('backupCodeInvalid');
+    expect(launch).not.toHaveBeenCalled();expect(runtime.snapshot().notes.length).toBe(1);
+  });
+  it('pauses sync while local export is open and resumes afterward without changing note content', async () => {
     signedIn(); let close: () => void = () => undefined;
-    const launch = jasmine.createSpy('recoveryExport').and.callFake(() => new Promise<void>(resolve => { close = resolve; }));
-    await start(false, { recoveryExport: launch });
+    const launch = jasmine.createSpy('localExport').and.callFake(() => new Promise<void>(resolve => { close = resolve; }));
+    await start(false, { localExport: launch });
     await runtime.save([note()], ['Personal']); await runtime.sync();
     const before = runtime.snapshot(), rootKey = secure.get('ssEakB64');
-    const exporting = runtime.openRecoveryExport(); await waitFor(() => launch.calls.count() === 1);
-    await expectAsync(runtime.openRecoveryExport()).toBeRejectedWithError('recoveryExportPending');
+    const exporting = runtime.saveEncryptedBackup(undefined, undefined, backupTestCode); await waitFor(() => launch.calls.count() === 1);
+    await expectAsync(runtime.saveEncryptedBackup(undefined, undefined, backupTestCode)).toBeRejectedWithError('localExportPending');
     const downloads = () => http.post.calls.allArgs().filter((args: any[]) => args[0].endsWith('/download')).length;
     const count = downloads(); await runtime.sync(); expect(downloads()).toBe(count);
     expect(runtime.snapshot().notes).toEqual(before.notes);
@@ -152,12 +209,65 @@ describe('Original design with existing Notes services', () => {
     expect(runtime.snapshot().notes[0].html).toBe(before.notes[0].html);
     expect(runtime.snapshot().folders).toEqual(before.folders); expect(secure.get('ssEakB64')).toBe(rootKey);
   });
-  it('keeps ordinary notes usable when the native support exporter fails to open', async () => {
-    signedIn(); await start(false, { recoveryExport: async () => { throw new Error('nativeExportFailed'); } });
+  it('keeps ordinary notes usable when the native local exporter fails to open', async () => {
+    signedIn(); await start(false, { localExport: async () => { throw new Error('nativeExportFailed'); } });
     await runtime.save([note()], ['Personal']); await runtime.sync();
-    await expectAsync(runtime.openRecoveryExport()).toBeRejectedWithError('nativeExportFailed');
+    await expectAsync(runtime.saveEncryptedBackup(undefined, undefined, backupTestCode)).toBeRejectedWithError('nativeExportFailed');
     await runtime.save([{ ...runtime.snapshot().notes[0], title: 'Still editable' }], ['Personal']);
     await runtime.sync(); expect(runtime.snapshot().notes[0].title).toBe('Still editable');
+  });
+  it('cancels a local export waiting for sync without opening the native writer', async () => {
+    signedIn(); const launch = jasmine.createSpy('localExport').and.resolveTo({ saved: true });
+    await start(false, { localExport: launch });
+    const blocked = new Subject<any>(); let downloads = 0;
+    http.post.and.callFake((url: string) => { if (url.endsWith('/download')) { downloads++; return blocked; } return of({}); });
+    const active = runtime.sync(); await waitFor(() => downloads === 1);
+    const controller = new AbortController(); const exporting = runtime.saveEncryptedBackup(undefined, controller.signal, backupTestCode);
+    controller.abort(); await expectAsync(exporting).toBeRejectedWith(jasmine.objectContaining({ name: 'AbortError' }));
+    expect(launch).not.toHaveBeenCalled(); blocked.next({ notes: [], folders: [] }); blocked.complete(); await active;
+  });
+  it('requires a fresh app code for every local export and excludes account credentials', async () => {
+    signedIn(); const payloads: any[] = [], decoded: any[] = [];
+    await start(false, { backupCrypto: async(op:string,text:string)=>{decoded.push(JSON.parse(text));return fakeBackupCrypto(op,text);}, localExport: async (json: string) => { payloads.push(JSON.parse(json)); return { saved: true }; } });
+    await runtime.save([note('Local copy', '<p>First</p><p><br></p><p>Last</p>')], ['Personal']); await runtime.sync();
+    await runtime.setAppLock('fresh-app-code');
+    const beforeNotes = storage.get('notes'), beforeFolders = storage.get('folders');
+    await expectAsync(runtime.saveEncryptedBackup(undefined, undefined, backupTestCode)).toBeRejectedWithError('wrongPassword');
+    await expectAsync(runtime.saveEncryptedBackup('wrong', undefined, backupTestCode)).toBeRejectedWithError('wrongPassword');
+    expect(payloads.length).toBe(0);
+    await runtime.saveEncryptedBackup('fresh-app-code', undefined, backupTestCode);
+    expect(payloads[0].format).toBe('stellar-encrypted-local-export');
+    expect(JSON.stringify(payloads[0])).not.toContain('Local copy');
+    expect(decoded[0].notes[0].html).toBe('<p>First</p><p><br></p><p>Last</p>');
+    expect(decoded[0].folders[0].name).toBe('Personal');
+    expect(Object.keys(decoded[0]).sort()).toEqual(['exportedAt','folders','format','notes','version']);
+    await expectAsync(runtime.saveEncryptedBackup(undefined, undefined, backupTestCode)).toBeRejectedWithError('wrongPassword');
+    expect(payloads.length).toBe(1);
+    expect(storage.get('notes')).toBe(beforeNotes); expect(storage.get('folders')).toBe(beforeFolders);
+    expect(secure.get('ssToken')).toBe('a'.repeat(40));
+  });
+  it('rate-limits incorrect export app codes without wiping any note data', async () => {
+    const launch = jasmine.createSpy('localExport').and.resolveTo({ saved: true });
+    await start(false, { localExport: launch }); await runtime.save([note()], ['Personal']); await runtime.setAppLock('export-code');
+    const notes = storage.get('notes'), folders = storage.get('folders');
+    for (let i=0;i<4;i++) await expectAsync(runtime.saveEncryptedBackup('wrong', undefined, backupTestCode)).toBeRejectedWithError('wrongPassword');
+    await expectAsync(runtime.saveEncryptedBackup('wrong', undefined, backupTestCode)).toBeRejectedWithError('localExportLockedOut');
+    for (let i=0;i<20;i++) await expectAsync(runtime.saveEncryptedBackup('wrong', undefined, backupTestCode)).toBeRejectedWithError('localExportLockedOut');
+    expect(launch).not.toHaveBeenCalled(); expect(storage.get('notes')).toBe(notes); expect(storage.get('folders')).toBe(folders);
+    expect(storage.get('failedAttemptsApp')).toBeFalsy();
+  });
+  it('keeps individually locked notes encrypted inside the encrypted backup', async () => {
+    const payloads: any[] = [], decoded:any[]=[];
+    await start(false, { backupCrypto:async(op:string,text:string)=>{decoded.push(JSON.parse(text));return fakeBackupCrypto(op,text);},localExport: async (json: string) => payloads.push(JSON.parse(json)) });
+    const view = note('Secret title', '<p>Secret body</p>'); await runtime.save([view], []);
+    await runtime.protectNote(view.id, 'note-code');
+    await runtime.save([{ ...view, locked: true }], []);
+    runtime.lockNote(view.id);
+    await runtime.saveEncryptedBackup(undefined, undefined, backupTestCode);
+    const item = decoded[0].notes[0];
+    expect(item.locked).toBeTrue(); expect(item.title).toBeUndefined(); expect(item.html).toBeUndefined();
+    expect(new CryptoService().decrypt(item.encrypted.title, 'note-code')).toBe('Secret title');
+    expect(new CryptoService().decrypt(item.encrypted.html, 'note-code')).toBe('<p>Secret body</p>');
   });
   it('does not fetch on foreground changes for a guest', async () => {
     let appState: (state: { isActive: boolean }) => void = () => undefined;

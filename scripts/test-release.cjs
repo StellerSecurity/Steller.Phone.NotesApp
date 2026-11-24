@@ -29,12 +29,12 @@ try {
   if (!fs.existsSync(path.join(root, 'node_modules/@angular/cli/bin/ng.js'))) throw Error('Reviewed dependencies are missing. No installation is performed by this command.');
   run('Dependency integrity', path.join(root, 'scripts/verify-identity-runtime.cjs'));
   run('Dependency hardening', path.join(root, 'scripts/harden-dependencies.cjs'));
-  run('Storage upgrade and dependency unit tests', null, ['--test', '--test-reporter=spec', '--test-reporter=junit', '--test-reporter-destination=stdout', '--test-reporter-destination=' + path.join(reports, 'mobile-unit.xml'), 'scripts/notes-database-upgrade.test.cjs', 'scripts/dependency-hardening.test.cjs', 'scripts/test-release-gate.test.cjs', 'scripts/recovery-export.test.cjs']);
+  run('Storage upgrade and dependency unit tests', null, ['--test', '--test-reporter=spec', '--test-reporter=junit', '--test-reporter-destination=stdout', '--test-reporter-destination=' + path.join(reports, 'mobile-unit.xml'), 'scripts/notes-database-upgrade.test.cjs', 'scripts/dependency-hardening.test.cjs', 'scripts/test-release-gate.test.cjs', 'scripts/recovery-export.test.cjs', 'scripts/local-export.test.cjs']);
   if (!mobileOnly) {
     const design = process.env.STELLAR_NOTES_DESIGN_SOURCE || localConfig.designSource;
     if (!design || !path.isAbsolute(design)) throw Error('Set STELLAR_NOTES_DESIGN_SOURCE to the reviewed Notes design checkout.');
     run('Notes UI unit regressions', path.join(design, 'tools/test-notes.cjs'), ['--report-dir', reports]);
-    const assets = ['index.html', 'notes.js', 'notes.css', 'mobile-features.js', 'live/api-integration.js', 'live/auth-navigation.js', 'live/device-feedback.js', 'editor/mobile-editor.js', 'editor/engine.bundle.js', 'editor/engine.bundle.css', 'live/runtime.bundle.js', 'live/runtime.sources.json'];
+    const assets = ['index.html', 'notes.js', 'notes.css', 'mobile-features.js', 'live/api-integration.js', 'live/auth-navigation.js', 'live/device-feedback.js', 'editor/mobile-editor.js', 'editor/engine.bundle.js', 'editor/engine.bundle.css', 'live/runtime.bundle.js', 'live/backup.worker.js', 'live/runtime.sources.json'];
     if (platformIndex >= 0 && !['android', 'ios'].includes(platform)) throw Error('Unknown release platform: ' + platform);
     for (const asset of assets) {
       const built = fs.readFileSync(path.join(root, 'www', asset));
