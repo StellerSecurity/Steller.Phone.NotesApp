@@ -1,0 +1,13 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+  <string name="biometric_lock_title">Déverrouiller Stellar Notes</string>
+  <string name="biometric_lock_message">Déverrouillez pour voir vos notes.</string>
+  <string name="biometric_lock_unlock">Déverrouiller avec la biométrie</string>
+  <string name="biometric_lock_passcode">Utiliser le code de l’appareil</string>
+  <string name="biometric_lock_prompt">Confirmez votre identité pour ouvrir Notes.</string>
+  <string name="biometric_lock_retry">Non reconnu. Réessayez.</string>
+  <string name="biometric_lock_cancelled">Déverrouillage annulé. Vos notes restent masquées.</string>
+  <string name="biometric_lock_device_setup">Configurez un verrouillage de l’écran dans les réglages Android, puis réessayez.</string>
+  <string name="app_name">Stellar Private Notes</string>
+  <string name="title_activity_main">Stellar Private Notes</string>
+</resources>

@@ -1,0 +1,29 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="local_export_brand" translatable="false">Stellar Notes</string>
+    <string name="local_export_close">Close local export</string>
+    <string name="local_export_contents">In your file</string>
+    <string name="local_export_notes">Notes</string>
+    <string name="local_export_folders">Folders</string>
+    <string name="local_export_privacy_title">Keep your file private</string>
+    <string name="local_export_locked_notes">Locked notes stay encrypted and still need their own note code.</string>
+    <string name="local_export_save">Choose location</string>
+    <string name="local_export_ready">Your original notes stay in the app.</string>
+    <string name="local_export_saving">Saving…</string>
+    <string name="local_export_done">Done</string>
+    <string name="local_export_saved">File saved locally. Your notes are unchanged.</string>
+    <string name="local_export_failed">The file could not be saved. The destination may contain an incomplete file. Your notes are unchanged. Close this screen and try again.</string>
+    <string name="local_export_auth_title">Confirm your phone code</string>
+    <string name="local_export_auth_copy">Enter your device PIN, pattern or password to export your notes.</string>
+    <string name="local_export_set_code">Set up a PIN, pattern or password in your phone’s settings before exporting notes.</string>
+    <string name="local_export_android_required">Android 11 or newer is required to confirm this action using only your phone code.</string>
+    <string name="local_export_auth_failed">Your phone code could not be verified. Close this screen and try again.</string>
+    <string name="local_export_expired">The export session has expired. Close this screen and start again.</string>
+    <string name="local_export_warning_confirm">I understand — continue</string>
+    <string name="local_export_warning_cancel">Cancel</string>
+    <string name="backup_export_title">Encrypted backup</string>
+    <string name="backup_export_intro">Save your encrypted notes and folders. Keep the separate 30-digit code safe.</string>
+    <string name="backup_export_privacy">The entire backup file is encrypted. Keep the 30-digit code separately; without it, this backup cannot be restored.</string>
+    <string name="backup_export_warning_title">Save encrypted backup?</string>
+    <string name="backup_export_warning_copy">You need both this file and its separate 30-digit code to restore your notes. Stellar cannot recover a lost code. Keep the code away from the file and only share them with people you trust. Your original notes stay in the app.</string>
+</resources>

@@ -1,0 +1,28 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="local_export_close">Fermer l’exportation</string>
+    <string name="local_export_contents">Dans votre fichier</string>
+    <string name="local_export_notes">Notes</string>
+    <string name="local_export_folders">Dossiers</string>
+    <string name="local_export_privacy_title">Protégez votre fichier</string>
+    <string name="local_export_locked_notes">Les notes verrouillées restent chiffrées et nécessitent toujours leur propre code.</string>
+    <string name="local_export_save">Choisir l’emplacement</string>
+    <string name="local_export_ready">Vos notes d’origine restent dans l’application.</string>
+    <string name="local_export_saving">Enregistrement…</string>
+    <string name="local_export_done">Terminé</string>
+    <string name="local_export_saved">Fichier enregistré localement. Vos notes sont inchangées.</string>
+    <string name="local_export_failed">Le fichier n’a pas pu être enregistré. La destination peut contenir un fichier incomplet. Vos notes sont inchangées. Fermez cet écran et réessayez.</string>
+    <string name="local_export_auth_title">Confirmez le code du téléphone</string>
+    <string name="local_export_auth_copy">Saisissez le PIN, schéma ou mot de passe du téléphone pour exporter vos notes.</string>
+    <string name="local_export_set_code">Configurez un PIN, schéma ou mot de passe dans les réglages du téléphone avant d’exporter vos notes.</string>
+    <string name="local_export_android_required">Android 11 ou ultérieur est requis pour confirmer cette action uniquement avec le code du téléphone.</string>
+    <string name="local_export_auth_failed">Le code du téléphone n’a pas pu être vérifié. Fermez cet écran et réessayez.</string>
+    <string name="local_export_expired">La session d’exportation a expiré. Fermez cet écran et recommencez.</string>
+    <string name="local_export_warning_confirm">Je comprends — continuer</string>
+    <string name="local_export_warning_cancel">Annuler</string>
+    <string name="backup_export_title">Sauvegarde chiffrée</string>
+    <string name="backup_export_intro">Enregistrez vos notes et dossiers chiffrés. Conservez le code séparé de 30 chiffres.</string>
+    <string name="backup_export_privacy">Tout le fichier est chiffré. Conservez séparément le code de 30 chiffres ; sans lui, la sauvegarde ne peut pas être restaurée.</string>
+    <string name="backup_export_warning_title">Enregistrer la sauvegarde chiffrée ?</string>
+    <string name="backup_export_warning_copy">La restauration nécessite le fichier et son code séparé de 30 chiffres. Stellar ne peut pas récupérer un code perdu. Conservez le code séparément du fichier. Vos notes originales restent dans l’application.</string>
+</resources>

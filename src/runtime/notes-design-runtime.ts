@@ -1,3 +1,6 @@
+import { generateBackupCode, backupCode, runBackupCrypto } from './backup/backup-client';
+import { validateBackupPayload } from './backup/backup-format';
+import { sanitizeNoteContent } from '../app/add-note/rich-text-editor/editor-document';
 import { ScreenshotProtectionService } from '../app/services/screenshot-protection.service';
 import { LocalNote, copyTrashedNotes, restoreSourceIds, restorationCleanup, RestoreObservation } from './note-restoration';
 import '@angular/compiler';
@@ -40,6 +43,7 @@ const appearance = registerPlugin<{
   selectionFeedback(): Promise<{ performed: boolean }>;
   errorFeedback(): Promise<{ performed: boolean }>;
   resetLocalApp(): Promise<void>;
+  saveEncryptedBackup(options: { json: string; language: string }): Promise<{ saved: boolean }>;
   saveImage(options: { dataUrl: string }): Promise<{ saved: boolean }>;
   biometricStatus(): Promise<{ available: boolean; enabled: boolean; status: number }>;
   setBiometricLock(options: { enabled: boolean }): Promise<{ available: boolean; enabled: boolean; cancelled: boolean; status: number }>;
@@ -70,7 +74,8 @@ export function createBrowserHttpClient(): HttpClient {
     new HttpClient(new HttpXhrBackend({ build: () => new XMLHttpRequest() })));
 }
 
-export async function createRuntime(onChange: (snapshot: any) => void, platform: { http?: HttpClient; storage?: Storage; secure?: SecureStorageService; background?: boolean; screenProtection?: Pick<ScreenshotProtectionService, 'isEnabled' | 'setEnabled' | 'applyCurrentSetting'>; appLifecycle?: Pick<typeof App, 'addListener'> } = {}) {
+export async function createRuntime(onChange: (snapshot: any) => void, platform: { http?: HttpClient; storage?: Storage; secure?: SecureStorageService; background?: boolean; screenProtection?: Pick<ScreenshotProtectionService, 'isEnabled' | 'setEnabled' | 'applyCurrentSetting'>; appLifecycle?: Pick<typeof App, 'addListener'>; localExport?: (json: string) => Promise<unknown>; backupCrypto?: typeof runBackupCrypto } = {}) {
+  const backupCryptography = platform.backupCrypto || runBackupCrypto;
   const backListener = Capacitor.getPlatform() === 'android' ? await App.addListener('backButton', () => {
     const handleBack = (window as Window & { stellarHandleBack?: () => boolean }).stellarHandleBack;
     if (!handleBack?.()) void App.minimizeApp();
@@ -108,12 +113,17 @@ export async function createRuntime(onChange: (snapshot: any) => void, platform:
   let records: LocalNote[] = [];
   let conflicts: string[] = [];
   let folderRecords: Folder[] = [];
+  let backupPreview: { token: string; data: any; generation: number; expires: number } | null = null;
+  let backupContextVersion = 0;
+  let backupPreviewTimer: ReturnType<typeof setTimeout>;
+  const clearBackupPreview = () => { backupContextVersion++; backupPreview = null; clearTimeout(backupPreviewTimer); };
   let user: any = null;
   let syncing = false;
   let failure = '';
   let serial: Promise<unknown> = Promise.resolve();
   let syncTimer: ReturnType<typeof setTimeout> | undefined;
   let disposed = false;
+  let exportingLocalNotes = false;
   const pendingDeletes = new Set<string>();
   const dirtyViews = new Set<string>();
   const acknowledgedVersions = new Map<string, number>();
@@ -219,7 +229,7 @@ export async function createRuntime(onChange: (snapshot: any) => void, platform:
     return activeSync;
   }
   async function performSync(): Promise<void> {
-    if (signingIn || syncing || !auth.isLoggedIn || !navigator.onLine || disposed) return;
+    if (exportingLocalNotes || signingIn || syncing || !auth.isLoggedIn || !navigator.onLine || disposed) return;
     syncing = true; failure = ''; emit();
     try {
       await serial;
@@ -392,6 +402,7 @@ export async function createRuntime(onChange: (snapshot: any) => void, platform:
     return { selected: true, operations: saved?.outbox || [] };
   }
   async function acceptSession(result: any, password: string) {
+    clearBackupPreview();
     if (result.response?.response_code !== 200) throw new Error('loginFailed');
     const response = result.response;
     const previousOwner = user || JSON.parse(await secure.getItem('ssUser') || 'null');
@@ -449,7 +460,7 @@ export async function createRuntime(onChange: (snapshot: any) => void, platform:
     ? appearance.biometricStatus()
     : Promise.resolve({ available: false, enabled: false, status: -1 }); }
   let biometric = await initialBiometricStatus;
-  const capabilities = { native: Capacitor.isNativePlatform(), biometric: biometric.available || biometric.enabled, screenshotToggle };
+  const capabilities = { native: Capacitor.isNativePlatform(), biometric: biometric.available || biometric.enabled, screenshotToggle, localExport: Capacitor.getPlatform() === 'android' || !!platform.localExport };
   let screenshotEnabled = await initialScreenProtection;
   const runtime = {
     snapshot,
@@ -479,6 +490,137 @@ export async function createRuntime(onChange: (snapshot: any) => void, platform:
     setEditing(id: string | null) { editingId = id; },
     markDirty(id: string, dirty = true) { if (dirty) dirtyViews.add(id); else dirtyViews.delete(id); },
     capabilities,
+    generateBackupCode,
+    async inspectBackup(encrypted: string, code: string, signal?: AbortSignal) {
+      clearBackupPreview();
+      if (disposed || snapshot().appLocked || signingIn) throw new Error('notesLocked');
+      const generation = outbox.generation, contextVersion = backupContextVersion;
+      const json = await backupCryptography('decrypt', encrypted, backupCode(code), signal);
+      const data = validateBackupPayload(JSON.parse(json));
+      if (disposed || snapshot().appLocked || outbox.generation !== generation || backupContextVersion !== contextVersion) throw new Error('notesLocked');
+      const token = crypto.randomUUID();
+      backupPreview = {token, data, generation, expires: performance.now() + 120000};
+      backupPreviewTimer = setTimeout(clearBackupPreview, 120000);
+      return {token, notes: data.notes.length, folders: data.folders.length};
+    },
+    discardBackup() { clearBackupPreview(); },
+    async importBackup(token: string) {
+      await activeSync?.catch(() => undefined);
+      return exclusive(async () => {
+        const preview = backupPreview;
+        if (!preview || preview.token !== token || preview.expires <= performance.now() || disposed || snapshot().appLocked || preview.generation !== outbox.generation) throw new Error('backupExpired');
+        const previousNotes = records, previousFolders = folderRecords;
+        const folders: Folder[] = [];
+        const names = new Map(folderRecords.filter(f=>!f.deleted).map(f=>[f.name,f]));
+        const mapping = new Map<string, Folder>();
+        for (const f of preview.data.folders) {
+          let folder = !f.deleted && names.get(f.name);
+          if (!folder) {
+            folder = {id:crypto.randomUUID(),name:f.name,deleted:!!f.deleted || !f.name.trim(),last_modified:Date.now()};
+            folders.push(folder);
+            if (!folder.deleted) names.set(folder.name,folder);
+          }
+          mapping.set(f.id,folder);
+        }
+        let version = nextNoteVersion(records);
+        const notes: LocalNote[] = preview.data.notes.map((n: any) => {
+          const folder = mapping.get(n.folderId);
+          return {id:crypto.randomUUID(),title:n.locked?n.encrypted.title:n.title,
+            text:n.locked?n.encrypted.html:sanitizeNoteContent(n.html, sanitizeEditorHtml),
+            protected:n.locked,pinned:n.pinned,favorite:n.favorite,deleted:n.deleted,
+            deleted_at:n.deletedAt ?? undefined,folder_id:folder && !folder.deleted?folder.id:null,
+            folder:folder && !folder.deleted?folder.name:'',last_modified:version++,base_version:0,sync_pending:auth.isLoggedIn};
+        });
+        records = [...records,...notes]; folderRecords = [...folderRecords,...folders];
+        try {
+          for (const n of notes) state.markPendingMutation(n.id,'update',Number(n.last_modified));
+          await persist();
+          await disk.set('notes.design.folders-pending.v1',true);
+        } catch (error) {
+          records=previousNotes;folderRecords=previousFolders;
+          for(const n of notes) state.clearPendingMutation(n.id);
+          await persist().catch(() => undefined);
+          throw error;
+        }
+        clearBackupPreview();emit();
+        if(auth.isLoggedIn) void queueUnsaved().then(()=>queueSync()).catch(()=>{failure='syncPending';emit();});
+        return {notes:notes.length,folders:folders.length};
+      });
+    },
+    async saveEncryptedBackup(appPassword?: string, signal?: AbortSignal, encryptedCode?: string) {
+      const checkCancelled = () => { if (signal?.aborted) throw new DOMException('Local export cancelled', 'AbortError'); };
+      const ready = async <T>(work: Promise<T>): Promise<T> => {
+        checkCancelled();
+        if (!signal) return work;
+        let cancelled: () => void = () => undefined;
+        try {
+          return await Promise.race([work, new Promise<never>((_resolve, reject) => {
+            cancelled = () => reject(new DOMException('Local export cancelled', 'AbortError'));
+            signal.addEventListener('abort', cancelled, { once: true });
+          })]);
+        } finally { signal.removeEventListener('abort', cancelled); }
+      };
+      checkCancelled();
+      if (!capabilities.localExport) throw new Error('localExportUnavailable');
+      if (exportingLocalNotes) throw new Error('localExportPending');
+      if (signingIn || disposed) throw new Error('loginPending');
+      if (snapshot().appLocked) throw new Error('notesLocked');
+      const code = backupCode(encryptedCode!);
+      const exportGeneration = outbox.generation;
+      exportingLocalNotes = true;
+      clearTimeout(syncTimer);
+      try {
+        if (activeSync) await ready(activeSync.catch(() => undefined));
+        await ready(serial);
+        await ready(state.flushPersistence());
+        // Fresh app-code verification is required for every export, even while
+        // Notes is already unlocked. Export failures never invoke a data wipe.
+        if (state.appHasPasswordChallenge()) {
+          const lock = await ready(disk.get('notes.local-export-auth.v1')) || { failed: 0, until: 0 };
+          if (Number(lock.until) > Date.now()) throw Object.assign(new Error('localExportLockedOut'), { retryAfterMs: Number(lock.until) - Date.now() });
+          let valid = false;
+          try {
+            if (typeof appPassword === 'string' && appPassword.length > 0) {
+              const decoded = legacyCrypto.decrypt(state.getNotes(), appPassword);
+              valid = !!decoded && Array.isArray(JSON.parse(decoded));
+            }
+          } catch { valid = false; }
+          if (!valid) {
+            const failed = Math.max(0, Math.min(20, Number(lock.failed) || 0)) + 1;
+            const delay = failed < 5 ? 0 : Math.min(900000, 30000 * 2 ** Math.min(10, failed - 5));
+            await disk.set('notes.local-export-auth.v1', { failed, until: delay ? Date.now() + delay : 0 });
+            if (delay) throw Object.assign(new Error('localExportLockedOut'), { retryAfterMs: delay });
+            throw new Error('wrongPassword');
+          }
+          await disk.remove('notes.local-export-auth.v1');
+        }
+        checkCancelled();
+        if (disposed || snapshot().appLocked || outbox.generation !== exportGeneration) throw new Error('notesLocked');
+        const payload = {
+          format: 'stellar-notes-export', version: 1, exportedAt: new Date().toISOString(),
+          notes: records.map(note => ({ id: note.id, folderId: note.folder_id ?? null,
+            folder: note.folder || '', pinned: !!note.pinned, favorite: !!note.favorite,
+            deleted: !!note.deleted, deletedAt: note.deleted_at ?? null, lastModified: Number(note.last_modified) || 0,
+            ...(note.protected ? { locked: true, encrypted: { format: 'cryptojs-aes-passphrase',
+              title: note.title || '', html: note.text || '' } }
+              : { locked: false, title: note.title || '', html: note.text || '' }) })),
+          folders: folderRecords.map(folder => ({ id: folder.id, name: folder.name,
+            deleted: !!folder.deleted, lastModified: Number(folder.last_modified) || 0 }))
+        };
+        let json = JSON.stringify(payload, null, 2);
+        {
+          const encrypted = await backupCryptography('encrypt', json, code, signal);
+          checkCancelled();
+          if (disposed || snapshot().appLocked || outbox.generation !== exportGeneration) throw new Error('notesLocked');
+          json = JSON.stringify({format:'stellar-encrypted-local-export',version:1,notesCount:payload.notes.length,
+            foldersCount:payload.folders.length,lockedCount:payload.notes.filter(n=>n.locked).length,backup:JSON.parse(encrypted)});
+        }
+        return await (platform.localExport ? platform.localExport(json) : appearance.saveEncryptedBackup({ json, language: document.documentElement.lang || 'en' }));
+      } finally {
+        exportingLocalNotes = false;
+        if (!disposed && auth.isLoggedIn) queueSync();
+      }
+    },
     async setScreenshotProtection(enabled: boolean) {
       if (!capabilities.screenshotToggle) throw new Error('screenProtectionUnavailable');
       await screenProtection.setEnabled(enabled);
@@ -613,6 +755,7 @@ export async function createRuntime(onChange: (snapshot: any) => void, platform:
     },
     lockNote(id: string) { notePasswords.delete(String(id)); },
     async logout() {
+      clearBackupPreview();
       await serial;
       await sync();
       if ((await outbox.getAll()).length || state.hasPendingMutations()) throw new Error('syncPending');
@@ -660,6 +803,7 @@ export async function createRuntime(onChange: (snapshot: any) => void, platform:
       await persist(); emit();
     },
     async lockApp() {
+      clearBackupPreview();
       await serial;
       await persist();
       state.setNotesAppPassword(''); state.setDecryptedNotes(null);
@@ -764,7 +908,7 @@ export async function createRuntime(onChange: (snapshot: any) => void, platform:
         privacy: state.isPrivacyModeEnabled(), clipboard: state.getClipboardAutoClearSeconds(),
         ...(['light', 'dark', 'system'].includes(appearance) ? { appearance } : {}) };
     },
-    dispose() { disposed = true; void backListener?.remove(); void appStateListener?.remove(); document.removeEventListener('visibilitychange', visibilityChanged); loginSubscription.unsubscribe(); keys.clearRuntimeKeys(); notePasswords.clear(); records = []; folderRecords = []; user = null; auth.clearAuthenticationState(); clearTimeout(syncTimer); clearInterval(poll); clearInterval(retryTimer); realtime.dispose(); window.removeEventListener('stellar:notes-changed', refresh); window.removeEventListener('online', refresh); },
+    dispose() { clearBackupPreview(); disposed = true; void backListener?.remove(); void appStateListener?.remove(); document.removeEventListener('visibilitychange', visibilityChanged); loginSubscription.unsubscribe(); keys.clearRuntimeKeys(); notePasswords.clear(); records = []; folderRecords = []; user = null; auth.clearAuthenticationState(); clearTimeout(syncTimer); clearInterval(poll); clearInterval(retryTimer); realtime.dispose(); window.removeEventListener('stellar:notes-changed', refresh); window.removeEventListener('online', refresh); },
   };
   const loginSubscription = auth.loginState$.subscribe(() => emit());
   emit();

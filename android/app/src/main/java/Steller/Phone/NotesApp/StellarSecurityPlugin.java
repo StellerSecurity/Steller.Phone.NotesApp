@@ -65,6 +65,42 @@ public class StellarSecurityPlugin extends Plugin {
     }
 
     @PluginMethod
+    public void saveEncryptedBackup(PluginCall call) {
+        String json = call.getString("json");
+        if (json == null || json.length() > 48 * 1024 * 1024) { call.reject("Invalid local export"); return; }
+        try {
+            org.json.JSONObject data = new org.json.JSONObject(json);
+            if (!"stellar-encrypted-local-export".equals(data.optString("format")) || data.optInt("version")!=1
+                || !LocalBackupFormat.valid(data.optJSONObject("backup"))
+                || data.optInt("notesCount",-1)<0 || data.optInt("notesCount")>10000
+                || data.optInt("foldersCount",-1)<0 || data.optInt("foldersCount")>10000) {
+                call.reject("Only encrypted backups are supported"); return;
+            }
+            String id = LocalExportPayload.offer(json);
+            if (id == null) { call.reject("Local export already open"); return; }
+            call.getData().put("localExportId", id);
+            call.getData().remove("json");
+            getActivity().runOnUiThread(() -> {
+                Intent intent = new Intent(getContext(), LocalNotesExportActivity.class);
+                intent.putExtra("payloadId", id);
+                intent.putExtra("language", call.getString("language", "en"));
+                intent.putExtra("notesDarkTheme", getActivity().getPreferences(Activity.MODE_PRIVATE).getBoolean("notesDarkTheme", false));
+                try { startActivityForResult(call, intent, "localExportResult"); }
+                catch (Exception error) { LocalExportPayload.discard(id); call.reject("Local export could not open"); }
+            });
+        } catch (org.json.JSONException error) { call.reject("Invalid local export"); }
+    }
+
+    @ActivityCallback
+    private void localExportResult(PluginCall call, ActivityResult result) {
+        if (call == null) return;
+        LocalExportPayload.discard(call.getString("localExportId"));
+        JSObject response = new JSObject();
+        response.put("saved", result.getResultCode() == Activity.RESULT_OK);
+        call.resolve(response);
+    }
+
+    @PluginMethod
     public void selectionFeedback(PluginCall call) {
         getActivity().runOnUiThread(() -> {
             JSObject result = new JSObject();

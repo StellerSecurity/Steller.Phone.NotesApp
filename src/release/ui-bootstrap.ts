@@ -2,8 +2,9 @@ import { of, throwError } from 'rxjs';
 const win = window as any;
 const create = win.StellarNotesRuntime.createRuntime;
 localStorage.clear();
-const signedIn = new URLSearchParams(location.search).has('signed-in');
-const storage = new Map<string, any>([['notes.design.preferences.v1', { language: 'en' }]]);
+const params = new URLSearchParams(location.search);
+const signedIn = params.has('signed-in');
+const storage = new Map<string, any>([['notes.design.preferences.v1', { language: 'en', ...(params.has('trash-off') ? { trash: false } : {}) }]]);
 const secure = new Map<string, string>();
 const remote = new Map<string, any>();
 if (signedIn) {
@@ -18,10 +19,11 @@ win.fetch = (request: RequestInfo | URL, init?: RequestInit) => {
   if (url.origin !== location.origin) throw new Error('External network is disabled in release UI tests.');
   return localFetch(request, init);
 };
-win.__notesQA = { storage, secure, failSave: false, remote };
+win.__notesQA = { storage, secure, failSave: false, exportCalls: 0, exportPayloads: [], remote };
 const testCreate = async (notify: (snapshot: any) => void) => {
   const runtime = await create(notify, {
     background: false,
+    localExport: async (json: string) => { win.__notesQA.exportCalls++; win.__notesQA.exportPayloads.push(JSON.parse(json)); return { saved: true }; },
     storage: { create: async function () { return this; }, get: async (key: string) => structuredClone(storage.get(key) ?? null), set: async (key: string, value: any) => storage.set(key, structuredClone(value)), remove: async (key: string) => storage.delete(key), clear: async () => storage.clear() },
     secure: { getItem: async (key: string) => secure.get(key) ?? null, setItem: async (key: string, value: string) => secure.set(key, value), removeItem: async (key: string) => secure.delete(key), clear: async () => secure.clear() },
     http: { post(url: string, body: any) {
@@ -34,7 +36,7 @@ const testCreate = async (notify: (snapshot: any) => void) => {
   const save = runtime.save.bind(runtime);
   runtime.save = async (...args: any[]) => { if (win.__notesQA.failSave) throw new Error('syntheticDiskFull'); return save(...args); };
   win.__notesQA.runtime = runtime;
-  await runtime.save([{ id: '61a299ef-a512-4284-a838-2950128e71a2', title: 'Release QA', html: '<p>First line</p><p><br></p><p>Last line</p>', body: 'First line\n\nLast line', locked: false, folder: '', pin: false, star: false }], []);
+  if (!params.has('empty')) await runtime.save([{ id: '61a299ef-a512-4284-a838-2950128e71a2', title: 'Release QA', html: '<p>First line</p><p><br></p><p>Last line</p>', body: 'First line\n\nLast line', locked: false, folder: '', pin: false, star: false }], []);
   return runtime;
 };
 

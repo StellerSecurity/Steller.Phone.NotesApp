@@ -1,0 +1,19 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+  <string name="recovery_label">Notes-gendannelse</string>
+  <string name="recovery_close">✕</string>
+  <string name="recovery_close_description">Luk gendannelse uden at eksportere</string>
+  <string name="recovery_title">Gendan dine lokale noter</string>
+  <string name="recovery_intro">Gem en krypteret kopi af appens lokale data til hjælp med gendannelse. De oprindelige filer flyttes, nulstilles eller overskrives ikke. Du behøver ingen konto, og intet uploades automatisk.</string>
+  <string name="recovery_password_notice">Kopien krypteres til Stellar Support. Support kan dekryptere pakken og undersøge filerne. Noter, der allerede er beskyttet med din gamle appkode, forbliver beskyttede; værktøjet kan ikke omgå koden. Indtast eller send ikke din Stellar ID-adgangskode.</string>
+  <string name="recovery_disclosure">Jeg forstår, at kopien kan indeholde private noter, mapper, indstillinger og loginoplysninger, og at Stellar Support kan undersøge kopien.</string>
+  <string name="recovery_consent">Jeg accepterer at oprette en krypteret kopi til gendannelse. Jeg vælger selv, hvor den gemmes, og om den deles med Stellar Support.</string>
+  <string name="recovery_export">Gem krypteret gendannelseskopi</string>
+  <string name="recovery_ready">Det originale lager bliver på telefonen. Del kun den gemte fil via en supportkanal, du stoler på.</string>
+  <string name="recovery_preparing">Forbereder og kontrollerer den krypterede kopi…</string>
+  <string name="recovery_saving">Gemmer krypteret gendannelseskopi…</string>
+  <string name="recovery_saved">Gendannelseskopien er gemt. Det originale lager er uændret. Intet er uploadet. Du kan nu dele filen med Stellar Support.</string>
+  <string name="recovery_failed">Gendannelseskopien kunne ikke oprettes. Ingen originale filer er ændret. Luk andre Notes-vinduer, og prøv igen, eller kontakt support.</string>
+  <string name="recovery_cancelled">Eksporten er annulleret. Ingen originale filer er ændret.</string>
+  <string name="recovery_save_failed">Lagringen blev ikke færdig. Destinationen kan indeholde en ufuldstændig fil; send den ikke. Ingen originale filer er ændret. Prøv igen.</string>
+</resources>
