@@ -24,17 +24,20 @@ public final class RecoveryActivity extends Activity {
     private File pending;
     private Thread worker;
     private boolean busy;
+    private boolean dark;
 
     private int dp(int value) { return Math.round(value*getResources().getDisplayMetrics().density); }
     private TextView text(int resource,int size) {
-        TextView v=new TextView(this); v.setText(resource); v.setTextSize(size); v.setTextColor(Color.rgb(11,12,25));
+        TextView v=new TextView(this); v.setText(resource); v.setTextSize(size); v.setTextColor(dark ? Color.rgb(246,246,253) : Color.rgb(11,12,25));
         v.setPadding(0,dp(10),0,dp(10)); return v;
     }
     @Override public void onCreate(Bundle saved) {
         super.onCreate(saved);
+        dark = getIntent().getBooleanExtra("notesDarkTheme", false);
+        int surface = dark ? Color.rgb(19,21,34) : Color.rgb(246,246,253);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_SECURE);
         LinearLayout page=new LinearLayout(this); page.setOrientation(LinearLayout.VERTICAL);
-        page.setBackgroundColor(Color.rgb(246,246,253));
+        page.setBackgroundColor(surface);
         ScrollView scroll=new ScrollView(this); scroll.setFillViewport(true); scroll.addView(page); setContentView(scroll);
         ViewCompat.setOnApplyWindowInsetsListener(scroll,(v,insets)->{
             androidx.core.graphics.Insets bars=insets.getInsets(WindowInsetsCompat.Type.systemBars()|WindowInsetsCompat.Type.displayCutout());
@@ -48,17 +51,17 @@ public final class RecoveryActivity extends Activity {
         page.addView(text(R.string.recovery_title,26));
         page.addView(text(R.string.recovery_intro,16));
         page.addView(text(R.string.recovery_password_notice,16));
-        disclosure=new CheckBox(this); disclosure.setText(R.string.recovery_disclosure); disclosure.setTextSize(16); disclosure.setTextColor(Color.rgb(11,12,25)); page.addView(disclosure);
-        consent=new CheckBox(this); consent.setText(R.string.recovery_consent); consent.setTextSize(16); consent.setTextColor(Color.rgb(11,12,25)); page.addView(consent);
+        disclosure=new CheckBox(this); disclosure.setText(R.string.recovery_disclosure); disclosure.setTextSize(16); disclosure.setTextColor(dark ? Color.rgb(246,246,253) : Color.rgb(11,12,25)); page.addView(disclosure);
+        consent=new CheckBox(this); consent.setText(R.string.recovery_consent); consent.setTextSize(16); consent.setTextColor(dark ? Color.rgb(246,246,253) : Color.rgb(11,12,25)); page.addView(consent);
         disclosure.setOnCheckedChangeListener((b,c)->update()); consent.setOnCheckedChangeListener((b,c)->update());
         export=new Button(this); export.setText(R.string.recovery_export); export.setTextSize(16);
         export.setOnClickListener(v->prepare()); page.addView(export);
         progress=new ProgressBar(this); progress.setVisibility(View.GONE); page.addView(progress);
         status=text(R.string.recovery_ready,16); status.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_POLITE); page.addView(status);
-        getWindow().setStatusBarColor(Color.rgb(246,246,253));
-        getWindow().setNavigationBarColor(Color.rgb(246,246,253));
+        getWindow().setStatusBarColor(surface);
+        getWindow().setNavigationBarColor(surface);
         WindowInsetsControllerCompat bars=WindowCompat.getInsetsController(getWindow(),scroll);
-        bars.setAppearanceLightStatusBars(true); bars.setAppearanceLightNavigationBars(true);
+        bars.setAppearanceLightStatusBars(!dark); bars.setAppearanceLightNavigationBars(!dark);
         update();
     }
     private void update() { if(export!=null) export.setEnabled(!busy && disclosure.isChecked() && consent.isChecked()); }

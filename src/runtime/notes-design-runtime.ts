@@ -40,6 +40,7 @@ const appearance = registerPlugin<{
   selectionFeedback(): Promise<{ performed: boolean }>;
   errorFeedback(): Promise<{ performed: boolean }>;
   resetLocalApp(): Promise<void>;
+  openRecoveryExport(): Promise<{ closed: boolean }>;
   saveImage(options: { dataUrl: string }): Promise<{ saved: boolean }>;
   biometricStatus(): Promise<{ available: boolean; enabled: boolean; status: number }>;
   setBiometricLock(options: { enabled: boolean }): Promise<{ available: boolean; enabled: boolean; cancelled: boolean; status: number }>;
@@ -70,7 +71,7 @@ export function createBrowserHttpClient(): HttpClient {
     new HttpClient(new HttpXhrBackend({ build: () => new XMLHttpRequest() })));
 }
 
-export async function createRuntime(onChange: (snapshot: any) => void, platform: { http?: HttpClient; storage?: Storage; secure?: SecureStorageService; background?: boolean; screenProtection?: Pick<ScreenshotProtectionService, 'isEnabled' | 'setEnabled' | 'applyCurrentSetting'>; appLifecycle?: Pick<typeof App, 'addListener'> } = {}) {
+export async function createRuntime(onChange: (snapshot: any) => void, platform: { http?: HttpClient; storage?: Storage; secure?: SecureStorageService; background?: boolean; screenProtection?: Pick<ScreenshotProtectionService, 'isEnabled' | 'setEnabled' | 'applyCurrentSetting'>; appLifecycle?: Pick<typeof App, 'addListener'>; recoveryExport?: () => Promise<unknown> } = {}) {
   const backListener = Capacitor.getPlatform() === 'android' ? await App.addListener('backButton', () => {
     const handleBack = (window as Window & { stellarHandleBack?: () => boolean }).stellarHandleBack;
     if (!handleBack?.()) void App.minimizeApp();
@@ -114,6 +115,7 @@ export async function createRuntime(onChange: (snapshot: any) => void, platform:
   let serial: Promise<unknown> = Promise.resolve();
   let syncTimer: ReturnType<typeof setTimeout> | undefined;
   let disposed = false;
+  let exportingRecovery = false;
   const pendingDeletes = new Set<string>();
   const dirtyViews = new Set<string>();
   const acknowledgedVersions = new Map<string, number>();
@@ -219,7 +221,7 @@ export async function createRuntime(onChange: (snapshot: any) => void, platform:
     return activeSync;
   }
   async function performSync(): Promise<void> {
-    if (signingIn || syncing || !auth.isLoggedIn || !navigator.onLine || disposed) return;
+    if (exportingRecovery || signingIn || syncing || !auth.isLoggedIn || !navigator.onLine || disposed) return;
     syncing = true; failure = ''; emit();
     try {
       await serial;
@@ -449,7 +451,7 @@ export async function createRuntime(onChange: (snapshot: any) => void, platform:
     ? appearance.biometricStatus()
     : Promise.resolve({ available: false, enabled: false, status: -1 }); }
   let biometric = await initialBiometricStatus;
-  const capabilities = { native: Capacitor.isNativePlatform(), biometric: biometric.available || biometric.enabled, screenshotToggle };
+  const capabilities = { native: Capacitor.isNativePlatform(), biometric: biometric.available || biometric.enabled, screenshotToggle, recoveryExport: Capacitor.getPlatform() === 'android' || !!platform.recoveryExport };
   let screenshotEnabled = await initialScreenProtection;
   const runtime = {
     snapshot,
@@ -479,6 +481,23 @@ export async function createRuntime(onChange: (snapshot: any) => void, platform:
     setEditing(id: string | null) { editingId = id; },
     markDirty(id: string, dirty = true) { if (dirty) dirtyViews.add(id); else dirtyViews.delete(id); },
     capabilities,
+    async openRecoveryExport() {
+      if (!capabilities.recoveryExport) throw new Error('recoveryExportUnavailable');
+      if (exportingRecovery) throw new Error('recoveryExportPending');
+      exportingRecovery = true;
+      clearTimeout(syncTimer);
+      try {
+        // Finish queued writes before the native read-only snapshot. A failed
+        // sync must not prevent recovery of the local files that still exist.
+        if (activeSync) await activeSync.catch(() => undefined);
+        await serial;
+        await state.flushPersistence();
+        return await (platform.recoveryExport ? platform.recoveryExport() : appearance.openRecoveryExport());
+      } finally {
+        exportingRecovery = false;
+        if (!disposed && auth.isLoggedIn) queueSync();
+      }
+    },
     async setScreenshotProtection(enabled: boolean) {
       if (!capabilities.screenshotToggle) throw new Error('screenProtectionUnavailable');
       await screenProtection.setEnabled(enabled);

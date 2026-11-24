@@ -137,6 +137,28 @@ describe('Original design with existing Notes services', () => {
     expect(runtime.snapshot().notes[0].html).toBe(view.html);
     expect(runtime.snapshot().folders).toContain('Local folder');
   });
+  it('pauses sync while support export is open and resumes afterward without changing note content', async () => {
+    signedIn(); let close: () => void = () => undefined;
+    const launch = jasmine.createSpy('recoveryExport').and.callFake(() => new Promise<void>(resolve => { close = resolve; }));
+    await start(false, { recoveryExport: launch });
+    await runtime.save([note()], ['Personal']); await runtime.sync();
+    const before = runtime.snapshot(), rootKey = secure.get('ssEakB64');
+    const exporting = runtime.openRecoveryExport(); await waitFor(() => launch.calls.count() === 1);
+    await expectAsync(runtime.openRecoveryExport()).toBeRejectedWithError('recoveryExportPending');
+    const downloads = () => http.post.calls.allArgs().filter((args: any[]) => args[0].endsWith('/download')).length;
+    const count = downloads(); await runtime.sync(); expect(downloads()).toBe(count);
+    expect(runtime.snapshot().notes).toEqual(before.notes);
+    close(); await exporting; await waitFor(() => downloads() > count);
+    expect(runtime.snapshot().notes[0].html).toBe(before.notes[0].html);
+    expect(runtime.snapshot().folders).toEqual(before.folders); expect(secure.get('ssEakB64')).toBe(rootKey);
+  });
+  it('keeps ordinary notes usable when the native support exporter fails to open', async () => {
+    signedIn(); await start(false, { recoveryExport: async () => { throw new Error('nativeExportFailed'); } });
+    await runtime.save([note()], ['Personal']); await runtime.sync();
+    await expectAsync(runtime.openRecoveryExport()).toBeRejectedWithError('nativeExportFailed');
+    await runtime.save([{ ...runtime.snapshot().notes[0], title: 'Still editable' }], ['Personal']);
+    await runtime.sync(); expect(runtime.snapshot().notes[0].title).toBe('Still editable');
+  });
   it('does not fetch on foreground changes for a guest', async () => {
     let appState: (state: { isActive: boolean }) => void = () => undefined;
     await start(false, { appLifecycle: { addListener: async (_: string, listener: typeof appState) => {

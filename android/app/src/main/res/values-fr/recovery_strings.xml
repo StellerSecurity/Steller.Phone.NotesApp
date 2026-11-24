@@ -4,7 +4,7 @@
   <string name="recovery_close">✕</string>
   <string name="recovery_close_description">Fermer sans exporter</string>
   <string name="recovery_title">Récupérer vos notes locales</string>
-  <string name="recovery_intro">Cette mise à jour de récupération garde Notes fermé pendant la création d’une copie du stockage local. Vos fichiers originaux ne sont ni déplacés, ni réinitialisés, ni remplacés. Aucun compte n’est nécessaire et aucun envoi automatique n’est effectué.</string>
+  <string name="recovery_intro">Enregistrez une copie chiffrée des données locales de cette application pour l’assistance à la récupération. Les fichiers d’origine ne seront ni déplacés, ni réinitialisés, ni écrasés. Aucun compte n’est requis et rien n’est envoyé automatiquement.</string>
   <string name="recovery_password_notice">La copie est chiffrée pour Stellar Support. Le support peut déchiffrer le paquet et examiner ses fichiers. Les notes déjà protégées par votre ancien mot de passe restent protégées ; cet outil ne contourne pas ce mot de passe. Ne saisissez et ne transmettez pas votre mot de passe Stellar ID.</string>
   <string name="recovery_disclosure">Je comprends que la copie peut contenir des notes privées, des dossiers, des réglages et des informations de connexion, et que Stellar Support peut examiner cette copie.</string>
   <string name="recovery_consent">Je consens à créer une copie chiffrée pour la récupération. Je choisis son emplacement et décide de la partager ou non avec Stellar Support.</string>

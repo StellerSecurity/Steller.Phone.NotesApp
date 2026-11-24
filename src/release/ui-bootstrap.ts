@@ -18,10 +18,11 @@ win.fetch = (request: RequestInfo | URL, init?: RequestInit) => {
   if (url.origin !== location.origin) throw new Error('External network is disabled in release UI tests.');
   return localFetch(request, init);
 };
-win.__notesQA = { storage, secure, failSave: false, remote };
+win.__notesQA = { storage, secure, failSave: false, exportCalls: 0, remote };
 const testCreate = async (notify: (snapshot: any) => void) => {
   const runtime = await create(notify, {
     background: false,
+    recoveryExport: async () => { win.__notesQA.exportCalls++; },
     storage: { create: async function () { return this; }, get: async (key: string) => structuredClone(storage.get(key) ?? null), set: async (key: string, value: any) => storage.set(key, structuredClone(value)), remove: async (key: string) => storage.delete(key), clear: async () => storage.clear() },
     secure: { getItem: async (key: string) => secure.get(key) ?? null, setItem: async (key: string, value: string) => secure.set(key, value), removeItem: async (key: string) => secure.delete(key), clear: async () => secure.clear() },
     http: { post(url: string, body: any) {

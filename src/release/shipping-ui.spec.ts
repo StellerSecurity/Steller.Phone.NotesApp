@@ -62,6 +62,14 @@ describe('Shipping Notes UI with the actual runtime and Quill', () => {
     click('[data-action="back"]'); await wait(list); expect(doc.querySelector('.note-list h2 img')).toBeNull(); await open();
     expect(Array.from(doc.querySelectorAll('.ql-editor li')).map(li => li.getAttribute('data-list'))).toEqual(['checked', 'unchecked']);
   });
+  it('opens the support exporter from settings and returns to the original notes', async () => {
+    await start(); const before = win.__notesQA.runtime.snapshot().notes[0].html;
+    click('[data-page="settings"]'); await wait(() => !!doc.querySelector('[data-action="support-export"]'));
+    expect(get('[data-recovery-export-section]').hidden).toBeFalse();
+    click('[data-action="support-export"]'); await wait(() => win.__notesQA.exportCalls === 1 && !doc.getElementById('app')?.inert);
+    click('[data-page="notes"]'); await wait(list); await open(); expect(body()).toContain('Last line');
+    expect(win.__notesQA.runtime.snapshot().notes[0].html).toBe(before);
+  });
   it('successful confirmed logout clears access but retains the encrypted account profile', async () => {
     await start(true); await wait(() => win.__notesQA.runtime.snapshot().loggedIn); click('[data-action="account"]'); await wait(() => !!doc.querySelector('[data-action="logout"]'));
     click('[data-action="logout"]'); click('#modal [data-close]'); expect(win.__notesQA.runtime.snapshot().loggedIn).toBeTrue();

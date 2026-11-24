@@ -65,6 +65,23 @@ public class StellarSecurityPlugin extends Plugin {
     }
 
     @PluginMethod
+    public void openRecoveryExport(PluginCall call) {
+        getActivity().runOnUiThread(() -> {
+            Intent intent = new Intent(getContext(), RecoveryActivity.class);
+            intent.putExtra("notesDarkTheme", getActivity().getPreferences(Activity.MODE_PRIVATE).getBoolean("notesDarkTheme", false));
+            startActivityForResult(call, intent, "recoveryExportResult");
+        });
+    }
+
+    @ActivityCallback
+    private void recoveryExportResult(PluginCall call, ActivityResult result) {
+        if (call == null) return;
+        JSObject response = new JSObject();
+        response.put("closed", true);
+        call.resolve(response);
+    }
+
+    @PluginMethod
     public void selectionFeedback(PluginCall call) {
         getActivity().runOnUiThread(() -> {
             JSObject result = new JSObject();

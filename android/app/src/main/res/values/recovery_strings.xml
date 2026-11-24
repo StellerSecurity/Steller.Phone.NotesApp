@@ -4,7 +4,7 @@
     <string name="recovery_close">✕</string>
     <string name="recovery_close_description">Close recovery without exporting</string>
     <string name="recovery_title">Recover your local notes</string>
-    <string name="recovery_intro">This recovery-only update keeps the normal Notes screen closed while you save a copy of the app’s local storage. Your original files will not be moved, reset or overwritten. No account is required and nothing is uploaded automatically.</string>
+    <string name="recovery_intro">Save an encrypted copy of this app’s local storage for recovery support. Your original files will not be moved, reset or overwritten. No account is required and nothing is uploaded automatically.</string>
     <string name="recovery_password_notice">The copy is encrypted for Stellar Support. Support can decrypt the exported package and inspect its files. Notes already protected by your old app password remain protected; this tool cannot bypass that password. Do not enter or send your Stellar ID password.</string>
     <string name="recovery_disclosure">I understand the copy may contain private notes, folders, settings and sign-in information, and Stellar Support can inspect the exported copy.</string>
     <string name="recovery_consent">I agree to create an encrypted copy for recovery. I choose where to save it and whether to share it with Stellar Support.</string>
