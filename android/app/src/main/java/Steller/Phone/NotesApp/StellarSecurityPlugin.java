@@ -40,6 +40,31 @@ public class StellarSecurityPlugin extends Plugin {
     }
 
     @PluginMethod
+    public void screenProtectionStatus(PluginCall call) {
+        getActivity().runOnUiThread(() -> {
+            JSObject result = new JSObject();
+            result.put("enabled", ((MainActivity) getActivity()).isScreenProtectionEnabled());
+            call.resolve(result);
+        });
+    }
+
+    @PluginMethod
+    public void setScreenProtection(PluginCall call) {
+        Boolean enabled = call.getBoolean("enabled");
+        if (enabled == null) { call.reject("Invalid screen protection setting"); return; }
+        getActivity().runOnUiThread(() -> {
+            MainActivity activity = (MainActivity) getActivity();
+            if (!activity.setScreenProtectionEnabled(enabled)) {
+                call.reject("Screen protection setting could not be saved");
+                return;
+            }
+            JSObject result = new JSObject();
+            result.put("enabled", activity.isScreenProtectionEnabled());
+            call.resolve(result);
+        });
+    }
+
+    @PluginMethod
     public void selectionFeedback(PluginCall call) {
         getActivity().runOnUiThread(() -> {
             JSObject result = new JSObject();

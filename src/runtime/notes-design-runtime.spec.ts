@@ -39,10 +39,11 @@ describe('Original design with existing Notes services', () => {
     throw new Error('Expected service update did not arrive');
   }
   const note = (title = 'Private title', html = '<p>Private content</p>') => ({ id: '5b56bdf6-bf29-4306-bf2f-d6f69bd9f7ae', title, html, body: 'Private content', folder: '', pin: false, star: false, locked: false });
-  async function start(background = false) {
-    runtime = await createRuntime(value => snapshots.push(value), { http, storage: disk, background,
+  async function start(background = false, extra: any = {}) {
+    runtime = await createRuntime(value => snapshots.push(value), { http, storage: disk, background, ...extra,
       secure: { getItem: async (key: string) => secure.get(key) || null,
         setItem: async (key: string, value: string) => { secure.set(key, value); }, removeItem: async (key: string) => { secure.delete(key); }, clear: async () => { secure.clear(); } } as any });
+    if (extra.waitForStartup !== false && runtime.snapshot().syncing) await runtime.sync();
   }
   beforeEach(() => {
     storage = new Map(); secure = new Map(); remote = new Map(); remoteFolders = []; snapshots = []; sockets = [];
@@ -74,6 +75,95 @@ describe('Original design with existing Notes services', () => {
     secure.set('ssToken', 'a'.repeat(40)); secure.set('ssEakB64', root); secure.set('ssAuthVersion', '1');
     secure.set('ssUser', JSON.stringify({ id: '123', email: 'runtime@example.invalid', auth_version: 1 }));
   }
+  it('fetches immediately on cold start and resumes once across native and browser signals', async () => {
+    signedIn();
+    let appState: (state: { isActive: boolean }) => void = () => undefined;
+    const remove = jasmine.createSpy('remove');
+    await start(false, { appLifecycle: { addListener: async (_name: string, listener: typeof appState) => {
+      appState = listener; return { remove };
+    } } });
+    const downloads = () => http.post.calls.allArgs().filter((args: any[]) => args[0].endsWith('/download')).length;
+    expect(downloads()).toBe(1);
+    await runtime.save([note()], ['Personal']); await runtime.sync();
+    const view = runtime.snapshot().notes[0];
+    const keys = new CryptoKeyService(); await keys.importEAK(root);
+    remote.set(view.id, { ...remote.get(view.id), last_modified: Date.now() + 1000,
+      title: packCipherBlob(await keys.encryptText('Changed while away', view.id + '#title')) });
+    const before = downloads();
+    appState({ isActive: false }); appState({ isActive: true });
+    document.dispatchEvent(new Event('visibilitychange'));
+    await waitFor(() => runtime.snapshot().notes[0]?.title === 'Changed while away');
+    expect(downloads()).toBe(before + 1);
+    expect(runtime.snapshot().folders).toContain('Personal');
+    runtime.dispose(); expect(remove).toHaveBeenCalledTimes(1);
+    const disposed = downloads(); appState({ isActive: false }); appState({ isActive: true });
+    await sleep(20); expect(downloads()).toBe(disposed);
+  });
+  it('refreshes after a resume during an in-flight sync without overlapping downloads', async () => {
+    signedIn(); await start(); await runtime.sync();
+    let appState: (state: { isActive: boolean }) => void = () => undefined;
+    runtime.dispose();
+    await start(false, { appLifecycle: { addListener: async (_: string, listener: typeof appState) => {
+      appState = listener; return { remove() {} };
+    } } });
+    await runtime.sync();
+    const blocked = new Subject<any>(); let downloads = 0;
+    http.post.and.callFake((url: string) => {
+      if (url.endsWith('/download') && ++downloads === 1) return blocked;
+      return of({ notes: [], folders: [] });
+    });
+    const active = runtime.sync(); await waitFor(() => downloads === 1);
+    appState({ isActive: false }); appState({ isActive: true }); appState({ isActive: true });
+    expect(downloads).toBe(1);
+    blocked.next({ notes: [], folders: [] }); blocked.complete(); await active;
+    await waitFor(() => downloads === 2); expect(downloads).toBe(2);
+  });
+  it('retains edits made while startup download is pending and syncs them afterward', async () => {
+    signedIn();
+    const blocked = new Subject<any>();
+    let downloadCalls = 0;
+    http.post.and.callFake((url: string, body: any) => {
+      if (url.endsWith('/download') && ++downloadCalls === 1) return blocked;
+      if (url.endsWith('/upload')) { for (const item of body.notes) remote.set(item.id, item); return of({ note_ack_v1: true }); }
+      return of({ notes: [...remote.values()], folders: [] });
+    });
+    await start(false, { waitForStartup: false }); await waitFor(() => downloadCalls === 1);
+    const view = note('Typed during startup', '<p>Keep me</p><p><br></p>');
+    await runtime.save([view], ['Local folder']);
+    expect(runtime.snapshot().notes[0].title).toBe(view.title);
+    blocked.next({ notes: [], folders: [] }); blocked.complete();
+    await waitFor(() => remote.has(view.id) && downloadCalls >= 2);
+    expect(runtime.snapshot().notes[0].title).toBe(view.title);
+    expect(runtime.snapshot().notes[0].html).toBe(view.html);
+    expect(runtime.snapshot().folders).toContain('Local folder');
+  });
+  it('does not fetch on foreground changes for a guest', async () => {
+    let appState: (state: { isActive: boolean }) => void = () => undefined;
+    await start(false, { appLifecycle: { addListener: async (_: string, listener: typeof appState) => {
+      appState = listener; return { remove() {} };
+    } } });
+    await runtime.save([note()], ['Local']);
+    appState({ isActive: false }); appState({ isActive: true });
+    await sleep(20); expect(http.post).not.toHaveBeenCalled();
+    expect(runtime.snapshot().notes[0].title).toBe('Private title');
+  });
+  it('reports the native screen setting and changes it without touching notes or keys', async () => {
+    signedIn(); let enabled = false;
+    const protection = { applyCurrentSetting: async () => undefined, isEnabled: async () => enabled,
+      setEnabled: jasmine.createSpy('setEnabled').and.callFake(async (value: boolean) => { enabled = value; }) };
+    await start(false, { screenProtection: protection }); await runtime.sync();
+    await runtime.save([note()], ['Personal']); await runtime.sync();
+    const before = structuredClone(storage.get('notes')), key = secure.get('ssEakB64');
+    expect((await runtime.preferences()).screenshot).toBeFalse();
+    expect((await runtime.preferences({ screenshot: true })).screenshot).toBeFalse();
+    expect(protection.setEnabled).not.toHaveBeenCalled();
+    expect(await runtime.setScreenshotProtection(true)).toEqual({ enabled: true });
+    expect((await runtime.preferences()).screenshot).toBeTrue();
+    protection.setEnabled.and.rejectWith(new Error('Native save failed'));
+    await expectAsync(runtime.setScreenshotProtection(false)).toBeRejected();
+    expect((await runtime.preferences()).screenshot).toBeTrue();
+    expect(storage.get('notes')).toEqual(before); expect(secure.get('ssEakB64')).toBe(key);
+  });
   it('does not expose a cached account when its session is missing', async () => {
     secure.set('ssUser', JSON.stringify({ id: '123', email: 'stale@example.invalid', auth_version: 1 }));
     await start();
@@ -257,7 +347,7 @@ describe('Original design with existing Notes services', () => {
     expect(await crypto.decryptText(unpackCipherBlob(remote.get(view.id).title), view.id + '#title')).toBe('After reload');
   });
   it('follows a notification received during a download with another download', async () => {
-    signedIn(); await start();
+    signedIn(); await start(); await runtime.sync();
     const blocked = new Subject<any>(); let downloads = 0;
     http.post.and.callFake((url: string) => {
       if (url.endsWith('/download') && ++downloads === 1) return blocked;

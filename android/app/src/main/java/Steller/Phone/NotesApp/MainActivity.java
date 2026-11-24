@@ -26,7 +26,7 @@ public class MainActivity extends BridgeActivity {
         getWindow().setBackgroundDrawable(new ColorDrawable(startSurface));
         super.onCreate(savedInstanceState);
         if (getBridge() != null) getBridge().getWebView().setBackgroundColor(startSurface);
-        enableSecureScreen();
+        applyScreenProtection();
         installSystemInsets();
         biometricScreenLock = new BiometricScreenLock(this);
     }
@@ -34,7 +34,7 @@ public class MainActivity extends BridgeActivity {
     @Override
     public void onResume() {
         super.onResume();
-        enableSecureScreen();
+        applyScreenProtection();
         if (biometricScreenLock != null) biometricScreenLock.resume();
     }
 
@@ -86,10 +86,22 @@ public class MainActivity extends BridgeActivity {
         WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView()).setAppearanceLightNavigationBars(!dark);
     }
 
-    private void enableSecureScreen() {
-        getWindow().setFlags(
-            WindowManager.LayoutParams.FLAG_SECURE,
-            WindowManager.LayoutParams.FLAG_SECURE
-        );
+    boolean isScreenProtectionEnabled() {
+        Object value = getSharedPreferences("CapacitorStorage", MODE_PRIVATE)
+            .getAll().get("screenshot_protection_enabled");
+        // Preserve the existing preference; missing or invalid values stay protected.
+        return !Boolean.FALSE.equals(value) && !"false".equals(value);
+    }
+
+    boolean setScreenProtectionEnabled(boolean enabled) {
+        boolean saved = getSharedPreferences("CapacitorStorage", MODE_PRIVATE).edit()
+            .putString("screenshot_protection_enabled", String.valueOf(enabled)).commit();
+        if (saved) applyScreenProtection();
+        return saved;
+    }
+
+    private void applyScreenProtection() {
+        if (isScreenProtectionEnabled()) getWindow().addFlags(WindowManager.LayoutParams.FLAG_SECURE);
+        else getWindow().clearFlags(WindowManager.LayoutParams.FLAG_SECURE);
     }
 }

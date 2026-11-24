@@ -1,3 +1,4 @@
+import { ScreenshotProtectionService } from '../app/services/screenshot-protection.service';
 import { LocalNote, copyTrashedNotes, restoreSourceIds, restorationCleanup, RestoreObservation } from './note-restoration';
 import '@angular/compiler';
 import { firstValueFrom, timeout } from 'rxjs';
@@ -69,11 +70,15 @@ export function createBrowserHttpClient(): HttpClient {
     new HttpClient(new HttpXhrBackend({ build: () => new XMLHttpRequest() })));
 }
 
-export async function createRuntime(onChange: (snapshot: any) => void, platform: { http?: HttpClient; storage?: Storage; secure?: SecureStorageService; background?: boolean } = {}) {
+export async function createRuntime(onChange: (snapshot: any) => void, platform: { http?: HttpClient; storage?: Storage; secure?: SecureStorageService; background?: boolean; screenProtection?: Pick<ScreenshotProtectionService, 'isEnabled' | 'setEnabled' | 'applyCurrentSetting'>; appLifecycle?: Pick<typeof App, 'addListener'> } = {}) {
   const backListener = Capacitor.getPlatform() === 'android' ? await App.addListener('backButton', () => {
     const handleBack = (window as Window & { stellarHandleBack?: () => boolean }).stellarHandleBack;
     if (!handleBack?.()) void App.minimizeApp();
   }) : undefined;
+  const screenProtection = platform.screenProtection || new ScreenshotProtectionService();
+  const screenshotToggle = !!platform.screenProtection || Capacitor.isNativePlatform();
+  const initialScreenProtection = screenshotToggle
+    ? screenProtection.applyCurrentSetting().then(() => screenProtection.isEnabled()) : Promise.resolve(true);
   const http = platform.http || createBrowserHttpClient();
   const disk = platform.storage || await openNotesDatabase();
   let initialPreferences: Promise<any[]> | null = Promise.all([disk.get('notes.design.preferences.v1'), disk.get('ssAppearanceMode')]);
@@ -155,8 +160,11 @@ export async function createRuntime(onChange: (snapshot: any) => void, platform:
   const persist = async () => {
     const noteJson = JSON.stringify(records), folderJson = JSON.stringify(folderRecords);
     const locked = state.appHasPasswordChallenge();
-    state.setNotes(locked ? legacyCrypto.encrypt(noteJson, state.getNotesAppPassword()) : noteJson);
-    state.setFolders(locked ? legacyCrypto.encrypt(folderJson, state.getNotesAppPassword()) : folderJson);
+    const password = state.getNotesAppPassword();
+    // A download with no collection changes must not rewrite the local store
+    // or its compatibility mirror (which can still hold a recovery source).
+    if (locked || state.getNotes() !== noteJson) state.setNotes(locked ? legacyCrypto.encrypt(noteJson, password) : noteJson);
+    if (locked || state.getFolders() !== folderJson) state.setFolders(locked ? legacyCrypto.encrypt(folderJson, password) : folderJson);
     state.setDecryptedNotes(noteJson);
     await state.flushPersistence();
   };
@@ -166,6 +174,7 @@ export async function createRuntime(onChange: (snapshot: any) => void, platform:
     return result;
   };
   const queueSync = () => {
+    if (activeSync) { refreshPending = true; return; }
     clearTimeout(syncTimer);
     syncTimer = setTimeout(() => { void sync().catch(() => undefined); }, 250);
   };
@@ -199,6 +208,7 @@ export async function createRuntime(onChange: (snapshot: any) => void, platform:
   let activeSync: Promise<void> | undefined;
   let refreshPending = false;
   function sync(): Promise<void> {
+    if (!activeSync) clearTimeout(syncTimer);
     if (!activeSync) activeSync = performSync().finally(() => {
       activeSync = undefined;
       if (refreshPending) {
@@ -331,6 +341,21 @@ export async function createRuntime(onChange: (snapshot: any) => void, platform:
   const refresh = () => { if (syncing) refreshPending = true; else queueSync(); };
   window.addEventListener('stellar:notes-changed', refresh);
   window.addEventListener('online', refresh);
+  // Resume events from the native app and the browser describe the same
+  // transition. Fetch once immediately, keeping cached notes on screen.
+  let foreground = !document.hidden;
+  const foregroundChanged = (active: boolean) => {
+    if (disposed) return;
+    const resumed = active && !foreground;
+    foreground = active;
+    if (!resumed) return;
+    if (activeSync) refreshPending = true;
+    else void sync().catch(() => undefined);
+  };
+  const visibilityChanged = () => foregroundChanged(!document.hidden);
+  document.addEventListener('visibilitychange', visibilityChanged);
+  const appStateListener = (Capacitor.isNativePlatform() || platform.appLifecycle)
+    ? await (platform.appLifecycle || App).addListener('appStateChange', state => foregroundChanged(state.isActive)) : undefined;
   const poll = setInterval(() => { if (!document.hidden) refresh(); }, 30000);
   if (platform.background !== false) realtime.init();
   const retryTimer = platform.background !== false ? setInterval(() => { if (auth.isLoggedIn) void sync().catch(() => undefined); }, 10000) : undefined;
@@ -424,7 +449,8 @@ export async function createRuntime(onChange: (snapshot: any) => void, platform:
     ? appearance.biometricStatus()
     : Promise.resolve({ available: false, enabled: false, status: -1 }); }
   let biometric = await initialBiometricStatus;
-  const capabilities = { native: Capacitor.isNativePlatform(), biometric: biometric.available || biometric.enabled, screenshotToggle: false };
+  const capabilities = { native: Capacitor.isNativePlatform(), biometric: biometric.available || biometric.enabled, screenshotToggle };
+  let screenshotEnabled = await initialScreenProtection;
   const runtime = {
     snapshot,
     sync,
@@ -453,6 +479,12 @@ export async function createRuntime(onChange: (snapshot: any) => void, platform:
     setEditing(id: string | null) { editingId = id; },
     markDirty(id: string, dirty = true) { if (dirty) dirtyViews.add(id); else dirtyViews.delete(id); },
     capabilities,
+    async setScreenshotProtection(enabled: boolean) {
+      if (!capabilities.screenshotToggle) throw new Error('screenProtectionUnavailable');
+      await screenProtection.setEnabled(enabled);
+      screenshotEnabled = await screenProtection.isEnabled();
+      return { enabled: screenshotEnabled };
+    },
     async setBiometricLock(enabled: boolean) {
       if (!Capacitor.isNativePlatform()) throw new Error('biometricUnavailable');
       const result = await appearance.setBiometricLock({ enabled });
@@ -658,7 +690,7 @@ export async function createRuntime(onChange: (snapshot: any) => void, platform:
       state.setNotesAppPassword(password);
       state.setDecryptedNotes(JSON.stringify(records));
       state.clearAppUnlockFailures(); state.recordSuccessfulAppUnlock();
-      await state.flushPersistence(); await auth.initializeAuthState(); emit(); queueSync();
+      await state.flushPersistence(); await auth.initializeAuthState(); emit(); void sync().catch(() => undefined);
     },
     async generateRecovery(password: string) { return identity.generateRecoveryCode(password); },
     async upgradeIdentity(currentPassword: string, newPassword: string, confirm: () => Promise<string>) {
@@ -728,14 +760,14 @@ export async function createRuntime(onChange: (snapshot: any) => void, platform:
       const saved = savedValue || {};
       if (!cached) biometric = await biometricStatus().catch(() => biometric);
       capabilities.biometric = biometric.available || biometric.enabled;
-      return { ...saved, biometric: biometric.enabled, autoLock: state.getAppLockTimeoutMinutes(), wipe: state.getAppWipeAfterDays(),
+      return { ...saved, screenshot: screenshotEnabled, biometric: biometric.enabled, autoLock: state.getAppLockTimeoutMinutes(), wipe: state.getAppWipeAfterDays(),
         privacy: state.isPrivacyModeEnabled(), clipboard: state.getClipboardAutoClearSeconds(),
         ...(['light', 'dark', 'system'].includes(appearance) ? { appearance } : {}) };
     },
-    dispose() { void backListener?.remove(); disposed = true; loginSubscription.unsubscribe(); keys.clearRuntimeKeys(); notePasswords.clear(); records = []; folderRecords = []; user = null; auth.clearAuthenticationState(); clearTimeout(syncTimer); clearInterval(poll); clearInterval(retryTimer); realtime.dispose(); window.removeEventListener('stellar:notes-changed', refresh); window.removeEventListener('online', refresh); },
+    dispose() { disposed = true; void backListener?.remove(); void appStateListener?.remove(); document.removeEventListener('visibilitychange', visibilityChanged); loginSubscription.unsubscribe(); keys.clearRuntimeKeys(); notePasswords.clear(); records = []; folderRecords = []; user = null; auth.clearAuthenticationState(); clearTimeout(syncTimer); clearInterval(poll); clearInterval(retryTimer); realtime.dispose(); window.removeEventListener('stellar:notes-changed', refresh); window.removeEventListener('online', refresh); },
   };
   const loginSubscription = auth.loginState$.subscribe(() => emit());
   emit();
-  if (auth.isLoggedIn) queueSync();
+  if (auth.isLoggedIn) void sync().catch(() => undefined);
   return runtime;
 }
