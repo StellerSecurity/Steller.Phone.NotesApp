@@ -3,6 +3,7 @@ import { FormBuilder } from '@angular/forms';
 import { ForgotPasswordComponent } from '../profile/forgot-password/forgot-password.component';
 import { AuthService } from './auth.service';
 import { IdentityAuthService } from './identity-auth.service';
+import { StellarIdClient } from '../utils/stellar-id-client';
 import { sessionToken } from '../utils/session-token';
 import { ThemeService } from './theme.service';
 
@@ -30,6 +31,23 @@ describe('Protected mobile login', () => {
     expect(finished!.serverStaticPublicKey).toBe(opaque.server.getPublicKey(serverSetup));
     expect(opaque.server.finishLogin({...challenge,finishLoginRequest:finished!.finishLoginRequest,identifiers}).sessionKey).toBe(finished!.sessionKey);
   }, 15000);
+
+  it('checks the authoritative legacy envelope before asking for a code or committing enrollment', async () => {
+    const opaque = await import('../../../identity-runtime/node_modules/@serenity-kit/opaque');await opaque.ready;
+    const serverSetup=opaque.server.createSetup(), email='upgrade@example.invalid', operations:string[]=[];
+    const envelope={crypto_version:'v1',kdf_params:{algo:'PBKDF2',hash:'SHA-256',iters:600000},kdf_salt:btoa('s'.repeat(16)),eak:btoa('e'.repeat(60))};
+    const client=new StellarIdClient({issuer:'https://id.stellarsecurity.com',methodKey:'unused',opaqueKey:opaque.server.getPublicKey(serverSetup)},async(operation,body)=>{
+      operations.push(operation);expect(operation).toBe('account/enroll/start');expect(body['password']).toBeUndefined();
+      return {challengeId:'synthetic',identifiers:{client:email,server:'https://id.stellarsecurity.com'},
+        ...opaque.server.createRegistrationResponse({serverSetup,userIdentifier:email,registrationRequest:body['registrationRequest']}),
+        legacyKdf:{version:envelope.crypto_version,parameters:envelope.kdf_params,salt:envelope.kdf_salt},keyEnvelope:envelope.eak};
+    });
+    const confirm=jasmine.createSpy('confirm').and.resolveTo('12345678');
+    await expectAsync(client.enroll({accountId:'123',email,token:'synthetic-session'},'new-synthetic-password',new Uint8Array(32),confirm,async actual=>{
+      expect(actual).toEqual(envelope as any);throw Error('wrongPassword');
+    })).toBeRejectedWithError('wrongPassword');
+    expect(confirm).not.toHaveBeenCalled();expect(operations).toEqual(['account/enroll/start']);
+  });
 
   function setup(method: 'legacy' | 'opaque') {
     const http = { post: jasmine.createSpy('post').and.returnValue(of({ response_code: 200 })) };

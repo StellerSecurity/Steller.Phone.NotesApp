@@ -42,6 +42,7 @@ const appearance = registerPlugin<{
   appearance(options: { theme: string; overlay: string }): Promise<void>;
   selectionFeedback(): Promise<{ performed: boolean }>;
   errorFeedback(): Promise<{ performed: boolean }>;
+  successFeedback(): Promise<{ performed: boolean }>;
   resetLocalApp(): Promise<void>;
   saveEncryptedBackup(options: { json: string; language: string }): Promise<{ saved: boolean }>;
   saveImage(options: { dataUrl: string }): Promise<{ saved: boolean }>;
@@ -54,6 +55,10 @@ export function nativeSelectionFeedback(): Promise<{ performed: boolean }> | nul
 export function nativeErrorFeedback(): Promise<unknown> | null {
   if (Capacitor.getPlatform() === 'android') return appearance.errorFeedback();
   return Capacitor.isNativePlatform() ? Haptics.notification({ type: NotificationType.Error }) : null;
+}
+export function nativeSuccessFeedback(): Promise<unknown> | null {
+  if (Capacitor.getPlatform() === 'android') return appearance.successFeedback();
+  return Capacitor.isNativePlatform() ? Haptics.notification({ type: NotificationType.Success }) : null;
 }
 export function nativeSaveImage(dataUrl: string): Promise<{ saved: boolean }> | null {
   return Capacitor.getPlatform() === 'android' ? appearance.saveImage({ dataUrl }) : null;
@@ -444,7 +449,8 @@ export async function createRuntime(onChange: (snapshot: any) => void, platform:
       if (transitioning) { await profiles.commit(); transitioning = false; }
       const guest = !previousOwner && !selectedProfile.selected ? records.filter(note => !note.deleted) : [];
       if (guest.length || (!previousOwner && !selectedProfile.selected && folderRecords.length)) await api.upload(0, uploadNotes(guest), undefined, folderRecords, true);
-      void sync().catch(() => undefined);
+      // Sign-in releases its guard before starting the initial download.
+      if (!signingIn) void sync().catch(() => undefined);
       return { recoveryCode: identity.pendingRecoveryCode };
     } catch (error) {
       if (transitioning) {
@@ -643,7 +649,9 @@ export async function createRuntime(onChange: (snapshot: any) => void, platform:
         return await acceptSession(await auth.signIn(email, password, true), password);
       } finally {
         signingIn = false;
-        if (auth.isLoggedIn) queueSync();
+        // Start fetching now, without the edit-debounce timer. Do not keep
+        // the login screen waiting on a slow/offline download.
+        if (auth.isLoggedIn) void sync().catch(() => undefined);
       }
     },
     async register(email: string, password: string) { if (password.length < 6) throw new Error('passwordTooShort'); return acceptSession(await auth.createProtectedAccount(email, password), password); },
@@ -839,18 +847,27 @@ export async function createRuntime(onChange: (snapshot: any) => void, platform:
     async generateRecovery(password: string) { return identity.generateRecoveryCode(password); },
     async upgradeIdentity(currentPassword: string, newPassword: string, confirm: () => Promise<string>) {
       if (!user || Number(user.auth_version) === 2 || snapshot().appLocked) throw new Error('notesLocked');
-      if (newPassword.length < 12 || newPassword === currentPassword) throw new Error('Use a different password with at least 12 characters.');
-      const opened = await extractPlainEAK(currentPassword, { crypto_version: user.crypto_version,
-        kdf_params: user.kdf_params, kdf_salt: user.kdf_salt_b64, eak: user.eak_b64 });
-      await keys.withEak(async root => {
-        if (btoa(String.fromCharCode(...root)) !== opened.eakB64) throw new Error('identityVerificationFailed');
-      });
+      if (newPassword.length < 8 || newPassword === currentPassword) throw new Error('Use a different password with at least 8 characters.');
       await sync();
       if (!navigator.onLine || syncing || failure || (await outbox.getAll()).length || records.some(note => note.sync_pending)) {
-        throw new Error('Finish syncing before upgrading your account.');
+        throw new Error('syncPending');
       }
       const ownerId = String(user.id);
-      const session = await identity.enroll(newPassword, confirm);
+      const session = await identity.enroll(newPassword, confirm, async bundle => {
+        // Verify the authoritative envelope, not potentially stale cached login metadata.
+        if (bundle?.crypto_version !== 'v1' || bundle.kdf_params?.algo !== 'PBKDF2' || bundle.kdf_params.hash !== 'SHA-256' || !Number.isSafeInteger(bundle.kdf_params.iters) || bundle.kdf_params.iters < 1 || bundle.kdf_params.iters > 10000000 || !bundle.kdf_salt || !bundle.eak) throw new Error('identityLegacyKeyUnavailable');
+        let opened;
+        try { opened = await extractPlainEAK(currentPassword, bundle); }
+        catch (error) {
+          if (error instanceof DOMException && error.name === 'OperationError') throw new Error('wrongPassword');
+          throw new Error('identityLegacyKeyUnavailable');
+        }
+        try {
+          await keys.withEak(async root => {
+            if (String(user?.id) !== ownerId || btoa(String.fromCharCode(...root)) !== opened.eakB64) throw new Error('identityLegacyKeyUnavailable');
+          });
+        } finally { opened.eakBytes.fill(0); }
+      });
       try {
         if (String(user?.id) !== ownerId) throw new Error('identityAccountSwitchRequiresLogout');
         await auth.prepareProtectedSession(session);

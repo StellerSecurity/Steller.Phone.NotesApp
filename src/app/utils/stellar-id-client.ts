@@ -1,6 +1,7 @@
 import type * as Opaque from '../../../identity-runtime/node_modules/@serenity-kit/opaque';
 
 type Json = Record<string, any>;
+export type LegacyKeyVerifier = (bundle: { crypto_version: 'v1'; kdf_params: { algo: 'PBKDF2'; hash: 'SHA-256'; iters: number }; kdf_salt: string; eak: string }) => Promise<void>;
 type Identifiers = { client: string; server: string };
 export type IdentityTransport = (operation: string, body: Json) => Promise<Json>;
 export interface IdentityPins { issuer: string; methodKey: string; opaqueKey: string; }
@@ -126,7 +127,7 @@ export class StellarIdClient {
     return { accountId: id, email: normalized, token, expiresAt, keyEnvelope: result['keyEnvelope'], rootKey };
   }
 
-  private async account(flow: string, password: string, input: Json, root: Uint8Array | null, authorizationPassword?: string, owner?: Pick<IdentitySession, 'accountId' | 'email'>, confirmEnrollment?: () => Promise<string>): Promise<IdentityAccount & { root: Uint8Array }> {
+  private async account(flow: string, password: string, input: Json, root: Uint8Array | null, authorizationPassword?: string, owner?: Pick<IdentitySession, 'accountId' | 'email'>, confirmEnrollment?: () => Promise<string>, verifyLegacyKey?: LegacyKeyVerifier): Promise<IdentityAccount & { root: Uint8Array }> {
     const opaque = await this.runtime();
     const registration = opaque.client.startRegistration({ password });
     const authorization = authorizationPassword === undefined ? null : opaque.client.startLogin({ password: authorizationPassword });
@@ -138,6 +139,10 @@ export class StellarIdClient {
     const identifiers = this.identifiers(start['identifiers'], client, recoveryCredential);
     const finished = opaque.client.finishRegistration({ password, clientRegistrationState: registration.clientRegistrationState, registrationResponse: start['registrationResponse'], identifiers });
     if (finished.serverStaticPublicKey !== this.pins.opaqueKey) return fail();
+    if (flow === 'enroll') {
+      if (!verifyLegacyKey) return fail();
+      await verifyLegacyKey({ crypto_version: start['legacyKdf']?.version, kdf_params: start['legacyKdf']?.parameters, kdf_salt: start['legacyKdf']?.salt, eak: start['keyEnvelope'] });
+    }
     let authorizing: ReturnType<typeof opaque.client.finishLogin> = undefined;
     if (authorization) {
       const authorClient = flow === 'recover' ? 'recovery:' + accountId(input['accountId']) : owner?.email;
@@ -176,9 +181,10 @@ export class StellarIdClient {
   }
 
   async enroll(owner: { accountId: string; email: string; token: string }, newPassword: string,
-    root: Uint8Array, confirm: () => Promise<string>): Promise<IdentitySession> {
-    if (newPassword.length < 12 || root.length !== 32) return fail();
-    const account = await this.account('enroll', newPassword, { token: owner.token }, root, undefined, owner, confirm);
+    root: Uint8Array, confirm: () => Promise<string>, verifyLegacyKey: LegacyKeyVerifier): Promise<IdentitySession> {
+    if (newPassword.length < 8 || root.length !== 32) return fail();
+    owner = { ...owner, email: owner.email.trim().toLowerCase() };
+    const account = await this.account('enroll', newPassword, { token: owner.token }, root, undefined, owner, confirm, verifyLegacyKey);
     const session = await this.login(owner.email, newPassword);
     if (session.accountId !== account.accountId || !sameBytes(session.rootKey, root)) {
       session.rootKey.fill(0);

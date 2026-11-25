@@ -46,9 +46,18 @@ describe('Shipping Notes UI with the actual runtime and Quill', () => {
   });
   it('places wrong-password feedback below the field and recovers on a correct retry', async () => {
     await start(); await open(); click('[data-action="note-lock"]'); input('#modal input', 'Synthetic92!'); click('#lock-now'); await wait(() => !!doc.querySelector('[data-action="unlock-note"]'));
+    const outcomes: string[]=[];win.stellarDeviceFeedback.error=(enabled:boolean)=>{if(enabled)outcomes.push('error')};win.stellarDeviceFeedback.success=(enabled:boolean)=>{if(enabled)outcomes.push('success')};
     click('[data-action="unlock-note"]'); input('#modal input', 'wrong'); click('#unlock-confirm'); await wait(() => !get('#note-password-error').hidden);
     expect(get('#modal input').getBoundingClientRect().bottom).toBeLessThanOrEqual(get('#note-password-error').getBoundingClientRect().top);
-    expect(get('#toast').classList.contains('visible')).toBeFalse(); input('#modal input', 'Synthetic92!'); expect(get('#note-password-error').hidden).toBeTrue(); click('#unlock-confirm'); await wait(editor); expect(title()).toBe('Release QA');
+    expect(get('#toast').classList.contains('visible')).toBeFalse(); input('#modal input', 'Synthetic92!'); expect(get('#note-password-error').hidden).toBeTrue(); click('#unlock-confirm'); await wait(editor); expect(title()).toBe('Release QA');expect(outcomes).toEqual(['error','success']);
+    click('[data-action="note-lock"]');expect(doc.querySelector('#lock-now')).toBeNull();expect(doc.querySelector('#remove-lock')).not.toBeNull();expect(doc.querySelector('.password-strength-live')).toBeNull();click('#modal [data-close]');expect(title()).toBe('Release QA');
+  });
+  it('gives distinct app-code feedback and keeps existing notes after a wrong-code retry', async () => {
+    await start();const outcomes:string[]=[];
+    win.stellarDeviceFeedback.error=(enabled:boolean)=>{if(enabled)outcomes.push('error')};win.stellarDeviceFeedback.success=(enabled:boolean)=>{if(enabled)outcomes.push('success')};
+    await win.__notesQA.runtime.setAppLock('SyntheticApp49!');await win.__notesQA.runtime.lockApp();await wait(()=>!!doc.querySelector('.demo-lock-input'));
+    input('.demo-lock-input','wrong');click('[data-action="unlock-app"]');await wait(()=>outcomes.length===1);expect(outcomes).toEqual(['error']);expect(doc.querySelector('.demo-lock-input')).not.toBeNull();
+    input('.demo-lock-input','SyntheticApp49!');click('[data-action="unlock-app"]');await wait(list);expect(outcomes).toEqual(['error','success']);await open();expect(title()).toBe('Release QA');expect(body()).toContain('Last line');
   });
   it('cancels deletion without losing text, then restores a trashed note intact', async () => {
     await start(); await open(); click('[data-action="more"]'); click('[data-menu="delete"]'); click('#modal [data-close]'); await wait(editor); expect(editor()).toBeTrue(); expect(body()).toContain('Last line');
