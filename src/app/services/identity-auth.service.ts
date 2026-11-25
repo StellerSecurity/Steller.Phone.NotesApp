@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom, timeout } from 'rxjs';
 import { environment } from '../../environments/environment';
-import { IdentitySession, StellarIdClient } from '../utils/stellar-id-client';
+import { IdentitySession, LegacyKeyVerifier, StellarIdClient } from '../utils/stellar-id-client';
 import { SecureStorageService } from './secure-storage.service';
 import { CryptoKeyService } from './crypto-key.service';
 
@@ -80,14 +80,14 @@ export class IdentityAuthService {
     } finally { root.fill(0); }
   }
 
-  async enroll(newPassword: string, confirm: () => Promise<string>): Promise<IdentitySession> {
+  async enroll(newPassword: string, confirm: () => Promise<string>, verifyLegacyKey: LegacyKeyVerifier): Promise<IdentitySession> {
     const token = await this.secure.getItem('ssToken');
     const raw = await this.secure.getItem('ssUser');
     if (!token || !raw || await this.secure.getItem('ssAuthVersion') === '2') throw new Error('identitySessionExpired');
     const owner = JSON.parse(raw);
     if (!owner?.id || typeof owner.email !== 'string') throw new Error('identityVerificationFailed');
     const session = await this.keys.withEak(async root => (await this.client()).enroll(
-      { accountId: String(owner.id), email: owner.email, token }, newPassword, root, confirm));
+      { accountId: String(owner.id), email: owner.email, token }, newPassword, root, confirm, verifyLegacyKey));
     try { await this.secure.setItem(await this.marker(owner.email), 'opaque'); }
     catch (error) { session.rootKey.fill(0); throw error; }
     return session;

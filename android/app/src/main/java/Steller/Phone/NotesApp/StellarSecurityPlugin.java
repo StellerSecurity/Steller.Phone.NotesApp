@@ -110,6 +110,17 @@ public class StellarSecurityPlugin extends Plugin {
     }
 
     @PluginMethod
+    public void successFeedback(PluginCall call) {
+        getActivity().runOnUiThread(() -> {
+            int feedback = android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R
+                ? HapticFeedbackConstants.CONFIRM : HapticFeedbackConstants.VIRTUAL_KEY;
+            JSObject result = new JSObject();
+            result.put("performed", getBridge().getWebView().performHapticFeedback(feedback));
+            call.resolve(result);
+        });
+    }
+
+    @PluginMethod
     public void errorFeedback(PluginCall call) {
         getActivity().runOnUiThread(() -> {
             int feedback = android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R

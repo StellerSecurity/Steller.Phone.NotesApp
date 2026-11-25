@@ -334,13 +334,19 @@ describe('Original design with existing Notes services', () => {
     await start();
     return eakB64;
   }
+  async function migrationEnvelope() {
+    const user = JSON.parse(secure.get('ssUser')!);
+    return { crypto_version: user.crypto_version, kdf_params: user.kdf_params, kdf_salt: user.kdf_salt_b64, eak: user.eak_b64 };
+  }
   const retainedNotes = () => JSON.parse(storage.get('notes')).map(({ sync_pending, ...note }: any) => note);
   it('migrates the identity session without changing note content, folders or their encryption key', async () => {
     const originalKey = await legacyMigrationAccount();
     await runtime.save([note()], ['Personal']); await runtime.sync();
     const savedNotes = retainedNotes(), savedFolders = storage.get('folders');
     const rootKey = Uint8Array.from(atob(originalKey), character => character.charCodeAt(0));
-    spyOn(IdentityAuthService.prototype, 'enroll').and.callFake(async (_password, confirm) => {
+    const envelope = await migrationEnvelope();
+    spyOn(IdentityAuthService.prototype, 'enroll').and.callFake(async (_password, confirm, verify) => {
+      await verify(envelope);
       expect(await confirm()).toBe('12345678');
       return { accountId: '123', email: 'runtime@example.invalid', token: '2|' + 'b'.repeat(40),
         expiresAt: new Date(Date.now() + 60000).toISOString(), keyEnvelope: btoa('e'.repeat(60)), rootKey };
@@ -352,6 +358,46 @@ describe('Original design with existing Notes services', () => {
     expect(secure.get('ssAuthVersion')).toBe('2');
     expect(retainedNotes()).toEqual(savedNotes); expect(storage.get('folders')).toBe(savedFolders);
     expect(rootKey.every(byte => byte === 0)).toBeTrue();
+  });
+  it('uses the authoritative envelope when an old session has no cached KDF metadata', async () => {
+    const originalKey = await legacyMigrationAccount(), envelope = await migrationEnvelope();
+    await runtime.save([note()], ['Personal']); await runtime.sync();
+    const savedNotes = retainedNotes(), savedFolders = storage.get('folders');
+    const oldUser = JSON.parse(secure.get('ssUser')!);
+    delete oldUser.kdf_params; delete oldUser.kdf_salt_b64; delete oldUser.eak_b64;
+    secure.set('ssUser', JSON.stringify(oldUser)); await start();
+    spyOn(IdentityAuthService.prototype, 'enroll').and.callFake(async (_password, confirm, verify) => {
+      await verify(envelope); expect(await confirm()).toBe('12345678'); throw new Error('migrationCancelled');
+    });
+    await expectAsync(runtime.upgradeIdentity('old-runtime-password', 'new-runtime-password', async () => '12345678')).toBeRejectedWithError('migrationCancelled');
+    expect(secure.get('ssEakB64')).toBe(originalKey); expect(retainedNotes()).toEqual(savedNotes); expect(storage.get('folders')).toBe(savedFolders);
+  });
+  for (const kind of ['wrong-password', 'different-key', 'missing-envelope']) {
+    it('stops upgrade without modifying data for ' + kind, async () => {
+      const originalKey = await legacyMigrationAccount();
+      const envelope = kind === 'different-key' ? exportServerBundleFromHeader((await createVault('old-runtime-password')).header) : await migrationEnvelope();
+      await runtime.save([note()], ['Personal']); await runtime.sync(); const savedNotes = retainedNotes();
+      const confirm = jasmine.createSpy('confirm').and.resolveTo('12345678');
+      spyOn(IdentityAuthService.prototype, 'enroll').and.callFake(async (_password, _confirm, verify) => {
+        await verify(kind === 'missing-envelope' ? {} as any : envelope);
+        throw new Error('verification should have stopped enrollment');
+      });
+      await expectAsync(runtime.upgradeIdentity(kind === 'wrong-password' ? 'wrong-password' : 'old-runtime-password', 'new-runtime-password', confirm))
+        .toBeRejectedWithError(kind === 'wrong-password' ? 'wrongPassword' : 'identityLegacyKeyUnavailable');
+      expect(confirm).not.toHaveBeenCalled(); expect(secure.get('ssToken')).toBe('a'.repeat(40)); expect(secure.get('ssAuthVersion')).toBe('1');
+      expect(secure.get('ssEakB64')).toBe(originalKey); expect(retainedNotes()).toEqual(savedNotes);
+    });
+  }
+  it('accepts an eight-character upgrade password and rejects seven before enrollment', async () => {
+    const originalKey=await legacyMigrationAccount(),envelope=await migrationEnvelope();
+    await runtime.save([note()], ['Personal']);await runtime.sync();const savedNotes=retainedNotes();
+    const enroll=spyOn(IdentityAuthService.prototype,'enroll').and.callFake(async (_password,confirm,verify)=>{
+      await verify(envelope);expect(await confirm()).toBe('12345678');throw Error('migrationCancelled');
+    });
+    await expectAsync(runtime.upgradeIdentity('old-runtime-password','Short7!',async()=>'12345678')).toBeRejected();expect(enroll).not.toHaveBeenCalled();
+    await expectAsync(runtime.upgradeIdentity('old-runtime-password','Fresh8!x',async()=>'12345678')).toBeRejectedWithError('migrationCancelled');
+    expect(enroll).toHaveBeenCalledTimes(1);expect(enroll.calls.mostRecent().args[0]).toBe('Fresh8!x');
+    expect(secure.get('ssEakB64')).toBe(originalKey);expect(retainedNotes()).toEqual(savedNotes);
   });
   it('cancelling migration preserves the legacy session and original notes', async () => {
     const originalKey = await legacyMigrationAccount();
@@ -414,10 +460,26 @@ describe('Original design with existing Notes services', () => {
     try {
       const completed = await Promise.race([runtime.signIn(session.email, 'synthetic-password').then(() => true), sleep(1000).then(() => false)]);
       expect(completed).toBeTrue();
+      expect(runtime.snapshot().syncing).toBeTrue();
       expect(secure.get('ssAuthVersion')).toBe('2');
       expect(JSON.parse(storage.get('notes'))[0].title).toBe('Private title');
       expect(runtime.snapshot().loggedIn).toBeTrue();
     } finally { download.next({ notes: [], folders: [] }); download.complete(); }
+  });
+  it('downloads existing server notes immediately after login while keeping local notes', async () => {
+    await start(); await runtime.save([note('Retained local note')], []);
+    const keys=new CryptoKeyService();await keys.importEAK(root);
+    const id='e4212d3c-5a6b-47c8-9d01-23456789abcd';
+    remote.set(id,{id,title:packCipherBlob(await keys.encryptText('Existing cloud note',id+'#title')),
+      text:packCipherBlob(await keys.encryptText('<p>Cloud content</p>',id)),last_modified:Date.now(),protected:false,deleted:false});
+    spyOn(AuthService.prototype,'signIn').and.resolveTo(loginResult('123','runtime@example.invalid'));
+    await runtime.signIn('runtime@example.invalid','synthetic-password');
+    expect(runtime.snapshot().syncing).toBeTrue();
+    await runtime.sync();
+    expect(runtime.snapshot().notes.map((n:any)=>n.title)).toContain('Existing cloud note');
+    expect(runtime.snapshot().notes.map((n:any)=>n.title)).toContain('Retained local note');
+    expect(http.post.calls.allArgs().some((args:any[])=>args[0].endsWith('/download'))).toBeTrue();
+    expect(remote.get(id).deleted).toBeFalse();
   });
   it('keeps offline uploads durable across runtime recreation', async () => {
     spyOnProperty(navigator, 'onLine', 'get').and.returnValue(false);
