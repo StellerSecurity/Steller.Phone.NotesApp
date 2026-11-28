@@ -10,8 +10,8 @@ android {
         applicationId "steller.phone.notesapp"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode notesRecoveryExport ? 50 : 49
-        versionName notesRecoveryExport ? "2.92-recovery" : "2.92"
+        versionCode notesRecoveryExport ? 50 : 51
+        versionName notesRecoveryExport ? "2.92-recovery" : "2.93"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
