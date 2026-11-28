@@ -466,6 +466,49 @@ describe('Original design with existing Notes services', () => {
       expect(runtime.snapshot().loggedIn).toBeTrue();
     } finally { download.next({ notes: [], folders: [] }); download.complete(); }
   });
+  it('never replays a recovery code on ordinary or repeated same-account login', async () => {
+    await start(); await runtime.save([note('Retained local note')], []);
+    spyOnProperty(IdentityAuthService.prototype, 'pendingRecoveryCode', 'get').and.returnValue('STALE-SYNTHETIC-RECOVERY');
+    const clear = spyOn(IdentityAuthService.prototype, 'clearRecoveryCode').and.callThrough();
+    spyOn(AuthService.prototype, 'signIn').and.callFake(async () => loginResult('123', 'runtime@example.invalid'));
+    for (let attempt = 0; attempt < 2; attempt++) {
+      expect((await runtime.signIn('runtime@example.invalid', 'synthetic-password')).recoveryCode).toBeNull();
+      await runtime.sync();
+      expect(runtime.snapshot().notes.some((n:any) => n.title === 'Retained local note')).toBeTrue();
+    }
+    expect(clear).toHaveBeenCalledTimes(2);
+  });
+  it('returns a newly registered recovery code once and clears the service copy', async () => {
+    await start();
+    spyOnProperty(IdentityAuthService.prototype, 'pendingRecoveryCode', 'get').and.returnValue('NEW-SYNTHETIC-RECOVERY');
+    const clear = spyOn(IdentityAuthService.prototype, 'clearRecoveryCode').and.callThrough();
+    spyOn(AuthService.prototype, 'createProtectedAccount').and.callFake(async () => loginResult('123', 'runtime@example.invalid') as any);
+    expect((await runtime.register('runtime@example.invalid', 'synthetic-password')).recoveryCode).toBe('NEW-SYNTHETIC-RECOVERY');
+    expect(clear).toHaveBeenCalledTimes(1);
+  });
+  for (const oldMissingFlag of [false, true]) {
+    it('syncs notes created during session expiry after restart and reauthentication; old flag=' + oldMissingFlag, async () => {
+      signedIn();
+      secure.set('ssAuthVersion', '2');
+      secure.set('ssIdentitySession', JSON.stringify({tokenId:'expired',expiresAt:'2000-01-01T00:00:00Z'}));
+      await start();
+      await runtime.save([note('Created while session expired', '<p>First</p><p><br></p><p>Last</p>')], []);
+      expect(runtime.snapshot().loggedIn).toBeFalse();
+      expect(JSON.parse(storage.get('notes'))[0].sync_pending).toBeTrue();
+      expect(http.post).not.toHaveBeenCalled();
+      if (oldMissingFlag) {
+        const saved = JSON.parse(storage.get('notes')); saved[0].sync_pending = false;
+        storage.set('notes', JSON.stringify(saved));
+      }
+      runtime.dispose(); await start();
+      spyOn(AuthService.prototype, 'signIn').and.callFake(async () => loginResult('123', 'runtime@example.invalid'));
+      await runtime.signIn('runtime@example.invalid', 'synthetic-password'); await runtime.sync();
+      expect(remote.has(note().id)).toBeTrue();
+      expect(runtime.snapshot().notes[0].html).toBe('<p>First</p><p><br></p><p>Last</p>');
+      expect(remote.get(note().id).deleted).toBeFalse();
+      expect(runtime.snapshot().failure).toBe('');
+    });
+  }
   it('downloads existing server notes immediately after login while keeping local notes', async () => {
     await start(); await runtime.save([note('Retained local note')], []);
     const keys=new CryptoKeyService();await keys.importEAK(root);

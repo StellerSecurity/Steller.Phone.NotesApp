@@ -57,6 +57,7 @@ export class IdentityAuthService {
   }
 
   async login(email: string, password: string): Promise<IdentitySession> {
+    this.clearRecoveryCode();
     const session = await (await this.client()).login(email, password);
     try { await this.secure.setItem(await this.marker(email), 'opaque'); }
     catch (error) { session.rootKey.fill(0); throw error; }
@@ -126,8 +127,8 @@ export class IdentityAuthService {
   }
 
   async generateRecoveryCode(password: string): Promise<string> {
-    this.recoveryCode = await this.withSession((session, client) => client.setupRecovery(session, password));
-    return this.recoveryCode;
+    this.clearRecoveryCode();
+    return this.withSession((session, client) => client.setupRecovery(session, password));
   }
 
   async changePassword(currentPassword: string, newPassword: string): Promise<void> {

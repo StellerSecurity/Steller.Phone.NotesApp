@@ -209,7 +209,10 @@ export async function createRuntime(onChange: (snapshot: any) => void, platform:
   const uploadNotes = (notes: LocalNote[]) => notes.map(({ sync_pending, restore_sources, ...note }) => note);
   async function queueUnsaved() {
     const queued = await outbox.getAll();
-    const updates = records.filter(note => note.sync_pending && !queued.some(op => op.payload.notes?.some(item => item.id === note.id && Number(item.last_modified) === Number(note.last_modified))));
+    // An expired session still owns its local edits. Older builds saved new
+    // notes with base_version=0 but no pending flag while authentication expired.
+    const updates = records.filter(note => (note.sync_pending || (!!user && !note.deleted && note.base_version === 0))
+      && !queued.some(op => op.payload.notes?.some(item => item.id === note.id && Number(item.last_modified) === Number(note.last_modified))));
     if (updates.length || await disk.get('notes.design.folders-pending.v1')) {
       await api.upload(0, uploadNotes(updates), undefined, folderRecords, true);
       await disk.remove('notes.design.folders-pending.v1');
@@ -406,7 +409,7 @@ export async function createRuntime(onChange: (snapshot: any) => void, platform:
     else await disk.remove('notes.design.folders-pending.v1');
     return { selected: true, operations: saved?.outbox || [] };
   }
-  async function acceptSession(result: any, password: string) {
+  async function acceptSession(result: any, password: string, showNewRecoveryCode = false) {
     clearBackupPreview();
     if (result.response?.response_code !== 200) throw new Error('loginFailed');
     const response = result.response;
@@ -451,7 +454,9 @@ export async function createRuntime(onChange: (snapshot: any) => void, platform:
       if (guest.length || (!previousOwner && !selectedProfile.selected && folderRecords.length)) await api.upload(0, uploadNotes(guest), undefined, folderRecords, true);
       // Sign-in releases its guard before starting the initial download.
       if (!signingIn) void sync().catch(() => undefined);
-      return { recoveryCode: identity.pendingRecoveryCode };
+      const recoveryCode = showNewRecoveryCode ? identity.pendingRecoveryCode : null;
+      identity.clearRecoveryCode();
+      return { recoveryCode };
     } catch (error) {
       if (transitioning) {
         runtime.dispose();
@@ -535,7 +540,7 @@ export async function createRuntime(onChange: (snapshot: any) => void, platform:
             text:n.locked?n.encrypted.html:sanitizeNoteContent(n.html, sanitizeEditorHtml),
             protected:n.locked,pinned:n.pinned,favorite:n.favorite,deleted:n.deleted,
             deleted_at:n.deletedAt ?? undefined,folder_id:folder && !folder.deleted?folder.id:null,
-            folder:folder && !folder.deleted?folder.name:'',last_modified:version++,base_version:0,sync_pending:auth.isLoggedIn};
+            folder:folder && !folder.deleted?folder.name:'',last_modified:version++,base_version:0,sync_pending:!!user};
         });
         records = [...records,...notes]; folderRecords = [...folderRecords,...folders];
         try {
@@ -654,7 +659,7 @@ export async function createRuntime(onChange: (snapshot: any) => void, platform:
         if (auth.isLoggedIn) void sync().catch(() => undefined);
       }
     },
-    async register(email: string, password: string) { if (password.length < 6) throw new Error('passwordTooShort'); return acceptSession(await auth.createProtectedAccount(email, password), password); },
+    async register(email: string, password: string) { if (password.length < 6) throw new Error('passwordTooShort'); return acceptSession(await auth.createProtectedAccount(email, password), password, true); },
     async recover(email: string, code: string, password: string) {
       if (password.length < 6) throw new Error('passwordTooShort');
       const session = await identity.recover(email, code, password);
@@ -720,7 +725,7 @@ export async function createRuntime(onChange: (snapshot: any) => void, platform:
           if (!previous || comparable(previous) !== comparable(note)) {
             note.last_modified = nextNoteVersion([...records, ...changed]);
             state.markPendingMutation(id, 'update', note.last_modified);
-            note.sync_pending = auth.isLoggedIn;
+            note.sync_pending = !!user;
             changed.push(note);
           }
           next.push(note);
