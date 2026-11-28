@@ -166,7 +166,8 @@ export async function createRuntime(onChange: (snapshot: any) => void, platform:
     }),
     folders: folderRecords.filter(folder => !folder.deleted && folder.name.trim()).map(folder => folder.name),
     user: auth.isLoggedIn && user ? { email: user.email, authVersion: user.auth_version } : null,
-    loggedIn: auth.isLoggedIn, syncing, failure, conflicts: [...conflicts],
+    loggedIn: auth.isLoggedIn, syncing,
+    failure: failure || (auth.isLoggedIn && (!navigator.onLine || !auth.hasActiveSession || state.hasPendingMutations()) ? 'syncPending' : ''), conflicts: [...conflicts],
     appLocked: state.appHasPasswordChallenge() && !state.getNotesAppPassword(),
     appLockEnabled: state.appHasPasswordChallenge(),
   });
@@ -209,7 +210,10 @@ export async function createRuntime(onChange: (snapshot: any) => void, platform:
   const uploadNotes = (notes: LocalNote[]) => notes.map(({ sync_pending, restore_sources, ...note }) => note);
   async function queueUnsaved() {
     const queued = await outbox.getAll();
-    const updates = records.filter(note => note.sync_pending && !queued.some(op => op.payload.notes?.some(item => item.id === note.id && Number(item.last_modified) === Number(note.last_modified))));
+    // An expired session still owns its local edits. Older builds saved new
+    // notes with base_version=0 but no pending flag while authentication expired.
+    const updates = records.filter(note => (note.sync_pending || (!!user && !note.deleted && note.base_version === 0))
+      && !queued.some(op => op.payload.notes?.some(item => item.id === note.id && Number(item.last_modified) === Number(note.last_modified))));
     if (updates.length || await disk.get('notes.design.folders-pending.v1')) {
       await api.upload(0, uploadNotes(updates), undefined, folderRecords, true);
       await disk.remove('notes.design.folders-pending.v1');
@@ -234,9 +238,12 @@ export async function createRuntime(onChange: (snapshot: any) => void, platform:
     return activeSync;
   }
   async function performSync(): Promise<void> {
-    if (exportingLocalNotes || signingIn || syncing || !auth.isLoggedIn || !navigator.onLine || disposed) return;
+    if (exportingLocalNotes || signingIn || syncing || (!auth.isLoggedIn && !user) || !navigator.onLine || disposed
+      || (state.appHasPasswordChallenge() && !state.getNotesAppPassword())) return;
     syncing = true; failure = ''; emit();
     try {
+      await auth.initializeAuthState();
+      if (!auth.hasActiveSession) { failure = 'syncPending'; return; }
       await serial;
       const token = await secure.getItem('ssToken'), generation = outbox.generation;
       const currentSession = async () => auth.isLoggedIn && token === await secure.getItem('ssToken') && generation === outbox.generation;
@@ -356,6 +363,8 @@ export async function createRuntime(onChange: (snapshot: any) => void, platform:
   const refresh = () => { if (syncing) refreshPending = true; else queueSync(); };
   window.addEventListener('stellar:notes-changed', refresh);
   window.addEventListener('online', refresh);
+  const showOfflineState = () => emit();
+  window.addEventListener('offline', showOfflineState);
   // Resume events from the native app and the browser describe the same
   // transition. Fetch once immediately, keeping cached notes on screen.
   let foreground = !document.hidden;
@@ -406,7 +415,7 @@ export async function createRuntime(onChange: (snapshot: any) => void, platform:
     else await disk.remove('notes.design.folders-pending.v1');
     return { selected: true, operations: saved?.outbox || [] };
   }
-  async function acceptSession(result: any, password: string) {
+  async function acceptSession(result: any, password: string, showNewRecoveryCode = false) {
     clearBackupPreview();
     if (result.response?.response_code !== 200) throw new Error('loginFailed');
     const response = result.response;
@@ -451,7 +460,9 @@ export async function createRuntime(onChange: (snapshot: any) => void, platform:
       if (guest.length || (!previousOwner && !selectedProfile.selected && folderRecords.length)) await api.upload(0, uploadNotes(guest), undefined, folderRecords, true);
       // Sign-in releases its guard before starting the initial download.
       if (!signingIn) void sync().catch(() => undefined);
-      return { recoveryCode: identity.pendingRecoveryCode };
+      const recoveryCode = showNewRecoveryCode ? identity.pendingRecoveryCode : null;
+      identity.clearRecoveryCode();
+      return { recoveryCode };
     } catch (error) {
       if (transitioning) {
         runtime.dispose();
@@ -535,7 +546,7 @@ export async function createRuntime(onChange: (snapshot: any) => void, platform:
             text:n.locked?n.encrypted.html:sanitizeNoteContent(n.html, sanitizeEditorHtml),
             protected:n.locked,pinned:n.pinned,favorite:n.favorite,deleted:n.deleted,
             deleted_at:n.deletedAt ?? undefined,folder_id:folder && !folder.deleted?folder.id:null,
-            folder:folder && !folder.deleted?folder.name:'',last_modified:version++,base_version:0,sync_pending:auth.isLoggedIn};
+            folder:folder && !folder.deleted?folder.name:'',last_modified:version++,base_version:0,sync_pending:!!user};
         });
         records = [...records,...notes]; folderRecords = [...folderRecords,...folders];
         try {
@@ -549,7 +560,7 @@ export async function createRuntime(onChange: (snapshot: any) => void, platform:
           throw error;
         }
         clearBackupPreview();emit();
-        if(auth.isLoggedIn) void queueUnsaved().then(()=>queueSync()).catch(()=>{failure='syncPending';emit();});
+        if(auth.hasActiveSession) void queueUnsaved().then(()=>queueSync()).catch(()=>{failure='syncPending';emit();});
         return {notes:notes.length,folders:folders.length};
       });
     },
@@ -654,7 +665,7 @@ export async function createRuntime(onChange: (snapshot: any) => void, platform:
         if (auth.isLoggedIn) void sync().catch(() => undefined);
       }
     },
-    async register(email: string, password: string) { if (password.length < 6) throw new Error('passwordTooShort'); return acceptSession(await auth.createProtectedAccount(email, password), password); },
+    async register(email: string, password: string) { if (password.length < 6) throw new Error('passwordTooShort'); return acceptSession(await auth.createProtectedAccount(email, password), password, true); },
     async recover(email: string, code: string, password: string) {
       if (password.length < 6) throw new Error('passwordTooShort');
       const session = await identity.recover(email, code, password);
@@ -684,7 +695,7 @@ export async function createRuntime(onChange: (snapshot: any) => void, platform:
         }
         records = [...records, ...restored.copies];
         await persist();
-        if (auth.isLoggedIn) { await queueUnsaved(); queueSync(); }
+        if (auth.hasActiveSession) { await queueUnsaved(); queueSync(); }
         return restored.restoredIds;
       });
       emit();
@@ -720,7 +731,7 @@ export async function createRuntime(onChange: (snapshot: any) => void, platform:
           if (!previous || comparable(previous) !== comparable(note)) {
             note.last_modified = nextNoteVersion([...records, ...changed]);
             state.markPendingMutation(id, 'update', note.last_modified);
-            note.sync_pending = auth.isLoggedIn;
+            note.sync_pending = !!user;
             changed.push(note);
           }
           next.push(note);
@@ -735,7 +746,7 @@ export async function createRuntime(onChange: (snapshot: any) => void, platform:
         records = next;
         await persist();
         for (const view of viewNotes) dirtyViews.delete(String(view.id));
-        if (auth.isLoggedIn) {
+        if (auth.hasActiveSession) {
           await queueUnsaved();
           queueSync();
         }
@@ -925,7 +936,7 @@ export async function createRuntime(onChange: (snapshot: any) => void, platform:
         privacy: state.isPrivacyModeEnabled(), clipboard: state.getClipboardAutoClearSeconds(),
         ...(['light', 'dark', 'system'].includes(appearance) ? { appearance } : {}) };
     },
-    dispose() { clearBackupPreview(); disposed = true; void backListener?.remove(); void appStateListener?.remove(); document.removeEventListener('visibilitychange', visibilityChanged); loginSubscription.unsubscribe(); keys.clearRuntimeKeys(); notePasswords.clear(); records = []; folderRecords = []; user = null; auth.clearAuthenticationState(); clearTimeout(syncTimer); clearInterval(poll); clearInterval(retryTimer); realtime.dispose(); window.removeEventListener('stellar:notes-changed', refresh); window.removeEventListener('online', refresh); },
+    dispose() { clearBackupPreview(); disposed = true; void backListener?.remove(); void appStateListener?.remove(); document.removeEventListener('visibilitychange', visibilityChanged); loginSubscription.unsubscribe(); keys.clearRuntimeKeys(); notePasswords.clear(); records = []; folderRecords = []; user = null; auth.clearAuthenticationState(); clearTimeout(syncTimer); clearInterval(poll); clearInterval(retryTimer); realtime.dispose(); window.removeEventListener('stellar:notes-changed', refresh); window.removeEventListener('online', refresh); window.removeEventListener('offline', showOfflineState); },
   };
   const loginSubscription = auth.loginState$.subscribe(() => emit());
   emit();

@@ -13,6 +13,9 @@ import { sessionToken } from '../utils/session-token';
 })
 export class AuthService {
   private expiryTimer: ReturnType<typeof setTimeout> | null = null;
+  private authStateRevision = 0;
+  private publishedToken: string | null = null;
+  private rememberedSession = false;
   private loggedInSubject = new BehaviorSubject<boolean>(false);
 
   public readonly loginState$ = this.loggedInSubject.asObservable();
@@ -22,22 +25,45 @@ export class AuthService {
   }
 
   get isLoggedIn(): boolean {
-    return this.loggedInSubject.value;
+    return this.loggedInSubject.value || this.rememberedSession;
   }
 
+  get hasActiveSession(): boolean { return this.loggedInSubject.value; }
+
   async initializeAuthState() {
+    const revision = ++this.authStateRevision;
     if (this.expiryTimer) clearTimeout(this.expiryTimer);
-    const token = await sessionToken(this.secureStorageService);
-    this.loggedInSubject.next(!!token);
-    if (token && await this.secureStorageService.getItem('ssAuthVersion') === '2') {
-      const raw = await this.secureStorageService.getItem('ssIdentitySession');
-      let expiry = 0;
-      try { expiry = raw ? Date.parse(JSON.parse(raw).expiresAt) : 0; } catch { this.loggedInSubject.next(false); }
-      if (expiry > Date.now()) this.expiryTimer = setTimeout(() => this.loggedInSubject.next(false), expiry - Date.now());
+    let token: string | null = null;
+    try { token = await this.identity.ensureSession(); } catch { /* Keep local data and retry. */ }
+    if (revision !== this.authStateRevision) return;
+    let remembered = false;
+    try {
+      const meta = JSON.parse(await this.secureStorageService.getItem('ssIdentitySession') || '{}');
+      const owner = JSON.parse(await this.secureStorageService.getItem('ssUser') || 'null');
+      const storedAccess = await this.secureStorageService.getItem('ssToken');
+      remembered = await this.secureStorageService.getItem('ssAuthVersion') === '2' && !meta.refreshRejected
+        && typeof storedAccess === 'string' && meta.tokenId === storedAccess.split('|')[0]
+        && String(owner?.id) === meta.accountId && typeof meta.email === 'string'
+        && String(owner?.email).trim().toLowerCase() === meta.email.trim().toLowerCase()
+        && typeof meta.refreshToken === 'string' && /^[a-f0-9]{32}\.[A-Za-z0-9_-]{43}$/.test(meta.refreshToken)
+        && Date.parse(meta.refreshExpiresAt) > Date.now();
+    } catch { /* No remembered account from malformed metadata. */ }
+    if (revision !== this.authStateRevision) return;
+    const changed = this.rememberedSession !== remembered; this.rememberedSession = remembered;
+    if (changed || this.publishedToken !== token || this.loggedInSubject.value !== !!token) {
+      this.publishedToken = token; this.loggedInSubject.next(!!token);
     }
+    try { if (await this.secureStorageService.getItem('ssAuthVersion') === '2') {
+      const raw = await this.secureStorageService.getItem('ssIdentitySession');
+      if (revision !== this.authStateRevision) return;
+      if (raw) this.expiryTimer = setTimeout(() => { void this.initializeAuthState(); }, 30000);
+    } } catch { if (revision === this.authStateRevision) this.expiryTimer = setTimeout(() => { void this.initializeAuthState(); }, 30000); }
   }
 
   clearAuthenticationState(): void {
+    this.authStateRevision++; if (this.expiryTimer) clearTimeout(this.expiryTimer);
+    this.rememberedSession = false;
+    this.publishedToken = null;
     this.loggedInSubject.next(false);
   }
 

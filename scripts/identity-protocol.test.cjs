@@ -30,6 +30,8 @@ async function transport(operation,body){
  if(operation==='method')return rpc('loginMethod',{body});
  if(operation==='start')return rpc('loginStart',{body});
  if(operation==='finish')return rpc('loginFinish',{body});
+ if(operation==='finish-renewable')return rpc('loginFinishRenewable',{body});
+ if(operation==='refresh')return rpc('renew',{body});
  if(operation==='logout')return rpc('logout',{token:body.token});
  if(operation.startsWith('account/')){const [,flow,step]=operation.split('/');return rpc(step,{flow,body});}
  throw new Error('Unexpected transport operation');
@@ -59,6 +61,11 @@ const deadline=setTimeout(()=>{child.kill();throw new Error('Identity protocol t
  check(legacyToken.body.authVersion,1,'legacy token remains legacy');
  let session=await client.login('new-mobile@example.invalid',first);
  check(session.rootKey,root,'new device opens the same notes key');
+ check(typeof session.refreshToken,'string','fresh OPAQUE proof issues a renewable device credential');
+ const renewed=await transport('refresh',{refreshToken:session.refreshToken,requestId:randomBytes(16).toString('hex')});
+ check(renewed.accountId,session.accountId,'renewal remains bound to the authenticated account');
+ check(renewed.refreshToken===session.refreshToken,false,'renewal rotates its credential');
+ session={...session,...renewed};check(session.rootKey,root,'renewal does not replace the client-only note key');
  const identity=await rpc('resolveToken',{body:{token:session.token}});
  check(identity.status,200,'OPAQUE session can authorize Notes without a token in a URL');
  check(identity.body.authVersion,2,'OPAQUE session remains protected');

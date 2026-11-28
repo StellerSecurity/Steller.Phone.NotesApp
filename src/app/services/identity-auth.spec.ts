@@ -8,6 +8,15 @@ import { sessionToken } from '../utils/session-token';
 import { ThemeService } from './theme.service';
 
 describe('Protected mobile login', () => {
+  it('does not retain an explicitly generated recovery code for future logins', async () => {
+    const service = new IdentityAuthService({} as any, {} as any, {} as any);
+    (service as any).recoveryCode = 'STALE-SYNTHETIC-RECOVERY';
+    const setup = jasmine.createSpy('setupRecovery').and.resolveTo('NEW-SYNTHETIC-RECOVERY');
+    spyOn<any>(service, 'withSession').and.callFake(async (work: any) => work({}, { setupRecovery: setup }));
+    expect(await service.generateRecoveryCode('synthetic-password')).toBe('NEW-SYNTHETIC-RECOVERY');
+    expect(service.pendingRecoveryCode).toBeNull();
+    expect(setup).toHaveBeenCalledTimes(1);
+  });
   it('defaults new installations to light while preserving saved appearance choices', async () => {
     for (const [stored, expected] of [[null, 'light'], ['invalid', 'light'], ['dark', 'dark'], ['system', 'system']] as const) {
       const storage = {create: async () => storage, get: async () => stored};

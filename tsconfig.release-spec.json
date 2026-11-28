@@ -28,6 +28,7 @@
     "src/app/services/identity-auth.spec.ts",
     "src/app/services/realtime-notes.service.spec.ts",
     "src/release/shipping-ui.spec.ts",
-    "src/runtime/backup/backup.spec.ts"
+    "src/runtime/backup/backup.spec.ts",
+    "src/app/utils/identity-renewal.spec.ts"
   ]
 }
