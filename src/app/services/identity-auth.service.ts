@@ -5,13 +5,20 @@ import { environment } from '../../environments/environment';
 import { IdentitySession, LegacyKeyVerifier, StellarIdClient } from '../utils/stellar-id-client';
 import { SecureStorageService } from './secure-storage.service';
 import { CryptoKeyService } from './crypto-key.service';
+import { IdentityRenewal } from '../utils/identity-renewal';
 
 @Injectable({ providedIn: 'root' })
 export class IdentityAuthService {
   private clientPromise: Promise<StellarIdClient> | null = null;
   private recoveryCode: string | null = null;
 
-  constructor(private http: HttpClient, private secure: SecureStorageService, private keys: CryptoKeyService) {}
+  private renewal: IdentityRenewal;
+  constructor(private http: HttpClient, private secure: SecureStorageService, private keys: CryptoKeyService) {
+    this.renewal = new IdentityRenewal(secure, (refreshToken, requestId) => firstValueFrom(
+      this.http.post<any>(environment.baseUrl + 'api/v2/auth/refresh', { refreshToken, requestId }).pipe(timeout(15000))));
+  }
+
+  ensureSession(): Promise<string | null> { return this.renewal.ensure(); }
 
   private async client(): Promise<StellarIdClient> {
     if (!this.clientPromise) {
@@ -100,12 +107,15 @@ export class IdentityAuthService {
   }
 
   async rememberSession(session: IdentitySession): Promise<void> {
+    await this.renewal.invalidate();
     await this.secure.setItem('ssIdentitySession', JSON.stringify({ accountId: session.accountId, email: session.email, tokenId: session.token.split('|')[0],
-      expiresAt: session.expiresAt, keyEnvelope: session.keyEnvelope }));
+      expiresAt: session.expiresAt, keyEnvelope: session.keyEnvelope,
+      ...(session.refreshToken ? {refreshToken: session.refreshToken, refreshExpiresAt: session.refreshExpiresAt} : {}) }));
     await this.secure.setItem('ssAuthVersion', '2');
   }
 
   async clearSession(): Promise<void> {
+    await this.renewal.invalidate();
     this.recoveryCode = null;
     await this.secure.removeItem('ssIdentitySession');
     await this.secure.removeItem('ssAuthVersion');
@@ -115,6 +125,7 @@ export class IdentityAuthService {
   clearRecoveryCode(): void { this.recoveryCode = null; }
 
   private async withSession<T>(work: (session: IdentitySession, client: StellarIdClient) => Promise<T>): Promise<T> {
+    await this.ensureSession();
     const token = await this.secure.getItem('ssToken');
     const raw = await this.secure.getItem('ssIdentitySession');
     if (!token || !raw || await this.secure.getItem('ssAuthVersion') !== '2') throw new Error('identitySessionExpired');
@@ -154,8 +165,14 @@ export class IdentityAuthService {
   }
 
   async logout(): Promise<void> {
+    await this.renewal.invalidate();
+    const raw = await this.secure.getItem('ssIdentitySession');
+    const refreshToken = raw ? JSON.parse(raw).refreshToken : null;
     const token = await this.secure.getItem('ssToken');
-    try { if (token && await this.secure.getItem('ssAuthVersion') === '2') await (await this.client()).logout(token); }
+    try {
+      if (refreshToken) await firstValueFrom(this.http.post(environment.baseUrl + 'api/v2/auth/logout-refresh', {refreshToken}).pipe(timeout(15000)));
+      else if (token && await this.secure.getItem('ssAuthVersion') === '2') await (await this.client()).logout(token);
+    }
     finally { this.recoveryCode = null; }
   }
 }

@@ -166,7 +166,8 @@ export async function createRuntime(onChange: (snapshot: any) => void, platform:
     }),
     folders: folderRecords.filter(folder => !folder.deleted && folder.name.trim()).map(folder => folder.name),
     user: auth.isLoggedIn && user ? { email: user.email, authVersion: user.auth_version } : null,
-    loggedIn: auth.isLoggedIn, syncing, failure, conflicts: [...conflicts],
+    loggedIn: auth.isLoggedIn, syncing,
+    failure: failure || (auth.isLoggedIn && (!navigator.onLine || !auth.hasActiveSession || state.hasPendingMutations()) ? 'syncPending' : ''), conflicts: [...conflicts],
     appLocked: state.appHasPasswordChallenge() && !state.getNotesAppPassword(),
     appLockEnabled: state.appHasPasswordChallenge(),
   });
@@ -237,9 +238,12 @@ export async function createRuntime(onChange: (snapshot: any) => void, platform:
     return activeSync;
   }
   async function performSync(): Promise<void> {
-    if (exportingLocalNotes || signingIn || syncing || !auth.isLoggedIn || !navigator.onLine || disposed) return;
+    if (exportingLocalNotes || signingIn || syncing || (!auth.isLoggedIn && !user) || !navigator.onLine || disposed
+      || (state.appHasPasswordChallenge() && !state.getNotesAppPassword())) return;
     syncing = true; failure = ''; emit();
     try {
+      await auth.initializeAuthState();
+      if (!auth.hasActiveSession) { failure = 'syncPending'; return; }
       await serial;
       const token = await secure.getItem('ssToken'), generation = outbox.generation;
       const currentSession = async () => auth.isLoggedIn && token === await secure.getItem('ssToken') && generation === outbox.generation;
@@ -359,6 +363,8 @@ export async function createRuntime(onChange: (snapshot: any) => void, platform:
   const refresh = () => { if (syncing) refreshPending = true; else queueSync(); };
   window.addEventListener('stellar:notes-changed', refresh);
   window.addEventListener('online', refresh);
+  const showOfflineState = () => emit();
+  window.addEventListener('offline', showOfflineState);
   // Resume events from the native app and the browser describe the same
   // transition. Fetch once immediately, keeping cached notes on screen.
   let foreground = !document.hidden;
@@ -554,7 +560,7 @@ export async function createRuntime(onChange: (snapshot: any) => void, platform:
           throw error;
         }
         clearBackupPreview();emit();
-        if(auth.isLoggedIn) void queueUnsaved().then(()=>queueSync()).catch(()=>{failure='syncPending';emit();});
+        if(auth.hasActiveSession) void queueUnsaved().then(()=>queueSync()).catch(()=>{failure='syncPending';emit();});
         return {notes:notes.length,folders:folders.length};
       });
     },
@@ -689,7 +695,7 @@ export async function createRuntime(onChange: (snapshot: any) => void, platform:
         }
         records = [...records, ...restored.copies];
         await persist();
-        if (auth.isLoggedIn) { await queueUnsaved(); queueSync(); }
+        if (auth.hasActiveSession) { await queueUnsaved(); queueSync(); }
         return restored.restoredIds;
       });
       emit();
@@ -740,7 +746,7 @@ export async function createRuntime(onChange: (snapshot: any) => void, platform:
         records = next;
         await persist();
         for (const view of viewNotes) dirtyViews.delete(String(view.id));
-        if (auth.isLoggedIn) {
+        if (auth.hasActiveSession) {
           await queueUnsaved();
           queueSync();
         }
@@ -930,7 +936,7 @@ export async function createRuntime(onChange: (snapshot: any) => void, platform:
         privacy: state.isPrivacyModeEnabled(), clipboard: state.getClipboardAutoClearSeconds(),
         ...(['light', 'dark', 'system'].includes(appearance) ? { appearance } : {}) };
     },
-    dispose() { clearBackupPreview(); disposed = true; void backListener?.remove(); void appStateListener?.remove(); document.removeEventListener('visibilitychange', visibilityChanged); loginSubscription.unsubscribe(); keys.clearRuntimeKeys(); notePasswords.clear(); records = []; folderRecords = []; user = null; auth.clearAuthenticationState(); clearTimeout(syncTimer); clearInterval(poll); clearInterval(retryTimer); realtime.dispose(); window.removeEventListener('stellar:notes-changed', refresh); window.removeEventListener('online', refresh); },
+    dispose() { clearBackupPreview(); disposed = true; void backListener?.remove(); void appStateListener?.remove(); document.removeEventListener('visibilitychange', visibilityChanged); loginSubscription.unsubscribe(); keys.clearRuntimeKeys(); notePasswords.clear(); records = []; folderRecords = []; user = null; auth.clearAuthenticationState(); clearTimeout(syncTimer); clearInterval(poll); clearInterval(retryTimer); realtime.dispose(); window.removeEventListener('stellar:notes-changed', refresh); window.removeEventListener('online', refresh); window.removeEventListener('offline', showOfflineState); },
   };
   const loginSubscription = auth.loginState$.subscribe(() => emit());
   emit();
